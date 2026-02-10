@@ -18,7 +18,7 @@ import ForMenPage from './components/ForMenPage';
 import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS } from './constants';
-import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent } from './types';
+import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem } from './types';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -32,57 +32,62 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<'home' | 'admin' | 'category'>('home');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Lifted Content State (Dynamic Data)
-  const [heroImages, setHeroImages] = useState<string[]>(HERO_IMAGES);
-  const [menuItems, setMenuItems] = useState(SUB_MENU_ITEMS);
+  // Lifted Content State
+  const [heroImages, setHeroImages] = useState<string[]>(() => {
+    const saved = localStorage.getItem('tour_mgm_hero_images_v3');
+    return saved ? JSON.parse(saved) : HERO_IMAGES;
+  });
+
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    const saved = localStorage.getItem('tour_mgm_menu_items_v3');
+    return saved ? JSON.parse(saved) : SUB_MENU_ITEMS;
+  });
   
-  // Persistence for products
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('tour_mgm_products');
+    const saved = localStorage.getItem('tour_mgm_products_v3');
     return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
   });
 
-  // Persistence for videos
   const [videos, setVideos] = useState<VideoItem[]>(() => {
-    const saved = localStorage.getItem('tour_mgm_videos');
+    const saved = localStorage.getItem('tour_mgm_videos_v3');
     return saved ? JSON.parse(saved) : INITIAL_VIDEOS;
   });
 
   const [posts, setPosts] = useState<CommunityPost[]>(() => {
-    const saved = localStorage.getItem('tour_mgm_posts');
+    const saved = localStorage.getItem('tour_mgm_posts_v3');
     return saved ? JSON.parse(saved) : INITIAL_POSTS;
   });
 
-  // Persistence for Page Contents
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(() => {
-    const saved = localStorage.getItem('tour_mgm_pages');
+    const saved = localStorage.getItem('tour_mgm_pages_v3');
     return saved ? JSON.parse(saved) : INITIAL_PAGE_CONTENTS;
   });
   
-  useEffect(() => {
-    localStorage.setItem('tour_mgm_products', JSON.stringify(products));
-  }, [products]);
+  // Safe Storage Utility to prevent QuotaExceededError crashes
+  const safeSave = (key: string, value: any) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        alert('저장 공간이 가득 찼습니다. 너무 큰 이미지 파일은 피해주시기 바랍니다.');
+      }
+      console.error('Storage Error:', e);
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem('tour_mgm_videos', JSON.stringify(videos));
-  }, [videos]);
+  useEffect(() => safeSave('tour_mgm_hero_images_v3', heroImages), [heroImages]);
+  useEffect(() => safeSave('tour_mgm_menu_items_v3', menuItems), [menuItems]);
+  useEffect(() => safeSave('tour_mgm_products_v3', products), [products]);
+  useEffect(() => safeSave('tour_mgm_videos_v3', videos), [videos]);
+  useEffect(() => safeSave('tour_mgm_posts_v3', posts), [posts]);
+  useEffect(() => safeSave('tour_mgm_pages_v3', pageContents), [pageContents]);
 
-  useEffect(() => {
-    localStorage.setItem('tour_mgm_posts', JSON.stringify(posts));
-  }, [posts]);
-
-  useEffect(() => {
-    localStorage.setItem('tour_mgm_pages', JSON.stringify(pageContents));
-  }, [pageContents]);
-
-  // Mock Users Database
   const [users, setUsers] = useState<User[]>([
     { id: 'admin', username: 'admin', role: 'admin', nickname: '관리자' },
     { id: 'u1', username: 'user1', role: 'user', nickname: '골프왕' },
     { id: 'u2', username: 'user2', role: 'user', nickname: '여행좋아' }
   ]);
 
-  // Modal State
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
   const [generatedPlan, setGeneratedPlan] = useState<TripPlanResult | undefined>(undefined);
 
@@ -92,8 +97,13 @@ const App: React.FC = () => {
       const adminUser = users.find(u => u.username === 'admin')!;
       setUser(adminUser);
       setShowAuthModal(false);
+      resetAuthFields();
     } else {
        if (authMode === 'signup') {
+         if (!username.trim() || !password.trim()) {
+           alert('아이디와 비밀번호를 입력해주세요.');
+           return;
+         }
          if (!nickname.trim()) {
            alert('닉네임을 입력해주세요.');
            return;
@@ -102,11 +112,14 @@ const App: React.FC = () => {
          setUsers([...users, newUser]);
          setUser(newUser);
          setShowAuthModal(false);
+         resetAuthFields();
+         alert('회원가입이 완료되었습니다!');
        } else {
          const existingUser = users.find(u => u.username === username);
          if (existingUser) {
            setUser(existingUser);
            setShowAuthModal(false);
+           resetAuthFields();
          } else {
            alert('사용자 정보가 일치하지 않습니다.');
          }
@@ -114,19 +127,20 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    setUser(null);
+  const resetAuthFields = () => {
     setUsername('');
     setPassword('');
     setNickname('');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
     setCurrentPage('home');
   };
 
   const handleProductClick = (id: string) => {
     const product = products.find(p => p.id === id);
-    if (product) {
-      setSelectedProduct(product);
-    }
+    if (product) setSelectedProduct(product);
   };
 
   const handleMenuClick = (label: string) => {
@@ -141,8 +155,7 @@ const App: React.FC = () => {
     if (selectedCategory === '골프') return products.filter(p => p.type === 'golf');
     if (selectedCategory === '호텔&빌라') return products.filter(p => p.type === 'hotel');
     if (selectedCategory === '관광') return products.filter(p => p.type === 'tour');
-    if (['이벤트', '베트남 문화', '먹거리', 'FOR MEN'].includes(selectedCategory)) return products;
-    return [];
+    return products;
   };
 
   const isAdmin = user?.role === 'admin';
@@ -151,12 +164,12 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <header className="sticky top-0 z-40 bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
-          <button onClick={() => setCurrentPage('home')} className="flex items-center gap-2 hover:opacity-80 transition">
+          <button onClick={() => setCurrentPage('home')} className="flex items-center gap-2">
              <div className="w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-xs">M</div>
-             <h1 className="text-lg font-bold text-deepgreen tracking-tight">TOUR MGM</h1>
+             <h1 className="text-lg font-bold text-deepgreen tracking-tight">MANGO TOUR</h1>
           </button>
           
-          <nav className="flex gap-3 items-center">
+          <nav className="flex gap-2 items-center">
             {isAdmin && (
               <button 
                 onClick={() => setCurrentPage(currentPage === 'home' ? 'admin' : 'home')}
@@ -170,17 +183,23 @@ const App: React.FC = () => {
 
             {user ? (
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-600 hidden md:inline">
-                  <span className="font-bold text-gold-600">{user.nickname}</span>님
-                </span>
-                <button onClick={handleLogout} className="text-xs text-gray-500 hover:text-red-500 underline">
-                  로그아웃
-                </button>
+                <span className="text-xs text-gray-600 font-bold">{user.nickname}님</span>
+                <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500 transition">로그아웃</button>
               </div>
             ) : (
-              <div className="flex gap-2">
-                <button onClick={() => { setShowAuthModal(true); setAuthMode('login'); }} className="px-3 py-1 rounded-full border border-gold-500 text-gold-600 hover:bg-gold-50 text-xs font-medium">로그인</button>
-                <button onClick={() => { setShowAuthModal(true); setAuthMode('signup'); }} className="px-3 py-1 rounded-full bg-gold-500 text-white hover:bg-gold-600 text-xs font-medium">회원가입</button>
+              <div className="flex gap-1.5">
+                <button 
+                  onClick={() => { setShowAuthModal(true); setAuthMode('login'); }} 
+                  className="px-3 py-1 bg-gold-500 text-white rounded-full text-xs font-bold hover:bg-gold-600 transition"
+                >
+                  로그인
+                </button>
+                <button 
+                  onClick={() => { setShowAuthModal(true); setAuthMode('signup'); }} 
+                  className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold hover:bg-gray-200 transition"
+                >
+                  회원가입
+                </button>
               </div>
             )}
           </nav>
@@ -190,13 +209,15 @@ const App: React.FC = () => {
       <main className="flex-grow">
         {currentPage === 'admin' && isAdmin ? (
           <AdminDashboard 
-            users={users} heroImages={heroImages} setHeroImages={setHeroImages}
-            menuItems={menuItems} setMenuItems={setMenuItems} products={products} setProducts={setProducts}
+            users={users} 
+            heroImages={heroImages} setHeroImages={setHeroImages}
+            menuItems={menuItems} setMenuItems={setMenuItems} 
+            products={products} setProducts={setProducts}
             pageContents={pageContents} setPageContents={setPageContents}
+            setCurrentPage={setCurrentPage}
           />
         ) : (
           <>
-            {/* Home Page Content */}
             {currentPage === 'home' && (
               <>
                 <HeroSlider images={heroImages} />
@@ -204,12 +225,11 @@ const App: React.FC = () => {
               </>
             )}
 
-            {/* Category Page Content */}
             {currentPage === 'category' && selectedCategory ? (
               selectedCategory === '동영상' ? (
-                <VideoGallery videos={videos} user={user} onUpdateVideos={setVideos} onReqLogin={() => setShowAuthModal(true)} onBack={() => setCurrentPage('home')} />
+                <VideoGallery videos={videos} user={user} onUpdateVideos={setVideos} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '커뮤니티' ? (
-                <CommunityBoard posts={posts} user={user} onUpdatePosts={setPosts} onReqLogin={() => setShowAuthModal(true)} onBack={() => setCurrentPage('home')} />
+                <CommunityBoard posts={posts} user={user} onUpdatePosts={setPosts} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '여행 만들기' ? (
                 <AITripPlanner onPlanGenerated={(plan) => setGeneratedPlan(plan)} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '비지니스' ? (
@@ -227,7 +247,7 @@ const App: React.FC = () => {
               ) : selectedCategory === '관광' ? (
                 <TourPage content={pageContents['tour']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '이벤트' ? (
-                <EventPage content={pageContents['event']} onBack={() => setCurrentPage('home')} />
+                <EventPage content={pageContents['event']} onBack={() => setCurrentPage('home')} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onEventClick={(t, c, i) => setSelectedProduct({ id: 'ev', title: t, description: c, image: i, price: 0, location: '이벤트', duration: '문의', type: 'tour' })} />
               ) : (
                 <CategoryPage category={selectedCategory} products={getFilteredProducts()} onProductClick={handleProductClick} onBack={() => setCurrentPage('home')} />
               )
@@ -236,21 +256,9 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="bg-gray-800 text-gray-400 py-6">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-white mb-2">TOUR MGM 여행사</h2>
-            <div className="space-y-1 text-sm">
-               <p>주소: 59 LE VAN THIEM PMH Q7. HOCHIMINH VN</p>
-               <p>전화번호: +84 77 803 8743</p>
-               <p>이메일: seo9791@gmail.com</p>
-               <p className="flex items-center gap-2"><span className="bg-yellow-400 text-black px-1 rounded text-xs font-bold">Kakao</span> 아이디: vnseen1</p>
-            </div>
-          </div>
-          <div className="flex flex-col justify-end items-start md:items-end">
-             <p className="text-xs mb-1">Copyright © TOUR MGM. All rights reserved.</p>
-          </div>
-        </div>
+      <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs">
+         <p>MANGO TOUR TRAVEL AGENCY | +84 77 803 8743 | Kakao: vnseen1</p>
+         <p className="mt-1">© MANGO TOUR. All rights reserved.</p>
       </footer>
 
       <ChatRoom user={user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
@@ -260,18 +268,42 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-lg p-8 w-full max-w-md shadow-2xl relative">
-            <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl relative transform transition-all animate-fade-in-up">
+            <button onClick={() => { setShowAuthModal(false); resetAuthFields(); }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
             <h2 className="text-2xl font-bold text-center mb-6 text-deepgreen">{authMode === 'login' ? '로그인' : '회원가입'}</h2>
             <form onSubmit={handleLogin} className="space-y-4">
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-gold-500 outline-none" placeholder="아이디" />
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-gold-500 outline-none" placeholder="비밀번호" />
-              {authMode === 'signup' && <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-gold-500 outline-none" placeholder="닉네임" />}
-              <button type="submit" className="w-full bg-gold-500 text-white font-bold py-3 rounded-lg hover:bg-gold-600 transition shadow-md">{authMode === 'login' ? '로그인 하기' : '가입 하기'}</button>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">ID</label>
+                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500" placeholder="아이디를 입력하세요" required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Password</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500" placeholder="비밀번호를 입력하세요" required />
+              </div>
+              {authMode === 'signup' && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nickname</label>
+                  <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500" placeholder="사용하실 닉네임을 입력하세요" required />
+                </div>
+              )}
+              <button type="submit" className="w-full bg-gold-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 hover:bg-gold-600 mt-2">
+                {authMode === 'login' ? '로그인' : '가입 완료하기'}
+              </button>
             </form>
-            <div className="mt-4 text-center text-sm">
-               <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} className="text-deepgreen font-bold hover:underline">{authMode === 'login' ? '회원가입' : '로그인'}</button>
+
+            <div className="mt-8 text-center border-t pt-6">
+              {authMode === 'login' ? (
+                <p className="text-sm text-gray-500">
+                  아직 회원이 아니신가요?{' '}
+                  <button onClick={() => setAuthMode('signup')} className="text-gold-600 font-bold hover:underline">회원가입 하기</button>
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  이미 계정이 있으신가요?{' '}
+                  <button onClick={() => setAuthMode('login')} className="text-gold-600 font-bold hover:underline">로그인 하기</button>
+                </p>
+              )}
             </div>
           </div>
         </div>

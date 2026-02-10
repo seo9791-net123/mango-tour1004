@@ -1,0 +1,18 @@
+
+{
+  "short_name": "MANGO TOUR",
+  "name": "MANGO TOUR - 베트남 프리미엄 여행",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/8212/8212613.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#004d40",
+  "background_color": "#ffffff",
+  "orientation": "portrait"
+}

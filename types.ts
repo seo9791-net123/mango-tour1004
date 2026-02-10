@@ -6,6 +6,11 @@ export interface User {
   nickname?: string;
 }
 
+export interface MenuItem {
+  label: string;
+  icon: string;
+}
+
 export interface Product {
   id: string;
   title: string;

@@ -88,7 +88,7 @@ const ChatRoom: React.FC<Props> = ({ user, onReqLogin }) => {
       <div className="bg-deepgreen p-4 flex justify-between items-center text-white shadow-md">
         <div>
            <h3 className="font-bold flex items-center gap-2">
-             <span>🌏</span> TOUR MGM 채팅방
+             <span>🌏</span> MANGO TOUR 채팅방
            </h3>
            <p className="text-[10px] opacity-80 font-light">여행자들과 자유롭게 소통하세요</p>
         </div>

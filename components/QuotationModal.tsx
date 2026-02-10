@@ -11,64 +11,47 @@ interface Props {
 
 const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
   const [showInquiry, setShowInquiry] = useState(false);
+  const [inquiryText, setInquiryText] = useState('');
 
   if (!product && !plan) return null;
 
   // Determine content source
   const title = product ? product.title : 'AI 맞춤 여행 견적';
-  const summary = product ? product.description : plan?.summary;
   const price = product ? `${product.price.toLocaleString()} 원` : plan?.totalCost;
   const itinerary = product ? product.itinerary : plan?.itinerary;
   const location = product ? product.location : '맞춤 여행지';
   const duration = product ? product.duration : '일정 협의';
 
-  // Construct detailed itinerary text for clipboard and file download
-  const itineraryText = itinerary 
-    ? itinerary.map(day => `[Day ${day.day}] ${day.activities.join(' -> ')}`).join('\n')
-    : '상세 일정: 상담 시 제공';
-
-  // Construct text content with full details
-  const contentText = `
-[TOUR MGM 견적서]
-
-■ 상품정보
-- 상품명: ${title}
-- 지역: ${location}
-- 기간: ${duration}
-- 예상금액: ${price} (항공권 제외)
-
-■ 상세 일정
-${itineraryText}
-
-■ 내용/포함사항
-${summary}
-${plan?.options ? `\n- 옵션: 가이드(${plan.options.guide}), 차량(${plan.options.vehicle})` : ''}
-
-------------------
-※ 본 견적서는 TOUR MGM에서 발행되었습니다.
-※ 문의: vnseen1 (KakaoTalk) / +84 77 803 8743
-  `;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(contentText).then(() => {
-      alert('견적 내용이 복사되었습니다.\n카카오톡 채팅방에 붙여넣기(Ctrl+V) 해주세요.');
-    });
-  };
-
-  const handleDownloadFile = () => {
-    const blob = new Blob([contentText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `TOUR_MGM_견적서_${new Date().toISOString().slice(0,10)}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
   const handlePrintPDF = () => {
     window.print();
+  };
+
+  const handleCopyText = async () => {
+     const textToCopy = `[MANGO TOUR 여행 견적 문의]
+📅 문의 일자: ${new Date().toLocaleDateString()}
+
+${product ? `📌 상품명: ${product.title}
+📍 지역: ${product.location}
+⏰ 일정: ${product.duration}
+💰 견적가: ${product.price.toLocaleString()}원
+📝 포함사항: ${product.description}` : `📌 AI 맞춤 플랜
+📝 테마: ${plan?.summary}
+💰 예상 견적: ${plan?.totalCost}
+✅ 옵션: 가이드 ${plan?.options?.guide}, 차량 ${plan?.options?.vehicle}`}
+
+--------------------------------
+[🗣️ 추가 문의 내용]
+${inquiryText || '(내용 없음)'}
+--------------------------------
+위 내용으로 상담을 신청합니다.`;
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      alert('견적서와 문의 내용이 복사되었습니다.\n카카오톡 채팅방에 붙여넣기(Paste) 해주세요.');
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+    }
   };
 
   return (
@@ -80,7 +63,7 @@ ${plan?.options ? `\n- 옵션: 가이드(${plan.options.guide}), 차량(${plan.o
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-2xl font-bold mb-1 tracking-wider">견적서 (QUOTATION)</h2>
-              <p className="text-sm opacity-80 font-light">TOUR MGM TRAVEL AGENCY</p>
+              <p className="text-sm opacity-80 font-light">MANGO TOUR TRAVEL AGENCY</p>
             </div>
             <button onClick={onClose} className="text-white hover:text-gold-400 transition text-2xl font-bold no-print">✕</button>
           </div>
@@ -95,7 +78,7 @@ ${plan?.options ? `\n- 옵션: 가이드(${plan.options.guide}), 차량(${plan.o
               <div className="text-sm text-gray-600 space-y-1">
                 <p><strong className="text-black">수신:</strong> 고객님 귀하</p>
                 <p><strong className="text-black">날짜:</strong> {new Date().toLocaleDateString()}</p>
-                <p><strong className="text-black">발행:</strong> TOUR MGM</p>
+                <p><strong className="text-black">발행:</strong> MANGO TOUR</p>
               </div>
               <div className="text-right">
                 <div className="w-16 h-16 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-2xl ml-auto mb-2 shadow-sm print:bg-gold-500 print:text-white print:print-color-adjust-exact">M</div>
@@ -228,14 +211,14 @@ ${plan?.options ? `\n- 옵션: 가이드(${plan.options.guide}), 차량(${plan.o
 
             {/* Footer Terms */}
             <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500 text-center leading-relaxed">
-              <p>※ TOUR MGM : 59 LE VAN THIEM PMH Q7. HOCHIMINH</p>
+              <p>※ MANGO TOUR : 59 LE VAN THIEM PMH Q7. HOCHIMINH</p>
               <p>Contact: +84 77 803 8743</p>
             </div>
             
             {/* Stamp Effect */}
             <div className="absolute bottom-10 right-10 opacity-20 pointer-events-none transform rotate-[-15deg] print:opacity-50">
                <div className="border-4 border-red-800 rounded-full w-32 h-32 flex items-center justify-center">
-                 <span className="text-red-800 font-bold text-xl text-center">TOUR MGM<br/>OFFICIAL</span>
+                 <span className="text-red-800 font-bold text-xl text-center">MANGO TOUR<br/>OFFICIAL</span>
                </div>
             </div>
 
@@ -262,77 +245,75 @@ ${plan?.options ? `\n- 옵션: 가이드(${plan.options.guide}), 차량(${plan.o
         {/* Inquiry Overlay */}
         {showInquiry && (
           <div className="no-print absolute inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white w-full md:w-[450px] rounded-t-2xl md:rounded-2xl overflow-hidden shadow-2xl">
-              <div className="bg-deepgreen p-4 text-white flex justify-between items-center">
+            <div className="bg-white w-full md:w-[450px] rounded-t-2xl md:rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+              <div className="bg-deepgreen p-4 text-white flex justify-between items-center shrink-0">
                 <h3 className="font-bold text-lg">상담 및 문의하기</h3>
                 <button onClick={() => setShowInquiry(false)} className="text-white hover:text-gray-300 font-bold text-xl">✕</button>
               </div>
-              <div className="p-6">
+              
+              <div className="p-6 overflow-y-auto">
                 <div className="text-center mb-6">
-                  <p className="text-gray-600 mb-2">아래 연락처로 견적서를 보내주시면<br/>빠르고 친절하게 안내해 드립니다.</p>
+                  <p className="text-gray-600 mb-2">
+                    <strong className="text-deepgreen">견적서 내용과 문의사항</strong>이<br/>
+                    자동으로 복사되어 상담이 수월해집니다.
+                  </p>
                 </div>
                 
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center p-4 bg-yellow-100 rounded-xl border border-yellow-200 shadow-sm">
-                    <div className="bg-yellow-400 p-2 rounded-lg mr-4">
-                      <span className="text-2xl font-bold text-black/80">Talk</span>
+                {/* Contact Info */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center p-3 bg-yellow-100 rounded-xl border border-yellow-200 shadow-sm">
+                    <div className="bg-yellow-400 p-1.5 rounded-lg mr-3">
+                      <span className="text-xl font-bold text-black/80">Talk</span>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-600 font-bold">카카오톡 아이디</p>
-                      <p className="text-lg font-bold text-gray-800">vnseen1</p>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-gray-600 font-bold">카카오톡</p>
+                      <p className="text-base font-bold text-gray-800">vnseen1</p>
                     </div>
-                    <button 
-                      onClick={() => navigator.clipboard.writeText('vnseen1').then(() => alert('카카오톡 아이디가 복사되었습니다.'))}
-                      className="ml-auto text-xs bg-white border border-gray-300 px-2 py-1 rounded text-gray-600 hover:bg-gray-50"
-                    >
-                      ID 복사
-                    </button>
                   </div>
-
-                  <div className="flex items-center p-4 bg-green-50 rounded-xl border border-green-200 shadow-sm">
-                    <div className="bg-green-600 p-2 rounded-lg mr-4 text-white">
-                      <span className="text-xl">📞</span>
+                  <div className="flex items-center p-3 bg-green-50 rounded-xl border border-green-200 shadow-sm">
+                    <div className="bg-green-600 p-1.5 rounded-lg mr-3 text-white">
+                      <span className="text-lg">📞</span>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-600 font-bold">베트남 현지 전화</p>
-                      <p className="text-lg font-bold text-gray-800">077 803 8743</p>
+                    <div className="flex-1">
+                      <p className="text-[10px] text-gray-600 font-bold">베트남 연락처</p>
+                      <p className="text-base font-bold text-gray-800">077 803 8743</p>
                     </div>
-                    <button 
-                       onClick={() => navigator.clipboard.writeText('0778038743').then(() => alert('전화번호가 복사되었습니다.'))}
-                       className="ml-auto text-xs bg-white border border-gray-300 px-2 py-1 rounded text-gray-600 hover:bg-gray-50"
-                    >
-                      번호 복사
-                    </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={handleCopy}
-                    className="py-3 px-4 border border-gray-300 rounded-lg font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 flex-col"
+                {/* Inquiry Input Area */}
+                <div className="mb-4">
+                  <label className="block text-xs font-bold text-gray-600 mb-2">✍️ 추가 문의사항 (선택)</label>
+                  <textarea 
+                    className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-gold-500 outline-none resize-none h-24 bg-gray-50"
+                    placeholder="인원, 날짜, 특별 요청사항 등 궁금하신 점을 자유롭게 적어주세요."
+                    value={inquiryText}
+                    onChange={(e) => setInquiryText(e.target.value)}
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                   <button 
+                    onClick={handleCopyText}
+                    className="w-full py-4 px-4 bg-gold-500 text-white rounded-xl font-bold hover:bg-gold-600 shadow-md transform active:scale-95 transition flex items-center justify-center gap-2"
                   >
                     <span className="text-xl">📋</span> 
-                    <span className="text-sm">텍스트 복사</span>
+                    <div className="text-left">
+                        <div className="text-base">견적서 + 문의내용 복사하기</div>
+                        <div className="text-[10px] opacity-80 font-normal">복사 후 카톡 채팅방에 붙여넣기 하세요</div>
+                    </div>
                   </button>
-                  <button 
-                    onClick={handleDownloadFile}
-                    className="py-3 px-4 border border-gray-300 rounded-lg font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 flex-col"
-                  >
-                    <span className="text-xl">💾</span> 
-                    <span className="text-sm">파일로 저장 (.txt)</span>
-                  </button>
-                  <button 
+
+                   <button 
                     onClick={handlePrintPDF}
-                    className="col-span-2 py-3 px-4 bg-deepgreen text-white rounded-lg font-bold hover:bg-opacity-90 flex items-center justify-center gap-2 shadow-md"
+                    className="w-full py-3 px-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 flex items-center justify-center gap-2 border border-gray-200"
                   >
-                    <span className="text-xl">🖨️</span> 
-                    <span>PDF 저장 / 인쇄</span>
+                    <span className="text-lg">🖨️</span> 
+                    <span className="text-sm">PDF 파일로 저장하기</span>
                   </button>
                 </div>
-                <p className="text-center text-xs text-gray-400 mt-4 leading-relaxed">
-                  * [PDF 저장] 버튼을 누른 후 인쇄 미리보기에서 'PDF로 저장'을 선택하세요.<br/>
-                  * 텍스트 파일은 메모장 등에서 내용을 확인하실 수 있습니다.
-                </p>
+                
               </div>
             </div>
           </div>
