@@ -66,7 +66,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
          <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <img src={content.introImage} className="w-full h-[250px] object-cover rounded-3xl shadow-2xl opacity-80" alt="Golf Service" />
             <div className="space-y-4">
-               <h3 className="text-xl font-bold text-gold-400 uppercase tracking-wider">TOUR MGM만의 특별한 골프 케어</h3>
+               <h3 className="text-xl font-bold text-gold-400 uppercase tracking-wider">MANGO TOUR만의 특별한 골프 케어</h3>
                <ul className="space-y-3 text-xs font-light opacity-80">
                   <li className="flex items-center gap-2"><span className="text-gold-500">✓</span> 전일정 전용 차량 및 전문 매니저 동행</li>
                   <li className="flex items-center gap-2"><span className="text-gold-500">✓</span> 골프장 티업 타임 우선 배정 권한</li>

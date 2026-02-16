@@ -29,29 +29,48 @@ const AdminDashboard: React.FC<Props> = ({
   setCurrentPage
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'pages' | 'menu'>('users');
+  
+  // States for Hero Management
   const heroFileInputRef = useRef<HTMLInputElement>(null);
+
+  // States for Product Management
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
+
+  // States for Page Content
   const [selectedPageId, setSelectedPageId] = useState<string>('business');
   const [pageForm, setPageForm] = useState<PageContent>(pageContents['business'] || INITIAL_PAGE_CONTENTS['business']);
 
+  // Sync pageForm when selecting a different page
   useEffect(() => {
     if (pageContents[selectedPageId]) {
       setPageForm({ ...pageContents[selectedPageId] });
+    } else {
+      // Fallback if data is missing
+      setPageForm(INITIAL_PAGE_CONTENTS[selectedPageId] || INITIAL_PAGE_CONTENTS['business']);
     }
   }, [selectedPageId, pageContents]);
 
+  // Robust File Upload to prevent crashes
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { alert('이미지 파일이 너무 큽니다. 2MB 이하의 파일을 권장합니다.'); }
+      if (file.size > 2 * 1024 * 1024) { // 2MB Limit per image recommended
+        alert('이미지 파일이 너무 큽니다. 2MB 이하의 파일을 권장합니다.');
+      }
       const reader = new FileReader();
-      reader.onloadend = () => { if (typeof reader.result === 'string') { callback(reader.result); } };
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          callback(reader.result);
+        }
+      };
       reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
       reader.readAsDataURL(file);
     }
+    // Reset file input value to allow re-selection
     e.target.value = '';
   };
 
+  // --- Hero Slider ---
   const handleReplaceHeroImage = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileUpload(e, (url) => {
       const updated = [...heroImages];
@@ -60,13 +79,16 @@ const AdminDashboard: React.FC<Props> = ({
     });
   };
 
+  // --- Products Management Helper Functions ---
   const handleProductFieldChange = (id: string, field: keyof Product, value: any) => {
     const updated = products.map(p => p.id === id ? { ...p, [field]: value } : p);
     setProducts(updated);
   };
 
   const handleReplaceProductImage = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileUpload(e, (url) => { handleProductFieldChange(id, 'image', url); });
+    handleFileUpload(e, (url) => {
+      handleProductFieldChange(id, 'image', url);
+    });
   };
 
   const handleItineraryDayAdd = (productId: string) => {
@@ -119,21 +141,29 @@ const AdminDashboard: React.FC<Props> = ({
     handleProductFieldChange(productId, 'itinerary', newItinerary);
   };
 
+  // --- Pages ---
   const handlePageFieldChange = (field: keyof PageContent, value: any) => {
     const updated = { ...pageForm, [field]: value };
     setPageForm(updated);
     setPageContents({ ...pageContents, [selectedPageId]: updated });
   };
 
+  const handleSectionChange = (index: number, field: 'title' | 'content', value: string) => {
+    const newSections = [...pageForm.sections];
+    newSections[index] = { ...newSections[index], [field]: value };
+    handlePageFieldChange('sections', newSections);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in-up">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-deepgreen flex items-center gap-2">
-           <span className="text-4xl">🛠️</span> TOUR MGM 관리 센터
+           <span className="text-4xl">🛠️</span> MANGO TOUR 관리 센터
         </h1>
         <button onClick={() => setCurrentPage('home')} className="px-6 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition text-sm">나가기</button>
       </div>
       
+      {/* Tabs */}
       <div className="flex gap-2 mb-8 border-b-2 border-gray-100 overflow-x-auto pb-1 scrollbar-hide">
         {[
           { id: 'users', label: '👥 회원' },
@@ -155,6 +185,8 @@ const AdminDashboard: React.FC<Props> = ({
       </div>
 
       <div className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-50 min-h-[600px]">
+        
+        {/* Hero Slide */}
         {activeTab === 'hero' && (
            <div className="animate-fade-in-up">
             <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">메인 슬라이드 이미지 (총 {heroImages.length}개)</h3>
@@ -178,13 +210,14 @@ const AdminDashboard: React.FC<Props> = ({
           </div>
         )}
 
+        {/* Product Catalog Management */}
         {activeTab === 'products' && (
           <div className="animate-fade-in-up">
             <div className="flex justify-between items-center mb-8 border-b pb-4">
               <h3 className="text-2xl font-bold text-gray-800 font-serif">상품 카탈로그 관리</h3>
               <button 
                 onClick={() => {
-                  const newProd: Product = { id: Date.now().toString(), title: '새 여행 상품', description: '설명을 입력하세요.', image: 'https://via.placeholder.com/800x600', price: 0, location: '지역', duration: '3박 5일', type: 'tour', itinerary: [] };
+                  const newProd: Product = { id: Date.now().toString(), title: '새 여행 상품', description: '상품 설명을 입력하세요.', image: 'https://via.placeholder.com/800x600', price: 0, location: '지역', duration: '3박 5일', type: 'tour', itinerary: [] };
                   setProducts([newProd, ...products]);
                 }} 
                 className="bg-gold-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg"
@@ -199,15 +232,85 @@ const AdminDashboard: React.FC<Props> = ({
                    <div className="h-48 bg-gray-100 relative group">
                      <img src={p.image} className="w-full h-full object-cover" alt={p.title} />
                      <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center cursor-pointer text-white">
+                        <span className="text-2xl mb-1">🖼️</span>
                         <span className="text-xs font-bold">사진 교체</span>
                         <input type="file" className="hidden" accept="image/*" onChange={(e) => handleReplaceProductImage(p.id, e)} />
                      </label>
                    </div>
+                   
                    <div className="p-6 space-y-4">
-                     <input className="w-full font-bold text-gray-800 border-b outline-none" value={p.title} onChange={e => handleProductFieldChange(p.id, 'title', e.target.value)} />
-                     <div className="flex gap-2">
-                        <button onClick={() => setEditingProductId(editingProductId === p.id ? null : p.id)} className="flex-1 py-2 bg-gray-100 rounded-xl font-bold text-xs">상세 편집</button>
-                        <button onClick={() => { if(confirm('삭제하시겠습니까?')) setProducts(products.filter(item => item.id !== p.id)) }} className="px-4 py-2 bg-red-50 text-red-400 rounded-xl text-xs font-bold">삭제</button>
+                     <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-gold-600 uppercase">상품명</label>
+                        <input className="w-full font-bold text-gray-800 border-b-2 border-transparent focus:border-gold-500 outline-none transition" value={p.title} onChange={e => handleProductFieldChange(p.id, 'title', e.target.value)} />
+                     </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase">가격 (원)</label>
+                          <input type="number" className="w-full text-red-600 font-bold border-b outline-none" value={p.price} onChange={e => handleProductFieldChange(p.id, 'price', parseInt(e.target.value) || 0)} />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase">지역</label>
+                          <input className="w-full text-gray-600 text-sm border-b outline-none" value={p.location} onChange={e => handleProductFieldChange(p.id, 'location', e.target.value)} />
+                        </div>
+                     </div>
+
+                     {/* 상세 편집 모드에서만 보이는 추가 필드들 */}
+                     {editingProductId === p.id && (
+                       <div className="pt-4 border-t space-y-4 animate-fade-in">
+                         <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-1">
+                             <label className="text-[10px] font-bold text-gray-400 uppercase">일정 (예: 4박 6일)</label>
+                             <input className="w-full text-xs border-b outline-none" value={p.duration} onChange={e => handleProductFieldChange(p.id, 'duration', e.target.value)} />
+                           </div>
+                           <div className="space-y-1">
+                             <label className="text-[10px] font-bold text-gray-400 uppercase">타입</label>
+                             <select className="w-full text-xs border-b outline-none bg-transparent" value={p.type} onChange={e => handleProductFieldChange(p.id, 'type', e.target.value)}>
+                               <option value="golf">골프</option>
+                               <option value="tour">관광</option>
+                               <option value="hotel">호텔&빌라</option>
+                             </select>
+                           </div>
+                         </div>
+                         <div className="space-y-1">
+                           <label className="text-[10px] font-bold text-gray-400 uppercase">상품 간단 설명</label>
+                           <textarea className="w-full text-xs border p-2 rounded outline-none h-16 resize-none" value={p.description} onChange={e => handleProductFieldChange(p.id, 'description', e.target.value)} />
+                         </div>
+
+                         {/* 상세 일정(Itinerary) 편집기 */}
+                         <div className="space-y-2">
+                           <div className="flex justify-between items-center">
+                             <label className="text-[10px] font-bold text-deepgreen uppercase tracking-tighter">상세 일정 관리</label>
+                             <button onClick={() => handleItineraryDayAdd(p.id)} className="bg-deepgreen text-white text-[9px] px-2 py-0.5 rounded shadow">+ 일차 추가</button>
+                           </div>
+                           <div className="space-y-3 max-h-60 overflow-y-auto pr-1 scrollbar-hide border-l-2 border-gold-200 pl-2">
+                             {p.itinerary?.map((day, dIdx) => (
+                               <div key={dIdx} className="bg-gray-50 p-3 rounded-xl border border-gray-100 space-y-2 shadow-sm">
+                                 <div className="flex justify-between items-center">
+                                   <span className="text-[11px] font-black text-deepgreen italic underline">Day {day.day}</span>
+                                   <button onClick={() => handleItineraryDayRemove(p.id, dIdx)} className="text-[9px] text-red-500 font-bold hover:underline">일차 삭제</button>
+                                 </div>
+                                 <div className="space-y-1">
+                                   {day.activities.map((act, aIdx) => (
+                                     <div key={aIdx} className="flex gap-1 items-center">
+                                       <input className="flex-1 text-[10px] bg-white border border-gray-100 p-1.5 rounded outline-none shadow-inner" value={act} onChange={e => handleActivityChange(p.id, dIdx, aIdx, e.target.value)} />
+                                       <button onClick={() => handleActivityRemove(p.id, dIdx, aIdx)} className="text-gray-300 hover:text-red-500 transition">✕</button>
+                                     </div>
+                                   ))}
+                                   <button onClick={() => handleActivityAdd(p.id, dIdx)} className="text-[9px] text-blue-500 hover:font-bold">+ 활동 추가</button>
+                                 </div>
+                               </div>
+                             ))}
+                             {(!p.itinerary || p.itinerary.length === 0) && <p className="text-[10px] text-gray-400 italic text-center py-4">등록된 일정이 없습니다.</p>}
+                           </div>
+                         </div>
+                       </div>
+                     )}
+
+                     <div className="flex gap-2 pt-2">
+                        <button onClick={() => setEditingProductId(editingProductId === p.id ? null : p.id)} className={`flex-1 py-2 rounded-xl font-bold text-xs transition ${editingProductId === p.id ? 'bg-gold-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                           {editingProductId === p.id ? '편집 완료' : '상세 편집'}
+                        </button>
+                        <button onClick={() => { if(confirm('이 상품을 영구 삭제하시겠습니까?')) setProducts(products.filter(item => item.id !== p.id)) }} className="px-4 py-2 bg-red-50 text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition">삭제</button>
                      </div>
                    </div>
                  </div>
@@ -216,14 +319,191 @@ const AdminDashboard: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Other tabs simplified for brevity */}
+        {/* Page Editor (Golf, Hotel, etc) */}
+        {activeTab === 'pages' && (
+          <div className="animate-fade-in-up">
+            <div className="flex justify-between items-center mb-8 border-b pb-6">
+               <h3 className="text-2xl font-bold text-gray-800 font-serif">서브 페이지 통합 편집기</h3>
+               <select 
+                className="p-3 bg-white border-2 border-deepgreen rounded-2xl font-bold text-deepgreen shadow-md outline-none"
+                value={selectedPageId}
+                onChange={(e) => setSelectedPageId(e.target.value)}
+              >
+                <option value="business">비지니스</option>
+                <option value="golf">골프</option>
+                <option value="hotel">호텔&빌라</option>
+                <option value="food">먹거리</option>
+                <option value="culture">베트남 문화</option>
+                <option value="men">FOR MEN</option>
+                <option value="tour">관광</option>
+                <option value="event">이벤트</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+               {/* Hero & Intro Section */}
+               <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
+                        <span className="text-xl">1️⃣</span> 상단 배너 설정 (Hero)
+                    </h4>
+                    <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-gray-400">메인 타이틀</label>
+                            <input className="w-full p-3 border rounded-xl font-bold shadow-sm focus:ring-2 focus:ring-gold-500 outline-none" value={pageForm.heroTitle} onChange={(e) => handlePageFieldChange('heroTitle', e.target.value)} placeholder="큰 제목" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-gray-400">서브 타이틀 (작은 글씨)</label>
+                            <input className="w-full p-3 border rounded-xl font-bold shadow-sm focus:ring-2 focus:ring-gold-500 outline-none" value={pageForm.heroSubtitle} onChange={(e) => handlePageFieldChange('heroSubtitle', e.target.value)} placeholder="부제목" />
+                        </div>
+                        <div className="h-32 bg-white rounded-2xl overflow-hidden relative group border-2 border-white shadow-sm">
+                        <img src={pageForm.heroImage} className="w-full h-full object-cover" alt="Hero Banner" />
+                        <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white font-bold cursor-pointer text-xs">
+                            <span className="text-2xl mb-1">🖼️</span> 배너 이미지 교체
+                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePageFieldChange('heroImage', url))} />
+                        </label>
+                        </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                     <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
+                        <span className="text-xl">2️⃣</span> 소개 섹션 (Intro)
+                    </h4>
+                    <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                        <input className="w-full p-3 border rounded-xl font-bold shadow-sm" value={pageForm.introTitle} onChange={(e) => handlePageFieldChange('introTitle', e.target.value)} placeholder="소개 제목" />
+                        <textarea className="w-full p-3 border rounded-xl h-32 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-gold-500 resize-none" value={pageForm.introText} onChange={(e) => handlePageFieldChange('introText', e.target.value)} placeholder="소개글 본문" />
+                        <div className="h-32 bg-white rounded-2xl overflow-hidden relative group border-2 border-white shadow-sm">
+                            <img src={pageForm.introImage} className="w-full h-full object-cover" alt="Intro Banner" />
+                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white font-bold cursor-pointer text-xs">
+                                <span className="text-2xl mb-1">🖼️</span> 소개 이미지 교체
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePageFieldChange('introImage', url))} />
+                            </label>
+                        </div>
+                    </div>
+                  </div>
+               </div>
+
+               {/* Sections & Gallery */}
+               <div className="space-y-8">
+                  <div className="space-y-4">
+                     <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
+                        <span className="text-xl">3️⃣</span> 텍스트 섹션 관리 (3개)
+                    </h4>
+                     <div className="space-y-3">
+                        {pageForm.sections.map((section, idx) => (
+                            <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-2">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="w-5 h-5 rounded-full bg-deepgreen text-white flex items-center justify-center text-[10px] font-bold">{idx + 1}</span>
+                                    <input 
+                                        className="flex-1 font-bold text-sm border-b focus:border-gold-500 outline-none" 
+                                        value={section.title}
+                                        onChange={(e) => handleSectionChange(idx, 'title', e.target.value)}
+                                        placeholder="섹션 제목"
+                                    />
+                                </div>
+                                <textarea 
+                                    className="w-full text-xs text-gray-600 bg-gray-50 p-2 rounded-lg outline-none resize-none h-16 border-transparent focus:bg-white focus:border-gold-200 border"
+                                    value={section.content}
+                                    onChange={(e) => handleSectionChange(idx, 'content', e.target.value)}
+                                    placeholder="섹션 내용"
+                                />
+                            </div>
+                        ))}
+                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
+                        <span className="text-xl">4️⃣</span> 갤러리 이미지 (총 {pageForm.galleryImages.length}개)
+                    </h4>
+                    <div className="grid grid-cols-3 gap-3">
+                        {pageForm.galleryImages.map((img, idx) => (
+                            <div key={idx} className="aspect-square bg-gray-50 border rounded-2xl overflow-hidden relative group shadow-sm">
+                            <img src={img} className="w-full h-full object-cover" alt={`Gallery ${idx}`} />
+                            <label className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center cursor-pointer">
+                                <span className="text-xl mb-1">🔄</span>
+                                <span className="text-[9px] text-white font-bold">교체하기</span>
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => {
+                                const ng = [...pageForm.galleryImages]; ng[idx] = url; handlePageFieldChange('galleryImages', ng);
+                                })} />
+                            </label>
+                            </div>
+                        ))}
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="mt-16 flex flex-col items-center">
+               <button onClick={() => setCurrentPage('home')} className="bg-deepgreen text-white px-24 py-5 rounded-3xl font-bold text-xl hover:shadow-2xl transition transform active:scale-95 shadow-xl flex items-center gap-3">
+                   <span>💾</span> 저장 후 홈으로 이동
+               </button>
+               <p className="text-gray-400 text-xs mt-3">※ 입력하신 내용은 자동으로 저장됩니다.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Menu Icon Management */}
+        {activeTab === 'menu' && (
+           <div className="animate-fade-in-up">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">메인 아이콘 메뉴 관리</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+              {menuItems.map((item, idx) => (
+                <div key={idx} className="border-2 border-gray-50 p-6 rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
+                  <div className="w-20 h-20 mb-3 bg-white rounded-3xl shadow-inner flex items-center justify-center p-4 relative overflow-hidden">
+                    <img src={item.icon} alt={item.label} className="w-full h-full object-contain transform group-hover:scale-110 transition" />
+                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white text-[10px] font-bold flex-col">
+                      <span>🖼️</span>
+                      <span>아이콘 변경</span>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={(e) => handleFileUpload(e, (url) => { 
+                          const ni = [...menuItems]; 
+                          ni[idx] = { ...ni[idx], icon: url }; 
+                          setMenuItems(ni); 
+                        })} 
+                      />
+                    </label>
+                  </div>
+                  <input 
+                    className="w-full border-b-2 border-transparent bg-transparent text-center font-bold text-gray-800 focus:border-gold-500 outline-none transition text-sm py-1" 
+                    value={item.label} 
+                    onChange={(e) => { 
+                      const ni = [...menuItems]; 
+                      ni[idx] = { ...ni[idx], label: e.target.value }; 
+                      setMenuItems(ni); 
+                    }} 
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-gray-400 text-xs mt-8 bg-gray-50 p-3 rounded-xl inline-block mx-auto">※ 아이콘 메뉴의 이름과 이미지를 자유롭게 수정할 수 있습니다. 변경사항은 실시간으로 저장됩니다.</p>
+          </div>
+        )}
+
+        {/* User Admin */}
         {activeTab === 'users' && (
           <div className="animate-fade-in-up">
             <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">Member Management</h3>
-            <div className="overflow-x-auto rounded-2xl border border-gray-100 text-sm">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b"><tr><th className="p-4 text-left font-bold text-gray-600">ID</th><th className="p-4 text-left font-bold text-gray-600">권한</th></tr></thead>
-                <tbody className="divide-y">{users.map(u => (<tr key={u.id} className="hover:bg-gray-50"><td className="p-4 font-bold text-gray-800">{u.username}</td><td className="p-4"><span className="bg-blue-100 text-blue-600 px-2 py-1 rounded text-[10px] uppercase font-bold">{u.role}</span></td></tr>))}</tbody>
+            <div className="overflow-x-auto rounded-2xl border border-gray-100">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b">
+                  <tr><th className="p-4 text-left font-bold text-gray-600">ID</th><th className="p-4 text-left font-bold text-gray-600">닉네임</th><th className="p-4 text-left font-bold text-gray-600">권한</th></tr>
+                </thead>
+                <tbody className="divide-y">
+                  {users.map(u => (
+                    <tr key={u.id} className="hover:bg-gray-50">
+                      <td className="p-4 font-bold text-gray-800">{u.username}</td>
+                      <td className="p-4 text-gray-600">{u.nickname || '-'}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${u.role === 'admin' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>{u.role.toUpperCase()}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </div>

@@ -42,13 +42,14 @@ const App: React.FC = () => {
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
+  // Changed keys to force data refresh to MANGO TOUR text
   const STORAGE_KEYS = [
-    'tour_mgm_hero_images_v3',
-    'tour_mgm_menu_items_v3',
-    'tour_mgm_products_v3',
-    'tour_mgm_videos_v3',
-    'tour_mgm_posts_v3',
-    'tour_mgm_pages_v3'
+    'mango_tour_hero_images_v1',
+    'mango_tour_menu_items_v1',
+    'mango_tour_products_v1',
+    'mango_tour_videos_v1',
+    'mango_tour_posts_v1',
+    'mango_tour_pages_v1'
   ];
 
   useEffect(() => {
@@ -157,8 +158,8 @@ const App: React.FC = () => {
       <header className="sticky top-0 z-40 bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
           <button onClick={() => setCurrentPage('home')} className="flex items-center gap-2">
-             <div className="w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-xs">T</div>
-             <h1 className="text-lg font-bold text-deepgreen tracking-tight uppercase">TOUR MGM</h1>
+             <div className="w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-xs">M</div>
+             <h1 className="text-lg font-bold text-deepgreen tracking-tight uppercase">MANGO TOUR</h1>
           </button>
           
           <nav className="flex gap-2 items-center">
@@ -249,8 +250,8 @@ const App: React.FC = () => {
       </main>
 
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs">
-         <p>TOUR MGM TRAVEL AGENCY | +84 77 803 8743 | Kakao: vnseen1</p>
-         <p className="mt-1">© TOUR MGM. All rights reserved.</p>
+         <p>MANGO TOUR TRAVEL AGENCY | +84 77 803 8743 | Kakao: vnseen1</p>
+         <p className="mt-1">© MANGO TOUR. All rights reserved.</p>
       </footer>
 
       <ChatRoom user={user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />

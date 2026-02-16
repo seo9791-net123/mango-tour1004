@@ -27,7 +27,7 @@ const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
   };
 
   const handleCopyText = async () => {
-     const textToCopy = `[TOUR MGM 여행 견적 문의]
+     const textToCopy = `[MANGO TOUR 여행 견적 문의]
 📅 문의 일자: ${new Date().toLocaleDateString()}
 
 ${product ? `📌 상품명: ${product.title}
@@ -63,7 +63,7 @@ ${inquiryText || '(내용 없음)'}
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-2xl font-bold mb-1 tracking-wider">견적서 (QUOTATION)</h2>
-              <p className="text-sm opacity-80 font-light">TOUR MGM TRAVEL AGENCY</p>
+              <p className="text-sm opacity-80 font-light">MANGO TOUR TRAVEL AGENCY</p>
             </div>
             <button onClick={onClose} className="text-white hover:text-gold-400 transition text-2xl font-bold no-print">✕</button>
           </div>
@@ -78,10 +78,10 @@ ${inquiryText || '(내용 없음)'}
               <div className="text-sm text-gray-600 space-y-1">
                 <p><strong className="text-black">수신:</strong> 고객님 귀하</p>
                 <p><strong className="text-black">날짜:</strong> {new Date().toLocaleDateString()}</p>
-                <p><strong className="text-black">발행:</strong> TOUR MGM</p>
+                <p><strong className="text-black">발행:</strong> MANGO TOUR</p>
               </div>
               <div className="text-right">
-                <div className="w-16 h-16 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-2xl ml-auto mb-2 shadow-sm print:bg-gold-500 print:text-white print:print-color-adjust-exact">T</div>
+                <div className="w-16 h-16 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-2xl ml-auto mb-2 shadow-sm print:bg-gold-500 print:text-white print:print-color-adjust-exact">M</div>
               </div>
             </div>
 
@@ -211,14 +211,14 @@ ${inquiryText || '(내용 없음)'}
 
             {/* Footer Terms */}
             <div className="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-500 text-center leading-relaxed">
-              <p>※ TOUR MGM : 59 LE VAN THIEM PMH Q7. HOCHIMINH</p>
+              <p>※ MANGO TOUR : 59 LE VAN THIEM PMH Q7. HOCHIMINH</p>
               <p>Contact: +84 77 803 8743</p>
             </div>
             
             {/* Stamp Effect */}
             <div className="absolute bottom-10 right-10 opacity-20 pointer-events-none transform rotate-[-15deg] print:opacity-50">
                <div className="border-4 border-red-800 rounded-full w-32 h-32 flex items-center justify-center">
-                 <span className="text-red-800 font-bold text-xl text-center">TOUR MGM<br/>OFFICIAL</span>
+                 <span className="text-red-800 font-bold text-xl text-center">MANGO TOUR<br/>OFFICIAL</span>
                </div>
             </div>
           </div>

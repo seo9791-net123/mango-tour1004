@@ -14,7 +14,7 @@ const ChatRoom: React.FC<Props> = ({ user, onReqLogin }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Key for localStorage
-  const CHAT_STORAGE_KEY = 'tour_mgm_public_chat';
+  const CHAT_STORAGE_KEY = 'mango_tour_public_chat_v1';
 
   // Load messages from localStorage on mount and when storage updates (sync tabs)
   useEffect(() => {

@@ -12,7 +12,7 @@ export const TERMS_OF_SERVICE = `
 [제1조 예약 및 결제 안내]
 1. 예약 확정 시 상품가액의 30%를 예약금으로 입금하셔야 합니다.
 2. 잔금은 여행 출발 7일 전까지 전액 완납을 원칙으로 합니다.
-3. 모든 결제는 TOUR MGM 지정 계좌를 통해 이루어져야 유효합니다.
+3. 모든 결제는 MANGO TOUR 지정 계좌를 통해 이루어져야 유효합니다.
 
 [제2조 취소 및 환불 규정]
 1. 여행 출발 15일 전 취소: 예약금 100% 환불
@@ -202,7 +202,7 @@ export const INITIAL_VIDEOS: VideoItem[] = [
 export const INITIAL_POSTS: CommunityPost[] = [
   { 
     id: 'post1', 
-    title: '베트남 골프 여행, TOUR MGM 덕분에 정말 편하게 다녀왔어요!', 
+    title: '베트남 골프 여행, MANGO TOUR 덕분에 정말 편하게 다녀왔어요!', 
     content: '떤선녓 CC에서 야간 골프 쳤는데 분위기 너무 좋네요. 가이드님이 티타임 예약도 딱 맞춰주시고, 차량도 럭셔리해서 이동할 때 너무 편했습니다. 다음에도 꼭 이용할게요!', 
     author: '골프매니아79', 
     date: '2024-03-15',
@@ -233,7 +233,7 @@ export const INITIAL_POSTS: CommunityPost[] = [
   { 
     id: 'post4', 
     title: '비지니스 접대 골프, 의전 서비스가 완벽했습니다.', 
-    content: '중요한 손님 모시고 간 자리라 신경이 많이 쓰였는데, TOUR MGM 매니저님이 전문적으로 대응해주셔서 아주 만족스러운 결과를 얻었습니다. 카지노 의전도 훌륭했습니다.', 
+    content: '중요한 손님 모시고 간 자리라 신경이 많이 쓰였는데, MANGO TOUR 매니저님이 전문적으로 대응해주셔서 아주 만족스러운 결과를 얻었습니다. 카지노 의전도 훌륭했습니다.', 
     author: 'VIP파트너', 
     date: '2024-04-01',
     views: 312,
@@ -285,7 +285,7 @@ export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {
     heroTitle: 'VIP CASINO & BIZ',
     heroSubtitle: 'Luxury Business Protocol Service',
     introTitle: '베트남 비지니스의 정점, 하이엔드 의전 서비스',
-    introText: 'TOUR MGM은 단순한 여행을 넘어 고객님의 비지니스 성공을 위한 최상의 파트너입니다. 호치민, 붕따우의 주요 카지노 VIP 의전부터 현지 기업 미팅 지원, 전용 리무진 서비스까지 완벽한 비지니스 환경을 제공합니다.',
+    introText: 'MANGO TOUR는 단순한 여행을 넘어 고객님의 비지니스 성공을 위한 최상의 파트너입니다. 호치민, 붕따우의 주요 카지노 VIP 의전부터 현지 기업 미팅 지원, 전용 리무진 서비스까지 완벽한 비지니스 환경을 제공합니다.',
     introImage: 'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800&q=80',
     galleryImages: [
       'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&q=80',
@@ -308,7 +308,7 @@ export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {
     heroTitle: 'PREMIUM GOLF',
     heroSubtitle: 'Best Courses in Southern Vietnam',
     introTitle: '사계절 푸른 필드, 베트남 남부 명문 골프장',
-    introText: '아시아 100대 코스로 선정된 명문 구장부터 도심 속 야간 라운딩까지. 떤선녓, 롱탄, 정산, 트윈도브스 등 최상의 컨디션을 유지하는 골프장 예약을 TOUR MGM이 책임집니다.',
+    introText: '아시아 100대 코스로 선정된 명문 구장부터 도심 속 야간 라운딩까지. 떤선녓, 롱탄, 정산, 트윈도브스 등 최상의 컨디션을 유지하는 골프장 예약을 MANGO TOUR가 책임집니다.',
     introImage: 'https://images.unsplash.com/photo-1623567340632-49dfc9723223?w=800&q=80',
     galleryImages: [
        'https://images.unsplash.com/photo-1592919505780-30395071b483?w=800&q=80',
@@ -331,7 +331,7 @@ export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {
     heroTitle: 'STAY IN LUXURY',
     heroSubtitle: 'Premium Hotels & Private Pool Villas',
     introTitle: '당신만을 위한 프라이빗한 휴식처',
-    introText: '호치민 1군의 5성급 호텔부터 붕따우, 무이네의 럭셔리 독채 풀빌라까지. TOUR MGM은 엄선된 숙소만을 고집합니다. 가족, 친구, 비지니스 파트너와 함께 완벽한 프라이버시를 누리세요.',
+    introText: '호치민 1군의 5성급 호텔부터 붕따우, 무이네의 럭셔리 독채 풀빌라까지. MANGO TOUR는 엄선된 숙소만을 고집합니다. 가족, 친구, 비지니스 파트너와 함께 완벽한 프라이버시를 누리세요.',
     introImage: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=800&q=80',
     galleryImages: [
       'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80',
@@ -423,7 +423,7 @@ export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {
     heroTitle: 'ESSENTIAL VIETNAM',
     heroSubtitle: 'Explore Southern Landscapes',
     introTitle: '도시에서 사막까지, 다채로운 베트남 남부',
-    introText: '프랑스풍 건축물의 호치민, 드넓은 사구의 무이네, 아름다운 항구도시 붕따우, 꽃의 도시 달랏. 베트남 남부의 정수를 TOUR MGM과 함께 발견해 보세요.',
+    introText: '프랑스풍 건축물의 호치민, 드넓은 사구의 무이네, 아름다운 항구도시 붕따우, 꽃의 도시 달랏. 베트남 남부의 정수를 MANGO TOUR와 함께 발견해 보세요.',
     introImage: 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800&q=80',
     galleryImages: [
       'https://images.unsplash.com/photo-1623122046188-4b775494d49e?w=800&q=80',
@@ -443,10 +443,10 @@ export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {
     id: 'event',
     title: '이벤트',
     heroImage: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=2070&auto=format&fit=crop',
-    heroTitle: 'TOUR MGM SPECIAL',
+    heroTitle: 'MANGO TOUR SPECIAL',
     heroSubtitle: 'Limited Offers & Tournaments',
-    introTitle: 'TOUR MGM 회원만을 위한 특별한 혜택',
-    introText: '매월 개최되는 아마추어 골프 대회, 계절별 특가 프로모션, 신규 호텔 오픈 기념 패키지 등 TOUR MGM에서만 만날 수 있는 특별한 이벤트를 확인하세요.',
+    introTitle: 'MANGO TOUR 회원만을 위한 특별한 혜택',
+    introText: '매월 개최되는 아마추어 골프 대회, 계절별 특가 프로모션, 신규 호텔 오픈 기념 패키지 등 MANGO TOUR에서만 만날 수 있는 특별한 이벤트를 확인하세요.',
     introImage: 'https://images.unsplash.com/photo-1595842858599-4c274b3d3278?w=800&q=80',
     galleryImages: [
       'https://images.unsplash.com/photo-1623567340632-49dfc9723223?w=800&q=80',
@@ -459,7 +459,7 @@ export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {
     sections: [
       { title: '월간 골프 챌린지', content: '매달 다른 명문 골프장에서 개최되는 아마추어 골프 대회로 푸짐한 경품과 네트워킹 시간을 제공합니다.' },
       { title: '얼리버드 프로모션', content: '3개월 전 예약 시 5성급 호텔 업그레이드 또는 카트비 무료 등 특별한 가격 혜택을 드립니다.' },
-      { title: '신규 지역 오픈 이벤트', content: '달랏, 다낭 등 신규 서비스 지역 오픈 시 TOUR MGM 회원 전용 특별 할인가를 적용해 드립니다.' }
+      { title: '신규 지역 오픈 이벤트', content: '달랏, 다낭 등 신규 서비스 지역 오픈 시 MANGO TOUR 회원 전용 특별 할인가를 적용해 드립니다.' }
     ]
   }
 };

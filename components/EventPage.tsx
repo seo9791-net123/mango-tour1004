@@ -83,7 +83,7 @@ const EventPage: React.FC<Props> = ({ content, onBack, onEventClick, isLoggedIn,
       <section className="py-12 bg-white">
          <div className="max-w-3xl mx-auto px-4 text-center">
             <h2 className="text-xl font-bold mb-3 text-gray-800">이벤트 소식을 가장 먼저 받아보세요</h2>
-            <p className="text-gray-500 mb-6 text-xs">TOUR MGM 플러스 친구 추가 시 매월 업데이트되는 대회 정보와 할인 쿠폰을 발송해 드립니다.</p>
+            <p className="text-gray-500 mb-6 text-xs">MANGO TOUR 플러스 친구 추가 시 매월 업데이트되는 대회 정보와 할인 쿠폰을 발송해 드립니다.</p>
             <button className="bg-yellow-400 text-black px-8 py-3 rounded-full font-bold hover:bg-yellow-500 transition shadow-lg flex items-center gap-2 mx-auto transform active:scale-95 text-[10px]">
                <span className="bg-black text-white px-1.5 py-0.5 rounded font-black text-[9px]">Talk</span> 
                <span>카카오톡 친구 추가하기</span>
