@@ -22,10 +22,6 @@ const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
   const location = product ? product.location : '맞춤 여행지';
   const duration = product ? product.duration : '일정 협의';
 
-  const handlePrintPDF = () => {
-    window.print();
-  };
-
   const handleCopyText = async () => {
      const textToCopy = `[MANGO TOUR 여행 견적 문의]
 📅 문의 일자: ${new Date().toLocaleDateString()}

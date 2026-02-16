@@ -1,5 +1,5 @@
 
-const DB_NAME = 'TourMGM_DB';
+const DB_NAME = 'MangoTour_DB';
 const STORE_NAME = 'app_state';
 const DB_VERSION = 1;
 

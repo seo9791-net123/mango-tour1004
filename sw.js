@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'tour-mgm-v1';
+const CACHE_NAME = 'mango-tour-v1';
 const ASSETS = [
   '/',
   '/index.html',
