@@ -39,13 +39,8 @@ const AdminDashboard: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'pages' | 'menu'>('users');
   
-  // States for Hero Management
   const heroFileInputRef = useRef<HTMLInputElement>(null);
-
-  // States for Product Management
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-
-  // States for Page Content
   const [selectedPageId, setSelectedPageId] = useState<string>('business');
   const [pageForm, setPageForm] = useState<PageContent>(pageContents['business'] || INITIAL_PAGE_CONTENTS['business']);
 
@@ -55,8 +50,8 @@ const AdminDashboard: React.FC<Props> = ({
   const [clientId, setClientId] = useState(localStorage.getItem('google_client_id') || '');
   const [isDriveConnected, setIsDriveConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  // Sync pageForm when selecting a different page
   useEffect(() => {
     if (pageContents[selectedPageId]) {
       setPageForm({ ...pageContents[selectedPageId] });
@@ -71,21 +66,38 @@ const AdminDashboard: React.FC<Props> = ({
       alert('API Key와 Client ID를 입력해주세요.');
       return;
     }
+    
+    setIsConnecting(true);
     localStorage.setItem('google_api_key', apiKey);
     localStorage.setItem('google_client_id', clientId);
 
     try {
+      // 1. GAPI Client Init
       await driveService.initGapiClient(apiKey);
-      driveService.initTokenClient(clientId, (response) => {
+      
+      // 2. Token Client Init
+      await driveService.initTokenClient(clientId, (response) => {
         if (response && response.access_token) {
             setIsDriveConnected(true);
-            alert('구글 드라이브 연결 성공!');
+            setIsConnecting(false);
+            alert('구글 드라이브 연결 성공! 이제 저장/복원 기능을 사용할 수 있습니다.');
         }
       });
+
+      // 3. Request Token (Login Popup)
       driveService.requestAccessToken();
-    } catch (e) {
+      
+    } catch (e: any) {
       console.error(e);
-      alert('구글 드라이브 연결 실패. 콘솔을 확인해주세요.');
+      setIsConnecting(false);
+      
+      // Error Handling for 403 API Not Enabled
+      const errorMsg = e.result?.error?.message || e.message || JSON.stringify(e);
+      if (errorMsg.includes('has not been used in project') || errorMsg.includes('is disabled')) {
+          alert(`[오류: API 미활성화]\n구글 클라우드 콘솔에서 'Google Drive API'를 사용 설정해야 합니다.\n\n에러 상세: ${errorMsg}`);
+      } else {
+          alert(`연결 중 오류가 발생했습니다.\n\n${errorMsg}`);
+      }
     }
   };
 
@@ -108,7 +120,7 @@ const AdminDashboard: React.FC<Props> = ({
         alert('구글 드라이브에 데이터가 성공적으로 저장되었습니다!');
     } catch (e) {
         console.error(e);
-        alert('저장 중 오류가 발생했습니다.');
+        alert('저장 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
     } finally {
         setIsSyncing(false);
     }
@@ -133,7 +145,7 @@ const AdminDashboard: React.FC<Props> = ({
             if (data.pageContents) setPageContents(data.pageContents);
             alert('데이터 복원 완료!');
         } else {
-            alert('저장된 데이터를 찾을 수 없습니다.');
+            alert('저장된 데이터를 찾을 수 없습니다 (mango_tour_data.json).');
         }
     } catch (e) {
         console.error(e);
@@ -143,8 +155,6 @@ const AdminDashboard: React.FC<Props> = ({
     }
   };
 
-
-  // Robust File Upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -163,7 +173,7 @@ const AdminDashboard: React.FC<Props> = ({
     e.target.value = '';
   };
 
-  // --- Hero Slider ---
+  // --- Helper Wrappers ---
   const handleReplaceHeroImage = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileUpload(e, (url) => {
       const updated = [...heroImages];
@@ -172,7 +182,6 @@ const AdminDashboard: React.FC<Props> = ({
     });
   };
 
-  // --- Products Management Helper Functions ---
   const handleProductFieldChange = (id: string, field: keyof Product, value: any) => {
     const updated = products.map(p => p.id === id ? { ...p, [field]: value } : p);
     setProducts(updated);
@@ -184,6 +193,7 @@ const AdminDashboard: React.FC<Props> = ({
     });
   };
 
+  // ... Itinerary Handlers ...
   const handleItineraryDayAdd = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -234,7 +244,7 @@ const AdminDashboard: React.FC<Props> = ({
     handleProductFieldChange(productId, 'itinerary', newItinerary);
   };
 
-  // --- Pages ---
+  // --- Page Handlers ---
   const handlePageFieldChange = (field: keyof PageContent, value: any) => {
     const updated = { ...pageForm, [field]: value };
     setPageForm(updated);
@@ -278,10 +288,21 @@ const AdminDashboard: React.FC<Props> = ({
             <div className="flex flex-wrap gap-3">
                 <button 
                     onClick={handleConnectDrive} 
-                    disabled={isDriveConnected}
-                    className={`px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition flex items-center gap-2 ${isDriveConnected ? 'bg-green-500 text-white cursor-default' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    disabled={isDriveConnected || isConnecting}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition flex items-center gap-2 ${
+                        isDriveConnected 
+                        ? 'bg-green-500 text-white cursor-default' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    } ${isConnecting ? 'opacity-75 cursor-wait' : ''}`}
                 >
-                    {isDriveConnected ? '✅ 연결됨' : '🔑 로그인 및 권한 요청'}
+                    {isConnecting ? (
+                        <>
+                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                           초기화 및 로그인 중...
+                        </>
+                    ) : (
+                        isDriveConnected ? '✅ 연결됨' : '🔑 로그인 및 권한 요청'
+                    )}
                 </button>
                 
                 {isDriveConnected && (
@@ -329,7 +350,6 @@ const AdminDashboard: React.FC<Props> = ({
       </div>
 
       <div className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-50 min-h-[600px]">
-        
         {/* Hero Slide */}
         {activeTab === 'hero' && (
            <div className="animate-fade-in-up">

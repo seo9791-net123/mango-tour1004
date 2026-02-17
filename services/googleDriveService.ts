@@ -15,50 +15,80 @@ export const driveService = {
   tokenClient: null as any,
   accessToken: null as string | null,
 
-  async initGapiClient(apiKey: string) {
-    if (!window.gapi) {
-        throw new Error("Google API script not loaded");
-    }
-    await new Promise<void>((resolve) => window.gapi.load('client', resolve));
-    await window.gapi.client.init({
-      apiKey: apiKey,
-      discoveryDocs: DISCOVERY_DOCS,
+  // 구글 스크립트가 로드될 때까지 기다리는 헬퍼 함수
+  waitForScript: () => {
+    return new Promise<void>((resolve, reject) => {
+      let attempts = 0;
+      const interval = setInterval(() => {
+        if (typeof window !== 'undefined' && window.gapi && window.google) {
+          clearInterval(interval);
+          resolve();
+        }
+        attempts++;
+        if (attempts > 20) { // 10초 대기
+          clearInterval(interval);
+          reject(new Error("Google API 스크립트 로드 실패. 페이지를 새로고침 해주세요."));
+        }
+      }, 500);
     });
-    this.isInitialized = true;
   },
 
-  initTokenClient(clientId: string, callback: (response: any) => void) {
-    if (!window.google) {
-        throw new Error("Google Identity script not loaded");
+  async initGapiClient(apiKey: string) {
+    await this.waitForScript();
+
+    if (!window.gapi) throw new Error("Google API script missing");
+    
+    await new Promise<void>((resolve) => window.gapi.load('client', resolve));
+    
+    try {
+      await window.gapi.client.init({
+        apiKey: apiKey,
+        discoveryDocs: DISCOVERY_DOCS,
+      });
+      this.isInitialized = true;
+    } catch (error: any) {
+      console.error("GAPI Init Error:", error);
+      // 에러 객체를 그대로 던져서 UI에서 처리하도록 함
+      throw error;
     }
-    this.tokenClient = window.google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: SCOPES,
-      callback: (tokenResponse: any) => {
-        if (tokenResponse.error) {
-            console.error(tokenResponse);
-            return;
-        }
-        this.accessToken = tokenResponse.access_token;
-        callback(tokenResponse);
-      },
-    });
+  },
+
+  async initTokenClient(clientId: string, callback: (response: any) => void) {
+    await this.waitForScript();
+
+    if (!window.google) throw new Error("Google Identity script missing");
+
+    try {
+      this.tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPES,
+        callback: (tokenResponse: any) => {
+          if (tokenResponse.error) {
+              console.error("Token Response Error:", tokenResponse);
+              alert(`로그인 오류: ${tokenResponse.error_description || tokenResponse.error}`);
+              return;
+          }
+          this.accessToken = tokenResponse.access_token;
+          callback(tokenResponse);
+        },
+      });
+    } catch (e) {
+      console.error("Token Client Init Error:", e);
+      throw e;
+    }
   },
 
   requestAccessToken() {
     if (this.tokenClient) {
-      this.tokenClient.requestAccessToken();
+      // 팝업 차단을 방지하기 위해 사용자 클릭 이벤트 내에서 호출되는 것이 좋음
+      this.tokenClient.requestAccessToken({ prompt: 'consent' });
     } else {
-        throw new Error("Token client not initialized");
+        throw new Error("인증 클라이언트가 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.");
     }
   },
 
   async findFile() {
     if (!this.accessToken) throw new Error('No access token');
-    
-    // GAPI client might not be fully ready for request if initGapiClient wasn't awaited properly in component,
-    // but usually user clicks button after init.
-    // Using fetch for list to be safe or gapi.
     
     try {
         const response = await window.gapi.client.drive.files.list({
@@ -85,7 +115,6 @@ export const driveService = {
         if (existingFile) {
           fileId = existingFile.id;
         } else {
-          // Create new file metadata
           const response = await window.gapi.client.drive.files.create({
             resource: {
               name: FILE_NAME,
@@ -95,7 +124,6 @@ export const driveService = {
           fileId = response.result.id;
         }
 
-        // Upload/Update content via fetch (Patch)
         const url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`;
         await fetch(url, {
             method: 'PATCH',
