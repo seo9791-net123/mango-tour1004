@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, PageContent, MenuItem } from '../types';
+import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost } from '../types';
 import { INITIAL_PAGE_CONTENTS } from '../constants';
+import { driveService } from '../services/googleDriveService';
 
 interface Props {
   users: User[];
@@ -13,6 +14,10 @@ interface Props {
   setProducts: (products: Product[]) => void;
   pageContents: Record<string, PageContent>;
   setPageContents: (contents: Record<string, PageContent>) => void;
+  videos: VideoItem[];
+  setVideos: (videos: VideoItem[]) => void;
+  posts: CommunityPost[];
+  setPosts: (posts: CommunityPost[]) => void;
   setCurrentPage: (page: 'home' | 'admin' | 'category') => void;
 }
 
@@ -26,6 +31,10 @@ const AdminDashboard: React.FC<Props> = ({
   setProducts,
   pageContents,
   setPageContents,
+  videos,
+  setVideos,
+  posts,
+  setPosts,
   setCurrentPage
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'pages' | 'menu'>('users');
@@ -40,21 +49,106 @@ const AdminDashboard: React.FC<Props> = ({
   const [selectedPageId, setSelectedPageId] = useState<string>('business');
   const [pageForm, setPageForm] = useState<PageContent>(pageContents['business'] || INITIAL_PAGE_CONTENTS['business']);
 
+  // Google Drive Config
+  const [showDriveConfig, setShowDriveConfig] = useState(false);
+  const [apiKey, setApiKey] = useState(localStorage.getItem('google_api_key') || '');
+  const [clientId, setClientId] = useState(localStorage.getItem('google_client_id') || '');
+  const [isDriveConnected, setIsDriveConnected] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
   // Sync pageForm when selecting a different page
   useEffect(() => {
     if (pageContents[selectedPageId]) {
       setPageForm({ ...pageContents[selectedPageId] });
     } else {
-      // Fallback if data is missing
       setPageForm(INITIAL_PAGE_CONTENTS[selectedPageId] || INITIAL_PAGE_CONTENTS['business']);
     }
   }, [selectedPageId, pageContents]);
 
-  // Robust File Upload to prevent crashes
+  // Handle Drive Connection
+  const handleConnectDrive = async () => {
+    if (!apiKey || !clientId) {
+      alert('API Key와 Client ID를 입력해주세요.');
+      return;
+    }
+    localStorage.setItem('google_api_key', apiKey);
+    localStorage.setItem('google_client_id', clientId);
+
+    try {
+      await driveService.initGapiClient(apiKey);
+      driveService.initTokenClient(clientId, (response) => {
+        if (response && response.access_token) {
+            setIsDriveConnected(true);
+            alert('구글 드라이브 연결 성공!');
+        }
+      });
+      driveService.requestAccessToken();
+    } catch (e) {
+      console.error(e);
+      alert('구글 드라이브 연결 실패. 콘솔을 확인해주세요.');
+    }
+  };
+
+  const handleSaveToDrive = async () => {
+    if (!isDriveConnected) {
+        alert('먼저 구글 드라이브에 연결해주세요.');
+        return;
+    }
+    setIsSyncing(true);
+    const backupData = {
+        heroImages,
+        menuItems,
+        products,
+        videos,
+        posts,
+        pageContents
+    };
+    try {
+        await driveService.saveData(backupData);
+        alert('구글 드라이브에 데이터가 성공적으로 저장되었습니다!');
+    } catch (e) {
+        console.error(e);
+        alert('저장 중 오류가 발생했습니다.');
+    } finally {
+        setIsSyncing(false);
+    }
+  };
+
+  const handleLoadFromDrive = async () => {
+    if (!isDriveConnected) {
+        alert('먼저 구글 드라이브에 연결해주세요.');
+        return;
+    }
+    if (!confirm('현재 데이터를 덮어쓰고 구글 드라이브의 데이터를 불러오시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+
+    setIsSyncing(true);
+    try {
+        const data = await driveService.loadData();
+        if (data) {
+            if (data.heroImages) setHeroImages(data.heroImages);
+            if (data.menuItems) setMenuItems(data.menuItems);
+            if (data.products) setProducts(data.products);
+            if (data.videos) setVideos(data.videos);
+            if (data.posts) setPosts(data.posts);
+            if (data.pageContents) setPageContents(data.pageContents);
+            alert('데이터 복원 완료!');
+        } else {
+            alert('저장된 데이터를 찾을 수 없습니다.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('복원 중 오류가 발생했습니다.');
+    } finally {
+        setIsSyncing(false);
+    }
+  };
+
+
+  // Robust File Upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB Limit per image recommended
+      if (file.size > 2 * 1024 * 1024) { 
         alert('이미지 파일이 너무 큽니다. 2MB 이하의 파일을 권장합니다.');
       }
       const reader = new FileReader();
@@ -66,7 +160,6 @@ const AdminDashboard: React.FC<Props> = ({
       reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
       reader.readAsDataURL(file);
     }
-    // Reset file input value to allow re-selection
     e.target.value = '';
   };
 
@@ -156,12 +249,63 @@ const AdminDashboard: React.FC<Props> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in-up">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-deepgreen flex items-center gap-2">
            <span className="text-4xl">🛠️</span> MANGO TOUR 관리 센터
         </h1>
-        <button onClick={() => setCurrentPage('home')} className="px-6 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition text-sm">나가기</button>
+        <div className="flex gap-2">
+            <button onClick={() => setShowDriveConfig(!showDriveConfig)} className="px-6 py-2 bg-blue-50 text-blue-600 rounded-full font-bold hover:bg-blue-100 transition text-sm flex items-center gap-2">
+               <span>☁️</span> 구글 드라이브 연동 설정
+            </button>
+            <button onClick={() => setCurrentPage('home')} className="px-6 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition text-sm">나가기</button>
+        </div>
       </div>
+
+      {/* Google Drive Config Panel */}
+      {showDriveConfig && (
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-8 animate-fade-in">
+            <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">☁️ 구글 드라이브 백업 센터</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label className="block text-xs font-bold text-blue-600 mb-1">Google API Key</label>
+                    <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" placeholder="AIza..." />
+                </div>
+                <div>
+                    <label className="block text-xs font-bold text-blue-600 mb-1">Google Client ID</label>
+                    <input type="text" value={clientId} onChange={e => setClientId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" placeholder="...apps.googleusercontent.com" />
+                </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+                <button 
+                    onClick={handleConnectDrive} 
+                    disabled={isDriveConnected}
+                    className={`px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition flex items-center gap-2 ${isDriveConnected ? 'bg-green-500 text-white cursor-default' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                >
+                    {isDriveConnected ? '✅ 연결됨' : '🔑 로그인 및 권한 요청'}
+                </button>
+                
+                {isDriveConnected && (
+                    <>
+                        <button 
+                            onClick={handleSaveToDrive} 
+                            disabled={isSyncing}
+                            className="px-4 py-2 bg-white text-blue-600 border border-blue-200 rounded-lg font-bold text-sm hover:bg-blue-50 transition flex items-center gap-2"
+                        >
+                            {isSyncing ? '⏳ 저장 중...' : '📤 현재 데이터 저장하기 (Backup)'}
+                        </button>
+                        <button 
+                            onClick={handleLoadFromDrive} 
+                            disabled={isSyncing}
+                            className="px-4 py-2 bg-white text-orange-600 border border-orange-200 rounded-lg font-bold text-sm hover:bg-orange-50 transition flex items-center gap-2"
+                        >
+                            {isSyncing ? '⏳ 불러오는 중...' : '📥 데이터 불러오기 (Restore)'}
+                        </button>
+                    </>
+                )}
+            </div>
+            <p className="text-xs text-blue-400 mt-3">* Google Cloud Console에서 'Google Drive API' 사용 설정 및 올바른 리디렉션 URI 설정이 필요합니다.</p>
+        </div>
+      )}
       
       {/* Tabs */}
       <div className="flex gap-2 mb-8 border-b-2 border-gray-100 overflow-x-auto pb-1 scrollbar-hide">

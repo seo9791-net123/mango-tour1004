@@ -207,6 +207,8 @@ const App: React.FC = () => {
             menuItems={menuItems} setMenuItems={setMenuItems} 
             products={products} setProducts={setProducts}
             pageContents={pageContents} setPageContents={setPageContents}
+            videos={videos} setVideos={setVideos}
+            posts={posts} setPosts={setPosts}
             setCurrentPage={setCurrentPage}
           />
         ) : (
