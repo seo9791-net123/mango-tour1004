@@ -60,6 +60,15 @@ const AdminDashboard: React.FC<Props> = ({
     }
   }, [selectedPageId, pageContents]);
 
+  // 에러 메시지 추출 헬퍼 함수
+  const getErrorMessage = (e: any) => {
+    if (typeof e === 'string') return e;
+    if (e.result?.error?.message) return e.result.error.message;
+    if (e.error?.message) return e.error.message;
+    if (e.message) return e.message;
+    return JSON.stringify(e);
+  };
+
   // Handle Drive Connection
   const handleConnectDrive = async () => {
     if (!apiKey || !clientId) {
@@ -91,10 +100,11 @@ const AdminDashboard: React.FC<Props> = ({
       console.error(e);
       setIsConnecting(false);
       
-      // Error Handling for 403 API Not Enabled
-      const errorMsg = e.result?.error?.message || e.message || JSON.stringify(e);
-      if (errorMsg.includes('has not been used in project') || errorMsg.includes('is disabled')) {
-          alert(`[오류: API 미활성화]\n구글 클라우드 콘솔에서 'Google Drive API'를 사용 설정해야 합니다.\n\n에러 상세: ${errorMsg}`);
+      const errorMsg = getErrorMessage(e);
+      
+      // 403 API Not Enabled Error Check
+      if (errorMsg.includes('has not been used in project') || errorMsg.includes('is disabled') || errorMsg.includes('PERMISSION_DENIED')) {
+          alert(`[🚨 중요: 구글 드라이브 API 미활성화]\n\n구글 클라우드 콘솔에서 'Google Drive API'가 활성화되지 않았습니다.\n\n해결 방법:\n1. Google Cloud Console 접속\n2. 'Google Drive API' 검색 후 [사용(ENABLE)] 클릭\n3. 1~2분 뒤 다시 시도해주세요.\n\n(상세 에러: ${errorMsg})`);
       } else {
           alert(`연결 중 오류가 발생했습니다.\n\n${errorMsg}`);
       }
@@ -324,7 +334,7 @@ const AdminDashboard: React.FC<Props> = ({
                     </>
                 )}
             </div>
-            <p className="text-xs text-blue-400 mt-3">* Google Cloud Console에서 'Google Drive API' 사용 설정 및 올바른 리디렉션 URI 설정이 필요합니다.</p>
+            <p className="text-xs text-blue-400 mt-3">* Google Cloud Console에서 'Google Drive API' 사용 설정을 반드시 해주셔야 합니다.</p>
         </div>
       )}
       
