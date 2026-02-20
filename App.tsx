@@ -19,8 +19,7 @@ import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS } from './constants';
 import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem } from './types';
-import { storageService } from './services/storageService';
-import { driveService } from './services/googleDriveService';
+import { firestoreService } from './services/firestoreService';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -42,79 +41,77 @@ const App: React.FC = () => {
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isLocalMode, setIsLocalMode] = useState(false);
 
-  // --- Data Persistence Handlers ---
+  // --- Firestore Integration Handlers ---
 
   // Initial Data Load
   useEffect(() => {
     const initData = async () => {
       try {
-        console.log("Loading data from local storage...");
-        // 1. Try to load from IndexedDB first
-        const cachedHero = await storageService.getItem<string[]>('heroImages');
-        const cachedMenu = await storageService.getItem<MenuItem[]>('menuItems');
-        const cachedProducts = await storageService.getItem<Product[]>('products');
-        const cachedVideos = await storageService.getItem<VideoItem[]>('videos');
-        const cachedPosts = await storageService.getItem<CommunityPost[]>('posts');
-        const cachedPages = await storageService.getItem<Record<string, PageContent>>('pageContents');
-
-        if (cachedHero) setHeroImages(cachedHero);
-        if (cachedMenu) setMenuItems(cachedMenu);
-        if (cachedProducts) setProducts(cachedProducts);
-        if (cachedVideos) setVideos(cachedVideos);
-        if (cachedPosts) setPosts(cachedPosts);
-        if (cachedPages) setPageContents(cachedPages);
-
-        // 2. Try to initialize Google Drive if keys exist (for sync)
-        const savedApiKey = localStorage.getItem('google_api_key');
-        const savedClientId = localStorage.getItem('google_client_id');
-        if (savedApiKey && savedClientId) {
-          try {
-            await driveService.initGapiClient(savedApiKey);
-            console.log("Google Drive API initialized");
-          } catch (e) {
-            console.warn("Google Drive auto-init failed", e);
-          }
+        console.log("Attempting to connect to Firestore...");
+        const data = await firestoreService.loadGlobalData();
+        
+        // 만약 loadGlobalData가 플레이스홀더 때문에 로컬 데이터를 반환했다면
+        if (import.meta.env.VITE_FIREBASE_PROJECT_ID === "your-project") {
+          setIsLocalMode(true);
+        } else {
+          console.log("Firestore connection successful, data loaded.");
+          setIsLocalMode(false);
         }
 
+        setHeroImages(data.heroImages);
+        setMenuItems(data.menuItems);
+        setProducts(data.products);
+        setVideos(data.videos);
+        setPosts(data.posts);
+        setPageContents(data.pageContents);
         setIsDataLoaded(true);
-      } catch (e) {
-        console.error("Failed to load data", e);
+      } catch (e: any) {
+        console.error("Failed to load data from Firestore. Using local fallback data.", e);
+        setIsLocalMode(true);
+        // 에러 메시지에 'offline'이 포함되어 있으면 사용자에게 알림
+        if (e.message?.includes('offline')) {
+          console.warn("Network restriction detected. Running in Local Mode.");
+        }
         setIsDataLoaded(true);
       }
     };
     initData();
   }, []);
 
-  // Update Handlers (Updates State AND Local Storage)
+  // Update Handlers (Updates State AND Firestore)
   const handleUpdateHeroImages = async (newImages: string[]) => {
     setHeroImages(newImages);
-    await storageService.setItem('heroImages', newImages);
+    await firestoreService.saveSettings('heroImages', newImages);
   };
 
   const handleUpdateMenuItems = async (newItems: MenuItem[]) => {
     setMenuItems(newItems);
-    await storageService.setItem('menuItems', newItems);
+    await firestoreService.saveSettings('menuItems', newItems);
   };
 
   const handleUpdateProducts = async (newProducts: Product[]) => {
     setProducts(newProducts);
-    await storageService.setItem('products', newProducts);
+    await firestoreService.syncCollection('products', newProducts);
   };
 
   const handleUpdateVideos = async (newVideos: VideoItem[]) => {
     setVideos(newVideos);
-    await storageService.setItem('videos', newVideos);
+    await firestoreService.syncCollection('videos', newVideos);
   };
 
   const handleUpdatePosts = async (newPosts: CommunityPost[]) => {
     setPosts(newPosts);
-    await storageService.setItem('posts', newPosts);
+    await firestoreService.syncCollection('posts', newPosts);
   };
 
   const handleUpdatePageContents = async (newContents: Record<string, PageContent>) => {
     setPageContents(newContents);
-    await storageService.setItem('pageContents', newContents);
+    // Determine which page changed to save efficiently, or save all if bulk update
+    // For AdminDashboard, usually one page is edited at a time, but the state object is replaced.
+    // We'll sync all for simplicity or optimized by checking differences in future.
+    await firestoreService.syncAllPages(newContents);
   };
 
   const [users, setUsers] = useState<User[]>([
@@ -209,6 +206,15 @@ const App: React.FC = () => {
                 {currentPage === 'home' ? '⚙️ 관리자' : '🏠 메인'}
               </button>
             )}
+
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${
+              isLocalMode 
+                ? 'bg-orange-50 text-orange-600 border-orange-200' 
+                : 'bg-green-50 text-green-600 border-green-200'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isLocalMode ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></span>
+              {isLocalMode ? 'LOCAL MODE' : 'CLOUD SYNC'}
+            </div>
 
             {user ? (
               <div className="flex items-center gap-3">

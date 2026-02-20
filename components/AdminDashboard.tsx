@@ -52,6 +52,20 @@ const AdminDashboard: React.FC<Props> = ({
   const [isDriveConnected, setIsDriveConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+
+  // Firebase Config
+  const [showFirebaseConfig, setShowFirebaseConfig] = useState(false);
+  const [fbApiKey, setFbApiKey] = useState(localStorage.getItem('fb_api_key') || '');
+  const [fbAuthDomain, setFbAuthDomain] = useState(localStorage.getItem('fb_auth_domain') || '');
+  const [fbProjectId, setFbProjectId] = useState(localStorage.getItem('fb_project_id') || '');
+  const [fbStorageBucket, setFbStorageBucket] = useState(localStorage.getItem('fb_storage_bucket') || '');
+  const [fbMessagingSenderId, setFbMessagingSenderId] = useState(localStorage.getItem('fb_messaging_sender_id') || '');
+  const [fbAppId, setFbAppId] = useState(localStorage.getItem('fb_app_id') || '');
+
+  // Cloudinary Config
+  const [showCloudinaryConfig, setShowCloudinaryConfig] = useState(false);
+  const [cloudName, setCloudName] = useState(localStorage.getItem('cloudinary_cloud_name') || '');
+  const [uploadPreset, setUploadPreset] = useState(localStorage.getItem('cloudinary_upload_preset') || '');
   
   // Upload State
   const [isUploading, setIsUploading] = useState(false);
@@ -301,6 +315,24 @@ const AdminDashboard: React.FC<Props> = ({
     handlePageFieldChange('galleryImages', newGallery);
   };
 
+  const handleSaveFirebaseConfig = () => {
+    localStorage.setItem('fb_api_key', fbApiKey);
+    localStorage.setItem('fb_auth_domain', fbAuthDomain);
+    localStorage.setItem('fb_project_id', fbProjectId);
+    localStorage.setItem('fb_storage_bucket', fbStorageBucket);
+    localStorage.setItem('fb_messaging_sender_id', fbMessagingSenderId);
+    localStorage.setItem('fb_app_id', fbAppId);
+    alert('Firebase 설정이 저장되었습니다. 변경사항을 적용하기 위해 페이지가 새로고침됩니다.');
+    window.location.reload();
+  };
+
+  const handleSaveCloudinaryConfig = () => {
+    localStorage.setItem('cloudinary_cloud_name', cloudName);
+    localStorage.setItem('cloudinary_upload_preset', uploadPreset);
+    alert('Cloudinary 설정이 저장되었습니다.');
+    setShowCloudinaryConfig(false);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -308,6 +340,12 @@ const AdminDashboard: React.FC<Props> = ({
            <span className="text-4xl">🛠️</span> MANGO TOUR 관리 센터
         </h1>
         <div className="flex gap-2">
+            <button onClick={() => setShowCloudinaryConfig(!showCloudinaryConfig)} className="px-6 py-2 bg-pink-50 text-pink-600 rounded-full font-bold hover:bg-pink-100 transition text-sm flex items-center gap-2">
+               <span>🖼️</span> 이미지 서버 설정 (Cloudinary)
+            </button>
+            <button onClick={() => setShowFirebaseConfig(!showFirebaseConfig)} className="px-6 py-2 bg-orange-50 text-orange-600 rounded-full font-bold hover:bg-orange-100 transition text-sm flex items-center gap-2">
+               <span>🔥</span> Firebase 연동 설정
+            </button>
             <button onClick={() => setShowDriveConfig(!showDriveConfig)} className="px-6 py-2 bg-blue-50 text-blue-600 rounded-full font-bold hover:bg-blue-100 transition text-sm flex items-center gap-2">
                <span>☁️</span> 구글 드라이브 연동 설정
             </button>
@@ -322,6 +360,81 @@ const AdminDashboard: React.FC<Props> = ({
               <div className="w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
               <p className="font-bold text-deepgreen">이미지를 서버에 저장 중입니다...</p>
            </div>
+        </div>
+      )}
+
+      {/* Cloudinary Config Panel */}
+      {showCloudinaryConfig && (
+        <div className="bg-pink-50 border border-pink-100 rounded-2xl p-6 mb-8 animate-fade-in">
+            <h3 className="text-lg font-bold text-pink-800 mb-4 flex items-center gap-2">🖼️ Cloudinary 이미지/비디오 서버 설정</h3>
+            <p className="text-xs text-pink-600 mb-4">Firebase Storage 생성이 안 될 경우 사용하는 강력한 대안입니다. 무료로 사용 가능합니다.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label className="block text-[10px] font-bold text-pink-600 mb-1">Cloud Name</label>
+                    <input type="text" value={cloudName} onChange={e => setCloudName(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm" placeholder="your_cloud_name" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-pink-600 mb-1">Upload Preset (Unsigned)</label>
+                    <input type="text" value={uploadPreset} onChange={e => setUploadPreset(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm" placeholder="your_preset_name" />
+                </div>
+            </div>
+            <div className="flex justify-end">
+                <button 
+                    onClick={handleSaveCloudinaryConfig} 
+                    className="px-6 py-2 bg-pink-600 text-white rounded-lg font-bold text-sm hover:bg-pink-700 transition shadow-md"
+                >
+                    설정 저장
+                </button>
+            </div>
+            <div className="mt-4 p-3 bg-white/50 rounded-xl text-[10px] text-pink-700 space-y-1">
+                <p className="font-bold">설정 방법:</p>
+                <p>1. <a href="https://cloudinary.com" target="_blank" className="underline">cloudinary.com</a> 가입</p>
+                <p>2. Dashboard에서 <b>Cloud Name</b> 확인</p>
+                <p>3. Settings &gt; Upload &gt; <b>Upload presets</b>에서 'Add upload preset' 클릭</p>
+                <p>4. Signing Mode를 <b>Unsigned</b>로 변경하고 저장 후 해당 이름을 입력</p>
+            </div>
+        </div>
+      )}
+
+      {/* Firebase Config Panel */}
+      {showFirebaseConfig && (
+        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-6 mb-8 animate-fade-in">
+            <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center gap-2">🔥 Firebase 실시간 DB 설정</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-600 mb-1">API Key</label>
+                    <input type="password" value={fbApiKey} onChange={e => setFbApiKey(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="AIza..." />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Auth Domain</label>
+                    <input type="text" value={fbAuthDomain} onChange={e => setFbAuthDomain(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="your-project.firebaseapp.com" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Project ID</label>
+                    <input type="text" value={fbProjectId} onChange={e => setFbProjectId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="your-project-id" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Storage Bucket</label>
+                    <input type="text" value={fbStorageBucket} onChange={e => setFbStorageBucket(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="your-project.appspot.com" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Messaging Sender ID</label>
+                    <input type="text" value={fbMessagingSenderId} onChange={e => setFbMessagingSenderId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="123456789" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-600 mb-1">App ID</label>
+                    <input type="text" value={fbAppId} onChange={e => setFbAppId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="1:123456:web:abc123" />
+                </div>
+            </div>
+            <div className="flex justify-end">
+                <button 
+                    onClick={handleSaveFirebaseConfig} 
+                    className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700 transition shadow-md"
+                >
+                    설정 저장 및 새로고침
+                </button>
+            </div>
+            <p className="text-[10px] text-orange-400 mt-3">* Firebase 콘솔의 '프로젝트 설정'에서 확인한 값을 입력해 주세요. 저장 후 앱이 새로고침됩니다.</p>
         </div>
       )}
 

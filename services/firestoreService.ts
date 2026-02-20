@@ -52,8 +52,13 @@ export const firestoreService = {
     }
 
     try {
+      console.log("Fetching data from Firestore server...");
+      
       // 1. Settings (Hero Images, Menu Items)
       const settingsRef = doc(db, COLLECTIONS.SETTINGS, "global");
+      
+      // 서버에서 직접 데이터를 가져오도록 시도 (캐시 무시)
+      // 오프라인 에러가 발생하면 여기서 잡힙니다.
       const settingsSnap = await getDoc(settingsRef);
       
       let heroImages = HERO_IMAGES;
