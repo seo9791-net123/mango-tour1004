@@ -1,37 +1,30 @@
 
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
-// ⚠️ 주의: Firebase 콘솔(https://console.firebase.google.com)에서 프로젝트를 생성 후
-// 설정(프로젝트 설정) > 일반 > '내 앱'에서 SDK 설정 및 구성을 선택하여 아래 내용을 채워주세요.
-
+// 제공해주신 설정값 적용 (환경 변수 우선, 없으면 플레이스홀더 사용)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSy...",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "...",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "..."
 };
 
-// Firebase 앱 초기화
-// 설정값이 비어있으면 초기화하지 않도록 하여 에러 방지
-let app;
-let db: any;
-let auth: any;
+// Firebase 앱 초기화 (싱글톤 패턴)
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-try {
-  if (firebaseConfig.apiKey !== "YOUR_API_KEY_HERE") {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    auth = getAuth(app);
-    console.log("Firebase initialized successfully");
-  } else {
-    console.warn("Firebase config is missing. Update services/firebaseConfig.ts");
-  }
-} catch (error) {
-  console.error("Firebase initialization failed:", error);
-}
+// Firestore 초기화 (네트워크 환경에 따른 롱폴링 설정 추가)
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
 
-export { app, db, auth };
+const auth = getAuth(app);
+const storage = getStorage(app);
+
+console.log("Firebase initialized with Long Polling enabled");
+
+export { app, db, auth, storage };

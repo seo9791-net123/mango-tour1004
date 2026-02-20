@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { CommunityPost, User, Comment } from '../types';
+import { uploadFile } from '../services/uploadService';
 
 interface Props {
   posts: CommunityPost[];
@@ -18,6 +19,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostImage, setNewPostImage] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
   
   // File input refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,32 +31,36 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   const [editForm, setEditForm] = useState<CommunityPost | null>(null); // Temp data for editing
   const [commentInput, setCommentInput] = useState('');
 
-  // Handle Image Upload for New Post
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Image Upload for New Post (Firebase Storage)
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setNewPostImage(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        const downloadUrl = await uploadFile(file, 'community_images');
+        setNewPostImage(downloadUrl);
+      } catch (error) {
+        alert('이미지 업로드 실패: ' + error);
+      } finally {
+        setIsUploading(false);
+      }
     }
     e.target.value = '';
   };
 
-  // Handle Image Upload for Editing Post
-  const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Image Upload for Editing Post (Firebase Storage)
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && editForm) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setEditForm({ ...editForm, image: reader.result });
-        }
-      };
-      reader.readAsDataURL(file);
+      setIsUploading(true);
+      try {
+        const downloadUrl = await uploadFile(file, 'community_images');
+        setEditForm({ ...editForm, image: downloadUrl });
+      } catch (error) {
+        alert('이미지 업로드 실패: ' + error);
+      } finally {
+        setIsUploading(false);
+      }
     }
     e.target.value = '';
   };
@@ -219,7 +225,9 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 
                 {/* Image Upload Area */}
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition relative">
-                    {newPostImage ? (
+                    {isUploading ? (
+                        <div className="text-gray-400 text-xs animate-pulse">이미지 업로드 중...</div>
+                    ) : newPostImage ? (
                         <div className="relative inline-block">
                             <img src={newPostImage} alt="Preview" className="max-h-40 rounded-lg shadow-sm" />
                             <button 
@@ -253,7 +261,13 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 
                 <div className="flex justify-end gap-2 pt-1">
                   <button onClick={() => setIsAdding(false)} className="px-3 py-1.5 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition text-xs">취소</button>
-                  <button onClick={handleAddPost} className="px-4 py-1.5 bg-deepgreen text-white rounded-lg font-bold shadow hover:bg-opacity-90 transition text-xs">등록하기</button>
+                  <button 
+                    onClick={handleAddPost} 
+                    disabled={isUploading}
+                    className="px-4 py-1.5 bg-deepgreen text-white rounded-lg font-bold shadow hover:bg-opacity-90 transition text-xs disabled:opacity-50"
+                  >
+                    {isUploading ? '업로드 대기 중' : '등록하기'}
+                  </button>
                 </div>
             </div>
           </div>
@@ -357,26 +371,28 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                           ) : (
                              <div className="w-full h-40 bg-gray-100 flex flex-col items-center justify-center text-gray-400 gap-2">
                                 <span className="text-2xl">🖼️</span>
-                                <span className="text-xs">이미지 없음</span>
+                                <span className="text-xs">{isUploading ? '업로드 중...' : '이미지 없음'}</span>
                              </div>
                           )}
                           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity gap-3">
-                             <div className="flex gap-2">
-                               <button 
-                                 onClick={() => editFileInputRef.current?.click()}
-                                 className="bg-white text-deepgreen px-4 py-2 rounded-full font-bold shadow-lg hover:bg-gold-50 transition text-[10px]"
-                               >
-                                  🖼️ 이미지 {editForm.image ? '교체' : '추가'}
-                               </button>
-                               {editForm.image && (
-                                 <button 
-                                   onClick={handleRemoveEditImage}
-                                   className="bg-red-500 text-white px-4 py-2 rounded-full font-bold shadow-lg hover:bg-red-600 transition text-[10px]"
-                                 >
-                                    🗑️ 이미지 삭제
-                                 </button>
-                               )}
-                             </div>
+                             {!isUploading && (
+                                 <div className="flex gap-2">
+                                   <button 
+                                     onClick={() => editFileInputRef.current?.click()}
+                                     className="bg-white text-deepgreen px-4 py-2 rounded-full font-bold shadow-lg hover:bg-gold-50 transition text-[10px]"
+                                   >
+                                      🖼️ 이미지 {editForm.image ? '교체' : '추가'}
+                                   </button>
+                                   {editForm.image && (
+                                     <button 
+                                       onClick={handleRemoveEditImage}
+                                       className="bg-red-500 text-white px-4 py-2 rounded-full font-bold shadow-lg hover:bg-red-600 transition text-[10px]"
+                                     >
+                                        🗑️ 이미지 삭제
+                                     </button>
+                                   )}
+                                 </div>
+                             )}
                              <input 
                                type="file" 
                                accept="image/*"
@@ -419,9 +435,10 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                         </button>
                         <button 
                           onClick={saveEdit}
-                          className="px-4 py-1.5 bg-gold-500 text-white rounded-lg font-bold text-[10px] hover:bg-gold-600 shadow-md"
+                          disabled={isUploading}
+                          className="px-4 py-1.5 bg-gold-500 text-white rounded-lg font-bold text-[10px] hover:bg-gold-600 shadow-md disabled:opacity-50"
                         >
-                          저장 완료
+                          {isUploading ? '저장 중...' : '저장 완료'}
                         </button>
                       </>
                    ) : (

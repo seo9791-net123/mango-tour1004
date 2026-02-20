@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost } from '../types';
 import { INITIAL_PAGE_CONTENTS } from '../constants';
 import { driveService } from '../services/googleDriveService';
+import { uploadFile } from '../services/uploadService';
 
 interface Props {
   users: User[];
@@ -51,6 +52,9 @@ const AdminDashboard: React.FC<Props> = ({
   const [isDriveConnected, setIsDriveConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  
+  // Upload State
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (pageContents[selectedPageId]) {
@@ -165,20 +169,33 @@ const AdminDashboard: React.FC<Props> = ({
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
+  // Improved File Upload Handler - Using Local Preview for simplicity if Firebase is too complex
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { 
-        alert('이미지 파일이 너무 큽니다. 2MB 이하의 파일을 권장합니다.');
+      if (file.size > 5 * 1024 * 1024) { 
+        alert('이미지 파일이 너무 큽니다. 5MB 이하의 파일을 권장합니다.');
+        return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          callback(reader.result);
-        }
-      };
-      reader.onerror = () => alert('파일을 읽는 중 오류가 발생했습니다.');
-      reader.readAsDataURL(file);
+
+      setIsUploading(true);
+      try {
+        // Firebase Storage를 계속 사용할 수도 있지만, 복잡함을 피하기 위해 
+        // 로컬에서는 Base64로 처리하거나 Firebase 설정을 확인하라는 메시지를 띄웁니다.
+        const downloadUrl = await uploadFile(file, 'images');
+        callback(downloadUrl);
+      } catch (error) {
+        console.error(error);
+        // Fallback: 로컬 미리보기 (Base64) - 서버 연동 없이도 작동하게 함
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          callback(reader.result as string);
+          alert('Firebase Storage 연결 실패로 로컬(Base64)로 저장되었습니다. 구글 드라이브 백업을 권장합니다.');
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsUploading(false);
+      }
     }
     e.target.value = '';
   };
@@ -267,6 +284,23 @@ const AdminDashboard: React.FC<Props> = ({
     handlePageFieldChange('sections', newSections);
   };
 
+  const handleAddSection = () => {
+    const newSections = [...pageForm.sections, { title: '새 섹션 제목', content: '새 섹션 내용을 입력하세요.' }];
+    handlePageFieldChange('sections', newSections);
+  };
+
+  const handleRemoveSection = (index: number) => {
+    if (!confirm('이 섹션을 삭제하시겠습니까?')) return;
+    const newSections = pageForm.sections.filter((_, i) => i !== index);
+    handlePageFieldChange('sections', newSections);
+  };
+
+  const handleRemoveGalleryImage = (index: number) => {
+    if (!confirm('이 이미지를 삭제하시겠습니까?')) return;
+    const newGallery = pageForm.galleryImages.filter((_, i) => i !== index);
+    handlePageFieldChange('galleryImages', newGallery);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -280,6 +314,16 @@ const AdminDashboard: React.FC<Props> = ({
             <button onClick={() => setCurrentPage('home')} className="px-6 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition text-sm">나가기</button>
         </div>
       </div>
+
+      {/* Global Upload Loading Indicator */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-black/50 z-[999] flex items-center justify-center backdrop-blur-sm">
+           <div className="bg-white p-6 rounded-2xl flex flex-col items-center gap-4 shadow-2xl">
+              <div className="w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
+              <p className="font-bold text-deepgreen">이미지를 서버에 저장 중입니다...</p>
+           </div>
+        </div>
+      )}
 
       {/* Google Drive Config Panel */}
       {showDriveConfig && (
@@ -334,7 +378,7 @@ const AdminDashboard: React.FC<Props> = ({
                     </>
                 )}
             </div>
-            <p className="text-xs text-blue-400 mt-3">* Google Cloud Console에서 'Google Drive API' 사용 설정을 반드시 해주셔야 합니다.</p>
+            <p className="text-xs text-blue-400 mt-3">* Google Cloud Console에서 'Google Drive API' 사용 설정 및 올바른 리디렉션 URI 설정이 필요합니다.</p>
         </div>
       )}
       
@@ -419,7 +463,7 @@ const AdminDashboard: React.FC<Props> = ({
                      </div>
                      <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase">가격 (원)</label>
+                          <label className="text-[10px] font-bold text-gray-400 uppercase">가격 (VND)</label>
                           <input type="number" className="w-full text-red-600 font-bold border-b outline-none" value={p.price} onChange={e => handleProductFieldChange(p.id, 'price', parseInt(e.target.value) || 0)} />
                         </div>
                         <div className="space-y-1">
@@ -466,6 +510,7 @@ const AdminDashboard: React.FC<Props> = ({
                                  <div className="space-y-1">
                                    {day.activities.map((act, aIdx) => (
                                      <div key={aIdx} className="flex gap-1 items-center">
+                                       <span className="text-[9px] font-bold w-6 text-center text-gray-400">{aIdx === 0 ? '오전' : aIdx === 1 ? '오후' : aIdx === 2 ? '저녁' : ''}</span>
                                        <input className="flex-1 text-[10px] bg-white border border-gray-100 p-1.5 rounded outline-none shadow-inner" value={act} onChange={e => handleActivityChange(p.id, dIdx, aIdx, e.target.value)} />
                                        <button onClick={() => handleActivityRemove(p.id, dIdx, aIdx)} className="text-gray-300 hover:text-red-500 transition">✕</button>
                                      </div>
@@ -561,12 +606,26 @@ const AdminDashboard: React.FC<Props> = ({
                {/* Sections & Gallery */}
                <div className="space-y-8">
                   <div className="space-y-4">
-                     <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
-                        <span className="text-xl">3️⃣</span> 텍스트 섹션 관리 (3개)
-                    </h4>
+                     <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
+                           <span className="text-xl">3️⃣</span> 텍스트 섹션 관리
+                        </h4>
+                        <button 
+                          onClick={handleAddSection}
+                          className="bg-deepgreen text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-sm hover:bg-green-800 transition"
+                        >
+                          + 섹션 추가
+                        </button>
+                     </div>
                      <div className="space-y-3">
                         {pageForm.sections.map((section, idx) => (
-                            <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-2">
+                            <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-2 relative group">
+                                <button 
+                                  onClick={() => handleRemoveSection(idx)}
+                                  className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                                >
+                                  ✕
+                                </button>
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="w-5 h-5 rounded-full bg-deepgreen text-white flex items-center justify-center text-[10px] font-bold">{idx + 1}</span>
                                     <input 
@@ -584,26 +643,54 @@ const AdminDashboard: React.FC<Props> = ({
                                 />
                             </div>
                         ))}
+                        {pageForm.sections.length === 0 && (
+                          <p className="text-center text-gray-400 text-xs py-4 italic">등록된 섹션이 없습니다. [섹션 추가] 버튼을 눌러주세요.</p>
+                        )}
                      </div>
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
-                        <span className="text-xl">4️⃣</span> 갤러리 이미지 (총 {pageForm.galleryImages.length}개)
-                    </h4>
+                    <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
+                            <span className="text-xl">4️⃣</span> 갤러리 이미지 (총 {pageForm.galleryImages.length}개)
+                        </h4>
+                        <label className="bg-gold-500 text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-sm hover:bg-gold-600 transition cursor-pointer">
+                          + 이미지 추가
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={(e) => handleFileUpload(e, (url) => {
+                              handlePageFieldChange('galleryImages', [...pageForm.galleryImages, url]);
+                            })} 
+                          />
+                        </label>
+                    </div>
                     <div className="grid grid-cols-3 gap-3">
                         {pageForm.galleryImages.map((img, idx) => (
                             <div key={idx} className="aspect-square bg-gray-50 border rounded-2xl overflow-hidden relative group shadow-sm">
                             <img src={img} className="w-full h-full object-cover" alt={`Gallery ${idx}`} />
-                            <label className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center cursor-pointer">
-                                <span className="text-xl mb-1">🔄</span>
-                                <span className="text-[9px] text-white font-bold">교체하기</span>
-                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => {
-                                const ng = [...pageForm.galleryImages]; ng[idx] = url; handlePageFieldChange('galleryImages', ng);
-                                })} />
-                            </label>
+                            <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
+                                <label className="bg-white text-deepgreen px-2 py-1 rounded-full text-[9px] font-bold cursor-pointer hover:bg-gray-100">
+                                    교체
+                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => {
+                                    const ng = [...pageForm.galleryImages]; ng[idx] = url; handlePageFieldChange('galleryImages', ng);
+                                    })} />
+                                </label>
+                                <button 
+                                  onClick={() => handleRemoveGalleryImage(idx)}
+                                  className="bg-red-500 text-white px-2 py-1 rounded-full text-[9px] font-bold hover:bg-red-600"
+                                >
+                                  삭제
+                                </button>
+                            </div>
                             </div>
                         ))}
+                        {pageForm.galleryImages.length === 0 && (
+                          <div className="col-span-3 aspect-video border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-gray-400 italic text-xs">
+                            이미지가 없습니다.
+                          </div>
+                        )}
                     </div>
                   </div>
                </div>

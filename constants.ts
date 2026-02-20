@@ -38,15 +38,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '호치민 3색 명문 골프 투어',
     description: '떤선녓 + 롱탄 + 송베 CC 라운딩. 호치민 최고의 코스만을 엄선했습니다.',
     image: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800',
-    price: 1350000,
+    price: 24300000,
     location: '호치민',
     duration: '3박 5일',
     type: 'golf',
     itinerary: [
-      { day: 1, activities: ['호치민 공항 픽업 및 호텔 체크인', '환영 석식(고급 현지식)', '자유 시간'] },
-      { day: 2, activities: ['떤선녓 CC 18홀 라운딩', '오후 시내 관광', '전신 마사지 90분'] },
-      { day: 3, activities: ['롱탄 CC 18홀 라운딩', '무제한 삼겹살 석식', '루프탑바 관람'] },
-      { day: 4, activities: ['송베 CC 18홀 라운딩', '쇼핑 및 휴식', '공항 샌딩'] }
+      { day: 1, activities: ['호치민 공항 픽업 및 호텔 체크인', '환영 석식(고급 현지식)', '자유 시간 및 휴식'] },
+      { day: 2, activities: ['떤선녓 CC 18홀 라운딩', '오후 시내 관광 (노트르담 성당, 우체국)', '전신 마사지 90분 및 석식'] },
+      { day: 3, activities: ['롱탄 CC 18홀 라운딩', '무제한 삼겹살 석식', '루프탑바 관람 및 야경 감상'] },
+      { day: 4, activities: ['송베 CC 18홀 라운딩', '벤탄 시장 쇼핑 및 휴식', '공항 샌딩'] }
     ]
   },
   {
@@ -54,15 +54,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '붕따우 더 그랜드 호짬 카지노 & 골프',
     description: '베트남 최고의 카지노 복합 리조트와 명문 블러프 골프 코스 이용.',
     image: 'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800',
-    price: 1580000,
+    price: 28500000,
     location: '붕따우',
     duration: '3박 5일',
     type: 'golf',
     itinerary: [
-      { day: 1, activities: ['공항 미팅 후 호짬 리조트 이동', '리조트 석식 및 카지노 자유 이용'] },
-      { day: 2, activities: ['더 블러프 CC 18홀 라운딩', '리조트 내 수영장 및 스파 이용'] },
-      { day: 3, activities: ['더 블러프 CC 18홀 라운딩', '붕따우 시내 관광 및 씨푸드 석식'] },
-      { day: 4, activities: ['늦은 체크아웃', '호치민 이동 및 쇼핑', '공항 샌딩'] }
+      { day: 1, activities: ['공항 미팅 후 호짬 리조트 이동', '리조트 체크인 및 휴식', '리조트 석식 및 카지노 이용'] },
+      { day: 2, activities: ['더 블러프 CC 18홀 라운딩', '리조트 내 수영장 및 스파 이용', '씨푸드 석식'] },
+      { day: 3, activities: ['더 블러프 CC 18홀 라운딩', '붕따우 시내 관광 (예수상)', '석식 및 자유 시간'] },
+      { day: 4, activities: ['오전 자유 시간 및 체크아웃', '호치민 이동 및 쇼핑', '공항 샌딩'] }
     ]
   },
   {
@@ -70,15 +70,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '무이네 사막 지프투어 & 골프 패키지',
     description: '사막의 낭만과 해변 골프의 즐거움을 동시에. 씨링크 CC 포함.',
     image: 'https://images.unsplash.com/photo-1623122046188-4b775494d49e?q=80&w=800',
-    price: 1150000,
+    price: 21000000,
     location: '무이네',
     duration: '3박 5일',
     type: 'golf',
     itinerary: [
-      { day: 1, activities: ['무이네 이동 및 리조트 체크인', '해변 석식 및 휴식'] },
-      { day: 2, activities: ['화이트샌듄 일출 지프투어', '씨링크 CC 18홀 라운딩', '마사지'] },
+      { day: 1, activities: ['호치민 픽업 및 무이네 이동', '리조트 체크인', '해변 석식 및 휴식'] },
+      { day: 2, activities: ['화이트샌듄 일출 지프투어', '씨링크 CC 18홀 라운딩', '전신 마사지'] },
       { day: 3, activities: ['씨링크 CC 18홀 라운딩', '요정의 샘물 산책', '로컬 씨푸드 파티'] },
-      { day: 4, activities: ['리조트 자유시간', '호치민 복귀 및 쇼핑', '공항 샌딩'] }
+      { day: 4, activities: ['리조트 자유시간 및 체크아웃', '호치민 복귀 및 쇼핑', '공항 샌딩'] }
     ]
   },
   {
@@ -86,15 +86,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '달랏 꽃의 도시 힐링 골프',
     description: '해발 1,500m의 시원한 기후에서 즐기는 고원 골프 투어.',
     image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
-    price: 1250000,
+    price: 22500000,
     location: '달랏',
     duration: '3박 5일',
     type: 'golf',
     itinerary: [
-      { day: 1, activities: ['달랏 공항 픽업 및 체크인', '달랏 야시장 관광'] },
-      { day: 2, activities: ['달랏 팔레스 CC 18홀 라운딩', '사랑의 계곡 투어'] },
-      { day: 3, activities: ['사콤 투옌람 CC 18홀 라운딩', '죽림 선원 투어'] },
-      { day: 4, activities: ['다딴라 폭포 관람', '쇼핑 및 공항 샌딩'] }
+      { day: 1, activities: ['달랏 공항 픽업 및 체크인', '달랏 시내 관광', '달랏 야시장 투어'] },
+      { day: 2, activities: ['달랏 팔레스 CC 18홀 라운딩', '사랑의 계곡 투어', '현지식 석식'] },
+      { day: 3, activities: ['사콤 투옌람 CC 18홀 라운딩', '죽림 선원 투어', '특식 석식'] },
+      { day: 4, activities: ['다딴라 폭포 관람', '쇼핑 및 자유시간', '공항 샌딩'] }
     ]
   },
   {
@@ -102,15 +102,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '호치민 VIP 의전 비지니스 투어',
     description: '성공적인 비지니스를 위한 전문 통역과 리무진 의전 패키지.',
     image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800',
-    price: 1800000,
+    price: 32500000,
     location: '호치민',
     duration: '3박 5일',
     type: 'tour',
     itinerary: [
-      { day: 1, activities: ['VIP 리무진 공항 픽업', '호텔 체크인 및 미팅 준비'] },
-      { day: 2, activities: ['비지니스 미팅 및 통역 지원', '전문 스파 케어'] },
-      { day: 3, activities: ['현지 업체 방문 및 네트워킹 석식', '카지노 의전'] },
-      { day: 4, activities: ['자유 시간 및 복귀 준비', '공항 샌딩'] }
+      { day: 1, activities: ['VIP 리무진 공항 픽업', '호텔 체크인', '미팅 준비 및 휴식'] },
+      { day: 2, activities: ['비지니스 미팅 지원', '오찬 및 휴식', '전문 스파 케어'] },
+      { day: 3, activities: ['현지 업체 방문', '네트워킹 석식', '카지노 의전 및 여가'] },
+      { day: 4, activities: ['자유 시간', '기념품 구매', '공항 샌딩'] }
     ]
   },
   {
@@ -118,15 +118,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '붕따우 프라이빗 풀빌라 힐링',
     description: '가족, 친구와 함께 즐기는 대형 독채 풀빌라와 씨푸드 만찬.',
     image: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?q=80&w=800',
-    price: 950000,
+    price: 17500000,
     location: '붕따우',
     duration: '3박 5일',
     type: 'hotel',
     itinerary: [
-      { day: 1, activities: ['전용 차량 붕따우 이동', '풀빌라 체크인 및 수영'] },
-      { day: 2, activities: ['풀빌라 야외 바베큐 파티', '해변 산책'] },
-      { day: 3, activities: ['붕따우 랜드마크 투어', '무제한 해산물 석식'] },
-      { day: 4, activities: ['늦은 오전 체크아웃', '호치민 이동 및 공항 샌딩'] }
+      { day: 1, activities: ['전용 차량 붕따우 이동', '풀빌라 체크인', '수영 및 휴식'] },
+      { day: 2, activities: ['오전 자유 수영', '풀빌라 야외 바베큐 파티', '해변 산책'] },
+      { day: 3, activities: ['붕따우 랜드마크 투어', '현지 맛집 탐방', '무제한 해산물 석식'] },
+      { day: 4, activities: ['늦은 오전 체크아웃', '호치민 이동', '공항 샌딩'] }
     ]
   },
   {
@@ -134,15 +134,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '트윈도브스 명문 코스 정복',
     description: 'KLPGA 대회가 열리는 호치민 인근 최고의 멤버십 코스 라운딩.',
     image: 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=800',
-    price: 1420000,
+    price: 25600000,
     location: '호치민',
     duration: '3박 5일',
     type: 'golf',
     itinerary: [
-      { day: 1, activities: ['공항 미팅 및 시내 호텔 체크인'] },
-      { day: 2, activities: ['트윈도브스 CC 18홀 라운딩', '클럽하우스 중식'] },
-      { day: 3, activities: ['트윈도브스 CC 18홀 라운딩', '무제한 소고기 석식'] },
-      { day: 4, activities: ['시내 관광 및 마사지', '공항 샌딩'] }
+      { day: 1, activities: ['공항 미팅', '시내 호텔 체크인', '자유 시간'] },
+      { day: 2, activities: ['트윈도브스 CC 18홀 라운딩', '클럽하우스 중식', '마사지 및 석식'] },
+      { day: 3, activities: ['트윈도브스 CC 18홀 라운딩', '시내 관광', '무제한 소고기 석식'] },
+      { day: 4, activities: ['오전 휴식', '시내 쇼핑', '공항 샌딩'] }
     ]
   },
   {
@@ -150,15 +150,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '호치민 미식 & 쇼핑 테마 투어',
     description: '베트남 미쉐린 맛집과 로컬 숨은 카페를 찾아 떠나는 3박 5일.',
     image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800',
-    price: 880000,
+    price: 15900000,
     location: '호치민',
     duration: '3박 5일',
     type: 'tour',
     itinerary: [
-      { day: 1, activities: ['공항 픽업 및 부이비엔 여행자거리 관광'] },
-      { day: 2, activities: ['미쉐린 선정 쌀국수 맛집 방문', '카페 투어'] },
-      { day: 3, activities: ['벤탄 시장 및 쇼핑몰 투어', '사이공 강 디너 크루즈'] },
-      { day: 4, activities: ['쿠킹 클래스 체험', '공항 샌딩'] }
+      { day: 1, activities: ['공항 픽업', '호텔 체크인', '부이비엔 여행자거리 관광'] },
+      { day: 2, activities: ['미쉐린 선정 쌀국수 조식', '유명 카페 투어', '파인다이닝 석식'] },
+      { day: 3, activities: ['벤탄 시장 및 사이공 스퀘어', '쇼핑몰 투어', '사이공 강 디너 크루즈'] },
+      { day: 4, activities: ['쿠킹 클래스 체험', '최후의 만찬', '공항 샌딩'] }
     ]
   },
   {
@@ -166,15 +166,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '호치민 야간 골프 & FOR MEN',
     description: '낮에는 여유로운 휴식, 밤에는 화려한 야간 라운딩과 나이트 라이프.',
     image: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=800',
-    price: 1650000,
+    price: 29800000,
     location: '호치민',
     duration: '3박 5일',
     type: 'golf',
     itinerary: [
-      { day: 1, activities: ['공항 픽업 및 밤문화 투어 오리엔테이션'] },
-      { day: 2, activities: ['낮 시간 자유 휴식', '떤선녓 야간 라운딩'] },
-      { day: 3, activities: ['오후 롱탄 CC 라운딩', '가라오케/칠바 투어'] },
-      { day: 4, activities: ['마사지 및 해장 조식', '공항 샌딩'] }
+      { day: 1, activities: ['공항 픽업', '호텔 체크인', '밤문화 투어 오리엔테이션'] },
+      { day: 2, activities: ['오전 자유 휴식', '떤선녓 야간 라운딩', '마사지'] },
+      { day: 3, activities: ['오후 롱탄 CC 라운딩', '석식', '가라오케/칠바 투어'] },
+      { day: 4, activities: ['해장 조식 및 마사지', '쇼핑', '공항 샌딩'] }
     ]
   },
   {
@@ -182,15 +182,15 @@ export const INITIAL_PRODUCTS: Product[] = [
     title: '메콩강 어드벤처 & 관광 패키지',
     description: '호치민 시내의 화려함과 메콩강의 소박한 자연을 동시에 만나는 일정.',
     image: 'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=800',
-    price: 790000,
+    price: 14500000,
     location: '호치민',
     duration: '3박 5일',
     type: 'tour',
     itinerary: [
-      { day: 1, activities: ['공항 미팅 및 통일궁/중앙우체국 관광'] },
-      { day: 2, activities: ['미토 메콩강 투어(쪽배 체험)', '코끼리 귀 생선 중식'] },
-      { day: 3, activities: ['구찌 터널 탐방', '호치민 스카이덱 야경 감상'] },
-      { day: 4, activities: ['벤탄 시장 기념품 쇼핑', '공항 샌딩'] }
+      { day: 1, activities: ['공항 미팅', '통일궁/중앙우체국 관광', '호텔 체크인'] },
+      { day: 2, activities: ['미토 메콩강 투어(쪽배 체험)', '코끼리 귀 생선 중식', '석식 및 휴식'] },
+      { day: 3, activities: ['구찌 터널 탐방', '호치민 스카이덱 야경 감상', '자유 시간'] },
+      { day: 4, activities: ['벤탄 시장 기념품 쇼핑', '마사지', '공항 샌딩'] }
     ]
   }
 ];

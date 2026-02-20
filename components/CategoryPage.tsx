@@ -50,7 +50,7 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                   <h3 className="font-bold text-sm mb-1 text-gray-800 line-clamp-1">{product.title}</h3>
                   <p className="text-gray-500 text-[11px] mb-3 line-clamp-2 h-8">{product.description}</p>
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-sm text-red-600">{product.price.toLocaleString()}원~</span>
+                    <span className="font-bold text-sm text-red-600">{product.price.toLocaleString()} VND~</span>
                     <button 
                       onClick={() => onProductClick(product.id)}
                       className="bg-deepgreen text-white px-2.5 py-1 rounded text-[10px] hover:bg-opacity-90 transition flex items-center gap-1"

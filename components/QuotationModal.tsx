@@ -17,7 +17,7 @@ const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
 
   // Determine content source
   const title = product ? product.title : 'AI 맞춤 여행 견적';
-  const price = product ? `${product.price.toLocaleString()} 원` : plan?.totalCost;
+  const price = product ? `${product.price.toLocaleString()} VND` : plan?.totalCost;
   const itinerary = product ? product.itinerary : plan?.itinerary;
   const location = product ? product.location : '맞춤 여행지';
   const duration = product ? product.duration : '일정 협의';
@@ -29,7 +29,7 @@ const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
 ${product ? `📌 상품명: ${product.title}
 📍 지역: ${product.location}
 ⏰ 일정: ${product.duration}
-💰 견적가: ${product.price.toLocaleString()}원
+💰 견적가: ${product.price.toLocaleString()} VND
 📝 포함사항: ${product.description}` : `📌 AI 맞춤 플랜
 📝 테마: ${plan?.summary}
 💰 예상 견적: ${plan?.totalCost}
@@ -48,6 +48,16 @@ ${inquiryText || '(내용 없음)'}
       console.error('Failed to copy: ', err);
       alert('복사에 실패했습니다. 수동으로 복사해주세요.');
     }
+  };
+
+  const getTimeLabel = (index: number, total: number) => {
+    if (total === 3) {
+      if (index === 0) return { text: '오전', color: 'bg-yellow-100 text-yellow-800' };
+      if (index === 1) return { text: '오후', color: 'bg-orange-100 text-orange-800' };
+      if (index === 2) return { text: '저녁', color: 'bg-indigo-100 text-indigo-800' };
+    }
+    // 기본값 (항목이 3개가 아닐 경우)
+    return { text: '일정', color: 'bg-gray-100 text-gray-600' };
   };
 
   return (
@@ -142,7 +152,7 @@ ${inquiryText || '(내용 없음)'}
             <div className="mb-8">
               <p className="font-bold mb-4 text-deepgreen text-lg border-b pb-2">상세 일정표</p>
               {itinerary ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {itinerary.map((day) => (
                     <div key={day.day} className="flex gap-4 group break-inside-avoid">
                       <div className="flex flex-col items-center">
@@ -152,13 +162,19 @@ ${inquiryText || '(내용 없음)'}
                          <div className="w-0.5 bg-gray-200 h-full group-last:hidden -mt-2"></div>
                       </div>
                       <div className="flex-1 bg-white border border-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md transition print:shadow-none print:border print:border-gray-300">
-                        <ul className="space-y-2">
-                           {day.activities.map((act, i) => (
-                             <li key={i} className="flex items-start text-sm text-gray-700">
-                               <span className="text-gold-500 mr-2 print:text-black">•</span> {act}
-                             </li>
-                           ))}
-                        </ul>
+                        <div className="space-y-3">
+                           {day.activities.map((act, i) => {
+                             const labelInfo = getTimeLabel(i, day.activities.length);
+                             return (
+                               <div key={i} className="flex items-start text-sm text-gray-700 gap-3">
+                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 w-12 text-center ${labelInfo.color} print:border print:border-gray-300`}>
+                                    {labelInfo.text}
+                                 </span>
+                                 <span className="flex-1 pt-0.5">{act}</span>
+                               </div>
+                             );
+                           })}
+                        </div>
                       </div>
                     </div>
                   ))}

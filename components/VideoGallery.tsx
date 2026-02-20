@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { VideoItem, User } from '../types';
+import { uploadFile } from '../services/uploadService';
 
 interface Props {
   videos: VideoItem[];
@@ -18,33 +19,43 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<VideoItem>({ id: '', title: '', url: '' });
 
-  // Handle New Video File Upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle New Video File Upload using Storage
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setIsUploading(true);
-      const videoUrl = URL.createObjectURL(file);
-      
-      const newVideo: VideoItem = {
-        id: Date.now().toString(),
-        title: file.name.replace(/\.[^/.]+$/, ""),
-        url: videoUrl
-      };
+      try {
+        const videoUrl = await uploadFile(file, 'videos');
+        
+        const newVideo: VideoItem = {
+          id: Date.now().toString(),
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          url: videoUrl
+        };
 
-      onUpdateVideos([newVideo, ...videos]);
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+        onUpdateVideos([newVideo, ...videos]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } catch (error) {
+        alert('동영상 업로드 실패: ' + error);
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
   // Handle Video Replacement during Edit
-  const handleReplaceVideo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReplaceVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const videoUrl = URL.createObjectURL(file);
-      setEditForm(prev => ({ ...prev, url: videoUrl }));
-      // Also update title if it's currently empty or just the old one? 
-      // Let's just update the URL for now to be safe.
+        setIsUploading(true);
+        try {
+            const videoUrl = await uploadFile(file, 'videos');
+            setEditForm(prev => ({ ...prev, url: videoUrl }));
+        } catch (error) {
+            alert('동영상 교체 실패: ' + error);
+        } finally {
+            setIsUploading(false);
+        }
     }
   };
 
@@ -110,7 +121,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
               className="flex-1 md:flex-none bg-gold-500 text-white px-5 py-2 rounded-full hover:bg-gold-600 font-bold transition flex items-center justify-center gap-2 text-xs shadow-lg"
             >
               {isUploading ? (
-                <span className="animate-pulse">업로드 중...</span>
+                <span className="animate-pulse">서버에 저장 중...</span>
               ) : (
                 <><span>🎥</span> 새 영상 추가</>
               )}
@@ -141,7 +152,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
                         onClick={() => editFileInputRef.current?.click()}
                         className="bg-white/20 hover:bg-white/40 text-white px-3 py-1.5 rounded-lg border border-white/50 text-[10px] font-bold transition backdrop-blur-md"
                       >
-                        영상 파일 교체 📂
+                        {isUploading ? '업로드 중...' : '영상 파일 교체 📂'}
                       </button>
                       <input 
                         type="file" 

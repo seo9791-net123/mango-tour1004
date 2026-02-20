@@ -20,6 +20,7 @@ import EventPage from './components/EventPage';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS } from './constants';
 import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem } from './types';
 import { storageService } from './services/storageService';
+import { driveService } from './services/googleDriveService';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -33,7 +34,7 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<'home' | 'admin' | 'category'>('home');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Lifted Content State
+  // Data State
   const [heroImages, setHeroImages] = useState<string[]>(HERO_IMAGES);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(SUB_MENU_ITEMS);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -42,44 +43,79 @@ const App: React.FC = () => {
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  // Changed keys to force data refresh to MANGO TOUR text
-  const STORAGE_KEYS = [
-    'mango_tour_hero_images_v1',
-    'mango_tour_menu_items_v1',
-    'mango_tour_products_v1',
-    'mango_tour_videos_v1',
-    'mango_tour_posts_v1',
-    'mango_tour_pages_v1'
-  ];
+  // --- Data Persistence Handlers ---
 
+  // Initial Data Load
   useEffect(() => {
-    const initStorage = async () => {
-      await storageService.migrateFromLocalStorage(STORAGE_KEYS);
-      const h = await storageService.getItem<string[]>(STORAGE_KEYS[0]);
-      const m = await storageService.getItem<MenuItem[]>(STORAGE_KEYS[1]);
-      const pr = await storageService.getItem<Product[]>(STORAGE_KEYS[2]);
-      const v = await storageService.getItem<VideoItem[]>(STORAGE_KEYS[3]);
-      const po = await storageService.getItem<CommunityPost[]>(STORAGE_KEYS[4]);
-      const pa = await storageService.getItem<Record<string, PageContent>>(STORAGE_KEYS[5]);
+    const initData = async () => {
+      try {
+        console.log("Loading data from local storage...");
+        // 1. Try to load from IndexedDB first
+        const cachedHero = await storageService.getItem<string[]>('heroImages');
+        const cachedMenu = await storageService.getItem<MenuItem[]>('menuItems');
+        const cachedProducts = await storageService.getItem<Product[]>('products');
+        const cachedVideos = await storageService.getItem<VideoItem[]>('videos');
+        const cachedPosts = await storageService.getItem<CommunityPost[]>('posts');
+        const cachedPages = await storageService.getItem<Record<string, PageContent>>('pageContents');
 
-      if (h) setHeroImages(h);
-      if (m) setMenuItems(m);
-      if (pr) setProducts(pr);
-      if (v) setVideos(v);
-      if (po) setPosts(po);
-      if (pa) setPageContents(pa);
+        if (cachedHero) setHeroImages(cachedHero);
+        if (cachedMenu) setMenuItems(cachedMenu);
+        if (cachedProducts) setProducts(cachedProducts);
+        if (cachedVideos) setVideos(cachedVideos);
+        if (cachedPosts) setPosts(cachedPosts);
+        if (cachedPages) setPageContents(cachedPages);
 
-      setIsDataLoaded(true);
+        // 2. Try to initialize Google Drive if keys exist (for sync)
+        const savedApiKey = localStorage.getItem('google_api_key');
+        const savedClientId = localStorage.getItem('google_client_id');
+        if (savedApiKey && savedClientId) {
+          try {
+            await driveService.initGapiClient(savedApiKey);
+            console.log("Google Drive API initialized");
+          } catch (e) {
+            console.warn("Google Drive auto-init failed", e);
+          }
+        }
+
+        setIsDataLoaded(true);
+      } catch (e) {
+        console.error("Failed to load data", e);
+        setIsDataLoaded(true);
+      }
     };
-    initStorage();
+    initData();
   }, []);
 
-  useEffect(() => { if (isDataLoaded) storageService.setItem(STORAGE_KEYS[0], heroImages); }, [heroImages, isDataLoaded]);
-  useEffect(() => { if (isDataLoaded) storageService.setItem(STORAGE_KEYS[1], menuItems); }, [menuItems, isDataLoaded]);
-  useEffect(() => { if (isDataLoaded) storageService.setItem(STORAGE_KEYS[2], products); }, [products, isDataLoaded]);
-  useEffect(() => { if (isDataLoaded) storageService.setItem(STORAGE_KEYS[3], videos); }, [videos, isDataLoaded]);
-  useEffect(() => { if (isDataLoaded) storageService.setItem(STORAGE_KEYS[4], posts); }, [posts, isDataLoaded]);
-  useEffect(() => { if (isDataLoaded) storageService.setItem(STORAGE_KEYS[5], pageContents); }, [pageContents, isDataLoaded]);
+  // Update Handlers (Updates State AND Local Storage)
+  const handleUpdateHeroImages = async (newImages: string[]) => {
+    setHeroImages(newImages);
+    await storageService.setItem('heroImages', newImages);
+  };
+
+  const handleUpdateMenuItems = async (newItems: MenuItem[]) => {
+    setMenuItems(newItems);
+    await storageService.setItem('menuItems', newItems);
+  };
+
+  const handleUpdateProducts = async (newProducts: Product[]) => {
+    setProducts(newProducts);
+    await storageService.setItem('products', newProducts);
+  };
+
+  const handleUpdateVideos = async (newVideos: VideoItem[]) => {
+    setVideos(newVideos);
+    await storageService.setItem('videos', newVideos);
+  };
+
+  const handleUpdatePosts = async (newPosts: CommunityPost[]) => {
+    setPosts(newPosts);
+    await storageService.setItem('posts', newPosts);
+  };
+
+  const handleUpdatePageContents = async (newContents: Record<string, PageContent>) => {
+    setPageContents(newContents);
+    await storageService.setItem('pageContents', newContents);
+  };
 
   const [users, setUsers] = useState<User[]>([
     { id: 'admin', username: 'admin', role: 'admin', nickname: '관리자' },
@@ -147,8 +183,8 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-deepgreen flex flex-col items-center justify-center text-white p-8">
         <div className="w-16 h-16 border-4 border-gold-400 border-t-transparent rounded-full animate-spin mb-6"></div>
-        <h2 className="text-xl font-bold mb-2">데이터를 안전하게 불러오는 중입니다</h2>
-        <p className="text-sm opacity-60">잠시만 기다려 주세요...</p>
+        <h2 className="text-xl font-bold mb-2">서버와 통신 중입니다...</h2>
+        <p className="text-sm opacity-60">최신 여행 정보를 불러오고 있습니다.</p>
       </div>
     );
   }
@@ -203,12 +239,12 @@ const App: React.FC = () => {
         {currentPage === 'admin' && isAdmin ? (
           <AdminDashboard 
             users={users} 
-            heroImages={heroImages} setHeroImages={setHeroImages}
-            menuItems={menuItems} setMenuItems={setMenuItems} 
-            products={products} setProducts={setProducts}
-            pageContents={pageContents} setPageContents={setPageContents}
-            videos={videos} setVideos={setVideos}
-            posts={posts} setPosts={setPosts}
+            heroImages={heroImages} setHeroImages={handleUpdateHeroImages}
+            menuItems={menuItems} setMenuItems={handleUpdateMenuItems} 
+            products={products} setProducts={handleUpdateProducts}
+            pageContents={pageContents} setPageContents={handleUpdatePageContents}
+            videos={videos} setVideos={handleUpdateVideos}
+            posts={posts} setPosts={handleUpdatePosts}
             setCurrentPage={setCurrentPage}
           />
         ) : (
@@ -222,9 +258,9 @@ const App: React.FC = () => {
 
             {currentPage === 'category' && selectedCategory ? (
               selectedCategory === '동영상' ? (
-                <VideoGallery videos={videos} user={user} onUpdateVideos={setVideos} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
+                <VideoGallery videos={videos} user={user} onUpdateVideos={handleUpdateVideos} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '커뮤니티' ? (
-                <CommunityBoard posts={posts} user={user} onUpdatePosts={setPosts} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
+                <CommunityBoard posts={posts} user={user} onUpdatePosts={handleUpdatePosts} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '여행 만들기' ? (
                 <AITripPlanner onPlanGenerated={(plan) => setGeneratedPlan(plan)} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '비지니스' ? (
