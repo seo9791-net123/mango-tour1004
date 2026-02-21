@@ -99,6 +99,50 @@ export const generateTripPlan = async (request: TripPlanRequest): Promise<TripPl
     throw new Error("No response text generated");
   } catch (error) {
     console.error("Gemini API Error:", error);
-    throw new Error("여행 계획 생성에 실패했습니다. 다시 시도해주세요.");
+    console.warn("Falling back to mock data due to API error.");
+    
+    // API 호출 실패 시 (결제 문제, 키 문제 등) 모의 데이터 반환
+    return getMockTripPlan(request);
   }
+};
+
+// 모의 데이터 생성 함수
+const getMockTripPlan = (request: TripPlanRequest): TripPlanResult => {
+  return {
+    itinerary: [
+      {
+        day: 1,
+        activities: [
+          "공항 픽업 및 호텔 체크인",
+          "시내 중심가 산책 및 환전",
+          "현지 맛집에서 쌀국수 저녁 식사"
+        ]
+      },
+      {
+        day: 2,
+        activities: [
+          "오전 골프 라운딩 (또는 시티 투어)",
+          "유명 카페 방문 및 휴식",
+          "야시장 투어 및 길거리 음식 체험"
+        ]
+      },
+      {
+        day: 3,
+        activities: [
+          "근교 명소 (바나힐 등) 관광",
+          "전통 마사지 체험",
+          "해산물 레스토랑 만찬"
+        ]
+      }
+    ],
+    costBreakdown: [
+      { item: "숙박비 (3박, 4성급 기준)", cost: "4,500,000 VND" },
+      { item: "차량 지원 (기사 포함)", cost: "3,000,000 VND" },
+      { item: "식비 (조식 포함, 중/석식)", cost: "2,500,000 VND" },
+      { item: "입장료 및 체험비", cost: "1,500,000 VND" },
+      { item: "가이드 비용", cost: "2,000,000 VND" }
+    ],
+    totalCost: "13,500,000 VND",
+    summary: `[예시 견적] ${request.destination} ${request.duration} 여행입니다. ${request.theme} 테마에 맞춰 구성되었으며, ${request.pax}인 기준 견적입니다. (항공권 제외)`
+  };
 };

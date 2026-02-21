@@ -53,7 +53,7 @@ const App: React.FC = () => {
         const data = await firestoreService.loadGlobalData();
         
         // 만약 loadGlobalData가 플레이스홀더 때문에 로컬 데이터를 반환했다면
-        if (import.meta.env.VITE_FIREBASE_PROJECT_ID === "your-project") {
+        if (import.meta.env.VITE_FIREBASE_PROJECT_ID === "your-project" || (data as any).isLocal) {
           setIsLocalMode(true);
         } else {
           console.log("Firestore connection successful, data loaded.");

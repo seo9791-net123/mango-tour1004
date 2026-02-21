@@ -118,20 +118,16 @@ export const firestoreService = {
     } catch (error: any) {
       console.error("Error loading global data:", error);
       
-      // 오프라인이거나 권한 문제 등으로 실패 시 로컬 데이터 반환 (앱이 멈추지 않도록)
-      if (error.code === 'unavailable' || error.message?.includes('offline')) {
-        console.warn("Firestore offline or unreachable. Falling back to local data.");
-        return {
-          heroImages: HERO_IMAGES,
-          menuItems: SUB_MENU_ITEMS,
-          products: INITIAL_PRODUCTS,
-          videos: INITIAL_VIDEOS,
-          posts: INITIAL_POSTS,
-          pageContents: INITIAL_PAGE_CONTENTS
-        };
-      }
-      
-      throw error;
+      // 오프라인이거나 권한 문제, 또는 기타 모든 에러 발생 시 로컬 데이터 반환 (앱이 멈추지 않도록)
+      console.warn("Firestore offline, unreachable, or error occurred. Falling back to local data.");
+      return {
+        heroImages: HERO_IMAGES,
+        menuItems: SUB_MENU_ITEMS,
+        products: INITIAL_PRODUCTS,
+        videos: INITIAL_VIDEOS,
+        posts: INITIAL_POSTS,
+        pageContents: INITIAL_PAGE_CONTENTS
+      };
     }
   },
 

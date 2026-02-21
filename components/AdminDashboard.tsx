@@ -333,6 +333,29 @@ const AdminDashboard: React.FC<Props> = ({
     setShowCloudinaryConfig(false);
   };
 
+  const handleExportData = () => {
+    const data = {
+      heroImages,
+      menuItems,
+      products,
+      videos,
+      posts,
+      pageContents,
+      timestamp: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mango-tour-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('데이터 백업 파일이 다운로드되었습니다. GitHub 저장소의 초기 데이터로 활용할 수 있습니다.');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -340,8 +363,11 @@ const AdminDashboard: React.FC<Props> = ({
            <span className="text-4xl">🛠️</span> MANGO TOUR 관리 센터
         </h1>
         <div className="flex gap-2">
+            <button onClick={handleExportData} className="px-6 py-2 bg-gray-600 text-white rounded-full font-bold hover:bg-gray-700 transition text-sm flex items-center gap-2">
+               <span>💾</span> 데이터 백업
+            </button>
             <button onClick={() => setShowCloudinaryConfig(!showCloudinaryConfig)} className="px-6 py-2 bg-pink-50 text-pink-600 rounded-full font-bold hover:bg-pink-100 transition text-sm flex items-center gap-2">
-               <span>🖼️</span> 이미지 서버 설정 (Cloudinary)
+               <span>🖼️</span> 이미지 서버 설정
             </button>
             <button onClick={() => setShowFirebaseConfig(!showFirebaseConfig)} className="px-6 py-2 bg-orange-50 text-orange-600 rounded-full font-bold hover:bg-orange-100 transition text-sm flex items-center gap-2">
                <span>🔥</span> Firebase 연동 설정
