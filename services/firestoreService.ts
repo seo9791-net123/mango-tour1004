@@ -38,8 +38,12 @@ export const firestoreService = {
   async loadGlobalData() {
     if (!db) throw new Error("Firestore is not initialized");
 
-    // 플레이스홀더 키 체크
-    if (import.meta.env.VITE_FIREBASE_PROJECT_ID === "your-project" || !import.meta.env.VITE_FIREBASE_API_KEY) {
+    // Check for keys in localStorage OR env vars OR hardcoded defaults
+    const hasEnvKeys = import.meta.env.VITE_FIREBASE_PROJECT_ID && import.meta.env.VITE_FIREBASE_PROJECT_ID !== "your-project";
+    const hasLocalKeys = localStorage.getItem('fb_project_id') && localStorage.getItem('fb_api_key');
+    const hasHardcodedKeys = true; // We now have hardcoded keys in firebaseConfig.ts
+
+    if (!hasEnvKeys && !hasLocalKeys && !hasHardcodedKeys) {
       console.warn("Firebase configuration is missing or using placeholders. Using local data.");
       return {
         heroImages: HERO_IMAGES,
@@ -111,8 +115,22 @@ export const firestoreService = {
         pageContents
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading global data:", error);
+      
+      // 오프라인이거나 권한 문제 등으로 실패 시 로컬 데이터 반환 (앱이 멈추지 않도록)
+      if (error.code === 'unavailable' || error.message?.includes('offline')) {
+        console.warn("Firestore offline or unreachable. Falling back to local data.");
+        return {
+          heroImages: HERO_IMAGES,
+          menuItems: SUB_MENU_ITEMS,
+          products: INITIAL_PRODUCTS,
+          videos: INITIAL_VIDEOS,
+          posts: INITIAL_POSTS,
+          pageContents: INITIAL_PAGE_CONTENTS
+        };
+      }
+      
       throw error;
     }
   },

@@ -10,8 +10,10 @@ import { storage } from "./firebaseConfig";
  */
 export const uploadFile = async (file: File, folder: string = "uploads"): Promise<string> => {
   // 1. Cloudinary 설정 확인 (우선순위 1)
-  const cloudName = localStorage.getItem('cloudinary_cloud_name');
-  const uploadPreset = localStorage.getItem('cloudinary_upload_preset');
+  // 사용자가 제공한 기본값: Cloud Name: "Cloud Name", Upload Preset: "mango-tour"
+  // 주의: "Cloud Name"이 실제 계정 이름이 아닐 수 있으므로 확인이 필요합니다.
+  const cloudName = localStorage.getItem('cloudinary_cloud_name') || "Cloud Name"; 
+  const uploadPreset = localStorage.getItem('cloudinary_upload_preset') || "mango-tour";
 
   if (cloudName && uploadPreset) {
     try {

@@ -4,14 +4,16 @@ import { initializeFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
-// 제공해주신 설정값 적용 (localStorage 우선, 그 다음 환경 변수, 마지막으로 플레이스홀더)
+// 제공해주신 설정값 적용 (localStorage 우선, 그 다음 환경 변수, 마지막으로 하드코딩된 값)
 const firebaseConfig = {
-  apiKey: localStorage.getItem('fb_api_key') || import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSy...",
-  authDomain: localStorage.getItem('fb_auth_domain') || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
-  projectId: localStorage.getItem('fb_project_id') || import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project",
-  storageBucket: localStorage.getItem('fb_storage_bucket') || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
-  messagingSenderId: localStorage.getItem('fb_messaging_sender_id') || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "...",
-  appId: localStorage.getItem('fb_app_id') || import.meta.env.VITE_FIREBASE_APP_ID || "..."
+  apiKey: localStorage.getItem('fb_api_key') || import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCMBakjmKmcJl6WEFkSjmPS7iKRJSPNlf0",
+  authDomain: localStorage.getItem('fb_auth_domain') || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gen-lang-client-0698853496.firebaseapp.com",
+  databaseURL: "https://gen-lang-client-0698853496-default-rtdb.firebaseio.com",
+  projectId: localStorage.getItem('fb_project_id') || import.meta.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0698853496",
+  storageBucket: localStorage.getItem('fb_storage_bucket') || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0698853496.firebasestorage.app",
+  messagingSenderId: localStorage.getItem('fb_messaging_sender_id') || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "517438076",
+  appId: localStorage.getItem('fb_app_id') || import.meta.env.VITE_FIREBASE_APP_ID || "1:517438076:web:eb2d6156caf063415427f9",
+  measurementId: "G-EF42069ZSS"
 };
 
 // Firebase 앱 초기화 (싱글톤 패턴)

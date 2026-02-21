@@ -207,14 +207,16 @@ const App: React.FC = () => {
               </button>
             )}
 
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${
-              isLocalMode 
-                ? 'bg-orange-50 text-orange-600 border-orange-200' 
-                : 'bg-green-50 text-green-600 border-green-200'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isLocalMode ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></span>
-              {isLocalMode ? 'LOCAL MODE' : 'CLOUD SYNC'}
-            </div>
+            {isAdmin && (
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${
+                isLocalMode 
+                  ? 'bg-orange-50 text-orange-600 border-orange-200' 
+                  : 'bg-green-50 text-green-600 border-green-200'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isLocalMode ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></span>
+                {isLocalMode ? 'LOCAL MODE' : 'CLOUD SYNC'}
+              </div>
+            )}
 
             {user ? (
               <div className="flex items-center gap-3">
