@@ -69,6 +69,7 @@ const AdminDashboard: React.FC<Props> = ({
   
   // Upload State
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     if (pageContents[selectedPageId]) {
@@ -184,31 +185,34 @@ const AdminDashboard: React.FC<Props> = ({
   };
 
   // Improved File Upload Handler - Using Local Preview for simplicity if Firebase is too complex
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void | Promise<void>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { 
-        alert('이미지 파일이 너무 큽니다. 5MB 이하의 파일을 권장합니다.');
+      if (file.size > 50 * 1024 * 1024) { 
+        alert('파일이 너무 큽니다. 50MB 이하의 파일을 권장합니다.');
         return;
       }
 
       setIsUploading(true);
+      setUploadProgress(0);
       try {
-        // Firebase Storage를 계속 사용할 수도 있지만, 복잡함을 피하기 위해 
-        // 로컬에서는 Base64로 처리하거나 Firebase 설정을 확인하라는 메시지를 띄웁니다.
-        const downloadUrl = await uploadFile(file, 'images');
-        callback(downloadUrl);
+        const downloadUrl = await uploadFile(file, 'images', (progress) => {
+          setUploadProgress(progress);
+        });
+        await callback(downloadUrl);
       } catch (error) {
-        console.error(error);
+        console.error("Upload failed:", error);
         // Fallback: 로컬 미리보기 (Base64) - 서버 연동 없이도 작동하게 함
         const reader = new FileReader();
-        reader.onloadend = () => {
-          callback(reader.result as string);
-          alert('Firebase Storage 연결 실패로 로컬(Base64)로 저장되었습니다. 구글 드라이브 백업을 권장합니다.');
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          await callback(base64);
+          alert('이미지 서버 연결 실패로 로컬(Base64)로 저장되었습니다. 구글 드라이브 백업을 권장합니다.');
         };
         reader.readAsDataURL(file);
       } finally {
         setIsUploading(false);
+        setUploadProgress(0);
       }
     }
     e.target.value = '';
@@ -223,9 +227,16 @@ const AdminDashboard: React.FC<Props> = ({
     });
   };
 
-  const handleProductFieldChange = (id: string, field: keyof Product, value: any) => {
-    const updated = products.map(p => p.id === id ? { ...p, [field]: value } : p);
-    setProducts(updated);
+  const handleProductFieldChange = async (id: string, field: keyof Product, value: any) => {
+    const previousProducts = [...products];
+    try {
+      const updated = products.map(p => p.id === id ? { ...p, [field]: value } : p);
+      await setProducts(updated);
+    } catch (error) {
+      console.error("Failed to update product:", error);
+      setProducts(previousProducts);
+      alert('상품 정보 저장 중 오류가 발생했습니다. 이전 상태로 복구합니다.');
+    }
   };
 
   const handleReplaceProductImage = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -286,10 +297,21 @@ const AdminDashboard: React.FC<Props> = ({
   };
 
   // --- Page Handlers ---
-  const handlePageFieldChange = (field: keyof PageContent, value: any) => {
-    const updated = { ...pageForm, [field]: value };
-    setPageForm(updated);
-    setPageContents({ ...pageContents, [selectedPageId]: updated });
+  const handlePageFieldChange = async (field: keyof PageContent, value: any) => {
+    const previousPageForm = { ...pageForm };
+    const previousPageContents = { ...pageContents };
+    
+    try {
+      const updated = { ...pageForm, [field]: value };
+      setPageForm(updated);
+      await setPageContents({ ...pageContents, [selectedPageId]: updated });
+    } catch (error) {
+      console.error("Failed to update page content:", error);
+      // Restore previous state on error
+      setPageForm(previousPageForm);
+      setPageContents(previousPageContents);
+      alert('데이터 저장 중 오류가 발생했습니다. 이전 상태로 복구합니다.');
+    }
   };
 
   const handleSectionChange = (index: number, field: 'title' | 'content', value: string) => {
@@ -382,9 +404,27 @@ const AdminDashboard: React.FC<Props> = ({
       {/* Global Upload Loading Indicator */}
       {isUploading && (
         <div className="fixed inset-0 bg-black/50 z-[999] flex items-center justify-center backdrop-blur-sm">
-           <div className="bg-white p-6 rounded-2xl flex flex-col items-center gap-4 shadow-2xl">
-              <div className="w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="font-bold text-deepgreen">이미지를 서버에 저장 중입니다...</p>
+           <div className="bg-white p-8 rounded-3xl flex flex-col items-center gap-6 shadow-2xl max-w-sm w-full mx-4">
+              <div className="relative w-20 h-20">
+                <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
+                <div 
+                  className="absolute inset-0 border-4 border-gold-500 rounded-full border-t-transparent animate-spin"
+                  style={{ animationDuration: '1s' }}
+                ></div>
+                <div className="absolute inset-0 flex items-center justify-center font-bold text-deepgreen text-sm">
+                  {uploadProgress}%
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-deepgreen text-lg mb-1">파일을 업로드 중입니다</p>
+                <p className="text-gray-500 text-xs">잠시만 기다려 주세요. 대용량 파일은 시간이 걸릴 수 있습니다.</p>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="bg-gold-500 h-full transition-all duration-300" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
            </div>
         </div>
       )}

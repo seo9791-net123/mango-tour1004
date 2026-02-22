@@ -35,32 +35,30 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
 
         <div className="space-y-16 mb-12">
-           {content.sections.map((section, idx) => (
-              <div key={idx} className={`flex flex-col lg:flex-row gap-8 items-center ${idx % 2 !== 0 ? 'lg:flex-row-reverse' : ''}`}>
-                 <div className="flex-1 space-y-3">
-                    <h3 className="text-2xl font-bold text-deepgreen uppercase leading-tight">{section.title}</h3>
-                    <div className="h-0.5 w-10 bg-gold-400"></div>
-                    <p className="text-gray-500 leading-relaxed text-sm font-light">{section.content}</p>
-                    <button className="text-gold-600 font-bold text-[10px] uppercase hover:underline">일정 보기 +</button>
+           {Array.from({ length: Math.max(content.sections.length, content.galleryImages.length) }).map((_, idx) => {
+              const section = content.sections[idx] || { title: '새로운 투어 코스', content: '상세 일정은 준비 중입니다.' };
+              const image = content.galleryImages[idx] || (idx === 0 ? content.introImage : 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800');
+              return (
+                 <div key={idx} className={`flex flex-col lg:flex-row gap-8 items-center ${idx % 2 !== 0 ? 'lg:flex-row-reverse' : ''}`}>
+                    <div className="flex-1 space-y-3">
+                       <h3 className="text-2xl font-bold text-deepgreen uppercase leading-tight">{section.title}</h3>
+                       <div className="h-0.5 w-10 bg-gold-400"></div>
+                       <p className="text-gray-500 leading-relaxed text-sm font-light">{section.content}</p>
+                       <button className="text-gold-600 font-bold text-[10px] uppercase hover:underline">일정 보기 +</button>
+                    </div>
+                    <div className="flex-1 w-full">
+                       <img 
+                         src={image} 
+                         className="w-full h-[300px] object-cover rounded-2xl shadow-xl border border-gray-100" 
+                         alt={section.title} 
+                       />
+                    </div>
                  </div>
-                 <div className="flex-1 w-full">
-                    <img 
-                      src={content.galleryImages[idx] || (idx === 0 ? content.introImage : 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800')} 
-                      className="w-full h-[300px] object-cover rounded-2xl shadow-xl border border-gray-100" 
-                      alt={section.title} 
-                    />
-                 </div>
-              </div>
-           ))}
+              );
+           })}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-8 border-t border-gray-100">
-           {content.galleryImages.slice(content.sections.length).map((img, idx) => (
-               <div key={idx} className="group relative h-40 overflow-hidden rounded-xl shadow-md">
-                  <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Tour Additional ${idx}`} />
-               </div>
-           ))}
-        </div>
+
       </section>
     </div>
   );

@@ -49,7 +49,8 @@ const EventPage: React.FC<Props> = ({ content, onBack, onEventClick, isLoggedIn,
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           {content.sections.map((section, idx) => {
+           {Array.from({ length: Math.max(content.sections.length, content.galleryImages.length) }).map((_, idx) => {
+               const section = content.sections[idx] || { title: '새로운 이벤트', content: '상세 내용은 문의 바랍니다.' };
                const eventImg = content.galleryImages[idx] || 'https://images.unsplash.com/photo-1595842858599-4c274b3d3278?w=800';
                return (
                   <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group border border-gray-100 flex flex-col h-full">

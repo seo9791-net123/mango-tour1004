@@ -35,7 +35,7 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
                 <div className="h-1 w-16 bg-gold-500"></div>
                 <p className="text-sm leading-relaxed font-light text-gray-700 whitespace-pre-line">{content.introText}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                   {content.sections.slice(0, 2).map((section, idx) => (
+                   {content.sections.map((section, idx) => (
                       <div key={idx} className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
                          <h4 className="font-bold mb-1 text-deepgreen flex items-center gap-2">
                            <span className="w-1 h-3 bg-gold-500 rounded-full"></span>

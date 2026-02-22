@@ -16,6 +16,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<VideoItem>({ id: '', title: '', url: '' });
 
@@ -24,8 +25,11 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
     const file = e.target.files?.[0];
     if (file) {
       setIsUploading(true);
+      setUploadProgress(0);
       try {
-        const videoUrl = await uploadFile(file, 'videos');
+        const videoUrl = await uploadFile(file, 'videos', (progress) => {
+          setUploadProgress(progress);
+        });
         
         const newVideo: VideoItem = {
           id: Date.now().toString(),
@@ -39,6 +43,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
         alert('동영상 업로드 실패: ' + error);
       } finally {
         setIsUploading(false);
+        setUploadProgress(0);
       }
     }
   };
@@ -48,13 +53,17 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
     const file = e.target.files?.[0];
     if (file) {
         setIsUploading(true);
+        setUploadProgress(0);
         try {
-            const videoUrl = await uploadFile(file, 'videos');
+            const videoUrl = await uploadFile(file, 'videos', (progress) => {
+              setUploadProgress(progress);
+            });
             setEditForm(prev => ({ ...prev, url: videoUrl }));
         } catch (error) {
             alert('동영상 교체 실패: ' + error);
         } finally {
             setIsUploading(false);
+            setUploadProgress(0);
         }
     }
   };
@@ -102,31 +111,48 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
               </button>
             )}
             <div>
-              <h2 className="text-xl font-bold text-gold-400">골프장 현장 영상</h2>
-              <p className="text-gray-400 text-xs mt-1">기존 영상 수정 및 새로운 영상을 자유롭게 업로드하세요.</p>
+              <h2 className="text-xl font-bold text-gold-400">동영상</h2>
+              <p className="text-gray-400 text-xs mt-1">
+                {isAdmin ? '기존 영상 수정 및 새로운 영상을 자유롭게 업로드하세요.' : '망고투어의 다양한 현장 영상을 확인해보세요.'}
+              </p>
             </div>
           </div>
 
-          <div className="flex gap-2 w-full md:w-auto">
-            <input 
-              type="file" 
-              accept="video/*" 
-              className="hidden" 
-              ref={fileInputRef} 
-              onChange={handleFileUpload} 
-            />
-            <button 
-              onClick={triggerUpload}
-              disabled={isUploading}
-              className="flex-1 md:flex-none bg-gold-500 text-white px-5 py-2 rounded-full hover:bg-gold-600 font-bold transition flex items-center justify-center gap-2 text-xs shadow-lg"
-            >
-              {isUploading ? (
-                <span className="animate-pulse">서버에 저장 중...</span>
-              ) : (
-                <><span>🎥</span> 새 영상 추가</>
-              )}
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex gap-2 w-full md:w-auto">
+              <input 
+                type="file" 
+                accept="video/*" 
+                className="hidden" 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+              />
+              <button 
+                onClick={triggerUpload}
+                disabled={isUploading}
+                className="flex-1 md:flex-none bg-gold-500 text-white px-5 py-2 rounded-full hover:bg-gold-600 font-bold transition flex flex-col items-center justify-center gap-1 text-xs shadow-lg min-w-[120px]"
+              >
+                {isUploading ? (
+                  <div className="w-full">
+                    <div className="flex justify-between mb-1">
+                      <span className="animate-pulse">업로드 중...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gold-700 rounded-full h-1.5">
+                      <div 
+                        className="bg-white h-1.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span>🎥</span> 새 영상 추가
+                  </div>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Video Grid */}
@@ -148,12 +174,29 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
                   />
                   {editingId === video.id && (
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center group/edit">
-                      <button 
-                        onClick={() => editFileInputRef.current?.click()}
-                        className="bg-white/20 hover:bg-white/40 text-white px-3 py-1.5 rounded-lg border border-white/50 text-[10px] font-bold transition backdrop-blur-md"
-                      >
-                        {isUploading ? '업로드 중...' : '영상 파일 교체 📂'}
-                      </button>
+                      <div className="flex flex-col items-center gap-2 w-full px-4">
+                        <button 
+                          onClick={() => editFileInputRef.current?.click()}
+                          disabled={isUploading}
+                          className="bg-white/20 hover:bg-white/40 text-white px-3 py-1.5 rounded-lg border border-white/50 text-[10px] font-bold transition backdrop-blur-md w-full max-w-[140px]"
+                        >
+                          {isUploading ? '업로드 중...' : '영상 파일 교체 📂'}
+                        </button>
+                        {isUploading && (
+                          <div className="w-full max-w-[140px]">
+                            <div className="flex justify-between text-[8px] text-white mb-1">
+                              <span>진행률</span>
+                              <span>{uploadProgress}%</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-1">
+                              <div 
+                                className="bg-gold-500 h-1 rounded-full transition-all duration-300" 
+                                style={{ width: `${uploadProgress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <input 
                         type="file" 
                         accept="video/*" 

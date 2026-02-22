@@ -44,20 +44,24 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
       <section className="py-12 bg-white">
          <div className="max-w-7xl mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               {content.sections.map((section, idx) => (
-                  <div key={idx} className="group cursor-pointer">
-                     <div className="overflow-hidden rounded-2xl shadow-lg mb-3 h-52 relative">
-                        <img 
-                          src={content.galleryImages[idx] || 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800'} 
-                          className="w-full h-full object-cover transform group-hover:scale-110 transition duration-1000" 
-                          alt={`Golf ${idx}`} 
-                        />
-                        <div className="absolute top-3 left-3 bg-gold-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase">Course {idx + 1}</div>
-                     </div>
-                     <h3 className="text-lg font-bold mb-1 group-hover:text-gold-600 transition text-deepgreen">{section.title}</h3>
-                     <p className="text-gray-500 text-[10px] leading-relaxed">{section.content}</p>
-                  </div>
-               ))}
+               {Array.from({ length: Math.max(content.sections.length, content.galleryImages.length) }).map((_, idx) => {
+                  const section = content.sections[idx] || { title: '새로운 코스', content: '상세 정보는 준비 중입니다.' };
+                  const image = content.galleryImages[idx] || 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800';
+                  return (
+                    <div key={idx} className="group cursor-pointer">
+                       <div className="overflow-hidden rounded-2xl shadow-lg mb-3 h-52 relative">
+                          <img 
+                            src={image} 
+                            className="w-full h-full object-cover transform group-hover:scale-110 transition duration-1000" 
+                            alt={`Golf ${idx}`} 
+                          />
+                          <div className="absolute top-3 left-3 bg-gold-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase">Course {idx + 1}</div>
+                       </div>
+                       <h3 className="text-lg font-bold mb-1 group-hover:text-gold-600 transition text-deepgreen">{section.title}</h3>
+                       <p className="text-gray-500 text-[10px] leading-relaxed">{section.content}</p>
+                    </div>
+                  );
+               })}
             </div>
          </div>
       </section>

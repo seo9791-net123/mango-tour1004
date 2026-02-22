@@ -43,6 +43,26 @@ const App: React.FC = () => {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
 
+  // --- Session Persistence ---
+  useEffect(() => {
+    const savedUser = localStorage.getItem('mango_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Failed to parse saved user", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('mango_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('mango_user');
+    }
+  }, [user]);
+
   // --- Firestore Integration Handlers ---
 
   // Initial Data Load
@@ -107,18 +127,29 @@ const App: React.FC = () => {
   };
 
   const handleUpdatePageContents = async (newContents: Record<string, PageContent>) => {
+    const previousContents = { ...pageContents };
     setPageContents(newContents);
-    // Determine which page changed to save efficiently, or save all if bulk update
-    // For AdminDashboard, usually one page is edited at a time, but the state object is replaced.
-    // We'll sync all for simplicity or optimized by checking differences in future.
-    await firestoreService.syncAllPages(newContents);
+    try {
+      await firestoreService.syncAllPages(newContents);
+    } catch (error) {
+      console.error("Failed to sync page contents:", error);
+      setPageContents(previousContents);
+      throw error; // Re-throw so the caller (AdminDashboard) can handle it
+    }
   };
 
-  const [users, setUsers] = useState<User[]>([
-    { id: 'admin', username: 'admin', role: 'admin', nickname: '관리자' },
-    { id: 'u1', username: 'user1', role: 'user', nickname: '골프왕' },
-    { id: 'u2', username: 'user2', role: 'user', nickname: '여행좋아' }
-  ]);
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('mango_users_db');
+    return saved ? JSON.parse(saved) : [
+      { id: 'admin', username: 'admin', role: 'admin', nickname: '관리자' },
+      { id: 'u1', username: 'user1', role: 'user', nickname: '골프왕' },
+      { id: 'u2', username: 'user2', role: 'user', nickname: '여행좋아' }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mango_users_db', JSON.stringify(users));
+  }, [users]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
   const [generatedPlan, setGeneratedPlan] = useState<TripPlanResult | undefined>(undefined);
@@ -154,7 +185,11 @@ const App: React.FC = () => {
   };
 
   const resetAuthFields = () => { setUsername(''); setPassword(''); setNickname(''); };
-  const handleLogout = () => { setUser(null); setCurrentPage('home'); };
+  const handleLogout = () => { 
+    setUser(null); 
+    localStorage.removeItem('mango_user');
+    setCurrentPage('home'); 
+  };
   const handleProductClick = (id: string) => {
     const product = products.find(p => p.id === id);
     if (product) setSelectedProduct(product);
@@ -190,7 +225,7 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <header className="sticky top-0 z-40 bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
-          <button onClick={() => setCurrentPage('home')} className="flex items-center gap-2">
+          <button onClick={() => window.location.href = '/'} className="flex items-center gap-2">
              <div className="w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-xs">M</div>
              <h1 className="text-lg font-bold text-deepgreen tracking-tight uppercase">MANGO TOUR</h1>
           </button>
