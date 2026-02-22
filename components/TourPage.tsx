@@ -10,6 +10,13 @@ interface Props {
 
 const TourPage: React.FC<Props> = ({ content, onBack }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [isGallerySliderOpen, setIsGallerySliderOpen] = useState(false);
+
+  const openGallerySlider = (index: number) => {
+    setGalleryIndex(index);
+    setIsGallerySliderOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
@@ -57,12 +64,15 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
                        <p className="text-gray-600 leading-relaxed text-lg font-bold">{section.content}</p>
                        <button className="text-gold-600 font-bold text-xs uppercase hover:underline">일정 보기 +</button>
                     </div>
-                    <div className="flex-1 w-full">
+                    <div className="flex-1 w-full relative group cursor-pointer" onClick={() => openGallerySlider(idx)}>
                        <img 
                          src={image} 
-                         className="w-full h-[300px] object-cover rounded-2xl shadow-xl border border-gray-100" 
+                         className="w-full h-[300px] object-cover rounded-2xl shadow-xl border border-gray-100 transform group-hover:scale-[1.02] transition duration-500" 
                          alt={section.title} 
                        />
+                       <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
+                         <span className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">슬라이드 보기</span>
+                       </div>
                     </div>
                  </div>
               );
@@ -74,6 +84,14 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
 
       {isSliderOpen && content.slides && (
         <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
+      )}
+
+      {isGallerySliderOpen && (
+        <SliderPopup 
+          images={content.galleryImages} 
+          initialIndex={galleryIndex} 
+          onClose={() => setIsGallerySliderOpen(false)} 
+        />
       )}
     </div>
   );

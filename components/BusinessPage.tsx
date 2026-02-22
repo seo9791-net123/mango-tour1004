@@ -10,6 +10,13 @@ interface Props {
 
 const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [isGallerySliderOpen, setIsGallerySliderOpen] = useState(false);
+
+  const openGallerySlider = (index: number) => {
+    setGalleryIndex(index);
+    setIsGallerySliderOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
@@ -77,9 +84,16 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                {content.galleryImages.map((img, idx) => (
-                  <div key={idx} className="group relative overflow-hidden rounded-xl shadow-md h-48">
+                  <div 
+                    key={idx} 
+                    className="group relative overflow-hidden rounded-xl shadow-md h-48 cursor-pointer"
+                    onClick={() => openGallerySlider(idx)}
+                  >
                      <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Gallery ${idx}`} />
-                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-3">
+                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500 flex items-center justify-center">
+                        <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm text-[10px]">슬라이드 보기</span>
+                     </div>
+                     <div className="absolute bottom-3 left-3 text-white opacity-100 group-hover:opacity-0 transition-opacity">
                         <p className="text-white font-bold text-[10px] uppercase tracking-tighter">VIP Service {idx + 1}</p>
                      </div>
                   </div>
@@ -98,6 +112,14 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
 
       {isSliderOpen && content.slides && (
         <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
+      )}
+
+      {isGallerySliderOpen && (
+        <SliderPopup 
+          images={content.galleryImages} 
+          initialIndex={galleryIndex} 
+          onClose={() => setIsGallerySliderOpen(false)} 
+        />
       )}
     </div>
   );

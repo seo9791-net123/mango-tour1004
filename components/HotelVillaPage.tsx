@@ -10,6 +10,13 @@ interface Props {
 
 const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [isGallerySliderOpen, setIsGallerySliderOpen] = useState(false);
+
+  const openGallerySlider = (index: number) => {
+    setGalleryIndex(index);
+    setIsGallerySliderOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
@@ -67,9 +74,15 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
              {content.galleryImages.map((img, idx) => (
-                <div key={idx} className="group overflow-hidden rounded-xl shadow-md h-48 relative">
+                <div 
+                  key={idx} 
+                  className="group overflow-hidden rounded-xl shadow-md h-48 relative cursor-pointer"
+                  onClick={() => openGallerySlider(idx)}
+                >
                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Villa ${idx}`} />
-                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500"></div>
+                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500 flex items-center justify-center">
+                      <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm text-[10px]">슬라이드 보기</span>
+                   </div>
                    <div className="absolute bottom-3 left-3 text-white">
                       <p className="text-[9px] uppercase font-bold text-gold-400">Accommodation</p>
                       <h4 className="text-[11px] font-bold">Stay Gallery {idx + 1}</h4>
@@ -94,6 +107,14 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
 
       {isSliderOpen && content.slides && (
         <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
+      )}
+
+      {isGallerySliderOpen && (
+        <SliderPopup 
+          images={content.galleryImages} 
+          initialIndex={galleryIndex} 
+          onClose={() => setIsGallerySliderOpen(false)} 
+        />
       )}
     </div>
   );

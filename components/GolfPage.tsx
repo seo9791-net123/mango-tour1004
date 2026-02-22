@@ -10,6 +10,13 @@ interface Props {
 
 const GolfPage: React.FC<Props> = ({ content, onBack }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [isGallerySliderOpen, setIsGallerySliderOpen] = useState(false);
+
+  const openGallerySlider = (index: number) => {
+    setGalleryIndex(index);
+    setIsGallerySliderOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
