@@ -115,11 +115,10 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
 
   const handlePostClick = (post: CommunityPost) => {
     if (!user) {
-      alert('공개된 게시글입니다. 상세 내용을 보시려면 로그인이 필요할 수 있습니다.');
-      if (post.isPrivate) {
-        alert('이 글은 비공개 글입니다. 로그인 후 비밀번호를 입력해야 볼 수 있습니다.');
-        return;
+      if (confirm('게시글 상세 내용과 사진을 보시려면 로그인이 필요합니다. 로그인하시겠습니까?')) {
+        onReqLogin();
       }
+      return;
     }
 
     if (post.isPrivate && !isAdmin && post.author !== user?.nickname && post.author !== user?.username) {
@@ -351,29 +350,12 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 <div 
                     key={post.id} 
                     onClick={() => handlePostClick(post)}
-                    className="bg-white rounded-lg shadow-sm hover:shadow-xl transition duration-300 cursor-pointer border border-gray-100 overflow-hidden flex flex-col h-full group"
+                    className="bg-white rounded-lg shadow-sm hover:shadow-xl transition duration-300 cursor-pointer border border-gray-100 overflow-hidden flex flex-col h-full group p-4"
                 >
-                    {/* Image Section */}
-                    <div className="h-36 bg-gray-200 overflow-hidden relative">
-                        {post.image ? (
-                            <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
-                        ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400">
-                                <span className="text-2xl mb-1">📝</span>
-                                <span className="text-[10px]">Text Only</span>
-                            </div>
-                        )}
-                        {!user && (
-                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                                <span className="text-white font-bold text-[10px] bg-black/50 px-2 py-1 rounded-full">🔒 로그인 필요</span>
-                           </div>
-                        )}
-                    </div>
-
                     {/* Content Section */}
-                    <div className="p-3 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start mb-1">
-                            <span className="text-[10px] font-bold text-gold-600 bg-gold-50 px-1.5 py-0.5 rounded-full">
+                    <div className="flex-1 flex flex-col">
+                        <div className="flex justify-between items-start mb-2">
+                            <span className="text-[10px] font-bold text-gold-600 bg-gold-50 px-2 py-0.5 rounded-full">
                                 {post.author}
                             </span>
                             <span className="text-[10px] text-gray-400">{post.date}</span>
@@ -382,13 +364,14 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                             {post.isPrivate && <span className="text-base">🔒</span>}
                             {post.title}
                         </h3>
-                        <p className="text-gray-600 text-base font-bold line-clamp-2 mb-3 flex-1 leading-relaxed">
+                        <p className="text-gray-600 text-base font-bold line-clamp-2 mb-4 flex-1 leading-relaxed">
                             {post.content}
                         </p>
-                        <div className="flex justify-between items-center text-[10px] text-gray-400 border-t pt-2">
-                            <div className="flex gap-2">
-                                <span>👀 {post.views}</span>
-                                <span>💬 {post.comments.length}</span>
+                        <div className="flex justify-between items-center text-[10px] text-gray-400 border-t pt-3">
+                            <div className="flex gap-3">
+                                <span className="flex items-center gap-1">👀 {post.views}</span>
+                                <span className="flex items-center gap-1">💬 {post.comments.length}</span>
+                                {post.image && <span className="text-gold-600 font-bold">🖼️ 사진포함</span>}
                             </div>
                         </div>
                     </div>

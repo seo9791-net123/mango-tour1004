@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PageContent } from '../types';
+import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
@@ -8,6 +9,8 @@ interface Props {
 }
 
 const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
+  const [isSliderOpen, setIsSliderOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
       {/* Compact Hero - 180px */}
@@ -34,9 +37,22 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
                 <h2 className="text-3xl md:text-4xl font-black uppercase leading-tight text-deepgreen">{content.introTitle}</h2>
                 <div className="h-1 w-16 bg-gold-500"></div>
                 <p className="text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
+                {content.slides && content.slides.length > 0 && (
+                  <button 
+                    onClick={() => setIsSliderOpen(true)}
+                    className="mt-4 px-6 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2"
+                  >
+                    <span>🖼️</span> 상세 갤러리 슬라이드 보기
+                  </button>
+                )}
              </div>
-             <div className="flex-1 relative">
-                <img src={content.introImage} className="w-full h-[250px] object-cover rounded-3xl shadow-xl" alt="Intro" />
+             <div className="flex-1 relative group cursor-pointer" onClick={() => content.slides && content.slides.length > 0 && setIsSliderOpen(true)}>
+                <img src={content.introImage} className="w-full h-[250px] object-cover rounded-3xl shadow-xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
+                {content.slides && content.slides.length > 0 && (
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
+                    <span className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">슬라이드 보기</span>
+                  </div>
+                )}
              </div>
           </div>
 
@@ -75,6 +91,10 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
             </div>
          </div>
       </section>
+
+      {isSliderOpen && content.slides && (
+        <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
+      )}
     </div>
   );
 };

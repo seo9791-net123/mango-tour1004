@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PageContent } from '../types';
+import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
@@ -8,6 +9,8 @@ interface Props {
 }
 
 const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
+  const [isSliderOpen, setIsSliderOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden animate-fade-in">
       {/* Compact Hero - 180px */}
@@ -37,6 +40,14 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
                  <h2 className="text-3xl md:text-5xl font-black uppercase mb-3 text-gold-500" style={{ fontFamily: 'serif' }}>{content.introTitle}</h2>
                  <div className="h-1 w-12 bg-white/20"></div>
                  <p className="text-xl leading-relaxed text-gray-300 font-bold whitespace-pre-line">{content.introText}</p>
+                 {content.slides && content.slides.length > 0 && (
+                    <button 
+                      onClick={() => setIsSliderOpen(true)}
+                      className="mt-4 px-6 py-3 bg-gold-600 text-white rounded-xl font-bold text-sm hover:bg-gold-500 transition shadow-lg flex items-center gap-2"
+                    >
+                      <span>🖼️</span> 상세 갤러리 슬라이드 보기
+                    </button>
+                 )}
                  <div className="space-y-3">
                     {content.sections.map((section, idx) => (
                        <div key={idx} className="p-5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition cursor-default">
@@ -49,8 +60,13 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
                     <button className="bg-gold-600 text-white px-6 py-2.5 rounded-full font-bold hover:bg-gold-500 transition shadow-xl text-[10px] uppercase tracking-widest">VIP 상담 신청</button>
                  </div>
               </div>
-              <div className="flex-1 w-full">
-                 <img src={content.introImage} className="w-full h-[300px] object-cover rounded-3xl shadow-[0_0_20px_rgba(197,160,40,0.1)] border border-white/10" alt="Nightlife" />
+              <div className="flex-1 w-full relative group cursor-pointer" onClick={() => content.slides && content.slides.length > 0 && setIsSliderOpen(true)}>
+                 <img src={content.introImage} className="w-full h-[300px] object-cover rounded-3xl shadow-[0_0_20px_rgba(197,160,40,0.1)] border border-white/10 group-hover:scale-[1.02] transition duration-500" alt="Nightlife" />
+                 {content.slides && content.slides.length > 0 && (
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
+                    <span className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">슬라이드 보기</span>
+                  </div>
+                )}
               </div>
            </div>
 
@@ -71,6 +87,10 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
            </div>
         </div>
       </section>
+
+      {isSliderOpen && content.slides && (
+        <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
+      )}
     </div>
   );
 };

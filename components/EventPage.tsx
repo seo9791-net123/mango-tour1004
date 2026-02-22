@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PageContent } from '../types';
+import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
@@ -11,6 +12,8 @@ interface Props {
 }
 
 const EventPage: React.FC<Props> = ({ content, onBack, onEventClick, isLoggedIn, onReqLogin }) => {
+  const [isSliderOpen, setIsSliderOpen] = useState(false);
+
   const handleDetailClick = (title: string, contentText: string, image: string) => {
     if (!isLoggedIn) {
       if (confirm('상세 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
@@ -46,6 +49,14 @@ const EventPage: React.FC<Props> = ({ content, onBack, onEventClick, isLoggedIn,
            <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase mb-3 tracking-tight">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
            <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
+           {content.slides && content.slides.length > 0 && (
+              <button 
+                onClick={() => setIsSliderOpen(true)}
+                className="mt-6 px-8 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2 mx-auto"
+              >
+                <span>🖼️</span> 상세 갤러리 슬라이드 보기
+              </button>
+           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -54,13 +65,18 @@ const EventPage: React.FC<Props> = ({ content, onBack, onEventClick, isLoggedIn,
                const eventImg = content.galleryImages[idx] || 'https://images.unsplash.com/photo-1595842858599-4c274b3d3278?w=800';
                return (
                   <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group border border-gray-100 flex flex-col h-full">
-                    <div className="h-44 overflow-hidden relative">
+                    <div className="h-44 overflow-hidden relative group/img cursor-pointer" onClick={() => content.slides && content.slides.length > 0 && setIsSliderOpen(true)}>
                       <img 
                         src={eventImg} 
                         className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" 
                         alt={section.title} 
                       />
                       <div className="absolute top-3 left-3 bg-deepgreen text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shadow-md">진행중</div>
+                      {content.slides && content.slides.length > 0 && (
+                        <div className="absolute inset-0 bg-black/20 group-hover/img:bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition duration-500">
+                          <span className="text-white font-bold text-[10px] bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">슬라이드 보기</span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-5 space-y-3 flex-1 flex flex-col">
                       <h3 className="text-2xl font-black group-hover:text-gold-600 transition duration-300 text-deepgreen leading-tight">{section.title}</h3>
@@ -94,6 +110,10 @@ const EventPage: React.FC<Props> = ({ content, onBack, onEventClick, isLoggedIn,
             </button>
          </div>
       </section>
+
+      {isSliderOpen && content.slides && (
+        <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
+      )}
     </div>
   );
 };

@@ -84,6 +84,11 @@ export interface PageSection {
   content: string;
 }
 
+export interface PageSlide {
+  image: string;
+  description: string;
+}
+
 // Updated Interface for Dynamic Page Content with manageable sections
 export interface PageContent {
   id: string;         // e.g., 'business', 'golf', 'food'
@@ -96,6 +101,7 @@ export interface PageContent {
   introImage: string; 
   galleryImages: string[];
   sections: PageSection[]; // Manageable text blocks for the admin
+  slides?: PageSlide[];    // Added for popup slider
 }
 
 export interface PopupNotification {

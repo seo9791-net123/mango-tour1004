@@ -343,6 +343,23 @@ const AdminDashboard: React.FC<Props> = ({
     handlePageFieldChange('galleryImages', newGallery);
   };
 
+  const handleAddSlide = () => {
+    const newSlides = [...(pageForm.slides || []), { image: 'https://via.placeholder.com/800x600', description: '슬라이드 설명을 입력하세요.' }];
+    handlePageFieldChange('slides', newSlides);
+  };
+
+  const handleRemoveSlide = (index: number) => {
+    if (!confirm('이 슬라이드를 삭제하시겠습니까?')) return;
+    const newSlides = (pageForm.slides || []).filter((_, i) => i !== index);
+    handlePageFieldChange('slides', newSlides);
+  };
+
+  const handleSlideChange = (index: number, field: 'image' | 'description', value: string) => {
+    const newSlides = [...(pageForm.slides || [])];
+    newSlides[index] = { ...newSlides[index], [field]: value };
+    handlePageFieldChange('slides', newSlides);
+  };
+
   const handlePopupChange = (field: keyof PopupNotification, value: any) => {
     setPopup({ ...popup, [field]: value });
   };
@@ -880,6 +897,53 @@ const AdminDashboard: React.FC<Props> = ({
                           <div className="col-span-3 aspect-video border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-gray-400 italic text-xs">
                             이미지가 없습니다.
                           </div>
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
+                            <span className="text-xl">5️⃣</span> 팝업 슬라이드 관리 (총 {(pageForm.slides || []).length}개)
+                        </h4>
+                        <button 
+                          onClick={handleAddSlide}
+                          className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-sm hover:bg-blue-700 transition"
+                        >
+                          + 슬라이드 추가
+                        </button>
+                    </div>
+                    <div className="space-y-4">
+                        {(pageForm.slides || []).map((slide, idx) => (
+                            <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 relative group">
+                                <button 
+                                  onClick={() => handleRemoveSlide(idx)}
+                                  className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition z-10"
+                                >
+                                  ✕
+                                </button>
+                                <div className="w-full md:w-32 h-24 bg-gray-100 rounded-xl overflow-hidden relative group/img shrink-0">
+                                    <img src={slide.image} className="w-full h-full object-cover" alt={`Slide ${idx}`} />
+                                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-white text-[10px] font-bold cursor-pointer">
+                                        변경
+                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handleSlideChange(idx, 'image', url))} />
+                                    </label>
+                                </div>
+                                <div className="flex-1 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">슬라이드 {idx + 1} 설명</span>
+                                    </div>
+                                    <textarea 
+                                        className="w-full text-xs text-gray-600 bg-gray-50 p-2 rounded-lg outline-none resize-none h-16 border-transparent focus:bg-white focus:border-gold-200 border"
+                                        value={slide.description}
+                                        onChange={(e) => handleSlideChange(idx, 'description', e.target.value)}
+                                        placeholder="슬라이드에 표시될 설명을 입력하세요."
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        {(pageForm.slides || []).length === 0 && (
+                          <p className="text-center text-gray-400 text-xs py-4 italic">등록된 슬라이드가 없습니다. [슬라이드 추가] 버튼을 눌러주세요.</p>
                         )}
                     </div>
                   </div>

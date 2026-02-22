@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PageContent } from '../types';
+import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
@@ -8,6 +9,8 @@ interface Props {
 }
 
 const TourPage: React.FC<Props> = ({ content, onBack }) => {
+  const [isSliderOpen, setIsSliderOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
       {/* Compact Hero - 180px */}
@@ -32,6 +35,14 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
            <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase mb-3">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
            <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
+           {content.slides && content.slides.length > 0 && (
+              <button 
+                onClick={() => setIsSliderOpen(true)}
+                className="mt-6 px-8 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2 mx-auto"
+              >
+                <span>🖼️</span> 상세 갤러리 슬라이드 보기
+              </button>
+           )}
         </div>
 
         <div className="space-y-16 mb-12">
@@ -60,6 +71,10 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
 
 
       </section>
+
+      {isSliderOpen && content.slides && (
+        <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
+      )}
     </div>
   );
 };
