@@ -31,17 +31,17 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
              <div className="space-y-6">
-                <h2 className="text-2xl md:text-3xl font-bold text-deepgreen uppercase leading-tight whitespace-pre-line">{content.introTitle}</h2>
+                <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase leading-tight whitespace-pre-line">{content.introTitle}</h2>
                 <div className="h-1 w-16 bg-gold-500"></div>
-                <p className="text-sm leading-relaxed font-light text-gray-700 whitespace-pre-line">{content.introText}</p>
+                <p className="text-xl leading-relaxed font-bold text-gray-700 whitespace-pre-line">{content.introText}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                    {content.sections.map((section, idx) => (
-                      <div key={idx} className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-                         <h4 className="font-bold mb-1 text-deepgreen flex items-center gap-2">
-                           <span className="w-1 h-3 bg-gold-500 rounded-full"></span>
+                      <div key={idx} className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
+                         <h4 className="font-black mb-2 text-deepgreen flex items-center gap-2 text-xl">
+                           <span className="w-1.5 h-4 bg-gold-500 rounded-full"></span>
                            {section.title}
                          </h4>
-                         <p className="text-gray-500 text-[10px] leading-relaxed">{section.content}</p>
+                         <p className="text-gray-600 text-base font-bold leading-relaxed">{section.content}</p>
                       </div>
                    ))}
                 </div>

@@ -31,9 +31,9 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row gap-8 items-center mb-12">
              <div className="flex-1 space-y-4">
-                <h2 className="text-2xl md:text-3xl font-bold uppercase leading-tight text-deepgreen">{content.introTitle}</h2>
+                <h2 className="text-3xl md:text-4xl font-black uppercase leading-tight text-deepgreen">{content.introTitle}</h2>
                 <div className="h-1 w-16 bg-gold-500"></div>
-                <p className="text-sm leading-relaxed text-gray-600 font-light whitespace-pre-line">{content.introText}</p>
+                <p className="text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
              </div>
              <div className="flex-1 relative">
                 <img src={content.introImage} className="w-full h-[250px] object-cover rounded-3xl shadow-xl" alt="Intro" />
@@ -43,8 +43,8 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
              {content.sections.map((section, idx) => (
                 <div key={idx} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-full hover:shadow-md transition">
-                   <h3 className="text-lg font-bold text-deepgreen mb-2">{section.title}</h3>
-                   <p className="text-gray-500 leading-relaxed text-[11px] flex-1">{section.content}</p>
+                   <h3 className="text-2xl font-black text-deepgreen mb-3">{section.title}</h3>
+                   <p className="text-gray-600 font-bold leading-relaxed text-lg flex-1">{section.content}</p>
                 </div>
              ))}
           </div>

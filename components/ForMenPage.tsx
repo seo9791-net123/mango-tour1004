@@ -34,14 +34,14 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
         <div className="max-w-7xl mx-auto px-4">
            <div className="flex flex-col lg:flex-row gap-8 items-center mb-16">
               <div className="flex-1 space-y-4">
-                 <h2 className="text-2xl md:text-4xl font-bold uppercase mb-2 text-gold-500" style={{ fontFamily: 'serif' }}>{content.introTitle}</h2>
+                 <h2 className="text-3xl md:text-5xl font-black uppercase mb-3 text-gold-500" style={{ fontFamily: 'serif' }}>{content.introTitle}</h2>
                  <div className="h-1 w-12 bg-white/20"></div>
-                 <p className="text-sm leading-relaxed text-gray-400 font-light whitespace-pre-line">{content.introText}</p>
+                 <p className="text-xl leading-relaxed text-gray-300 font-bold whitespace-pre-line">{content.introText}</p>
                  <div className="space-y-3">
                     {content.sections.map((section, idx) => (
-                       <div key={idx} className="p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition cursor-default">
-                          <h4 className="text-gold-500 font-bold mb-0.5 text-sm">{section.title}</h4>
-                          <p className="text-gray-500 text-[10px] leading-relaxed">{section.content}</p>
+                       <div key={idx} className="p-5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition cursor-default">
+                          <h4 className="text-gold-500 font-black mb-2 text-xl">{section.title}</h4>
+                          <p className="text-gray-400 text-base font-bold leading-relaxed">{section.content}</p>
                        </div>
                     ))}
                  </div>

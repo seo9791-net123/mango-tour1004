@@ -43,9 +43,9 @@ const EventPage: React.FC<Props> = ({ content, onBack, onEventClick, isLoggedIn,
 
       <section className="py-12 max-w-7xl mx-auto px-4">
         <div className="text-center mb-12">
-           <h2 className="text-2xl font-bold text-deepgreen uppercase mb-3 tracking-tight">{content.introTitle}</h2>
+           <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase mb-3 tracking-tight">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-sm leading-relaxed text-gray-500 font-light whitespace-pre-line">{content.introText}</p>
+           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -60,18 +60,18 @@ const EventPage: React.FC<Props> = ({ content, onBack, onEventClick, isLoggedIn,
                         className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" 
                         alt={section.title} 
                       />
-                      <div className="absolute top-3 left-3 bg-deepgreen text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase shadow-md">진행중</div>
+                      <div className="absolute top-3 left-3 bg-deepgreen text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shadow-md">진행중</div>
                     </div>
-                    <div className="p-5 space-y-2 flex-1 flex flex-col">
-                      <h3 className="text-base font-bold group-hover:text-gold-600 transition duration-300 text-deepgreen">{section.title}</h3>
-                      <p className="text-gray-500 text-[10px] leading-relaxed flex-1 line-clamp-2">{section.content}</p>
-                      <div className="pt-3 border-t border-gray-50 flex justify-between items-center">
-                        <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Promotion</span>
+                    <div className="p-5 space-y-3 flex-1 flex flex-col">
+                      <h3 className="text-2xl font-black group-hover:text-gold-600 transition duration-300 text-deepgreen leading-tight">{section.title}</h3>
+                      <p className="text-gray-600 text-lg font-bold leading-relaxed flex-1 line-clamp-3">{section.content}</p>
+                      <div className="pt-4 border-t border-gray-50 flex justify-between items-center">
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Promotion</span>
                         <button 
                           onClick={() => handleDetailClick(section.title, section.content, eventImg)}
-                          className="text-gold-600 font-bold text-[10px] hover:text-gold-700 flex items-center gap-1 transition-colors"
+                          className="text-gold-600 font-bold text-xs hover:text-gold-700 flex items-center gap-1 transition-colors"
                         >
-                          상세보기 <span className="text-sm">→</span>
+                          상세보기 <span className="text-base">→</span>
                         </button>
                       </div>
                     </div>

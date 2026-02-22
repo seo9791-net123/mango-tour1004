@@ -17,6 +17,7 @@ import CulturePage from './components/CulturePage';
 import ForMenPage from './components/ForMenPage';
 import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
+import BottomNav from './components/BottomNav';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP } from './constants';
 import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem, PopupNotification } from './types';
 import { firestoreService } from './services/firestoreService';
@@ -42,6 +43,7 @@ const App: React.FC = () => {
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const [popup, setPopup] = useState<PopupNotification>(INITIAL_POPUP);
   const [showPopup, setShowPopup] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
 
@@ -237,7 +239,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
+    <div className="min-h-screen bg-white flex flex-col font-sans pb-20 md:pb-0">
       <header className="sticky top-0 z-40 bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
           <button onClick={() => window.location.href = '/'} className="flex items-center gap-2">
@@ -355,7 +357,23 @@ const App: React.FC = () => {
          <p className="mt-1">© MANGO TOUR. All rights reserved.</p>
       </footer>
 
-      <ChatRoom user={user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
+      <ChatRoom 
+        user={user} 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} 
+      />
+
+      <BottomNav 
+        currentPage={currentPage} 
+        selectedCategory={selectedCategory}
+        onNavigate={(page, cat) => {
+          setCurrentPage(page as any);
+          if (cat) setSelectedCategory(cat);
+        }}
+        isChatOpen={isChatOpen} 
+        setIsChatOpen={setIsChatOpen} 
+      />
 
       {/* Popup Notification */}
       {showPopup && popup.isActive && (

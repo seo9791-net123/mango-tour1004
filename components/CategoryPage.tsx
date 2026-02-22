@@ -46,16 +46,16 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                   </div>
                 </div>
                 <div className="p-3">
-                  <div className="text-[10px] text-gold-600 font-bold mb-0.5">{product.location}</div>
-                  <h3 className="font-bold text-sm mb-1 text-gray-800 line-clamp-1">{product.title}</h3>
-                  <p className="text-gray-500 text-[11px] mb-3 line-clamp-2 h-8">{product.description}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-sm text-red-600">{product.price.toLocaleString()} VND~</span>
+                  <div className="text-[12px] text-gold-600 font-bold mb-1">{product.location}</div>
+                  <h3 className="font-black text-xl mb-2 text-gray-800 line-clamp-2 leading-tight">{product.title}</h3>
+                  <p className="text-gray-600 text-base font-bold mb-4 line-clamp-3 h-auto leading-relaxed">{product.description}</p>
+                  <div className="flex justify-between items-center mt-auto border-t pt-3">
+                    <span className="font-black text-lg text-red-600">{product.price.toLocaleString()} VND~</span>
                     <button 
                       onClick={() => onProductClick(product.id)}
-                      className="bg-deepgreen text-white px-2.5 py-1 rounded text-[10px] hover:bg-opacity-90 transition flex items-center gap-1"
+                      className="bg-deepgreen text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-opacity-90 transition flex items-center gap-1 shadow-md"
                     >
-                      견적보기 <span className="text-[9px]">↗</span>
+                      견적보기 <span className="text-xs">↗</span>
                     </button>
                   </div>
                 </div>

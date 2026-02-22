@@ -35,9 +35,9 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
 
       <section className="py-12 bg-gray-50 text-black border-b">
         <div className="max-w-7xl mx-auto px-4 text-center">
-           <h2 className="text-xl md:text-2xl font-bold uppercase mb-4 tracking-wide text-deepgreen">{content.introTitle}</h2>
+           <h2 className="text-3xl md:text-4xl font-black uppercase mb-4 tracking-wide text-deepgreen">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-sm md:text-base leading-relaxed text-gray-600 font-light whitespace-pre-line">{content.introText}</p>
+           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
         </div>
       </section>
 
@@ -49,16 +49,16 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
                   const image = content.galleryImages[idx] || 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800';
                   return (
                     <div key={idx} className="group cursor-pointer">
-                       <div className="overflow-hidden rounded-2xl shadow-lg mb-3 h-52 relative">
+                       <div className="overflow-hidden rounded-2xl shadow-lg mb-4 h-52 relative">
                           <img 
                             src={image} 
                             className="w-full h-full object-cover transform group-hover:scale-110 transition duration-1000" 
                             alt={`Golf ${idx}`} 
                           />
-                          <div className="absolute top-3 left-3 bg-gold-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase">Course {idx + 1}</div>
+                          <div className="absolute top-3 left-3 bg-gold-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Course {idx + 1}</div>
                        </div>
-                       <h3 className="text-lg font-bold mb-1 group-hover:text-gold-600 transition text-deepgreen">{section.title}</h3>
-                       <p className="text-gray-500 text-[10px] leading-relaxed">{section.content}</p>
+                       <h3 className="text-2xl font-black mb-2 group-hover:text-gold-600 transition text-deepgreen">{section.title}</h3>
+                       <p className="text-gray-600 text-lg font-bold leading-relaxed">{section.content}</p>
                     </div>
                   );
                })}

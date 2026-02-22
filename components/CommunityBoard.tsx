@@ -19,17 +19,22 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostImage, setNewPostImage] = useState<string>('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [postPassword, setPostPassword] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   
   // File input refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
-
+  
   // Detail & Edit Modal State
   const [viewingPost, setViewingPost] = useState<CommunityPost | null>(null);
   const [isEditing, setIsEditing] = useState(false); // Toggle Edit Mode
   const [editForm, setEditForm] = useState<CommunityPost | null>(null); // Temp data for editing
   const [commentInput, setCommentInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState<string | null>(null);
+  const [adminReplyInput, setAdminReplyInput] = useState('');
 
   // Handle Image Upload for New Post (Firebase Storage)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,6 +86,10 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
         alert('제목과 내용을 입력해주세요.');
         return;
     }
+    if (isPrivate && !postPassword) {
+        alert('비공개 글은 비밀번호가 필요합니다.');
+        return;
+    }
 
     const newPost: CommunityPost = {
       id: Date.now().toString(),
@@ -90,14 +99,64 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
       date: new Date().toISOString().split('T')[0],
       image: newPostImage,
       comments: [],
-      views: 0
+      views: 0,
+      isPrivate: isPrivate,
+      password: isPrivate ? postPassword : undefined
     };
 
     onUpdatePosts([newPost, ...posts]);
     setNewPostTitle('');
     setNewPostContent('');
     setNewPostImage('');
+    setIsPrivate(false);
+    setPostPassword('');
     setIsAdding(false);
+  };
+
+  const handlePostClick = (post: CommunityPost) => {
+    if (!user) {
+      alert('공개된 게시글입니다. 상세 내용을 보시려면 로그인이 필요할 수 있습니다.');
+      if (post.isPrivate) {
+        alert('이 글은 비공개 글입니다. 로그인 후 비밀번호를 입력해야 볼 수 있습니다.');
+        return;
+      }
+    }
+
+    if (post.isPrivate && !isAdmin && post.author !== user?.nickname && post.author !== user?.username) {
+      setShowPasswordPrompt(post.id);
+      return;
+    }
+
+    openPost(post);
+  };
+
+  const openPost = (post: CommunityPost) => {
+    // Increment view count when opening
+    const updatedPost = { ...post, views: post.views + 1 };
+    const updatedPosts = posts.map(p => p.id === post.id ? updatedPost : p);
+    onUpdatePosts(updatedPosts);
+    setViewingPost(updatedPost);
+    setIsEditing(false); // Reset edit mode when opening new post
+    setAdminReplyInput(post.adminReply || '');
+    setShowPasswordPrompt(null);
+    setPasswordInput('');
+  };
+
+  const handlePasswordSubmit = () => {
+    const post = posts.find(p => p.id === showPasswordPrompt);
+    if (post && post.password === passwordInput) {
+      openPost(post);
+    } else {
+      alert('비밀번호가 일치하지 않습니다.');
+    }
+  };
+
+  const handleSaveAdminReply = () => {
+    if (!viewingPost || !isAdmin) return;
+    const updatedPost = { ...viewingPost, adminReply: adminReplyInput };
+    setViewingPost(updatedPost);
+    onUpdatePosts(posts.map(p => p.id === updatedPost.id ? updatedPost : p));
+    alert('답변이 저장되었습니다.');
   };
 
   const handleDelete = (id: string) => {
@@ -108,15 +167,6 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
         setIsEditing(false);
       }
     }
-  };
-
-  const handlePostClick = (post: CommunityPost) => {
-    // Increment view count when opening
-    const updatedPost = { ...post, views: post.views + 1 };
-    const updatedPosts = posts.map(p => p.id === post.id ? updatedPost : p);
-    onUpdatePosts(updatedPosts);
-    setViewingPost(updatedPost);
-    setIsEditing(false); // Reset edit mode when opening new post
   };
 
   // Edit Functions
@@ -162,7 +212,8 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
         id: Date.now().toString(),
         author: user.nickname || user.username,
         content: commentInput,
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        isAdmin: isAdmin
     };
 
     const updatedPost = { 
@@ -192,8 +243,8 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 </button>
              )}
              <div>
-                <h2 className="text-xl font-bold text-deepgreen mb-1">커뮤니티 & 여행 후기</h2>
-                <p className="text-gray-500 text-xs">회원님들의 생생한 여행 사진과 이야기를 들려주세요.</p>
+                <h2 className="text-3xl md:text-4xl font-black text-deepgreen mb-2">커뮤니티 & 여행 후기</h2>
+                <p className="text-gray-700 text-lg font-bold">회원님들의 생생한 여행 사진과 이야기를 들려주세요.</p>
              </div>
           </div>
           
@@ -258,6 +309,27 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                   value={newPostContent}
                   onChange={e => setNewPostContent(e.target.value)}
                 />
+
+                <div className="flex items-center gap-4 p-2 bg-gray-50 rounded-lg">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={isPrivate} 
+                      onChange={(e) => setIsPrivate(e.target.checked)}
+                      className="w-4 h-4 accent-gold-500"
+                    />
+                    <span className="text-xs font-bold text-gray-600">비공개 설정</span>
+                  </label>
+                  {isPrivate && (
+                    <input 
+                      type="password"
+                      placeholder="비밀번호 입력"
+                      value={postPassword}
+                      onChange={(e) => setPostPassword(e.target.value)}
+                      className="flex-1 border border-gray-300 p-1.5 rounded-md text-xs outline-none focus:ring-1 focus:ring-gold-500"
+                    />
+                  )}
+                </div>
                 
                 <div className="flex justify-end gap-2 pt-1">
                   <button onClick={() => setIsAdding(false)} className="px-3 py-1.5 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition text-xs">취소</button>
@@ -306,10 +378,11 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                             </span>
                             <span className="text-[10px] text-gray-400">{post.date}</span>
                         </div>
-                        <h3 className="font-bold text-sm text-gray-800 mb-1 line-clamp-1 group-hover:text-deepgreen transition">
+                        <h3 className="font-black text-xl text-gray-800 mb-2 line-clamp-1 group-hover:text-deepgreen transition flex items-center gap-1">
+                            {post.isPrivate && <span className="text-base">🔒</span>}
                             {post.title}
                         </h3>
-                        <p className="text-gray-500 text-[11px] line-clamp-2 mb-2 flex-1">
+                        <p className="text-gray-600 text-base font-bold line-clamp-2 mb-3 flex-1 leading-relaxed">
                             {post.content}
                         </p>
                         <div className="flex justify-between items-center text-[10px] text-gray-400 border-t pt-2">
@@ -323,6 +396,42 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
             ))}
         </div>
       </div>
+
+      {/* Password Prompt Modal */}
+      {showPasswordPrompt && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl animate-scale-in">
+            <div className="text-center mb-4">
+              <span className="text-3xl">🔒</span>
+              <h3 className="font-bold text-gray-800 mt-2">비공개 게시글</h3>
+              <p className="text-[10px] text-gray-500 mt-1">작성자 또는 관리자만 볼 수 있습니다.<br/>비밀번호를 입력해주세요.</p>
+            </div>
+            <input 
+              type="password"
+              className="w-full border border-gray-300 p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500 text-center mb-4"
+              placeholder="비밀번호"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setShowPasswordPrompt(null)}
+                className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200"
+              >
+                취소
+              </button>
+              <button 
+                onClick={handlePasswordSubmit}
+                className="flex-1 py-3 bg-gold-500 text-white rounded-xl font-bold text-xs hover:bg-gold-600 shadow-md"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Post Detail & Edit Modal */}
       {viewingPost && user && (
@@ -341,18 +450,18 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                        />
                      ) : (
                        <div>
-                          <h2 className="text-lg font-bold text-gray-900 mb-1">{viewingPost.title}</h2>
-                          <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                              <div className="flex items-center gap-1">
-                                  <div className="w-5 h-5 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-[10px]">
+                          <h2 className="text-3xl font-black text-gray-900 mb-2">{viewingPost.title}</h2>
+                          <div className="flex items-center gap-3 text-sm text-gray-500">
+                              <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-xs">
                                       {viewingPost.author.slice(0,1)}
                                   </div>
-                                  <span className="font-medium text-gray-700">{viewingPost.author}</span>
+                                  <span className="font-bold text-gray-700">{viewingPost.author}</span>
                               </div>
                               <span>•</span>
-                              <span>{viewingPost.date}</span>
+                              <span className="font-medium">{viewingPost.date}</span>
                               <span>•</span>
-                              <span>조회 {viewingPost.views}</span>
+                              <span className="font-medium">조회 {viewingPost.views}</span>
                           </div>
                        </div>
                      )}
@@ -418,9 +527,40 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                       placeholder="내용을 입력하세요"
                    />
                 ) : (
-                   <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed text-xs">
+                   <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed text-lg font-bold">
                        {viewingPost.content}
                    </div>
+                )}
+
+                {/* Admin Reply Section */}
+                {viewingPost.adminReply && !isEditing && (
+                  <div className="mt-8 bg-deepgreen/5 border-l-4 border-deepgreen p-4 rounded-r-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-deepgreen font-bold text-xs">👑 관리자 답변</span>
+                    </div>
+                    <p className="text-xs text-gray-700 whitespace-pre-wrap">{viewingPost.adminReply}</p>
+                  </div>
+                )}
+
+                {/* Admin Reply Input (Only for Admins) */}
+                {isAdmin && !isEditing && (
+                  <div className="mt-8 pt-6 border-t">
+                    <label className="block text-xs font-bold text-gray-600 mb-2">답변 작성 (관리자 전용)</label>
+                    <textarea 
+                      className="w-full p-3 border border-gray-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-deepgreen h-24 resize-none bg-gray-50"
+                      placeholder="답변 내용을 입력하세요..."
+                      value={adminReplyInput}
+                      onChange={(e) => setAdminReplyInput(e.target.value)}
+                    />
+                    <div className="flex justify-end mt-2">
+                      <button 
+                        onClick={handleSaveAdminReply}
+                        className="bg-deepgreen text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-opacity-90 transition"
+                      >
+                        답변 저장하기
+                      </button>
+                    </div>
+                  </div>
                 )}
                 
                 {/* Action Buttons */}
@@ -478,9 +618,12 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                             </div>
                         ) : (
                             viewingPost.comments.map(comment => (
-                                <div key={comment.id} className="bg-white p-2.5 rounded-lg shadow-sm border border-gray-100">
+                                <div key={comment.id} className={`p-2.5 rounded-lg shadow-sm border ${comment.isAdmin ? 'bg-deepgreen/5 border-deepgreen/20' : 'bg-white border-gray-100'}`}>
                                     <div className="flex justify-between items-center mb-0.5">
-                                        <span className="font-bold text-[11px] text-deepgreen">{comment.author}</span>
+                                        <span className={`font-bold text-[11px] ${comment.isAdmin ? 'text-deepgreen' : 'text-gray-600'}`}>
+                                          {comment.isAdmin && '👑 '}
+                                          {comment.author}
+                                        </span>
                                         <span className="text-[10px] text-gray-400">{comment.date}</span>
                                     </div>
                                     <p className="text-[11px] text-gray-700">{comment.content}</p>

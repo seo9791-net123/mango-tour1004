@@ -34,6 +34,7 @@ export interface Comment {
   author: string;
   content: string;
   date: string;
+  isAdmin?: boolean;
 }
 
 export interface CommunityPost {
@@ -45,6 +46,9 @@ export interface CommunityPost {
   image?: string;     // Added for photo uploads
   comments: Comment[]; // Added for reviews/comments
   views: number;      // Added for view count
+  isPrivate?: boolean;
+  password?: string;
+  adminReply?: string;
 }
 
 export interface TripPlanRequest {

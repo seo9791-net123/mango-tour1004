@@ -45,7 +45,7 @@ const IconMenu: React.FC<Props> = ({ items, onItemClick }) => {
             </div>
             
             {/* Label */}
-            <span className="text-[11px] md:text-[12px] font-bold text-gray-500 group-hover:text-deepgreen tracking-tight transition-colors duration-300 text-center mt-1">
+            <span className="text-[14px] md:text-[15px] font-bold text-gray-700 group-hover:text-deepgreen tracking-tight transition-colors duration-300 text-center mt-1">
               {item.label}
             </span>
           </div>

@@ -5,10 +5,11 @@ import { User, ChatMessage } from '../types';
 interface Props {
   user: User | null;
   onReqLogin: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const ChatRoom: React.FC<Props> = ({ user, onReqLogin }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const ChatRoom: React.FC<Props> = ({ user, onReqLogin, isOpen, onClose }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -73,8 +74,9 @@ const ChatRoom: React.FC<Props> = ({ user, onReqLogin }) => {
   if (!isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-gold-500 text-white p-4 rounded-full shadow-lg hover:bg-gold-600 transition z-50 flex items-center gap-2 group"
+        onClick={() => {}} // Controlled by BottomNav now, but we'll keep a desktop floating button if needed
+        className="fixed bottom-6 right-6 bg-gold-500 text-white p-4 rounded-full shadow-lg hover:bg-gold-600 transition z-50 hidden md:flex items-center gap-2 group"
+        style={{ display: 'none' }} // Hide floating button as it's moved to BottomNav
       >
         <span className="text-2xl group-hover:scale-110 transition">💬</span>
         <span className="font-bold">채팅방</span>
@@ -83,7 +85,7 @@ const ChatRoom: React.FC<Props> = ({ user, onReqLogin }) => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden max-h-[600px] animate-fade-in-up">
+    <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 w-[calc(100%-2rem)] md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden max-h-[60vh] md:max-h-[600px] animate-fade-in-up">
       {/* Header */}
       <div className="bg-deepgreen p-4 flex justify-between items-center text-white shadow-md">
         <div>
@@ -92,7 +94,7 @@ const ChatRoom: React.FC<Props> = ({ user, onReqLogin }) => {
            </h3>
            <p className="text-[10px] opacity-80 font-light">여행자들과 자유롭게 소통하세요</p>
         </div>
-        <button onClick={() => setIsOpen(false)} className="hover:text-gold-400 transition text-lg font-bold">✕</button>
+        <button onClick={onClose} className="hover:text-gold-400 transition text-lg font-bold">✕</button>
       </div>
 
       {/* Message Area */}

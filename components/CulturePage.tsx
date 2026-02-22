@@ -33,16 +33,16 @@ const CulturePage: React.FC<Props> = ({ content, onBack }) => {
                <img src={content.introImage} className="w-full h-[300px] object-cover rounded-2xl shadow-xl" alt="Intro" />
             </div>
             <div className="flex-1 order-1 lg:order-2 space-y-4">
-               <h2 className="text-2xl md:text-3xl font-bold text-deepgreen uppercase leading-tight">{content.introTitle}</h2>
+               <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase leading-tight">{content.introTitle}</h2>
                <div className="h-1 w-16 bg-gold-500"></div>
-               <p className="text-sm leading-relaxed text-gray-600 font-light whitespace-pre-line">{content.introText}</p>
+               <p className="text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
                <div className="grid grid-cols-1 gap-3">
                   {content.sections.map((section, idx) => (
-                     <div key={idx} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gold-50 flex items-center justify-center shrink-0 text-gold-600 font-bold text-xs">0{idx+1}</div>
+                     <div key={idx} className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-full bg-gold-50 flex items-center justify-center shrink-0 text-gold-600 font-black text-sm">0{idx+1}</div>
                         <div>
-                          <p className="font-bold text-gold-700 mb-0.5 text-sm">{section.title}</p>
-                          <p className="text-[10px] text-gray-500 leading-relaxed">{section.content}</p>
+                          <p className="font-black text-gold-700 mb-1 text-xl">{section.title}</p>
+                          <p className="text-base text-gray-600 font-bold leading-relaxed">{section.content}</p>
                         </div>
                      </div>
                   ))}
