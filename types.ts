@@ -93,3 +93,12 @@ export interface PageContent {
   galleryImages: string[];
   sections: PageSection[]; // Manageable text blocks for the admin
 }
+
+export interface PopupNotification {
+  id: string;
+  title: string;
+  content: string;
+  image?: string;
+  isActive: boolean;
+  link?: string;
+}

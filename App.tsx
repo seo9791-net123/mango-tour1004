@@ -17,8 +17,8 @@ import CulturePage from './components/CulturePage';
 import ForMenPage from './components/ForMenPage';
 import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
-import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS } from './constants';
-import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem } from './types';
+import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP } from './constants';
+import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem, PopupNotification } from './types';
 import { firestoreService } from './services/firestoreService';
 
 const App: React.FC = () => {
@@ -40,6 +40,8 @@ const App: React.FC = () => {
   const [videos, setVideos] = useState<VideoItem[]>(INITIAL_VIDEOS);
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
+  const [popup, setPopup] = useState<PopupNotification>(INITIAL_POPUP);
+  const [showPopup, setShowPopup] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
 
@@ -86,6 +88,14 @@ const App: React.FC = () => {
         setVideos(data.videos);
         setPosts(data.posts);
         setPageContents(data.pageContents);
+        setPopup(data.popup);
+        
+        // Check if popup should be shown (e.g., once per session or if active)
+        const popupClosed = sessionStorage.getItem('mango_popup_closed');
+        if (data.popup.isActive && !popupClosed) {
+          setShowPopup(true);
+        }
+        
         setIsDataLoaded(true);
       } catch (e: any) {
         console.error("Failed to load data from Firestore. Using local fallback data.", e);
@@ -136,6 +146,11 @@ const App: React.FC = () => {
       setPageContents(previousContents);
       throw error; // Re-throw so the caller (AdminDashboard) can handle it
     }
+  };
+
+  const handleUpdatePopup = async (newPopup: PopupNotification) => {
+    setPopup(newPopup);
+    await firestoreService.savePopup(newPopup);
   };
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -288,6 +303,7 @@ const App: React.FC = () => {
             pageContents={pageContents} setPageContents={handleUpdatePageContents}
             videos={videos} setVideos={handleUpdateVideos}
             posts={posts} setPosts={handleUpdatePosts}
+            popup={popup} setPopup={handleUpdatePopup}
             setCurrentPage={setCurrentPage}
           />
         ) : (
@@ -331,11 +347,53 @@ const App: React.FC = () => {
       </main>
 
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs">
-         <p>MANGO TOUR TRAVEL AGENCY | +84 77 803 8743 | Kakao: vnseen1</p>
+         <p>MANGO TOUR TRAVEL AGENCY | +84 77 803 8743 | 
+           <a href="https://open.kakao.com/o/gSfNsh3h" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
+             Kakao: <span className="font-bold">MANGO TOUR</span>
+           </a>
+         </p>
          <p className="mt-1">© MANGO TOUR. All rights reserved.</p>
       </footer>
 
       <ChatRoom user={user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
+
+      {/* Popup Notification */}
+      {showPopup && popup.isActive && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-sm w-full animate-scale-in border border-white/20">
+            {popup.image && (
+              <div className="h-64 relative">
+                <img src={popup.image} className="w-full h-full object-cover" alt="Notification" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                <div className="absolute bottom-6 left-6 right-6">
+                  <h3 className="text-white font-bold text-xl drop-shadow-lg">{popup.title}</h3>
+                </div>
+              </div>
+            )}
+            <div className="p-8 space-y-4">
+              {!popup.image && <h3 className="text-deepgreen font-bold text-xl">{popup.title}</h3>}
+              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{popup.content}</p>
+              
+              <div className="pt-4 flex flex-col gap-2">
+                {popup.link && (
+                  <button 
+                    onClick={() => { window.open(popup.link, '_blank'); setShowPopup(false); sessionStorage.setItem('mango_popup_closed', 'true'); }}
+                    className="w-full py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition transform active:scale-95"
+                  >
+                    자세히 보기
+                  </button>
+                )}
+                <button 
+                  onClick={() => { setShowPopup(false); sessionStorage.setItem('mango_popup_closed', 'true'); }}
+                  className="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold hover:bg-gray-200 transition"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(selectedProduct || generatedPlan) && (
         <QuotationModal product={selectedProduct} plan={generatedPlan} onClose={() => { setSelectedProduct(undefined); setGeneratedPlan(undefined); }} />

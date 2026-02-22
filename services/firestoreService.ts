@@ -9,7 +9,8 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { 
-  PageContent 
+  PageContent,
+  PopupNotification
 } from "../types";
 import { 
   INITIAL_PRODUCTS, 
@@ -17,7 +18,8 @@ import {
   INITIAL_POSTS, 
   HERO_IMAGES, 
   SUB_MENU_ITEMS, 
-  INITIAL_PAGE_CONTENTS 
+  INITIAL_PAGE_CONTENTS,
+  INITIAL_POPUP
 } from "../constants";
 
 // 데이터 컬렉션 이름 정의
@@ -26,7 +28,8 @@ const COLLECTIONS = {
   VIDEOS: "videos",
   POSTS: "posts",
   PAGES: "pages",
-  SETTINGS: "settings" // Hero Images, Menu Items 등을 저장
+  SETTINGS: "settings", // Hero Images, Menu Items 등을 저장
+  POPUP: "popup"
 };
 
 export const firestoreService = {
@@ -51,7 +54,8 @@ export const firestoreService = {
         products: INITIAL_PRODUCTS,
         videos: INITIAL_VIDEOS,
         posts: INITIAL_POSTS,
-        pageContents: INITIAL_PAGE_CONTENTS
+        pageContents: INITIAL_PAGE_CONTENTS,
+        popup: INITIAL_POPUP
       };
     }
 
@@ -106,13 +110,24 @@ export const firestoreService = {
         });
       }
 
+      // 6. Popup
+      const popupRef = doc(db, COLLECTIONS.POPUP, "main");
+      const popupSnap = await getDoc(popupRef);
+      let popup = INITIAL_POPUP;
+      if (popupSnap.exists()) {
+        popup = popupSnap.data() as PopupNotification;
+      } else {
+        await setDoc(popupRef, INITIAL_POPUP);
+      }
+
       return {
         heroImages,
         menuItems,
         products,
         videos,
         posts,
-        pageContents
+        pageContents,
+        popup
       };
 
     } catch (error: any) {
@@ -126,7 +141,8 @@ export const firestoreService = {
         products: INITIAL_PRODUCTS,
         videos: INITIAL_VIDEOS,
         posts: INITIAL_POSTS,
-        pageContents: INITIAL_PAGE_CONTENTS
+        pageContents: INITIAL_PAGE_CONTENTS,
+        popup: INITIAL_POPUP
       };
     }
   },
@@ -230,5 +246,15 @@ export const firestoreService = {
           batch.set(ref, page, { merge: true });
       });
       await batch.commit();
+  },
+
+  async savePopup(popup: PopupNotification) {
+    if (!db) return;
+    try {
+      const ref = doc(db, COLLECTIONS.POPUP, "main");
+      await setDoc(ref, popup, { merge: true });
+    } catch (e) {
+      console.error("Error saving popup:", e);
+    }
   }
 };

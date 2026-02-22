@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost } from '../types';
+import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification } from '../types';
 import { INITIAL_PAGE_CONTENTS } from '../constants';
 import { driveService } from '../services/googleDriveService';
 import { uploadFile } from '../services/uploadService';
@@ -19,6 +19,8 @@ interface Props {
   setVideos: (videos: VideoItem[]) => void;
   posts: CommunityPost[];
   setPosts: (posts: CommunityPost[]) => void;
+  popup: PopupNotification;
+  setPopup: (popup: PopupNotification) => void;
   setCurrentPage: (page: 'home' | 'admin' | 'category') => void;
 }
 
@@ -36,9 +38,11 @@ const AdminDashboard: React.FC<Props> = ({
   setVideos,
   posts,
   setPosts,
+  popup,
+  setPopup,
   setCurrentPage
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'pages' | 'menu'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'pages' | 'menu' | 'popup'>('users');
   
   const heroFileInputRef = useRef<HTMLInputElement>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -328,6 +332,8 @@ const AdminDashboard: React.FC<Props> = ({
   const handleRemoveSection = (index: number) => {
     if (!confirm('이 섹션을 삭제하시겠습니까?')) return;
     const newSections = pageForm.sections.filter((_, i) => i !== index);
+    // Use functional update to ensure we have the latest state if needed, 
+    // but here we are passing the new array directly to handlePageFieldChange
     handlePageFieldChange('sections', newSections);
   };
 
@@ -335,6 +341,10 @@ const AdminDashboard: React.FC<Props> = ({
     if (!confirm('이 이미지를 삭제하시겠습니까?')) return;
     const newGallery = pageForm.galleryImages.filter((_, i) => i !== index);
     handlePageFieldChange('galleryImages', newGallery);
+  };
+
+  const handlePopupChange = (field: keyof PopupNotification, value: any) => {
+    setPopup({ ...popup, [field]: value });
   };
 
   const handleSaveFirebaseConfig = () => {
@@ -568,6 +578,7 @@ const AdminDashboard: React.FC<Props> = ({
           { id: 'hero', label: '🖼️ 슬라이드' },
           { id: 'products', label: '🛍️ 상품' },
           { id: 'pages', label: '📄 페이지' },
+          { id: 'popup', label: '🔔 팝업' },
           { id: 'menu', label: '🔘 메뉴' },
         ].map(tab => (
           <button
@@ -917,10 +928,119 @@ const AdminDashboard: React.FC<Props> = ({
                       setMenuItems(ni); 
                     }} 
                   />
+                  <button 
+                    onClick={() => {
+                      if(confirm('이 메뉴 아이콘을 삭제하시겠습니까?')) {
+                        const ni = menuItems.filter((_, i) => i !== idx);
+                        setMenuItems(ni);
+                      }
+                    }}
+                    className="mt-2 text-[10px] text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
+                  >
+                    삭제
+                  </button>
                 </div>
               ))}
             </div>
-            <p className="text-center text-gray-400 text-xs mt-8 bg-gray-50 p-3 rounded-xl inline-block mx-auto">※ 아이콘 메뉴의 이름과 이미지를 자유롭게 수정할 수 있습니다. 변경사항은 실시간으로 저장됩니다.</p>
+            <div className="mt-8 flex justify-center">
+              <button 
+                onClick={() => {
+                  const newItem: MenuItem = { label: '새 메뉴', icon: 'https://cdn-icons-png.flaticon.com/512/1039/1039328.png' };
+                  setMenuItems([...menuItems, newItem]);
+                }}
+                className="bg-deepgreen text-white px-8 py-3 rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition flex items-center gap-2"
+              >
+                <span>➕</span> 메뉴 아이콘 추가
+              </button>
+            </div>
+            <p className="text-center text-gray-400 text-xs mt-8 bg-gray-50 p-3 rounded-xl inline-block mx-auto">※ 아이콘 메뉴의 이름과 이미지를 자유롭게 수정하거나 추가/삭제할 수 있습니다. 변경사항은 실시간으로 저장됩니다.</p>
+          </div>
+        )}
+
+        {/* Popup Management */}
+        {activeTab === 'popup' && (
+          <div className="animate-fade-in-up max-w-4xl mx-auto">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">공지사항 팝업 관리</h3>
+            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl overflow-hidden">
+              <div className="p-8 space-y-8">
+                <div className="flex items-center justify-between bg-gray-50 p-6 rounded-3xl">
+                  <div>
+                    <h4 className="font-bold text-gray-800">팝업 활성화 상태</h4>
+                    <p className="text-xs text-gray-500">사용자가 웹을 열 때 팝업을 표시할지 결정합니다.</p>
+                  </div>
+                  <button 
+                    onClick={() => handlePopupChange('isActive', !popup.isActive)}
+                    className={`w-16 h-8 rounded-full transition-all relative ${popup.isActive ? 'bg-deepgreen' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${popup.isActive ? 'left-9' : 'left-1'}`}></div>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-400 uppercase ml-1">팝업 제목</label>
+                      <input 
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-transparent focus:bg-white focus:border-gold-500 border outline-none font-bold"
+                        value={popup.title}
+                        onChange={(e) => handlePopupChange('title', e.target.value)}
+                        placeholder="팝업 제목을 입력하세요"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-400 uppercase ml-1">팝업 내용</label>
+                      <textarea 
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-transparent focus:bg-white focus:border-gold-500 border outline-none h-40 resize-none text-sm"
+                        value={popup.content}
+                        onChange={(e) => handlePopupChange('content', e.target.value)}
+                        placeholder="팝업 내용을 입력하세요"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-400 uppercase ml-1">이동 링크 (선택)</label>
+                      <input 
+                        className="w-full p-4 bg-gray-50 rounded-2xl border-transparent focus:bg-white focus:border-gold-500 border outline-none text-sm"
+                        value={popup.link || ''}
+                        onChange={(e) => handlePopupChange('link', e.target.value)}
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">팝업 이미지</label>
+                    <div className="aspect-square bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 overflow-hidden relative group">
+                      {popup.image ? (
+                        <>
+                          <img src={popup.image} className="w-full h-full object-cover" alt="Popup Preview" />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
+                            <label className="bg-white text-deepgreen px-4 py-2 rounded-xl font-bold text-xs cursor-pointer hover:bg-gray-100">
+                              이미지 교체
+                              <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePopupChange('image', url))} />
+                            </label>
+                            <button 
+                              onClick={() => handlePopupChange('image', undefined)}
+                              className="bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-red-600"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition">
+                          <span className="text-4xl mb-2">🖼️</span>
+                          <span className="text-xs font-bold text-gray-400">이미지 업로드</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePopupChange('image', url))} />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 p-6 text-center">
+                <p className="text-xs text-gray-400 italic">※ 팝업 설정은 변경 즉시 실시간으로 반영됩니다.</p>
+              </div>
+            </div>
           </div>
         )}
 

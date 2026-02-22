@@ -1,5 +1,5 @@
 
-import { Product, VideoItem, CommunityPost, PageContent } from './types';
+import { Product, VideoItem, CommunityPost, PageContent, PopupNotification } from './types';
 
 export const LOCATIONS = ['호치민', '붕따우', '무이네', '달랏'];
 export const THEMES = ['골프', '관광', '먹거리', '비지니스'];
@@ -462,4 +462,12 @@ export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {
       { title: '신규 지역 오픈 이벤트', content: '달랏, 다낭 등 신규 서비스 지역 오픈 시 MANGO TOUR 회원 전용 특별 할인가를 적용해 드립니다.' }
     ]
   }
+};
+
+export const INITIAL_POPUP: PopupNotification = {
+  id: 'p1',
+  title: 'MANGO TOUR 공지사항',
+  content: '베트남 남부 명문 골프 투어 및 VIP 의전 서비스 전문 MANGO TOUR에 오신 것을 환영합니다.',
+  isActive: false,
+  image: 'https://images.unsplash.com/photo-1628753232870-6da09a967c9c?q=80&w=800'
 };

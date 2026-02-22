@@ -43,7 +43,8 @@ ${inquiryText || '(내용 없음)'}
 
     try {
       await navigator.clipboard.writeText(textToCopy);
-      alert('견적서와 문의 내용이 복사되었습니다.\n카카오톡 채팅방에 붙여넣기(Paste) 해주세요.');
+      alert('견적서와 문의 내용이 복사되었습니다.\n확인 버튼을 누르면 카카오톡 상담방으로 이동합니다.\n채팅창에 붙여넣기(Paste) 해주세요.');
+      window.open('https://open.kakao.com/o/gSfNsh3h', '_blank');
     } catch (err) {
       console.error('Failed to copy: ', err);
       alert('복사에 실패했습니다. 수동으로 복사해주세요.');
@@ -271,13 +272,16 @@ ${inquiryText || '(내용 없음)'}
                 </div>
                 
                 <div className="space-y-3 mb-6">
-                  <div className="flex items-center p-3 bg-yellow-100 rounded-xl border border-yellow-200 shadow-sm">
+                  <div 
+                    onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
+                    className="flex items-center p-3 bg-yellow-100 rounded-xl border border-yellow-200 shadow-sm cursor-pointer hover:bg-yellow-200 transition"
+                  >
                     <div className="bg-yellow-400 p-1.5 rounded-lg mr-3">
                       <span className="text-xl font-bold text-black/80">Talk</span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-[10px] text-gray-600 font-bold">카카오톡</p>
-                      <p className="text-base font-bold text-gray-800">vnseen1</p>
+                      <p className="text-[10px] text-gray-600 font-bold">카카오톡 오픈채팅</p>
+                      <p className="text-base font-bold text-gray-800">MANGO TOUR</p>
                     </div>
                   </div>
                 </div>
