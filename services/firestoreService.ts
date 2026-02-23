@@ -59,6 +59,14 @@ export const firestoreService = {
       };
     }
 
+    // Helper for timeout
+    const withTimeout = <T>(promise: Promise<T>, ms: number = 3000): Promise<T> => {
+        return Promise.race([
+            promise,
+            new Promise<T>((_, reject) => setTimeout(() => reject(new Error("Firestore operation timed out")), ms))
+        ]);
+    };
+
     try {
       console.log("Fetching data from Firestore server...");
       
@@ -67,7 +75,8 @@ export const firestoreService = {
       
       // 서버에서 직접 데이터를 가져오도록 시도 (캐시 무시)
       // 오프라인 에러가 발생하면 여기서 잡힙니다.
-      const settingsSnap = await getDoc(settingsRef);
+      // 타임아웃 3초 적용
+      const settingsSnap = await withTimeout(getDoc(settingsRef));
       
       let heroImages = HERO_IMAGES;
       let menuItems = SUB_MENU_ITEMS;
@@ -77,8 +86,8 @@ export const firestoreService = {
         if (data.heroImages) heroImages = data.heroImages;
         if (data.menuItems) menuItems = data.menuItems;
       } else {
-        // 초기 데이터 저장
-        await setDoc(settingsRef, { heroImages, menuItems });
+        // 초기 데이터 저장 (비동기로 실행하여 로딩 막지 않음)
+        setDoc(settingsRef, { heroImages, menuItems }).catch(e => console.warn("Failed to seed settings:", e));
       }
 
       // 2. Products
@@ -93,7 +102,7 @@ export const firestoreService = {
       // 5. Pages
       // Pages는 Object 형태이므로 별도 처리
       let pageContents = { ...INITIAL_PAGE_CONTENTS };
-      const pagesSnap = await getDocs(collection(db, COLLECTIONS.PAGES));
+      const pagesSnap = await withTimeout(getDocs(collection(db, COLLECTIONS.PAGES)));
       
       if (pagesSnap.empty) {
         // Seed Pages
@@ -102,7 +111,7 @@ export const firestoreService = {
           const ref = doc(db, COLLECTIONS.PAGES, page.id);
           batch.set(ref, page);
         });
-        await batch.commit();
+        batch.commit().catch(e => console.warn("Failed to seed pages:", e));
       } else {
         pagesSnap.forEach(doc => {
           const data = doc.data() as PageContent;
@@ -112,12 +121,12 @@ export const firestoreService = {
 
       // 6. Popup
       const popupRef = doc(db, COLLECTIONS.POPUP, "main");
-      const popupSnap = await getDoc(popupRef);
+      const popupSnap = await withTimeout(getDoc(popupRef));
       let popup = INITIAL_POPUP;
       if (popupSnap.exists()) {
         popup = popupSnap.data() as PopupNotification;
       } else {
-        await setDoc(popupRef, INITIAL_POPUP);
+        setDoc(popupRef, INITIAL_POPUP).catch(e => console.warn("Failed to seed popup:", e));
       }
 
       return {
@@ -131,10 +140,9 @@ export const firestoreService = {
       };
 
     } catch (error: any) {
-      console.error("Error loading global data:", error);
+      console.warn("Firestore offline, unreachable, or error occurred. Falling back to local data.", error.message);
       
       // 오프라인이거나 권한 문제, 또는 기타 모든 에러 발생 시 로컬 데이터 반환 (앱이 멈추지 않도록)
-      console.warn("Firestore offline, unreachable, or error occurred. Falling back to local data.");
       return {
         heroImages: HERO_IMAGES,
         menuItems: SUB_MENU_ITEMS,

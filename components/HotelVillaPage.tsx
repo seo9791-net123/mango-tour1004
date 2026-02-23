@@ -1,21 +1,29 @@
 
 import React, { useState } from 'react';
-import { PageContent } from '../types';
+import { PageContent, PageSection } from '../types';
 import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
   onBack: () => void;
+  onSectionClick?: (section: PageSection) => void;
+  isLoggedIn?: boolean;
+  onReqLogin?: () => void;
 }
 
-const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
+const HotelVillaPage: React.FC<Props> = ({ content, onBack, onSectionClick, isLoggedIn, onReqLogin }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  const [isGallerySliderOpen, setIsGallerySliderOpen] = useState(false);
 
-  const openGallerySlider = (index: number) => {
-    setGalleryIndex(index);
-    setIsGallerySliderOpen(true);
+  const handleDetailClick = (section: PageSection) => {
+    if (section.isImageLocked) return;
+
+    if (!isLoggedIn) {
+      if (confirm('상세 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
+        onReqLogin?.();
+      }
+      return;
+    }
+    onSectionClick?.(section);
   };
 
   return (
@@ -65,24 +73,27 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
              {content.sections.map((section, idx) => (
-                <div key={idx} className="p-6 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-full hover:shadow-md transition">
+                <div 
+                  key={idx} 
+                  className="p-6 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-full hover:shadow-md transition cursor-pointer group relative"
+                  onClick={() => handleDetailClick(section)}
+                >
                    <h3 className="text-2xl font-black text-deepgreen mb-3">{section.title}</h3>
                    <p className="text-gray-600 font-bold leading-relaxed text-lg flex-1">{section.content}</p>
+                   {!section.isImageLocked && (
+                     <div className="mt-4 text-right">
+                       <span className="text-gold-600 text-xs font-bold group-hover:underline">상세보기 →</span>
+                     </div>
+                   )}
                 </div>
              ))}
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
              {content.galleryImages.map((img, idx) => (
-                <div 
-                  key={idx} 
-                  className="group overflow-hidden rounded-xl shadow-md h-48 relative cursor-pointer"
-                  onClick={() => openGallerySlider(idx)}
-                >
+                <div key={idx} className="group overflow-hidden rounded-xl shadow-md h-48 relative">
                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Villa ${idx}`} />
-                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500 flex items-center justify-center">
-                      <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm text-[10px]">슬라이드 보기</span>
-                   </div>
+                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500"></div>
                    <div className="absolute bottom-3 left-3 text-white">
                       <p className="text-[9px] uppercase font-bold text-gold-400">Accommodation</p>
                       <h4 className="text-[11px] font-bold">Stay Gallery {idx + 1}</h4>
@@ -107,14 +118,6 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
 
       {isSliderOpen && content.slides && (
         <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
-      )}
-
-      {isGallerySliderOpen && (
-        <SliderPopup 
-          images={content.galleryImages} 
-          initialIndex={galleryIndex} 
-          onClose={() => setIsGallerySliderOpen(false)} 
-        />
       )}
     </div>
   );

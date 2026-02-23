@@ -1,7 +1,6 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { PageContent } from '../types';
-import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
@@ -9,15 +8,6 @@ interface Props {
 }
 
 const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
-  const [isSliderOpen, setIsSliderOpen] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  const [isGallerySliderOpen, setIsGallerySliderOpen] = useState(false);
-
-  const openGallerySlider = (index: number) => {
-    setGalleryIndex(index);
-    setIsGallerySliderOpen(true);
-  };
-
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
       {/* Compact Hero - 180px */}
@@ -44,14 +34,6 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
                 <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase leading-tight whitespace-pre-line">{content.introTitle}</h2>
                 <div className="h-1 w-16 bg-gold-500"></div>
                 <p className="text-xl leading-relaxed font-bold text-gray-700 whitespace-pre-line">{content.introText}</p>
-                {content.slides && content.slides.length > 0 && (
-                  <button 
-                    onClick={() => setIsSliderOpen(true)}
-                    className="mt-4 px-6 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2"
-                  >
-                    <span>🖼️</span> 상세 갤러리 슬라이드 보기
-                  </button>
-                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                    {content.sections.map((section, idx) => (
                       <div key={idx} className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -64,13 +46,8 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
                    ))}
                 </div>
              </div>
-             <div className="relative group cursor-pointer" onClick={() => content.slides && content.slides.length > 0 && setIsSliderOpen(true)}>
+             <div className="relative group">
                 <img src={content.introImage} className="w-full h-[300px] object-cover rounded-3xl shadow-xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
-                {content.slides && content.slides.length > 0 && (
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
-                    <span className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">슬라이드 보기</span>
-                  </div>
-                )}
              </div>
           </div>
         </div>
@@ -84,16 +61,9 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                {content.galleryImages.map((img, idx) => (
-                  <div 
-                    key={idx} 
-                    className="group relative overflow-hidden rounded-xl shadow-md h-48 cursor-pointer"
-                    onClick={() => openGallerySlider(idx)}
-                  >
+                  <div key={idx} className="group relative overflow-hidden rounded-xl shadow-md h-48">
                      <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Gallery ${idx}`} />
-                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500 flex items-center justify-center">
-                        <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-bold bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm text-[10px]">슬라이드 보기</span>
-                     </div>
-                     <div className="absolute bottom-3 left-3 text-white opacity-100 group-hover:opacity-0 transition-opacity">
+                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-3">
                         <p className="text-white font-bold text-[10px] uppercase tracking-tighter">VIP Service {idx + 1}</p>
                      </div>
                   </div>
@@ -109,18 +79,6 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
             <button className="bg-gold-500 text-white px-8 py-3 rounded-full font-bold hover:bg-gold-600 transition shadow-xl text-xs">실시간 의전 상담하기</button>
          </div>
       </section>
-
-      {isSliderOpen && content.slides && (
-        <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
-      )}
-
-      {isGallerySliderOpen && (
-        <SliderPopup 
-          images={content.galleryImages} 
-          initialIndex={galleryIndex} 
-          onClose={() => setIsGallerySliderOpen(false)} 
-        />
-      )}
     </div>
   );
 };

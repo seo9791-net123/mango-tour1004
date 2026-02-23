@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Product, TripPlanResult } from '../types';
 import { TERMS_OF_SERVICE } from '../constants';
+import ProductDetailModal from './ProductDetailModal';
 
 interface Props {
   product?: Product;
@@ -11,6 +12,7 @@ interface Props {
 
 const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
   const [showInquiry, setShowInquiry] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [inquiryText, setInquiryText] = useState('');
 
   if (!product && !plan) return null;
@@ -62,8 +64,8 @@ ${inquiryText || '(내용 없음)'}
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm print:p-0 print:block print:bg-white print:static">
-      <div className="printable-area bg-white w-full max-w-2xl h-[90vh] overflow-hidden rounded-xl shadow-2xl relative flex flex-col print:h-auto print:shadow-none print:w-full print:max-w-none">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000] p-0 md:p-4 backdrop-blur-sm print:p-0 print:block print:bg-white print:static">
+      <div className="printable-area bg-white w-full max-w-2xl h-full md:h-[90vh] md:max-h-[90vh] overflow-hidden md:rounded-xl shadow-2xl relative flex flex-col print:h-auto print:shadow-none print:w-full print:max-w-none">
         
         {/* Paper Header */}
         <div className="bg-deepgreen text-white p-6 sticky top-0 z-10 shadow-md print:static print:shadow-none print:bg-deepgreen print:text-white print:print-color-adjust-exact">
@@ -238,13 +240,22 @@ ${inquiryText || '(내용 없음)'}
         </div>
 
         {/* Actions Footer */}
-        <div className="no-print bg-gray-100 p-4 border-t flex justify-between md:justify-end gap-3 sticky bottom-0 z-20 shadow-inner">
+        <div className="no-print bg-gray-100 p-4 pb-8 md:pb-4 border-t flex justify-between md:justify-end gap-3 sticky bottom-0 z-20 shadow-inner">
           <button 
             onClick={onClose} 
             className="flex-1 md:flex-none px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-white transition"
           >
             닫기
           </button>
+          {product && (
+            <button 
+              onClick={() => setShowPreview(true)} 
+              className="flex-1 md:flex-none px-6 py-3 rounded-lg bg-deepgreen text-white font-bold hover:bg-green-800 shadow-lg flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5"
+            >
+               <span>🖼️</span> 
+               <span>미리보기</span>
+            </button>
+          )}
           <button 
             onClick={() => setShowInquiry(true)} 
             className="flex-1 md:flex-none px-6 py-3 rounded-lg bg-gold-500 text-white font-bold hover:bg-gold-600 shadow-lg flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5"
@@ -311,6 +322,10 @@ ${inquiryText || '(내용 없음)'}
               </div>
             </div>
           </div>
+        )}
+
+        {showPreview && product && (
+          <ProductDetailModal product={product} onClose={() => setShowPreview(false)} />
         )}
       </div>
     </div>

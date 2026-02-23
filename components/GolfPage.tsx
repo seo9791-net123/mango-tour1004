@@ -1,21 +1,34 @@
 
 import React, { useState } from 'react';
-import { PageContent } from '../types';
+import { PageContent, PageSection } from '../types';
 import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
   onBack: () => void;
+  onSectionClick?: (section: PageSection) => void;
+  isLoggedIn?: boolean;
+  onReqLogin?: () => void;
 }
 
-const GolfPage: React.FC<Props> = ({ content, onBack }) => {
+const GolfPage: React.FC<Props> = ({ content, onBack, onSectionClick, isLoggedIn, onReqLogin }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  const [isGallerySliderOpen, setIsGallerySliderOpen] = useState(false);
 
-  const openGallerySlider = (index: number) => {
-    setGalleryIndex(index);
-    setIsGallerySliderOpen(true);
+  const handleDetailClick = (section: PageSection, displayImage: string) => {
+    if (section.isImageLocked) return; // 잠금 모드일 경우 클릭 무시
+
+    if (!isLoggedIn) {
+      if (confirm('상세 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
+        onReqLogin?.();
+      }
+      return;
+    }
+    
+    const sectionWithImage = {
+      ...section,
+      images: section.images && section.images.length > 0 ? section.images : [displayImage]
+    };
+    onSectionClick?.(sectionWithImage);
   };
 
   return (
@@ -66,7 +79,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
                   const section = content.sections[idx] || { title: '새로운 코스', content: '상세 정보는 준비 중입니다.' };
                   const image = content.galleryImages[idx] || 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800';
                   return (
-                    <div key={idx} className="group cursor-pointer">
+                    <div key={idx} className="group cursor-pointer" onClick={() => handleDetailClick(section, image)}>
                        <div className="overflow-hidden rounded-2xl shadow-lg mb-4 h-52 relative">
                           <img 
                             src={image} 
@@ -74,6 +87,11 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
                             alt={`Golf ${idx}`} 
                           />
                           <div className="absolute top-3 left-3 bg-gold-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Course {idx + 1}</div>
+                          {!section.isImageLocked && (
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
+                              <span className="text-white font-bold text-[10px] bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">상세보기</span>
+                            </div>
+                          )}
                        </div>
                        <h3 className="text-2xl font-black mb-2 group-hover:text-gold-600 transition text-deepgreen">{section.title}</h3>
                        <p className="text-gray-600 text-lg font-bold leading-relaxed">{section.content}</p>

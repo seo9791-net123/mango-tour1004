@@ -337,9 +337,9 @@ const App: React.FC = () => {
               ) : selectedCategory === 'FOR MEN' ? (
                 <ForMenPage content={pageContents['men']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '관광' ? (
-                <TourPage content={pageContents['tour']} onBack={() => setCurrentPage('home')} />
+                <TourPage content={pageContents['tour']} onBack={() => setCurrentPage('home')} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
               ) : selectedCategory === '이벤트' ? (
-                <EventPage content={pageContents['event']} onBack={() => setCurrentPage('home')} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onEventClick={(t, c, i) => setSelectedProduct({ id: 'ev', title: t, description: c, image: i, price: 0, location: '이벤트', duration: '문의', type: 'tour' })} />
+                <EventPage content={pageContents['event']} onBack={() => setCurrentPage('home')} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
               ) : (
                 <CategoryPage category={selectedCategory} products={getFilteredProducts()} onProductClick={handleProductClick} onBack={() => setCurrentPage('home')} />
               )

@@ -21,6 +21,8 @@ export interface Product {
   duration: string;
   type: 'golf' | 'tour' | 'hotel';
   itinerary?: Array<{ day: number; activities: string[] }>;
+  detailImages?: string[];
+  detailContent?: string;
 }
 
 export interface VideoItem {
@@ -82,11 +84,8 @@ export interface ChatMessage {
 export interface PageSection {
   title: string;
   content: string;
-}
-
-export interface PageSlide {
-  image: string;
-  description: string;
+  detailImages?: string[]; // Multiple images for the detail popup
+  detailContent?: string; // Rich text/detailed content for the popup
 }
 
 // Updated Interface for Dynamic Page Content with manageable sections
@@ -101,7 +100,6 @@ export interface PageContent {
   introImage: string; 
   galleryImages: string[];
   sections: PageSection[]; // Manageable text blocks for the admin
-  slides?: PageSlide[];    // Added for popup slider
 }
 
 export interface PopupNotification {

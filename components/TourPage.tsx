@@ -1,21 +1,26 @@
 
 import React, { useState } from 'react';
-import { PageContent } from '../types';
-import SliderPopup from './SliderPopup';
+import { PageContent, PageSection } from '../types';
+import SectionDetailModal from './SectionDetailModal';
 
 interface Props {
   content: PageContent;
   onBack: () => void;
+  isLoggedIn?: boolean;
+  onReqLogin?: () => void;
 }
 
-const TourPage: React.FC<Props> = ({ content, onBack }) => {
-  const [isSliderOpen, setIsSliderOpen] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  const [isGallerySliderOpen, setIsGallerySliderOpen] = useState(false);
+const TourPage: React.FC<Props> = ({ content, onBack, isLoggedIn, onReqLogin }) => {
+  const [selectedDetail, setSelectedDetail] = useState<PageSection | null>(null);
 
-  const openGallerySlider = (index: number) => {
-    setGalleryIndex(index);
-    setIsGallerySliderOpen(true);
+  const handleDetailClick = (section: PageSection) => {
+    if (!isLoggedIn) {
+      if (confirm('상세 일정 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
+        onReqLogin?.();
+      }
+      return;
+    }
+    setSelectedDetail(section);
   };
 
   return (
@@ -42,14 +47,6 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
            <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase mb-3">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
            <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
-           {content.slides && content.slides.length > 0 && (
-              <button 
-                onClick={() => setIsSliderOpen(true)}
-                className="mt-6 px-8 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2 mx-auto"
-              >
-                <span>🖼️</span> 상세 갤러리 슬라이드 보기
-              </button>
-           )}
         </div>
 
         <div className="space-y-16 mb-12">
@@ -62,36 +59,28 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
                        <h3 className="text-3xl font-black text-deepgreen uppercase leading-tight">{section.title}</h3>
                        <div className="h-1 w-12 bg-gold-400"></div>
                        <p className="text-gray-600 leading-relaxed text-lg font-bold">{section.content}</p>
-                       <button className="text-gold-600 font-bold text-xs uppercase hover:underline">일정 보기 +</button>
+                       <button 
+                         onClick={() => handleDetailClick(section)}
+                         className="text-gold-600 font-bold text-xs uppercase hover:underline"
+                       >
+                         일정 보기 +
+                       </button>
                     </div>
-                    <div className="flex-1 w-full relative group cursor-pointer" onClick={() => openGallerySlider(idx)}>
+                    <div className="flex-1 w-full">
                        <img 
                          src={image} 
-                         className="w-full h-[300px] object-cover rounded-2xl shadow-xl border border-gray-100 transform group-hover:scale-[1.02] transition duration-500" 
+                         className="w-full h-[300px] object-cover rounded-2xl shadow-xl border border-gray-100" 
                          alt={section.title} 
                        />
-                       <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
-                         <span className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">슬라이드 보기</span>
-                       </div>
                     </div>
                  </div>
               );
            })}
         </div>
-
-
       </section>
 
-      {isSliderOpen && content.slides && (
-        <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
-      )}
-
-      {isGallerySliderOpen && (
-        <SliderPopup 
-          images={content.galleryImages} 
-          initialIndex={galleryIndex} 
-          onClose={() => setIsGallerySliderOpen(false)} 
-        />
+      {selectedDetail && (
+        <SectionDetailModal section={selectedDetail} onClose={() => setSelectedDetail(null)} />
       )}
     </div>
   );

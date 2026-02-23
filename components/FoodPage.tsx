@@ -1,7 +1,6 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { PageContent } from '../types';
-import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
@@ -9,8 +8,6 @@ interface Props {
 }
 
 const FoodPage: React.FC<Props> = ({ content, onBack }) => {
-  const [isSliderOpen, setIsSliderOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
       {/* Compact Hero - 180px */}
@@ -35,21 +32,10 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
            <h2 className="text-2xl md:text-3xl font-bold uppercase mb-3 text-deepgreen">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
            <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold">{content.introText}</p>
-           {content.slides && content.slides.length > 0 && (
-              <button 
-                onClick={() => setIsSliderOpen(true)}
-                className="mt-6 px-8 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2 mx-auto"
-              >
-                <span>🖼️</span> 상세 갤러리 슬라이드 보기
-              </button>
-           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-           <div 
-             className="md:col-span-2 lg:col-span-2 relative h-[300px] overflow-hidden rounded-2xl shadow-xl group cursor-pointer"
-             onClick={() => content.slides && content.slides.length > 0 && setIsSliderOpen(true)}
-           >
+           <div className="md:col-span-2 lg:col-span-2 relative h-[300px] overflow-hidden rounded-2xl shadow-xl group">
               <img src={content.introImage} className="w-full h-full object-cover group-hover:scale-[1.02] transition duration-500" alt="Main Food" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
                  <div className="text-white">
@@ -57,11 +43,6 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
                     <p className="text-sm font-bold opacity-90">베트남의 영혼을 담은 최고의 요리를 만나보세요.</p>
                  </div>
               </div>
-              {content.slides && content.slides.length > 0 && (
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
-                  <span className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">슬라이드 보기</span>
-                </div>
-              )}
            </div>
            {content.sections.map((section, idx) => (
                <div key={idx} className="bg-gray-50 border border-gray-100 p-6 rounded-2xl shadow-sm flex flex-col justify-center hover:bg-white hover:shadow-md transition">
@@ -99,10 +80,6 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
             </div>
          </div>
       </section>
-
-      {isSliderOpen && content.slides && (
-        <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
-      )}
     </div>
   );
 };

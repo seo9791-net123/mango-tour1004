@@ -457,9 +457,34 @@ export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {
       'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80'
     ],
     sections: [
-      { title: '월간 골프 챌린지', content: '매달 다른 명문 골프장에서 개최되는 아마추어 골프 대회로 푸짐한 경품과 네트워킹 시간을 제공합니다.' },
-      { title: '얼리버드 프로모션', content: '3개월 전 예약 시 5성급 호텔 업그레이드 또는 카트비 무료 등 특별한 가격 혜택을 드립니다.' },
-      { title: '신규 지역 오픈 이벤트', content: '달랏, 다낭 등 신규 서비스 지역 오픈 시 MANGO TOUR 회원 전용 특별 할인가를 적용해 드립니다.' }
+      { 
+        title: '월간 골프 챌린지', 
+        content: '매달 다른 명문 골프장에서 개최되는 아마추어 골프 대회로 푸짐한 경품과 네트워킹 시간을 제공합니다.',
+        detailContent: '매월 셋째 주 토요일, 베트남 남부 최고의 명문 골프장에서 아마추어 골프 대회가 열립니다.\n\n[참가 안내]\n- 대상: MANGO TOUR 회원 누구나\n- 장소: 매월 공지 (떤선녓, 롱탄, 트윈도브스 등)\n- 혜택: 우승자 트로피 및 골프 용품, 참가자 전원 기념품 증정\n\n많은 참여 부탁드립니다.',
+        detailImages: [
+          'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=800',
+          'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?w=800',
+          'https://images.unsplash.com/photo-1592919505780-30395071b483?w=800'
+        ]
+      },
+      { 
+        title: '얼리버드 프로모션', 
+        content: '3개월 전 예약 시 5성급 호텔 업그레이드 또는 카트비 무료 등 특별한 가격 혜택을 드립니다.',
+        detailContent: '미리 준비하는 여행자를 위한 특별한 혜택!\n\n3개월 전 사전 예약 시 다음과 같은 혜택 중 하나를 선택하실 수 있습니다.\n\n1. 4성급 -> 5성급 호텔 무료 업그레이드\n2. 전 일정 그린피 10% 추가 할인\n3. 공항 VIP 의전 서비스 무료 제공\n\n지금 바로 상담 신청하세요.',
+        detailImages: [
+          'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800',
+          'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800'
+        ]
+      },
+      { 
+        title: '신규 지역 오픈 이벤트', 
+        content: '달랏, 다낭 등 신규 서비스 지역 오픈 시 MANGO TOUR 회원 전용 특별 할인가를 적용해 드립니다.',
+        detailContent: 'MANGO TOUR가 달랏과 다낭으로 서비스를 확장했습니다!\n\n오픈 기념으로 해당 지역 상품 예약 시 20% 할인 혜택을 드립니다.\n\n- 기간: 오픈일로부터 1개월간\n- 대상: 선착순 50팀\n- 혜택: 상품가 20% 할인 + 현지 맛집 바우처 증정',
+        detailImages: [
+          'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=800',
+          'https://images.unsplash.com/photo-1528127269322-539801943592?w=800'
+        ]
+      }
     ]
   }
 };

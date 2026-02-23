@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification } from '../types';
+import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection } from '../types';
 import { INITIAL_PAGE_CONTENTS } from '../constants';
 import { driveService } from '../services/googleDriveService';
 import { uploadFile } from '../services/uploadService';
@@ -300,6 +300,23 @@ const AdminDashboard: React.FC<Props> = ({
     handleProductFieldChange(productId, 'itinerary', newItinerary);
   };
 
+  const handleProductDetailImageAdd = (productId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileUpload(e, (url) => {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      const detailImages = [...(product.detailImages || [])];
+      detailImages.push(url);
+      handleProductFieldChange(productId, 'detailImages', detailImages);
+    });
+  };
+
+  const handleProductDetailImageRemove = (productId: string, imageIdx: number) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const detailImages = (product.detailImages || []).filter((_, i) => i !== imageIdx);
+    handleProductFieldChange(productId, 'detailImages', detailImages);
+  };
+
   // --- Page Handlers ---
   const handlePageFieldChange = async (field: keyof PageContent, value: any) => {
     const previousPageForm = { ...pageForm };
@@ -318,9 +335,26 @@ const AdminDashboard: React.FC<Props> = ({
     }
   };
 
-  const handleSectionChange = (index: number, field: 'title' | 'content', value: string) => {
+  const handleSectionChange = (index: number, field: keyof PageSection, value: any) => {
     const newSections = [...pageForm.sections];
     newSections[index] = { ...newSections[index], [field]: value };
+    handlePageFieldChange('sections', newSections);
+  };
+
+  const handleSectionDetailImageAdd = (sectionIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileUpload(e, (url) => {
+      const newSections = [...pageForm.sections];
+      const detailImages = [...(newSections[sectionIdx].detailImages || [])];
+      detailImages.push(url);
+      newSections[sectionIdx] = { ...newSections[sectionIdx], detailImages };
+      handlePageFieldChange('sections', newSections);
+    });
+  };
+
+  const handleSectionDetailImageRemove = (sectionIdx: number, imageIdx: number) => {
+    const newSections = [...pageForm.sections];
+    const detailImages = (newSections[sectionIdx].detailImages || []).filter((_, i) => i !== imageIdx);
+    newSections[sectionIdx] = { ...newSections[sectionIdx], detailImages };
     handlePageFieldChange('sections', newSections);
   };
 
@@ -341,23 +375,6 @@ const AdminDashboard: React.FC<Props> = ({
     if (!confirm('이 이미지를 삭제하시겠습니까?')) return;
     const newGallery = pageForm.galleryImages.filter((_, i) => i !== index);
     handlePageFieldChange('galleryImages', newGallery);
-  };
-
-  const handleAddSlide = () => {
-    const newSlides = [...(pageForm.slides || []), { image: 'https://via.placeholder.com/800x600', description: '슬라이드 설명을 입력하세요.' }];
-    handlePageFieldChange('slides', newSlides);
-  };
-
-  const handleRemoveSlide = (index: number) => {
-    if (!confirm('이 슬라이드를 삭제하시겠습니까?')) return;
-    const newSlides = (pageForm.slides || []).filter((_, i) => i !== index);
-    handlePageFieldChange('slides', newSlides);
-  };
-
-  const handleSlideChange = (index: number, field: 'image' | 'description', value: string) => {
-    const newSlides = [...(pageForm.slides || [])];
-    newSlides[index] = { ...newSlides[index], [field]: value };
-    handlePageFieldChange('slides', newSlides);
   };
 
   const handlePopupChange = (field: keyof PopupNotification, value: any) => {
@@ -701,6 +718,45 @@ const AdminDashboard: React.FC<Props> = ({
                            <textarea className="w-full text-xs border p-2 rounded outline-none h-16 resize-none" value={p.description} onChange={e => handleProductFieldChange(p.id, 'description', e.target.value)} />
                          </div>
 
+                         {/* Detail Popup Management for Products */}
+                         <div className="pt-4 border-t border-gray-100 space-y-3">
+                             <div className="flex justify-between items-center">
+                                 <label className="text-[10px] font-bold text-gold-600 uppercase">미리보기 팝업 관리</label>
+                             </div>
+                             <textarea 
+                                 className="w-full text-xs text-gray-700 bg-gold-50/30 p-2 rounded-lg outline-none resize-none h-24 border-gold-100 focus:bg-white focus:border-gold-300 border"
+                                 value={p.detailContent || ''}
+                                 onChange={(e) => handleProductFieldChange(p.id, 'detailContent', e.target.value)}
+                                 placeholder="미리보기 팝업 상세 내용"
+                             />
+                             
+                             <div className="space-y-2">
+                                 <label className="text-[9px] font-bold text-gray-400 block">팝업 상세 이미지 (여러 장 가능)</label>
+                                 <div className="flex flex-wrap gap-2">
+                                     {p.detailImages?.map((img, imgIdx) => (
+                                         <div key={imgIdx} className="w-12 h-12 rounded-lg overflow-hidden relative group border shadow-sm">
+                                             <img src={img} className="w-full h-full object-cover" alt={`Detail ${imgIdx}`} />
+                                             <button 
+                                                 onClick={() => handleProductDetailImageRemove(p.id, imgIdx)}
+                                                 className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[10px] font-bold"
+                                             >
+                                                 삭제
+                                             </button>
+                                         </div>
+                                     ))}
+                                     <label className="w-12 h-12 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-gold-400 hover:text-gold-400 transition cursor-pointer">
+                                         <span className="text-xl">+</span>
+                                         <input 
+                                             type="file" 
+                                             className="hidden" 
+                                             accept="image/*" 
+                                             onChange={(e) => handleProductDetailImageAdd(p.id, e)} 
+                                         />
+                                     </label>
+                                 </div>
+                             </div>
+                         </div>
+
                          {/* 상세 일정(Itinerary) 편집기 */}
                          <div className="space-y-2">
                            <div className="flex justify-between items-center">
@@ -846,8 +902,47 @@ const AdminDashboard: React.FC<Props> = ({
                                     className="w-full text-xs text-gray-600 bg-gray-50 p-2 rounded-lg outline-none resize-none h-16 border-transparent focus:bg-white focus:border-gold-200 border"
                                     value={section.content}
                                     onChange={(e) => handleSectionChange(idx, 'content', e.target.value)}
-                                    placeholder="섹션 내용"
+                                    placeholder="섹션 요약 내용 (목록에 표시됨)"
                                 />
+
+                                {/* Detail Popup Management */}
+                                <div className="pt-2 border-t border-gray-100 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-[10px] font-bold text-gold-600 uppercase">상세 팝업 관리</label>
+                                    </div>
+                                    <textarea 
+                                        className="w-full text-xs text-gray-700 bg-gold-50/30 p-2 rounded-lg outline-none resize-none h-24 border-gold-100 focus:bg-white focus:border-gold-300 border"
+                                        value={section.detailContent || ''}
+                                        onChange={(e) => handleSectionChange(idx, 'detailContent', e.target.value)}
+                                        placeholder="팝업 상세 내용 (상세보기 클릭 시 표시)"
+                                    />
+                                    
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-bold text-gray-400 block">팝업 상세 이미지 (여러 장 가능)</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {section.detailImages?.map((img, imgIdx) => (
+                                                <div key={imgIdx} className="w-12 h-12 rounded-lg overflow-hidden relative group border shadow-sm">
+                                                    <img src={img} className="w-full h-full object-cover" alt={`Detail ${imgIdx}`} />
+                                                    <button 
+                                                        onClick={() => handleSectionDetailImageRemove(idx, imgIdx)}
+                                                        className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[10px] font-bold"
+                                                    >
+                                                        삭제
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <label className="w-12 h-12 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-gold-400 hover:text-gold-400 transition cursor-pointer">
+                                                <span className="text-xl">+</span>
+                                                <input 
+                                                    type="file" 
+                                                    className="hidden" 
+                                                    accept="image/*" 
+                                                    onChange={(e) => handleSectionDetailImageAdd(idx, e)} 
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                         {pageForm.sections.length === 0 && (
@@ -897,53 +992,6 @@ const AdminDashboard: React.FC<Props> = ({
                           <div className="col-span-3 aspect-video border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-gray-400 italic text-xs">
                             이미지가 없습니다.
                           </div>
-                        )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
-                            <span className="text-xl">5️⃣</span> 팝업 슬라이드 관리 (총 {(pageForm.slides || []).length}개)
-                        </h4>
-                        <button 
-                          onClick={handleAddSlide}
-                          className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-sm hover:bg-blue-700 transition"
-                        >
-                          + 슬라이드 추가
-                        </button>
-                    </div>
-                    <div className="space-y-4">
-                        {(pageForm.slides || []).map((slide, idx) => (
-                            <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row gap-4 relative group">
-                                <button 
-                                  onClick={() => handleRemoveSlide(idx)}
-                                  className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition z-10"
-                                >
-                                  ✕
-                                </button>
-                                <div className="w-full md:w-32 h-24 bg-gray-100 rounded-xl overflow-hidden relative group/img shrink-0">
-                                    <img src={slide.image} className="w-full h-full object-cover" alt={`Slide ${idx}`} />
-                                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition flex items-center justify-center text-white text-[10px] font-bold cursor-pointer">
-                                        변경
-                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handleSlideChange(idx, 'image', url))} />
-                                    </label>
-                                </div>
-                                <div className="flex-1 space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase">슬라이드 {idx + 1} 설명</span>
-                                    </div>
-                                    <textarea 
-                                        className="w-full text-xs text-gray-600 bg-gray-50 p-2 rounded-lg outline-none resize-none h-16 border-transparent focus:bg-white focus:border-gold-200 border"
-                                        value={slide.description}
-                                        onChange={(e) => handleSlideChange(idx, 'description', e.target.value)}
-                                        placeholder="슬라이드에 표시될 설명을 입력하세요."
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                        {(pageForm.slides || []).length === 0 && (
-                          <p className="text-center text-gray-400 text-xs py-4 italic">등록된 슬라이드가 없습니다. [슬라이드 추가] 버튼을 눌러주세요.</p>
                         )}
                     </div>
                   </div>

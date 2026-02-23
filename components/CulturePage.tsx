@@ -1,7 +1,6 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { PageContent } from '../types';
-import SliderPopup from './SliderPopup';
 
 interface Props {
   content: PageContent;
@@ -9,8 +8,6 @@ interface Props {
 }
 
 const CulturePage: React.FC<Props> = ({ content, onBack }) => {
-  const [isSliderOpen, setIsSliderOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-[#fcfcf7] text-black font-sans overflow-x-hidden animate-fade-in">
       {/* Compact Hero - 180px */}
@@ -32,26 +29,13 @@ const CulturePage: React.FC<Props> = ({ content, onBack }) => {
 
       <section className="py-12 max-w-7xl mx-auto px-4">
          <div className="flex flex-col lg:flex-row gap-8 items-center mb-12">
-            <div className="flex-1 order-2 lg:order-1 relative group cursor-pointer" onClick={() => content.slides && content.slides.length > 0 && setIsSliderOpen(true)}>
+            <div className="flex-1 order-2 lg:order-1 relative group">
                <img src={content.introImage} className="w-full h-[300px] object-cover rounded-2xl shadow-xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
-               {content.slides && content.slides.length > 0 && (
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
-                    <span className="text-white font-bold text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm">슬라이드 보기</span>
-                  </div>
-                )}
             </div>
             <div className="flex-1 order-1 lg:order-2 space-y-4">
                <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase leading-tight">{content.introTitle}</h2>
                <div className="h-1 w-16 bg-gold-500"></div>
                <p className="text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
-               {content.slides && content.slides.length > 0 && (
-                  <button 
-                    onClick={() => setIsSliderOpen(true)}
-                    className="mt-4 px-6 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2"
-                  >
-                    <span>🖼️</span> 상세 갤러리 슬라이드 보기
-                  </button>
-                )}
                <div className="grid grid-cols-1 gap-3">
                   {content.sections.map((section, idx) => (
                      <div key={idx} className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm flex items-start gap-4">
@@ -81,10 +65,6 @@ const CulturePage: React.FC<Props> = ({ content, onBack }) => {
             ))}
          </div>
       </section>
-
-      {isSliderOpen && content.slides && (
-        <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />
-      )}
     </div>
   );
 };
