@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { PageContent } from '../types';
+import PageSectionList from './PageSectionList';
 
 interface Props {
   content: PageContent;
@@ -36,27 +37,20 @@ const CulturePage: React.FC<Props> = ({ content, onBack }) => {
                <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase leading-tight">{content.introTitle}</h2>
                <div className="h-1 w-16 bg-gold-500"></div>
                <p className="text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
-               <div className="grid grid-cols-1 gap-3">
-                  {content.sections.map((section, idx) => (
-                     <div key={idx} className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm flex items-start gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gold-50 flex items-center justify-center shrink-0 text-gold-600 font-black text-sm">0{idx+1}</div>
-                        <div>
-                          <p className="font-black text-gold-700 mb-1 text-xl">{section.title}</p>
-                          <p className="text-base text-gray-600 font-bold leading-relaxed">{section.content}</p>
-                        </div>
-                     </div>
-                  ))}
-               </div>
             </div>
+         </div>
+
+         <div className="mb-12">
+           <PageSectionList sections={content.sections} />
          </div>
 
          <div className="text-center mb-8">
             <h3 className="text-xl font-bold uppercase tracking-widest text-deepgreen">Culture & Beauty Collection</h3>
             <div className="w-10 h-0.5 bg-gold-500 mx-auto mt-1"></div>
          </div>
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {content.galleryImages.map((img, idx) => (
-                <div key={idx} className="group relative h-60 overflow-hidden rounded-2xl shadow-md">
+                <div key={idx} className="group relative h-40 overflow-hidden rounded-xl shadow-md">
                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-700" alt={`Culture ${idx}`} />
                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex items-end">
                       <p className="text-white font-bold text-[10px]">Vietnam Heritage {idx + 1}</p>

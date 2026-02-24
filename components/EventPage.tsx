@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
-import { PageContent, PageSection } from '../types';
-import SectionDetailModal from './SectionDetailModal';
+import React from 'react';
+import { PageContent } from '../types';
+import PageSectionList from './PageSectionList';
 
 interface Props {
   content: PageContent;
@@ -10,19 +10,7 @@ interface Props {
   onReqLogin?: () => void;
 }
 
-const EventPage: React.FC<Props> = ({ content, onBack, isLoggedIn, onReqLogin }) => {
-  const [selectedDetail, setSelectedDetail] = useState<PageSection | null>(null);
-
-  const handleDetailClick = (section: PageSection) => {
-    if (!isLoggedIn) {
-      if (confirm('상세 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
-        onReqLogin?.();
-      }
-      return;
-    }
-    setSelectedDetail(section);
-  };
-
+const EventPage: React.FC<Props> = ({ content, onBack }) => {
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-black font-sans overflow-x-hidden animate-fade-in">
       {/* Compact Hero - 180px */}
@@ -47,39 +35,26 @@ const EventPage: React.FC<Props> = ({ content, onBack, isLoggedIn, onReqLogin })
         <div className="text-center mb-12">
            <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase mb-3 tracking-tight">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-sm leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
+           <p className="max-w-4xl mx-auto text-sm leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-12">{content.introText}</p>
+           
+           <PageSectionList sections={content.sections} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           {Array.from({ length: Math.max(content.sections.length, content.galleryImages.length) }).map((_, idx) => {
-               const section = content.sections[idx] || { title: '새로운 이벤트', content: '상세 내용은 문의 바랍니다.' };
-               const eventImg = content.galleryImages[idx] || 'https://images.unsplash.com/photo-1595842858599-4c274b3d3278?w=800';
-               return (
-                  <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group border border-gray-100 flex flex-col h-full">
-                    <div className="h-44 overflow-hidden relative">
-                      <img 
-                        src={eventImg} 
-                        className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" 
-                        alt={section.title} 
-                      />
-                      <div className="absolute top-3 left-3 bg-deepgreen text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shadow-md">진행중</div>
+        <div className="mt-12">
+           <div className="text-center mb-8">
+              <h3 className="text-gold-600 font-bold tracking-widest text-[10px] mb-1 uppercase">EVENT GALLERY</h3>
+              <h2 className="text-2xl font-bold uppercase text-deepgreen">이벤트 현장 갤러리</h2>
+           </div>
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {content.galleryImages.map((img, idx) => (
+                 <div key={idx} className="group relative overflow-hidden rounded-xl shadow-md h-40">
+                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Event Gallery ${idx}`} />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+                       <span className="text-white text-[10px] font-bold border border-white/40 px-3 py-1 rounded-full backdrop-blur-sm">VIEW</span>
                     </div>
-                    <div className="p-5 space-y-3 flex-1 flex flex-col">
-                      <h3 className="text-2xl font-black group-hover:text-gold-600 transition duration-300 text-deepgreen leading-tight">{section.title}</h3>
-                      <p className="text-gray-600 text-lg font-bold leading-relaxed flex-1 line-clamp-3">{section.content}</p>
-                      <div className="pt-4 border-t border-gray-50 flex justify-between items-center">
-                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Promotion</span>
-                        <button 
-                          onClick={() => handleDetailClick(section)}
-                          className="text-gold-600 font-bold text-xs hover:text-gold-700 flex items-center gap-1 transition-colors"
-                        >
-                          상세보기 <span className="text-base">→</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-               );
-           })}
+                 </div>
+              ))}
+           </div>
         </div>
       </section>
       
@@ -96,10 +71,6 @@ const EventPage: React.FC<Props> = ({ content, onBack, isLoggedIn, onReqLogin })
             </button>
          </div>
       </section>
-
-      {selectedDetail && (
-        <SectionDetailModal section={selectedDetail} onClose={() => setSelectedDetail(null)} />
-      )}
     </div>
   );
 };

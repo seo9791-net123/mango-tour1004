@@ -1,6 +1,7 @@
 
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "./firebaseConfig";
+import { compressImage } from "../utils/imageUtils";
 
 /**
  * 파일을 Firebase Storage 또는 Cloudinary에 업로드하며 진행률을 추적합니다.
@@ -16,6 +17,17 @@ export const uploadFile = async (
 ): Promise<string> => {
   const cloudName = localStorage.getItem('cloudinary_cloud_name') || "Cloud Name"; 
   const uploadPreset = localStorage.getItem('cloudinary_upload_preset') || "mango-tour";
+
+  // 이미지 파일인 경우 압축 시도
+  let uploadData: Blob | File = file;
+  if (file.type.startsWith('image/')) {
+    try {
+      uploadData = await compressImage(file);
+      console.log(`Image compressed: ${file.size} -> ${uploadData.size}`);
+    } catch (e) {
+      console.warn("Image compression failed, using original file:", e);
+    }
+  }
 
   // 1. Cloudinary (XHR for progress)
   if (cloudName && uploadPreset && cloudName !== "Cloud Name") {
@@ -35,14 +47,19 @@ export const uploadFile = async (
           const response = JSON.parse(xhr.responseText);
           resolve(response.secure_url);
         } else {
-          reject(new Error('Cloudinary upload failed'));
+          let errorMsg = 'Cloudinary upload failed';
+          try {
+            const response = JSON.parse(xhr.responseText);
+            if (response.error?.message) errorMsg += `: ${response.error.message}`;
+          } catch (e) {}
+          reject(new Error(`${errorMsg} (Status: ${xhr.status})`));
         }
       };
 
       xhr.onerror = () => reject(new Error('Cloudinary upload network error'));
 
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadData);
       formData.append('upload_preset', uploadPreset);
       formData.append('folder', folder);
       xhr.send(formData);
@@ -56,7 +73,7 @@ export const uploadFile = async (
 
   const uniqueFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
   const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
-  const uploadTask = uploadBytesResumable(storageRef, file);
+  const uploadTask = uploadBytesResumable(storageRef, uploadData);
 
   return new Promise((resolve, reject) => {
     uploadTask.on(

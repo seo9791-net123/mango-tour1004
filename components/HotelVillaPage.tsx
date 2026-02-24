@@ -1,30 +1,16 @@
 
 import React, { useState } from 'react';
-import { PageContent, PageSection } from '../types';
+import { PageContent } from '../types';
 import SliderPopup from './SliderPopup';
+import PageSectionList from './PageSectionList';
 
 interface Props {
   content: PageContent;
   onBack: () => void;
-  onSectionClick?: (section: PageSection) => void;
-  isLoggedIn?: boolean;
-  onReqLogin?: () => void;
 }
 
-const HotelVillaPage: React.FC<Props> = ({ content, onBack, onSectionClick, isLoggedIn, onReqLogin }) => {
+const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
-
-  const handleDetailClick = (section: PageSection) => {
-    if (section.isImageLocked) return;
-
-    if (!isLoggedIn) {
-      if (confirm('상세 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
-        onReqLogin?.();
-      }
-      return;
-    }
-    onSectionClick?.(section);
-  };
 
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
@@ -71,27 +57,13 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack, onSectionClick, isLo
              </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-             {content.sections.map((section, idx) => (
-                <div 
-                  key={idx} 
-                  className="p-6 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-full hover:shadow-md transition cursor-pointer group relative"
-                  onClick={() => handleDetailClick(section)}
-                >
-                   <h3 className="text-2xl font-black text-deepgreen mb-3">{section.title}</h3>
-                   <p className="text-gray-600 font-bold leading-relaxed text-lg flex-1">{section.content}</p>
-                   {!section.isImageLocked && (
-                     <div className="mt-4 text-right">
-                       <span className="text-gold-600 text-xs font-bold group-hover:underline">상세보기 →</span>
-                     </div>
-                   )}
-                </div>
-             ))}
+          <div className="mb-12">
+            <PageSectionList sections={content.sections} />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
              {content.galleryImages.map((img, idx) => (
-                <div key={idx} className="group overflow-hidden rounded-xl shadow-md h-48 relative">
+                <div key={idx} className="group overflow-hidden rounded-xl shadow-md h-40 relative">
                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Villa ${idx}`} />
                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors duration-500"></div>
                    <div className="absolute bottom-3 left-3 text-white">

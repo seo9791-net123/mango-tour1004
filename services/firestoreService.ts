@@ -214,9 +214,13 @@ export const firestoreService = {
 
       await batch.commit();
       console.log(`Synced ${collectionName} successfully.`);
-    } catch (e) {
+    } catch (e: any) {
       console.error(`Error syncing ${collectionName}:`, e);
-      alert("데이터 저장 중 오류가 발생했습니다.");
+      if (e.message?.includes('exceeds the maximum allowed size')) {
+        alert(`❌ 저장 실패: '${collectionName}' 데이터가 너무 큽니다 (1MB 제한 초과).\n\n원인: 고화질 이미지를 너무 많이 추가했거나, 이미지 서버(Cloudinary) 연결 실패로 이미지가 텍스트(Base64)로 저장되었습니다.\n\n해결방법: 최근에 추가한 큰 이미지를 삭제하거나, 이미지 용량을 줄여서 다시 시도해주세요.`);
+      } else {
+        alert("데이터 저장 중 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
+      }
     }
   },
 

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { PageContent } from '../types';
+import PageSectionList from './PageSectionList';
 
 interface Props {
   content: PageContent;
@@ -29,27 +30,18 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
 
       <section className="py-12 bg-[#f8f9fa] text-black">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-12">
              <div className="space-y-6">
                 <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase leading-tight whitespace-pre-line">{content.introTitle}</h2>
                 <div className="h-1 w-16 bg-gold-500"></div>
                 <p className="text-xl leading-relaxed font-bold text-gray-700 whitespace-pre-line">{content.introText}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                   {content.sections.map((section, idx) => (
-                      <div key={idx} className="p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-                         <h4 className="font-black mb-2 text-deepgreen flex items-center gap-2 text-xl">
-                           <span className="w-1.5 h-4 bg-gold-500 rounded-full"></span>
-                           {section.title}
-                         </h4>
-                         <p className="text-gray-600 text-base font-bold leading-relaxed">{section.content}</p>
-                      </div>
-                   ))}
-                </div>
              </div>
              <div className="relative group">
                 <img src={content.introImage} className="w-full h-[300px] object-cover rounded-3xl shadow-xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
              </div>
           </div>
+
+          <PageSectionList sections={content.sections} />
         </div>
       </section>
 
@@ -59,9 +51,9 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
                <h3 className="text-gold-600 font-bold tracking-widest text-[10px] mb-1 uppercase">GALLERY</h3>
                <h2 className="text-2xl font-bold uppercase text-deepgreen">비지니스 VIP 갤러리</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                {content.galleryImages.map((img, idx) => (
-                  <div key={idx} className="group relative overflow-hidden rounded-xl shadow-md h-48">
+                  <div key={idx} className="group relative overflow-hidden rounded-xl shadow-md h-40">
                      <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Gallery ${idx}`} />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-3">
                         <p className="text-white font-bold text-[10px] uppercase tracking-tighter">VIP Service {idx + 1}</p>

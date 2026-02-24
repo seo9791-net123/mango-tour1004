@@ -337,11 +337,11 @@ const App: React.FC = () => {
               ) : selectedCategory === 'FOR MEN' ? (
                 <ForMenPage content={pageContents['men']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '관광' ? (
-                <TourPage content={pageContents['tour']} onBack={() => setCurrentPage('home')} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
+                <TourPage content={pageContents['tour']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '이벤트' ? (
-                <EventPage content={pageContents['event']} onBack={() => setCurrentPage('home')} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
+                <EventPage content={pageContents['event']} onBack={() => setCurrentPage('home')} />
               ) : (
-                <CategoryPage category={selectedCategory} products={getFilteredProducts()} onProductClick={handleProductClick} onBack={() => setCurrentPage('home')} />
+                <CategoryPage category={selectedCategory} products={getFilteredProducts()} onProductClick={handleProductClick} onBack={() => setCurrentPage('home')} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
               )
             ) : null}
           </>

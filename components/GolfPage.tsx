@@ -1,35 +1,16 @@
 
 import React, { useState } from 'react';
-import { PageContent, PageSection } from '../types';
+import { PageContent } from '../types';
 import SliderPopup from './SliderPopup';
+import PageSectionList from './PageSectionList';
 
 interface Props {
   content: PageContent;
   onBack: () => void;
-  onSectionClick?: (section: PageSection) => void;
-  isLoggedIn?: boolean;
-  onReqLogin?: () => void;
 }
 
-const GolfPage: React.FC<Props> = ({ content, onBack, onSectionClick, isLoggedIn, onReqLogin }) => {
+const GolfPage: React.FC<Props> = ({ content, onBack }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
-
-  const handleDetailClick = (section: PageSection, displayImage: string) => {
-    if (section.isImageLocked) return; // 잠금 모드일 경우 클릭 무시
-
-    if (!isLoggedIn) {
-      if (confirm('상세 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
-        onReqLogin?.();
-      }
-      return;
-    }
-    
-    const sectionWithImage = {
-      ...section,
-      images: section.images && section.images.length > 0 ? section.images : [displayImage]
-    };
-    onSectionClick?.(sectionWithImage);
-  };
 
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
@@ -60,46 +41,34 @@ const GolfPage: React.FC<Props> = ({ content, onBack, onSectionClick, isLoggedIn
         <div className="max-w-7xl mx-auto px-4 text-center">
            <h2 className="text-3xl md:text-4xl font-black uppercase mb-4 tracking-wide text-deepgreen">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
+           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-12">{content.introText}</p>
+           
+           <PageSectionList sections={content.sections} />
+
+           <div className="mt-16 text-center mb-8">
+              <h3 className="text-gold-600 font-bold tracking-widest text-[10px] mb-1 uppercase">GALLERY</h3>
+              <h2 className="text-2xl font-bold uppercase text-deepgreen">골프 코스 갤러리</h2>
+           </div>
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {content.galleryImages.map((img, idx) => (
+                 <div key={idx} className="group relative overflow-hidden rounded-xl shadow-md h-40">
+                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Golf Gallery ${idx}`} />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-3">
+                       <p className="text-white font-bold text-[10px] uppercase tracking-tighter">Golf Course {idx + 1}</p>
+                    </div>
+                 </div>
+              ))}
+           </div>
+
            {content.slides && content.slides.length > 0 && (
               <button 
                 onClick={() => setIsSliderOpen(true)}
-                className="mt-6 px-8 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2 mx-auto"
+                className="mt-12 px-8 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2 mx-auto"
               >
                 <span>🖼️</span> 상세 갤러리 슬라이드 보기
               </button>
            )}
         </div>
-      </section>
-
-      <section className="py-12 bg-white">
-         <div className="max-w-7xl mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               {Array.from({ length: Math.max(content.sections.length, content.galleryImages.length) }).map((_, idx) => {
-                  const section = content.sections[idx] || { title: '새로운 코스', content: '상세 정보는 준비 중입니다.' };
-                  const image = content.galleryImages[idx] || 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800';
-                  return (
-                    <div key={idx} className="group cursor-pointer" onClick={() => handleDetailClick(section, image)}>
-                       <div className="overflow-hidden rounded-2xl shadow-lg mb-4 h-52 relative">
-                          <img 
-                            src={image} 
-                            className="w-full h-full object-cover transform group-hover:scale-110 transition duration-1000" 
-                            alt={`Golf ${idx}`} 
-                          />
-                          <div className="absolute top-3 left-3 bg-gold-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Course {idx + 1}</div>
-                          {!section.isImageLocked && (
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-500">
-                              <span className="text-white font-bold text-[10px] bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm">상세보기</span>
-                            </div>
-                          )}
-                       </div>
-                       <h3 className="text-2xl font-black mb-2 group-hover:text-gold-600 transition text-deepgreen">{section.title}</h3>
-                       <p className="text-gray-600 text-lg font-bold leading-relaxed">{section.content}</p>
-                    </div>
-                  );
-               })}
-            </div>
-         </div>
       </section>
 
       <section className="py-12 bg-gray-900 text-white">

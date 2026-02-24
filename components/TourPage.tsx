@@ -1,28 +1,14 @@
 
-import React, { useState } from 'react';
-import { PageContent, PageSection } from '../types';
-import SectionDetailModal from './SectionDetailModal';
+import React from 'react';
+import { PageContent } from '../types';
+import PageSectionList from './PageSectionList';
 
 interface Props {
   content: PageContent;
   onBack: () => void;
-  isLoggedIn?: boolean;
-  onReqLogin?: () => void;
 }
 
-const TourPage: React.FC<Props> = ({ content, onBack, isLoggedIn, onReqLogin }) => {
-  const [selectedDetail, setSelectedDetail] = useState<PageSection | null>(null);
-
-  const handleDetailClick = (section: PageSection) => {
-    if (!isLoggedIn) {
-      if (confirm('상세 일정 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
-        onReqLogin?.();
-      }
-      return;
-    }
-    setSelectedDetail(section);
-  };
-
+const TourPage: React.FC<Props> = ({ content, onBack }) => {
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
       {/* Compact Hero - 180px */}
@@ -46,42 +32,19 @@ const TourPage: React.FC<Props> = ({ content, onBack, isLoggedIn, onReqLogin }) 
         <div className="text-center mb-12">
            <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase mb-3">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
+           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-12">{content.introText}</p>
+           
+           <PageSectionList sections={content.sections} />
         </div>
 
-        <div className="space-y-16 mb-12">
-           {Array.from({ length: Math.max(content.sections.length, content.galleryImages.length) }).map((_, idx) => {
-              const section = content.sections[idx] || { title: '새로운 투어 코스', content: '상세 일정은 준비 중입니다.' };
-              const image = content.galleryImages[idx] || (idx === 0 ? content.introImage : 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=800');
-              return (
-                 <div key={idx} className={`flex flex-col lg:flex-row gap-8 items-center ${idx % 2 !== 0 ? 'lg:flex-row-reverse' : ''}`}>
-                    <div className="flex-1 space-y-4">
-                       <h3 className="text-3xl font-black text-deepgreen uppercase leading-tight">{section.title}</h3>
-                       <div className="h-1 w-12 bg-gold-400"></div>
-                       <p className="text-gray-600 leading-relaxed text-lg font-bold">{section.content}</p>
-                       <button 
-                         onClick={() => handleDetailClick(section)}
-                         className="text-gold-600 font-bold text-xs uppercase hover:underline"
-                       >
-                         일정 보기 +
-                       </button>
-                    </div>
-                    <div className="flex-1 w-full">
-                       <img 
-                         src={image} 
-                         className="w-full h-[300px] object-cover rounded-2xl shadow-xl border border-gray-100" 
-                         alt={section.title} 
-                       />
-                    </div>
-                 </div>
-              );
-           })}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-12">
+           {content.galleryImages.map((img, idx) => (
+              <div key={idx} className="group overflow-hidden rounded-xl shadow-md h-40 relative">
+                 <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Tour ${idx}`} />
+              </div>
+           ))}
         </div>
       </section>
-
-      {selectedDetail && (
-        <SectionDetailModal section={selectedDetail} onClose={() => setSelectedDetail(null)} />
-      )}
     </div>
   );
 };

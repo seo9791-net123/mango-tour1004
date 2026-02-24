@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { PageContent } from '../types';
+import PageSectionList from './PageSectionList';
 
 interface Props {
   content: PageContent;
@@ -31,10 +32,12 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
         <div className="text-center mb-10">
            <h2 className="text-2xl md:text-3xl font-bold uppercase mb-3 text-deepgreen">{content.introTitle}</h2>
            <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold">{content.introText}</p>
+           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold mb-12">{content.introText}</p>
+           
+           <PageSectionList sections={content.sections} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
            <div className="md:col-span-2 lg:col-span-2 relative h-[300px] overflow-hidden rounded-2xl shadow-xl group">
               <img src={content.introImage} className="w-full h-full object-cover group-hover:scale-[1.02] transition duration-500" alt="Main Food" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
@@ -44,17 +47,11 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
                  </div>
               </div>
            </div>
-           {content.sections.map((section, idx) => (
-               <div key={idx} className="bg-gray-50 border border-gray-100 p-6 rounded-2xl shadow-sm flex flex-col justify-center hover:bg-white hover:shadow-md transition">
-                  <h4 className="text-2xl font-black mb-3 text-gold-600">{section.title}</h4>
-                  <p className="text-gray-700 text-lg font-bold leading-relaxed">{section.content}</p>
-               </div>
-           ))}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
             {content.galleryImages.map((img, idx) => (
-                <div key={idx} className="group overflow-hidden rounded-xl shadow-md h-32 relative">
+                <div key={idx} className="group overflow-hidden rounded-xl shadow-md h-40 relative">
                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Food Gallery ${idx}`} />
                 </div>
             ))}

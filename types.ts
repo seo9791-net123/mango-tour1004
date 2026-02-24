@@ -81,6 +81,11 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+export interface PageSlide {
+  image: string;
+  description: string;
+}
+
 export interface PageSection {
   title: string;
   content: string;
@@ -100,6 +105,7 @@ export interface PageContent {
   introImage: string; 
   galleryImages: string[];
   sections: PageSection[]; // Manageable text blocks for the admin
+  slides?: PageSlide[];    // Optional gallery slides
 }
 
 export interface PopupNotification {

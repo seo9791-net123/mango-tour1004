@@ -1,15 +1,37 @@
 
-import React from 'react';
-import { Product } from '../types';
+import React, { useState } from 'react';
+import { Product, PageSection } from '../types';
+import SectionDetailModal from './SectionDetailModal';
 
 interface Props {
   category: string;
   products: Product[];
   onProductClick: (id: string) => void;
   onBack: () => void;
+  isLoggedIn?: boolean;
+  onReqLogin?: () => void;
 }
 
-const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onBack }) => {
+const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onBack, isLoggedIn, onReqLogin }) => {
+  const [selectedDetail, setSelectedDetail] = useState<PageSection | null>(null);
+
+  const handlePreviewClick = (product: Product) => {
+    if (!isLoggedIn) {
+      if (confirm('상세 정보 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
+        onReqLogin?.();
+      }
+      return;
+    }
+    // Convert Product to PageSection for SectionDetailModal
+    const section: PageSection = {
+      title: product.title,
+      content: product.description,
+      detailContent: product.detailContent || product.description,
+      detailImages: product.detailImages || [product.image]
+    };
+    setSelectedDetail(section);
+  };
+
   return (
     <div className="py-8 bg-gray-50 min-h-[600px] animate-fade-in">
       <div className="max-w-7xl mx-auto px-4">
@@ -49,11 +71,19 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                   <div className="text-[12px] text-gold-600 font-bold mb-1">{product.location}</div>
                   <h3 className="font-black text-xl mb-2 text-gray-800 line-clamp-2 leading-tight">{product.title}</h3>
                   <p className="text-gray-600 text-base font-bold mb-4 line-clamp-3 h-auto leading-relaxed">{product.description}</p>
-                  <div className="flex justify-between items-center mt-auto border-t pt-3">
-                    <span className="font-black text-lg text-red-600">{product.price.toLocaleString()} VND~</span>
+                  <div className="flex flex-col gap-2 mt-auto border-t pt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-lg text-red-600">{product.price.toLocaleString()} VND~</span>
+                      <button 
+                        onClick={() => handlePreviewClick(product)}
+                        className="text-gold-600 font-bold text-xs hover:underline"
+                      >
+                        미리보기 +
+                      </button>
+                    </div>
                     <button 
                       onClick={() => onProductClick(product.id)}
-                      className="bg-deepgreen text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-opacity-90 transition flex items-center gap-1 shadow-md"
+                      className="w-full bg-deepgreen text-white py-2.5 rounded-lg text-xs font-bold hover:bg-opacity-90 transition flex items-center justify-center gap-1 shadow-md"
                     >
                       견적보기 <span className="text-xs">↗</span>
                     </button>
@@ -64,6 +94,10 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
           </div>
         )}
       </div>
+
+      {selectedDetail && (
+        <SectionDetailModal section={selectedDetail} onClose={() => setSelectedDetail(null)} />
+      )}
     </div>
   );
 };

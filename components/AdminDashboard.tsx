@@ -1,9 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection } from '../types';
+import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide } from '../types';
 import { INITIAL_PAGE_CONTENTS } from '../constants';
 import { driveService } from '../services/googleDriveService';
 import { uploadFile } from '../services/uploadService';
+import { compressImage } from '../utils/imageUtils';
 
 interface Props {
   users: User[];
@@ -204,16 +205,37 @@ const AdminDashboard: React.FC<Props> = ({
           setUploadProgress(progress);
         });
         await callback(downloadUrl);
-      } catch (error) {
-        console.error("Upload failed:", error);
+      } catch (e: any) {
+        console.error("Upload failed, falling back to Base64:", e);
+        
         // Fallback: 로컬 미리보기 (Base64) - 서버 연동 없이도 작동하게 함
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64 = reader.result as string;
-          await callback(base64);
-          alert('이미지 서버 연결 실패로 로컬(Base64)로 저장되었습니다. 구글 드라이브 백업을 권장합니다.');
-        };
-        reader.readAsDataURL(file);
+        try {
+          // Base64로 저장할 때도 압축을 적용하여 Firestore 1MB 제한을 피하도록 함
+          const compressedBlob = await compressImage(file, 800, 800, 0.5); // 더 강력한 압축
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64 = reader.result as string;
+            
+            // Firestore 1MB limit check (approximate for Base64)
+            if (base64.length > 900000) { 
+              alert('⚠️ 경고: 이미지 서버 연결 실패로 압축 후 저장하려고 했으나, 여전히 용량이 너무 큽니다. (Firestore 1MB 제한)\n\n더 작은 이미지를 사용하거나 Cloudinary 설정을 확인해주세요.');
+              return;
+            }
+
+            await callback(base64);
+            alert('이미지 서버 연결 실패로 압축된 로컬(Base64) 데이터로 저장되었습니다.');
+          };
+          reader.readAsDataURL(compressedBlob);
+        } catch (compressErr) {
+          console.error("Compression fallback failed:", compressErr);
+          // 최후의 수단: 원본 Base64 (위험함)
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const base64 = reader.result as string;
+            await callback(base64);
+          };
+          reader.readAsDataURL(file);
+        }
       } finally {
         setIsUploading(false);
         setUploadProgress(0);
@@ -358,6 +380,24 @@ const AdminDashboard: React.FC<Props> = ({
     handlePageFieldChange('sections', newSections);
   };
 
+  const handlePageSlideAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileUpload(e, (url) => {
+      const newSlides = [...(pageForm.slides || []), { image: url, description: '' }];
+      handlePageFieldChange('slides', newSlides);
+    });
+  };
+
+  const handlePageSlideRemove = (idx: number) => {
+    const newSlides = (pageForm.slides || []).filter((_, i) => i !== idx);
+    handlePageFieldChange('slides', newSlides);
+  };
+
+  const handlePageSlideChange = (idx: number, field: keyof PageSlide, value: string) => {
+    const newSlides = [...(pageForm.slides || [])];
+    newSlides[idx] = { ...newSlides[idx], [field]: value };
+    handlePageFieldChange('slides', newSlides);
+  };
+
   const handleAddSection = () => {
     const newSections = [...pageForm.sections, { title: '새 섹션 제목', content: '새 섹션 내용을 입력하세요.' }];
     handlePageFieldChange('sections', newSections);
@@ -497,11 +537,12 @@ const AdminDashboard: React.FC<Props> = ({
                 </button>
             </div>
             <div className="mt-4 p-3 bg-white/50 rounded-xl text-[10px] text-pink-700 space-y-1">
-                <p className="font-bold">설정 방법:</p>
-                <p>1. <a href="https://cloudinary.com" target="_blank" className="underline">cloudinary.com</a> 가입</p>
-                <p>2. Dashboard에서 <b>Cloud Name</b> 확인</p>
-                <p>3. Settings &gt; Upload &gt; <b>Upload presets</b>에서 'Add upload preset' 클릭</p>
-                <p>4. Signing Mode를 <b>Unsigned</b>로 변경하고 저장 후 해당 이름을 입력</p>
+                <p className="font-bold">⚠️ 중요: Cloudinary 설정 가이드</p>
+                <p>1. <a href="https://cloudinary.com" target="_blank" className="underline">cloudinary.com</a> 가입 후 Dashboard에서 <b>Cloud Name</b>을 복사해 넣으세요.</p>
+                <p>2. Settings(톱니바퀴) &gt; Upload &gt; <b>Upload presets</b>에서 'Add upload preset' 클릭</p>
+                <p>3. Signing Mode를 반드시 <b>Unsigned</b>로 변경하세요. (기본값은 Signed이며, 이 경우 업로드가 실패합니다.)</p>
+                <p>4. 생성된 프리셋의 이름을 <b>Upload Preset</b> 칸에 입력하세요.</p>
+                <p>5. <b>용량 제한:</b> 무료 계정은 파일당 용량 제한이 있을 수 있습니다. (현재 앱에서 자동 압축을 지원합니다.)</p>
             </div>
         </div>
       )}
@@ -636,6 +677,11 @@ const AdminDashboard: React.FC<Props> = ({
               {heroImages.map((img, idx) => (
                 <div key={idx} className="relative group rounded-2xl overflow-hidden aspect-video shadow-md border bg-gray-50">
                   <img src={img} alt={`Slide ${idx}`} className="w-full h-full object-cover" />
+                  {img.startsWith('data:') && (
+                    <div className="absolute top-1 left-1 bg-red-500/80 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold backdrop-blur-sm">
+                      Base64 ({(img.length / 1024).toFixed(0)}KB)
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
                     <label className="bg-white text-deepgreen px-3 py-1 rounded-full font-bold text-[10px] cursor-pointer hover:bg-gold-50 shadow-md">
                       교체 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleReplaceHeroImage(idx, e)} />
@@ -673,6 +719,11 @@ const AdminDashboard: React.FC<Props> = ({
                  <div key={p.id} className={`flex flex-col border rounded-3xl bg-white shadow-xl overflow-hidden transition-all duration-300 ${editingProductId === p.id ? 'ring-4 ring-gold-400' : 'hover:shadow-2xl'}`}>
                    <div className="h-48 bg-gray-100 relative group">
                      <img src={p.image} className="w-full h-full object-cover" alt={p.title} />
+                     {p.image.startsWith('data:') && (
+                       <div className="absolute top-2 left-2 bg-red-500/80 text-white text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur-sm">
+                         Base64 ({(p.image.length / 1024).toFixed(0)}KB)
+                       </div>
+                     )}
                      <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center cursor-pointer text-white">
                         <span className="text-2xl mb-1">🖼️</span>
                         <span className="text-xs font-bold">사진 교체</span>
@@ -868,6 +919,40 @@ const AdminDashboard: React.FC<Props> = ({
 
                {/* Sections & Gallery */}
                <div className="space-y-8">
+                  {/* 갤러리 슬라이드 관리 */}
+                  <div className="space-y-4">
+                     <div className="flex justify-between items-center">
+                        <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
+                           <span className="text-xl">🖼️</span> 갤러리 슬라이드 관리
+                        </h4>
+                        <label className="bg-gold-500 text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-sm hover:bg-gold-600 transition cursor-pointer">
+                          + 슬라이드 추가
+                          <input type="file" className="hidden" accept="image/*" onChange={handlePageSlideAdd} />
+                        </label>
+                     </div>
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                       {pageForm.slides?.map((slide, idx) => (
+                         <div key={idx} className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm space-y-2 relative group">
+                           <button 
+                             onClick={() => handlePageSlideRemove(idx)}
+                             className="absolute top-2 right-2 z-10 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition"
+                           >
+                             ✕
+                           </button>
+                           <div className="h-32 rounded-xl overflow-hidden bg-gray-100">
+                             <img src={slide.image} className="w-full h-full object-cover" alt={`Slide ${idx}`} />
+                           </div>
+                           <textarea 
+                             className="w-full text-[10px] p-2 border rounded-lg h-12 resize-none outline-none focus:border-gold-500"
+                             value={slide.description}
+                             onChange={(e) => handlePageSlideChange(idx, 'description', e.target.value)}
+                             placeholder="슬라이드 설명 (선택)"
+                           />
+                         </div>
+                       ))}
+                     </div>
+                  </div>
+
                   <div className="space-y-4">
                      <div className="flex justify-between items-center">
                         <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
@@ -1016,6 +1101,11 @@ const AdminDashboard: React.FC<Props> = ({
                 <div key={idx} className="border-2 border-gray-50 p-6 rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
                   <div className="w-20 h-20 mb-3 bg-white rounded-3xl shadow-inner flex items-center justify-center p-4 relative overflow-hidden">
                     <img src={item.icon} alt={item.label} className="w-full h-full object-contain transform group-hover:scale-110 transition" />
+                    {item.icon.startsWith('data:') && (
+                      <div className="absolute top-0 left-0 right-0 bg-red-500/80 text-white text-[7px] text-center py-0.5 font-bold">
+                        Base64 ({(item.icon.length / 1024).toFixed(0)}KB)
+                      </div>
+                    )}
                     <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white text-[10px] font-bold flex-col">
                       <span>🖼️</span>
                       <span>아이콘 변경</span>

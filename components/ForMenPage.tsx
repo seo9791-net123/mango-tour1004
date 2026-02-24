@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { PageContent } from '../types';
+import PageSectionList from './PageSectionList';
 
 interface Props {
   content: PageContent;
@@ -37,14 +38,6 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
                  <h2 className="text-3xl md:text-5xl font-black uppercase mb-3 text-gold-500" style={{ fontFamily: 'serif' }}>{content.introTitle}</h2>
                  <div className="h-1 w-12 bg-white/20"></div>
                  <p className="text-xl leading-relaxed text-gray-300 font-bold whitespace-pre-line">{content.introText}</p>
-                 <div className="space-y-3">
-                    {content.sections.map((section, idx) => (
-                       <div key={idx} className="p-5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition cursor-default">
-                          <h4 className="text-gold-500 font-black mb-2 text-xl">{section.title}</h4>
-                          <p className="text-gray-400 text-base font-bold leading-relaxed">{section.content}</p>
-                       </div>
-                    ))}
-                 </div>
                  <div className="pt-3">
                     <button 
                       onClick={() => alert('커뮤니티에 비공개 글로 작성 하시면 답변 및 연락을 드리겠습니다')}
@@ -59,12 +52,16 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
               </div>
            </div>
 
+           <div className="mb-16">
+             <PageSectionList sections={content.sections} />
+           </div>
+
            <div className="text-center mb-8">
               <h3 className="text-lg font-bold text-white uppercase tracking-widest border-b border-gold-500 inline-block">HCMC Night Collection</h3>
            </div>
-           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {content.galleryImages.map((img, idx) => (
-                  <div key={idx} className="group overflow-hidden rounded-xl shadow-xl h-52 relative border border-white/5">
+                  <div key={idx} className="group overflow-hidden rounded-xl shadow-xl h-40 relative border border-white/5">
                      <img src={img} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-1000" alt={`Men ${idx}`} />
                      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity"></div>
                      <div className="absolute bottom-3 left-3 right-3 text-white">
