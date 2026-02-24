@@ -101,48 +101,48 @@ ${inquiryText || '(내용 없음)'}
                </h3>
                
                {/* Basic Info Table */}
-               <table className="w-full mb-6 text-sm md:text-base">
+               <table className="w-full mb-6 text-sm md:text-base table-fixed">
                   <tbody>
                     {product ? (
                       <>
                         <tr className="border-b">
-                          <td className="py-3 font-bold w-32 text-gray-600 bg-gray-50 pl-2">상품명</td>
-                          <td className="py-3 pl-4">{title}</td>
+                          <td className="py-2 font-bold w-20 md:w-24 text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">상품명</td>
+                          <td className="py-2 pl-3 text-sm md:text-base">{title}</td>
                         </tr>
                         <tr className="border-b">
-                          <td className="py-3 font-bold text-gray-600 bg-gray-50 pl-2">지역/일정</td>
-                          <td className="py-3 pl-4">{location} / {duration}</td>
+                          <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">지역/일정</td>
+                          <td className="py-2 pl-3 text-sm md:text-base">{location} / {duration}</td>
                         </tr>
                         <tr className="border-b">
-                          <td className="py-3 font-bold text-gray-600 bg-gray-50 pl-2">포함사항</td>
-                          <td className="py-3 pl-4 text-gray-700">{product.description}</td>
+                          <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">포함사항</td>
+                          <td className="py-2 pl-3 text-sm md:text-base text-gray-700">{product.description}</td>
                         </tr>
                       </>
                     ) : (
                       <>
                         <tr className="border-b">
-                          <td className="py-3 font-bold w-32 text-gray-600 bg-gray-50 pl-2">여행 컨셉</td>
-                          <td className="py-3 pl-4 italic">"{plan?.summary}"</td>
+                          <td className="py-2 font-bold w-20 md:w-24 text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">여행 컨셉</td>
+                          <td className="py-2 pl-3 italic text-sm md:text-base">"{plan?.summary}"</td>
                         </tr>
                         {plan?.options && (
                           <>
                              <tr className="border-b">
-                               <td className="py-3 font-bold text-gray-600 bg-gray-50 pl-2">가이드</td>
-                               <td className="py-3 pl-4">{plan.options.guide}</td>
+                               <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">가이드</td>
+                               <td className="py-2 pl-3 text-sm md:text-base">{plan.options.guide}</td>
                              </tr>
                              <tr className="border-b">
-                               <td className="py-3 font-bold text-gray-600 bg-gray-50 pl-2">차량</td>
-                               <td className="py-3 pl-4">{plan.options.vehicle}</td>
+                               <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">차량</td>
+                               <td className="py-2 pl-3 text-sm md:text-base">{plan.options.vehicle}</td>
                              </tr>
                           </>
                         )}
                       </>
                     )}
                     <tr className="border-b-2 border-deepgreen bg-yellow-50/50 print:bg-gray-100 print:print-color-adjust-exact">
-                      <td className="py-4 font-bold text-red-600 pl-2">견적 금액</td>
-                      <td className="py-4 pl-4">
-                        <span className="font-bold text-xl text-red-600">{price}</span>
-                        <span className="text-sm font-normal text-gray-500 ml-2">
+                      <td className="py-3 font-bold text-red-600 pl-2 text-xs md:text-sm">견적 금액</td>
+                      <td className="py-3 pl-3">
+                        <span className="font-bold text-lg md:text-xl text-red-600">{price}</span>
+                        <span className="text-[10px] md:text-sm font-normal text-gray-500 ml-2">
                           (항공권 제외{product ? ', 1인 기준' : ''})
                         </span>
                       </td>
