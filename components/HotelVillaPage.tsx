@@ -31,13 +31,13 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 bg-white text-black">
+      <section className="py-8 bg-white text-black">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row gap-8 items-center mb-12">
-             <div className="flex-1 space-y-4">
-                <h2 className="text-3xl md:text-4xl font-black uppercase leading-tight text-deepgreen">{content.introTitle}</h2>
+          <div className="flex flex-col md:flex-row gap-8 items-center mb-8">
+             <div className="flex-1 space-y-3">
+                <h2 className="text-2xl md:text-3xl font-black uppercase leading-tight text-deepgreen">{content.introTitle}</h2>
                 <div className="h-1 w-16 bg-gold-500"></div>
-                <p className="text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
+                <p className="text-lg leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
                 {content.slides && content.slides.length > 0 && (
                   <button 
                     onClick={() => setIsSliderOpen(true)}
@@ -57,7 +57,7 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
              </div>
           </div>
 
-          <div className="mb-12">
+          <div className="mb-8">
             <PageSectionList sections={content.sections} />
           </div>
 
@@ -76,7 +76,7 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
       
-      <section className="py-12 bg-[#f8f9fa] text-center">
+      <section className="py-8 bg-[#f8f9fa] text-center">
          <div className="max-w-4xl mx-auto px-4">
             <h2 className="text-xl font-bold mb-4 text-deepgreen">완벽한 휴식을 위한 큐레이션</h2>
             <div className="flex flex-wrap justify-center gap-2">

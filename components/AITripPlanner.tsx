@@ -24,6 +24,27 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check for API Key if using Gemini 3 models
+    if (window.aistudio) {
+      const hasKey = await window.aistudio.hasSelectedApiKey();
+      if (!hasKey) {
+        if (confirm('AI 기능을 사용하려면 API 키 선택이 필요합니다. 키 선택 창을 여시겠습니까?\n(무료 모델을 선택하시면 비용이 발생하지 않습니다.)')) {
+          await window.aistudio.openSelectKey();
+        }
+        return;
+      }
+    }
+
+    // Additional check for process.env.API_KEY in case hasSelectedApiKey is true but env is not updated
+    const currentKey = (typeof process !== 'undefined' && process.env ? (process.env.API_KEY || process.env.GEMINI_API_KEY) : null) || (window as any).API_KEY;
+    if (!currentKey || currentKey === "undefined") {
+       if (confirm('API 키가 아직 시스템에 반영되지 않았습니다. 키 선택 창을 다시 한 번 확인하시겠습니까?')) {
+         if (window.aistudio) await window.aistudio.openSelectKey();
+       }
+       return;
+    }
+
     setLoading(true);
     try {
       const result = await generateTripPlan(formData);
@@ -35,6 +56,7 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
       setIsModalOpen(false);
       onPlanGenerated(result);
     } catch (error) {
+      console.error("Trip plan generation error:", error);
       alert('여행 계획을 생성하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);
@@ -46,18 +68,28 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
       {/* Header if onBack exists (Page Mode) */}
       {onBack && (
          <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
-            <div className="flex items-center gap-3 mb-3">
-                <button
-                onClick={onBack}
-                className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition shadow-sm text-gray-600"
-                >
-                ←
-                </button>
-                <h2 className="text-xl font-bold text-deepgreen">
-                    나만의 여행 만들기 (AI)
-                </h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                <div className="flex items-center gap-3">
+                    <button
+                    onClick={onBack}
+                    className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition shadow-sm text-gray-600"
+                    >
+                    ←
+                    </button>
+                    <h2 className="text-xl font-bold text-deepgreen">
+                        나만의 여행 만들기 (AI)
+                    </h2>
+                </div>
+                {window.aistudio && (
+                  <button 
+                    onClick={() => window.aistudio.openSelectKey()}
+                    className="text-[10px] font-bold text-gold-600 bg-gold-50 px-3 py-1.5 rounded-full border border-gold-200 hover:bg-gold-100 transition self-start md:self-auto"
+                  >
+                    🔑 API 키 설정/변경
+                  </button>
+                )}
             </div>
-            <p className="text-gray-600 mb-4 pl-11 text-xs">
+            <p className="text-gray-600 mb-4 pl-0 md:pl-11 text-xs">
                 인공지능이 고객님의 취향을 분석하여 최적의 일정과 견적을 제안합니다.
             </p>
          </div>
@@ -79,12 +111,128 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white transition-all duration-200 bg-gold-500 text-base rounded-full hover:bg-gold-600 hover:shadow-lg hover:-translate-y-1 focus:outline-none ring-offset-2 focus:ring-2 ring-gold-400"
+            className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-gold-500 text-lg rounded-full hover:bg-gold-600 hover:shadow-lg hover:-translate-y-1 focus:outline-none ring-offset-2 focus:ring-2 ring-gold-400"
           >
-            <span className="mr-2 text-xl">✈️</span>
-            나만의 여행상품 만들기
+            <span className="mr-2 text-2xl">✈️</span>
+            AI로 나만의 여행상품 만들기
             <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 animate-ping opacity-0 group-hover:opacity-100 duration-1000"></div>
           </button>
+        </div>
+      </section>
+
+      {/* How it Works Section */}
+      <section className="bg-gray-50 py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl font-black text-deepgreen mb-2">여행이 만들어지는 과정</h2>
+            <p className="text-gray-500 text-sm">단 3단계면 충분합니다. 나머지는 망고투어가 책임집니다.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { step: '01', title: '취향 선택', desc: '여행지, 테마, 인원 등 고객님의 취향을 AI에게 알려주세요.', icon: '🎯' },
+              { step: '02', title: 'AI 맞춤 설계', desc: 'Gemini AI가 최적의 동선과 합리적인 견적을 즉시 산출합니다.', icon: '⚡' },
+              { step: '03', title: '상담 및 확정', desc: '생성된 견적서를 바탕으로 전문가와 최종 상담 후 여행을 시작하세요.', icon: '🤝' }
+            ].map((item, i) => (
+              <div key={i} className="relative group">
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="text-4xl mb-4">{item.icon}</div>
+                  <div className="text-gold-500 font-black text-4xl opacity-10 absolute top-6 right-8 group-hover:opacity-20 transition-opacity">{item.step}</div>
+                  <h3 className="text-lg font-bold text-deepgreen mb-2">{item.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
+                </div>
+                {i < 2 && (
+                  <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                    <span className="text-gray-300 text-2xl">→</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Manual Inquiry Section */}
+      <section className="max-w-7xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+           <div className="space-y-6">
+              <div>
+                 <h3 className="text-gold-600 font-bold tracking-widest text-[10px] md:text-xs mb-2 uppercase">DIRECT CUSTOM INQUIRY</h3>
+                 <h2 className="text-2xl md:text-3xl font-black text-deepgreen leading-tight">
+                    AI보다 더 정교한<br/>
+                    <span className="text-gold-500">1:1 맞춤 상담</span>이 필요하신가요?
+                 </h2>
+              </div>
+              <p className="text-gray-600 leading-relaxed font-medium text-sm md:text-base">
+                 망고투어의 전문 상담원이 고객님의 모든 요구사항을 반영하여<br className="hidden md:block"/>
+                 세상에 단 하나뿐인 특별한 여행 상품을 직접 설계해 드립니다.
+              </p>
+              <ul className="space-y-3">
+                 {[
+                   '대규모 단체 행사 및 기업 연수 전문',
+                   'VVIP를 위한 초호화 럭셔리 빌라 및 전용기 서비스',
+                   '특수 목적 여행 (웨딩, 촬영, 비즈니스 미팅 등)',
+                   '실시간 항공권 및 호텔 최저가 조합'
+                 ].map((item, i) => (
+                   <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700">
+                      <span className="w-5 h-5 rounded-full bg-gold-100 text-gold-600 flex items-center justify-center text-[10px]">✓</span>
+                      {item}
+                   </li>
+                 ))}
+              </ul>
+              <div className="pt-4">
+                 <button 
+                   onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
+                   className="px-8 py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-xl hover:bg-opacity-90 transition flex items-center gap-3"
+                 >
+                    <span className="text-2xl">💬</span>
+                    전문가에게 직접 문의하기
+                 </button>
+              </div>
+           </div>
+           
+           <div className="relative">
+              <div className="absolute -inset-4 bg-gold-500/10 rounded-[2.5rem] rotate-3"></div>
+              <div className="relative bg-white border border-gray-100 p-8 rounded-[2rem] shadow-2xl">
+                 <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-full bg-gold-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">M</div>
+                    <div>
+                       <p className="text-xs font-bold text-gray-400 uppercase">Customer Service</p>
+                       <p className="text-lg font-black text-deepgreen">MANGO TOUR 실시간 상담</p>
+                    </div>
+                 </div>
+                 
+                 <div className="space-y-4 mb-8">
+                    <div className="flex gap-3">
+                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">👤</div>
+                       <div className="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-xs text-gray-700 font-medium">
+                          안녕하세요! 어떤 여행을 계획 중이신가요?
+                       </div>
+                    </div>
+                    <div className="flex gap-3 flex-row-reverse">
+                       <div className="w-8 h-8 rounded-full bg-gold-500 flex items-center justify-center shrink-0 text-white text-[10px] font-bold">YOU</div>
+                       <div className="bg-gold-500 p-3 rounded-2xl rounded-tr-none text-xs text-white font-bold shadow-md">
+                          다낭 3박 4일 골프 투어 견적 부탁드려요.
+                       </div>
+                    </div>
+                 </div>
+                 
+                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center">
+                    <p className="text-[10px] text-gray-400 mb-2 font-bold">상담 가능 시간: 09:00 - 22:00 (연중무휴)</p>
+                    <div className="flex justify-center gap-4">
+                       <div className="text-center">
+                          <p className="text-lg font-black text-deepgreen">98%</p>
+                          <p className="text-[8px] text-gray-500 font-bold uppercase">Response Rate</p>
+                       </div>
+                       <div className="w-px bg-gray-200 h-8 self-center"></div>
+                       <div className="text-center">
+                          <p className="text-lg font-black text-deepgreen">5min</p>
+                          <p className="text-[8px] text-gray-500 font-bold uppercase">Avg. Response</p>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
         </div>
       </section>
 

@@ -28,16 +28,16 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 bg-[#f8f9fa] text-black">
+      <section className="py-8 bg-[#f8f9fa] text-black">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-12">
-             <div className="space-y-6">
-                <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase leading-tight whitespace-pre-line">{content.introTitle}</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center mb-8">
+             <div className="space-y-4">
+                <h2 className="text-2xl md:text-3xl font-black text-deepgreen uppercase leading-tight whitespace-pre-line">{content.introTitle}</h2>
                 <div className="h-1 w-16 bg-gold-500"></div>
-                <p className="text-xl leading-relaxed font-bold text-gray-700 whitespace-pre-line">{content.introText}</p>
+                <p className="text-lg leading-relaxed font-bold text-gray-700 whitespace-pre-line">{content.introText}</p>
              </div>
              <div className="relative group">
-                <img src={content.introImage} className="w-full h-[300px] object-cover rounded-3xl shadow-xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
+                <img src={content.introImage} className="w-full h-[250px] object-cover rounded-3xl shadow-xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
              </div>
           </div>
 
@@ -45,9 +45,9 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 bg-white">
+      <section className="py-8 bg-white">
          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
                <h3 className="text-gold-600 font-bold tracking-widest text-[10px] mb-1 uppercase">GALLERY</h3>
                <h2 className="text-2xl font-bold uppercase text-deepgreen">비지니스 VIP 갤러리</h2>
             </div>
@@ -64,7 +64,7 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
          </div>
       </section>
 
-      <section className="py-12 bg-deepgreen text-white text-center">
+      <section className="py-8 bg-deepgreen text-white text-center">
          <div className="max-w-7xl mx-auto px-4">
             <h2 className="text-xl md:text-2xl font-bold mb-3 uppercase">성공적인 비지니스를 위한 파트너</h2>
             <p className="text-xs opacity-70 mb-6 max-w-2xl mx-auto">MANGO TOUR는 베트남 남부 전 지역에서 고객님의 품격을 높여드리는 전문 의전팀을 운영하고 있습니다.</p>

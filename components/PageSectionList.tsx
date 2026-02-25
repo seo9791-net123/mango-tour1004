@@ -17,13 +17,13 @@ const PageSectionList: React.FC<Props> = ({ sections }) => {
       {sections.map((section, idx) => (
         <div 
           key={idx} 
-          className="bg-[#fcfcfc] rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-md transition-shadow duration-300 group cursor-pointer relative"
+          className="bg-[#fcfcfc] rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-md transition-shadow duration-300 group cursor-pointer relative"
           onClick={() => setSelectedSection(section)}
         >
-          <h3 className="text-[22px] font-bold text-[#004d40] mb-4 leading-tight">
+          <h3 className="text-[20px] font-bold text-[#004d40] mb-2 leading-tight">
             {section.title}
           </h3>
-          <p className="text-[#4a4a4a] text-[17px] font-medium leading-relaxed mb-12 flex-grow">
+          <p className="text-[#4a4a4a] text-[15px] font-medium leading-relaxed mb-6 flex-grow">
             {section.content}
           </p>
           <div className="flex justify-end mt-auto">

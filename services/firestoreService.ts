@@ -7,7 +7,7 @@ import {
   writeBatch,
   getDoc 
 } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { db, isDefaultConfig } from "./firebaseConfig";
 import { 
   PageContent,
   PopupNotification
@@ -55,7 +55,8 @@ export const firestoreService = {
         videos: INITIAL_VIDEOS,
         posts: INITIAL_POSTS,
         pageContents: INITIAL_PAGE_CONTENTS,
-        popup: INITIAL_POPUP
+        popup: INITIAL_POPUP,
+        isDefaultConfig: true
       };
     }
 
@@ -136,7 +137,8 @@ export const firestoreService = {
         videos,
         posts,
         pageContents,
-        popup
+        popup,
+        isDefaultConfig
       };
 
     } catch (error: any) {
@@ -150,7 +152,8 @@ export const firestoreService = {
         videos: INITIAL_VIDEOS,
         posts: INITIAL_POSTS,
         pageContents: INITIAL_PAGE_CONTENTS,
-        popup: INITIAL_POPUP
+        popup: INITIAL_POPUP,
+        isDefaultConfig: true
       };
     }
   },

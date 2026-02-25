@@ -28,19 +28,19 @@ const CulturePage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 max-w-7xl mx-auto px-4">
-         <div className="flex flex-col lg:flex-row gap-8 items-center mb-12">
+      <section className="py-8 max-w-7xl mx-auto px-4">
+         <div className="flex flex-col lg:flex-row gap-8 items-center mb-8">
             <div className="flex-1 order-2 lg:order-1 relative group">
-               <img src={content.introImage} className="w-full h-[300px] object-cover rounded-2xl shadow-xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
+               <img src={content.introImage} className="w-full h-[250px] object-cover rounded-2xl shadow-xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
             </div>
-            <div className="flex-1 order-1 lg:order-2 space-y-4">
-               <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase leading-tight">{content.introTitle}</h2>
+            <div className="flex-1 order-1 lg:order-2 space-y-3">
+               <h2 className="text-2xl md:text-3xl font-black text-deepgreen uppercase leading-tight">{content.introTitle}</h2>
                <div className="h-1 w-16 bg-gold-500"></div>
-               <p className="text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
+               <p className="text-lg leading-relaxed text-gray-700 font-bold whitespace-pre-line">{content.introText}</p>
             </div>
          </div>
 
-         <div className="mb-12">
+         <div className="mb-8">
            <PageSectionList sections={content.sections} />
          </div>
 

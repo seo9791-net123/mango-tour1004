@@ -28,16 +28,16 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 max-w-7xl mx-auto px-4">
-        <div className="text-center mb-12">
-           <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase mb-3">{content.introTitle}</h2>
-           <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-12">{content.introText}</p>
+      <section className="py-8 max-w-7xl mx-auto px-4">
+        <div className="text-center mb-8">
+           <h2 className="text-2xl md:text-3xl font-black text-deepgreen uppercase mb-2">{content.introTitle}</h2>
+           <div className="h-1 w-16 bg-gold-500 mx-auto mb-4"></div>
+           <p className="max-w-4xl mx-auto text-lg leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-8">{content.introText}</p>
            
            <PageSectionList sections={content.sections} />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-8">
            {content.galleryImages.map((img, idx) => (
               <div key={idx} className="group overflow-hidden rounded-xl shadow-md h-40 relative">
                  <img src={img} className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700" alt={`Tour ${idx}`} />

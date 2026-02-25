@@ -10,11 +10,13 @@ const firebaseConfig = {
   authDomain: localStorage.getItem('fb_auth_domain') || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gen-lang-client-0698853496.firebaseapp.com",
   databaseURL: "https://gen-lang-client-0698853496-default-rtdb.firebaseio.com",
   projectId: localStorage.getItem('fb_project_id') || import.meta.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0698853496",
-  storageBucket: localStorage.getItem('fb_storage_bucket') || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0698853496.firebasestorage.app",
+  storageBucket: localStorage.getItem('fb_storage_bucket') || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0698853496.appspot.com",
   messagingSenderId: localStorage.getItem('fb_messaging_sender_id') || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "517438076",
   appId: localStorage.getItem('fb_app_id') || import.meta.env.VITE_FIREBASE_APP_ID || "1:517438076:web:eb2d6156caf063415427f9",
   measurementId: "G-EF42069ZSS"
 };
+
+const isDefaultConfig = !localStorage.getItem('fb_project_id') && !import.meta.env.VITE_FIREBASE_PROJECT_ID;
 
 // Firebase 앱 초기화 (싱글톤 패턴)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -34,4 +36,4 @@ const storage = getStorage(app);
 
 console.log("Firebase initialized with Long Polling enabled");
 
-export { app, db, auth, storage };
+export { app, db, auth, storage, isDefaultConfig };

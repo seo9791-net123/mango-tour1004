@@ -114,23 +114,43 @@ const AdminDashboard: React.FC<Props> = ({
             setIsDriveConnected(true);
             setIsConnecting(false);
             alert('구글 드라이브 연결 성공! 이제 저장/복원 기능을 사용할 수 있습니다.');
+        } else {
+            setIsConnecting(false);
         }
       });
 
       // 3. Request Token (Login Popup)
+      // 팝업 차단 안내를 미리 띄우거나, 팝업 호출 직전에 알림
       driveService.requestAccessToken();
       
+      // 팝업이 뜨지 않을 경우를 대비해 10초 후 로딩 상태 해제 (성공하지 않았다면)
+      setTimeout(() => {
+        setIsConnecting(prev => {
+          if (prev) {
+            console.log("Connection timeout - resetting state");
+            return false;
+          }
+          return false;
+        });
+      }, 15000);
+      
     } catch (e: any) {
-      console.error(e);
+      console.error("Drive Connection Error:", e);
       setIsConnecting(false);
       
       const errorMsg = getErrorMessage(e);
       
-      // 403 API Not Enabled Error Check
+      if (errorMsg.includes('popup_closed-by-user')) {
+          // 사용자가 창을 닫은 경우는 별도 알림 없이 로딩만 해제
+          return;
+      }
+
       if (errorMsg.includes('has not been used in project') || errorMsg.includes('is disabled') || errorMsg.includes('PERMISSION_DENIED')) {
           alert(`[🚨 중요: 구글 드라이브 API 미활성화]\n\n구글 클라우드 콘솔에서 'Google Drive API'가 활성화되지 않았습니다.\n\n해결 방법:\n1. Google Cloud Console 접속\n2. 'Google Drive API' 검색 후 [사용(ENABLE)] 클릭\n3. 1~2분 뒤 다시 시도해주세요.\n\n(상세 에러: ${errorMsg})`);
+      } else if (errorMsg.includes('Script load failed') || errorMsg.includes('스크립트 로드 실패')) {
+          alert(errorMsg);
       } else {
-          alert(`연결 중 오류가 발생했습니다.\n\n${errorMsg}`);
+          alert(`연결 중 오류가 발생했습니다. 팝업 차단이 설정되어 있는지 확인해 주세요.\n\n상세 에러: ${errorMsg}`);
       }
     }
   };
@@ -463,10 +483,10 @@ const AdminDashboard: React.FC<Props> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in-up">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <h1 className="text-3xl font-bold text-deepgreen flex items-center gap-2">
-           <span className="text-4xl">🛠️</span> MANGO TOUR 관리 센터
+    <div className="max-w-7xl mx-auto px-4 py-4 animate-fade-in-up">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+        <h1 className="text-2xl font-bold text-deepgreen flex items-center gap-2">
+           <span className="text-3xl">🛠️</span> MANGO TOUR 관리 센터
         </h1>
         <div className="flex gap-2">
             <button onClick={handleExportData} className="px-6 py-2 bg-gray-600 text-white rounded-full font-bold hover:bg-gray-700 transition text-sm flex items-center gap-2">
@@ -542,7 +562,8 @@ const AdminDashboard: React.FC<Props> = ({
                 <p>2. Settings(톱니바퀴) &gt; Upload &gt; <b>Upload presets</b>에서 'Add upload preset' 클릭</p>
                 <p>3. Signing Mode를 반드시 <b>Unsigned</b>로 변경하세요. (기본값은 Signed이며, 이 경우 업로드가 실패합니다.)</p>
                 <p>4. 생성된 프리셋의 이름을 <b>Upload Preset</b> 칸에 입력하세요.</p>
-                <p>5. <b>용량 제한:</b> 무료 계정은 파일당 용량 제한이 있을 수 있습니다. (현재 앱에서 자동 압축을 지원합니다.)</p>
+                <p>5. <b>동영상 업로드 주의:</b> 프리셋 설정 중 <b>Incoming Transformation</b>은 비워두세요. (g_auto 설정 시 동영상 업로드 에러 발생)</p>
+                <p>6. <b>용량 제한:</b> 무료 계정은 파일당 용량 제한이 있을 수 있습니다. (현재 앱에서 자동 압축을 지원합니다.)</p>
             </div>
         </div>
       )}
@@ -647,7 +668,7 @@ const AdminDashboard: React.FC<Props> = ({
       )}
       
       {/* Tabs */}
-      <div className="flex gap-2 mb-8 border-b-2 border-gray-100 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex gap-2 mb-4 border-b-2 border-gray-100 overflow-x-auto pb-1 scrollbar-hide">
         {[
           { id: 'users', label: '👥 회원' },
           { id: 'hero', label: '🖼️ 슬라이드' },
@@ -717,7 +738,7 @@ const AdminDashboard: React.FC<Props> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                {products.map((p) => (
                  <div key={p.id} className={`flex flex-col border rounded-3xl bg-white shadow-xl overflow-hidden transition-all duration-300 ${editingProductId === p.id ? 'ring-4 ring-gold-400' : 'hover:shadow-2xl'}`}>
-                   <div className="h-48 bg-gray-100 relative group">
+                   <div className="h-40 bg-gray-100 relative group">
                      <img src={p.image} className="w-full h-full object-cover" alt={p.title} />
                      {p.image.startsWith('data:') && (
                        <div className="absolute top-2 left-2 bg-red-500/80 text-white text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur-sm">
@@ -731,17 +752,17 @@ const AdminDashboard: React.FC<Props> = ({
                      </label>
                    </div>
                    
-                   <div className="p-6 space-y-4">
-                     <div className="space-y-1">
+                   <div className="p-4 space-y-2">
+                     <div className="space-y-0.5">
                         <label className="text-[10px] font-bold text-gold-600 uppercase">상품명</label>
                         <input className="w-full font-bold text-gray-800 border-b-2 border-transparent focus:border-gold-500 outline-none transition" value={p.title} onChange={e => handleProductFieldChange(p.id, 'title', e.target.value)} />
                      </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
+                     <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-0.5">
                           <label className="text-[10px] font-bold text-gray-400 uppercase">가격 (VND)</label>
                           <input type="number" className="w-full text-red-600 font-bold border-b outline-none" value={p.price} onChange={e => handleProductFieldChange(p.id, 'price', parseInt(e.target.value) || 0)} />
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           <label className="text-[10px] font-bold text-gray-400 uppercase">지역</label>
                           <input className="w-full text-gray-600 text-sm border-b outline-none" value={p.location} onChange={e => handleProductFieldChange(p.id, 'location', e.target.value)} />
                         </div>
@@ -750,7 +771,7 @@ const AdminDashboard: React.FC<Props> = ({
                      {/* 상세 편집 모드에서만 보이는 추가 필드들 */}
                      {editingProductId === p.id && (
                        <div className="pt-4 border-t space-y-4 animate-fade-in">
-                         <div className="grid grid-cols-2 gap-4">
+                         <div className="grid grid-cols-2 gap-3">
                            <div className="space-y-1">
                              <label className="text-[10px] font-bold text-gray-400 uppercase">일정 (예: 4박 6일)</label>
                              <input className="w-full text-xs border-b outline-none" value={p.duration} onChange={e => handleProductFieldChange(p.id, 'duration', e.target.value)} />
@@ -873,14 +894,14 @@ const AdminDashboard: React.FC<Props> = ({
               </select>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                {/* Hero & Intro Section */}
-               <div className="space-y-6">
-                  <div className="space-y-4">
+               <div className="space-y-4">
+                  <div className="space-y-2">
                     <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
                         <span className="text-xl">1️⃣</span> 상단 배너 설정 (Hero)
                     </h4>
-                    <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                    <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-2 shadow-sm">
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-400">메인 타이틀</label>
                             <input className="w-full p-3 border rounded-xl font-bold shadow-sm focus:ring-2 focus:ring-gold-500 outline-none" value={pageForm.heroTitle} onChange={(e) => handlePageFieldChange('heroTitle', e.target.value)} placeholder="큰 제목" />
@@ -899,11 +920,11 @@ const AdminDashboard: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                      <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
                         <span className="text-xl">2️⃣</span> 소개 섹션 (Intro)
                     </h4>
-                    <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 space-y-4 shadow-sm">
+                    <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-2 shadow-sm">
                         <input className="w-full p-3 border rounded-xl font-bold shadow-sm" value={pageForm.introTitle} onChange={(e) => handlePageFieldChange('introTitle', e.target.value)} placeholder="소개 제목" />
                         <textarea className="w-full p-3 border rounded-xl h-32 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-gold-500 resize-none" value={pageForm.introText} onChange={(e) => handlePageFieldChange('introText', e.target.value)} placeholder="소개글 본문" />
                         <div className="h-32 bg-white rounded-2xl overflow-hidden relative group border-2 border-white shadow-sm">
@@ -918,9 +939,9 @@ const AdminDashboard: React.FC<Props> = ({
                </div>
 
                {/* Sections & Gallery */}
-               <div className="space-y-8">
+               <div className="space-y-4">
                   {/* 갤러리 슬라이드 관리 */}
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                      <div className="flex justify-between items-center">
                         <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
                            <span className="text-xl">🖼️</span> 갤러리 슬라이드 관리
@@ -1098,7 +1119,7 @@ const AdminDashboard: React.FC<Props> = ({
             <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">메인 아이콘 메뉴 관리</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
               {menuItems.map((item, idx) => (
-                <div key={idx} className="border-2 border-gray-50 p-6 rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
+                <div key={idx} className="border-2 border-gray-50 p-4 rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
                   <div className="w-20 h-20 mb-3 bg-white rounded-3xl shadow-inner flex items-center justify-center p-4 relative overflow-hidden">
                     <img src={item.icon} alt={item.label} className="w-full h-full object-contain transform group-hover:scale-110 transition" />
                     {item.icon.startsWith('data:') && (
@@ -1164,8 +1185,8 @@ const AdminDashboard: React.FC<Props> = ({
           <div className="animate-fade-in-up max-w-4xl mx-auto">
             <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">공지사항 팝업 관리</h3>
             <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl overflow-hidden">
-              <div className="p-8 space-y-8">
-                <div className="flex items-center justify-between bg-gray-50 p-6 rounded-3xl">
+              <div className="p-4 space-y-4">
+                <div className="flex items-center justify-between bg-gray-50 p-4 rounded-3xl">
                   <div>
                     <h4 className="font-bold text-gray-800">팝업 활성화 상태</h4>
                     <p className="text-xs text-gray-500">사용자가 웹을 열 때 팝업을 표시할지 결정합니다.</p>
@@ -1178,7 +1199,7 @@ const AdminDashboard: React.FC<Props> = ({
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-gray-400 uppercase ml-1">팝업 제목</label>

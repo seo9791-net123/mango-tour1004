@@ -37,15 +37,15 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 bg-gray-50 text-black border-b">
+      <section className="py-8 bg-gray-50 text-black border-b">
         <div className="max-w-7xl mx-auto px-4 text-center">
-           <h2 className="text-3xl md:text-4xl font-black uppercase mb-4 tracking-wide text-deepgreen">{content.introTitle}</h2>
-           <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-12">{content.introText}</p>
+           <h2 className="text-2xl md:text-3xl font-black uppercase mb-3 tracking-wide text-deepgreen">{content.introTitle}</h2>
+           <div className="h-1 w-16 bg-gold-500 mx-auto mb-4"></div>
+           <p className="max-w-4xl mx-auto text-lg leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-8">{content.introText}</p>
            
            <PageSectionList sections={content.sections} />
 
-           <div className="mt-16 text-center mb-8">
+           <div className="mt-8 text-center mb-6">
               <h3 className="text-gold-600 font-bold tracking-widest text-[10px] mb-1 uppercase">GALLERY</h3>
               <h2 className="text-2xl font-bold uppercase text-deepgreen">골프 코스 갤러리</h2>
            </div>
@@ -63,7 +63,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
            {content.slides && content.slides.length > 0 && (
               <button 
                 onClick={() => setIsSliderOpen(true)}
-                className="mt-12 px-8 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2 mx-auto"
+                className="mt-8 px-8 py-3 bg-deepgreen text-white rounded-xl font-bold text-sm hover:bg-gold-600 transition shadow-lg flex items-center gap-2 mx-auto"
               >
                 <span>🖼️</span> 상세 갤러리 슬라이드 보기
               </button>
@@ -71,7 +71,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 bg-gray-900 text-white">
+      <section className="py-8 bg-gray-900 text-white">
          <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <img src={content.introImage} className="w-full h-[250px] object-cover rounded-3xl shadow-2xl opacity-80" alt="Golf Service" />
             <div className="space-y-4">

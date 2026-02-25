@@ -31,17 +31,17 @@ const EventPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 max-w-7xl mx-auto px-4">
-        <div className="text-center mb-12">
-           <h2 className="text-3xl md:text-4xl font-black text-deepgreen uppercase mb-3 tracking-tight">{content.introTitle}</h2>
-           <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-sm leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-12">{content.introText}</p>
+      <section className="py-8 max-w-7xl mx-auto px-4">
+        <div className="text-center mb-8">
+           <h2 className="text-2xl md:text-3xl font-black text-deepgreen uppercase mb-2 tracking-tight">{content.introTitle}</h2>
+           <div className="h-1 w-16 bg-gold-500 mx-auto mb-4"></div>
+           <p className="max-w-4xl mx-auto text-sm leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-8">{content.introText}</p>
            
            <PageSectionList sections={content.sections} />
         </div>
 
-        <div className="mt-12">
-           <div className="text-center mb-8">
+        <div className="mt-8">
+           <div className="text-center mb-6">
               <h3 className="text-gold-600 font-bold tracking-widest text-[10px] mb-1 uppercase">EVENT GALLERY</h3>
               <h2 className="text-2xl font-bold uppercase text-deepgreen">이벤트 현장 갤러리</h2>
            </div>
@@ -58,7 +58,7 @@ const EventPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
       
-      <section className="py-12 bg-white">
+      <section className="py-8 bg-white">
          <div className="max-w-3xl mx-auto px-4 text-center">
             <h2 className="text-xl font-bold mb-3 text-gray-800">이벤트 소식을 가장 먼저 받아보세요</h2>
             <p className="text-gray-500 mb-6 text-xs">MANGO TOUR 플러스 친구 추가 시 매월 업데이트되는 대회 정보와 할인 쿠폰을 발송해 드립니다.</p>

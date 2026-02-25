@@ -227,7 +227,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   };
 
   return (
-    <section className={`py-8 bg-gray-50 ${onBack ? 'min-h-screen' : ''}`}>
+    <section className={`py-6 bg-gray-50 ${onBack ? 'min-h-screen' : ''}`}>
       <div className="max-w-7xl mx-auto px-4">
         
         {/* Header */}

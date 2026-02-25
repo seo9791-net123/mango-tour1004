@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import HeroSlider from './components/HeroSlider';
 import IconMenu from './components/IconMenu';
 import AITripPlanner from './components/AITripPlanner';
@@ -21,6 +21,7 @@ import BottomNav from './components/BottomNav';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP } from './constants';
 import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem, PopupNotification } from './types';
 import { firestoreService } from './services/firestoreService';
+import { debounce } from './utils/debounce';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -69,6 +70,31 @@ const App: React.FC = () => {
 
   // --- Firestore Integration Handlers ---
 
+  // Debounced Sync Functions
+  const debouncedSyncProducts = useRef(debounce(async (newProducts: Product[]) => {
+    await firestoreService.syncCollection('products', newProducts);
+  }, 1000)).current;
+
+  const debouncedSyncVideos = useRef(debounce(async (newVideos: VideoItem[]) => {
+    await firestoreService.syncCollection('videos', newVideos);
+  }, 1000)).current;
+
+  const debouncedSyncPosts = useRef(debounce(async (newPosts: CommunityPost[]) => {
+    await firestoreService.syncCollection('posts', newPosts);
+  }, 1000)).current;
+
+  const debouncedSyncPages = useRef(debounce(async (newContents: Record<string, PageContent>) => {
+    await firestoreService.syncAllPages(newContents);
+  }, 1500)).current;
+
+  const debouncedSyncSettings = useRef(debounce(async (key: 'heroImages' | 'menuItems', data: any) => {
+    await firestoreService.saveSettings(key, data);
+  }, 1000)).current;
+
+  const debouncedSyncPopup = useRef(debounce(async (newPopup: PopupNotification) => {
+    await firestoreService.savePopup(newPopup);
+  }, 1000)).current;
+
   // Initial Data Load
   useEffect(() => {
     const initData = async () => {
@@ -76,8 +102,8 @@ const App: React.FC = () => {
         console.log("Attempting to connect to Firestore...");
         const data = await firestoreService.loadGlobalData();
         
-        // 만약 loadGlobalData가 플레이스홀더 때문에 로컬 데이터를 반환했다면
-        if (import.meta.env.VITE_FIREBASE_PROJECT_ID === "your-project" || (data as any).isLocal) {
+        // 만약 데모용 기본 설정을 사용 중이거나, 로컬 모드 플래그가 있다면
+        if (data.isDefaultConfig || (data as any).isLocal) {
           setIsLocalMode(true);
         } else {
           console.log("Firestore connection successful, data loaded.");
@@ -115,44 +141,37 @@ const App: React.FC = () => {
   // Update Handlers (Updates State AND Firestore)
   const handleUpdateHeroImages = async (newImages: string[]) => {
     setHeroImages(newImages);
-    await firestoreService.saveSettings('heroImages', newImages);
+    debouncedSyncSettings('heroImages', newImages);
   };
 
   const handleUpdateMenuItems = async (newItems: MenuItem[]) => {
     setMenuItems(newItems);
-    await firestoreService.saveSettings('menuItems', newItems);
+    debouncedSyncSettings('menuItems', newItems);
   };
 
   const handleUpdateProducts = async (newProducts: Product[]) => {
     setProducts(newProducts);
-    await firestoreService.syncCollection('products', newProducts);
+    debouncedSyncProducts(newProducts);
   };
 
   const handleUpdateVideos = async (newVideos: VideoItem[]) => {
     setVideos(newVideos);
-    await firestoreService.syncCollection('videos', newVideos);
+    debouncedSyncVideos(newVideos);
   };
 
   const handleUpdatePosts = async (newPosts: CommunityPost[]) => {
     setPosts(newPosts);
-    await firestoreService.syncCollection('posts', newPosts);
+    debouncedSyncPosts(newPosts);
   };
 
   const handleUpdatePageContents = async (newContents: Record<string, PageContent>) => {
-    const previousContents = { ...pageContents };
     setPageContents(newContents);
-    try {
-      await firestoreService.syncAllPages(newContents);
-    } catch (error) {
-      console.error("Failed to sync page contents:", error);
-      setPageContents(previousContents);
-      throw error; // Re-throw so the caller (AdminDashboard) can handle it
-    }
+    debouncedSyncPages(newContents);
   };
 
   const handleUpdatePopup = async (newPopup: PopupNotification) => {
     setPopup(newPopup);
-    await firestoreService.savePopup(newPopup);
+    debouncedSyncPopup(newPopup);
   };
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -170,6 +189,16 @@ const App: React.FC = () => {
 
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
   const [generatedPlan, setGeneratedPlan] = useState<TripPlanResult | undefined>(undefined);
+
+  useEffect(() => {
+    const handleNavigate = () => {
+      setSelectedCategory('여행 만들기');
+      setCurrentPage('category');
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('navigate-to-planner', handleNavigate);
+    return () => window.removeEventListener('navigate-to-planner', handleNavigate);
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

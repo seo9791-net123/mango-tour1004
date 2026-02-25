@@ -3,10 +3,25 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { TripPlanRequest, TripPlanResult } from "../types";
 
 const createClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key is missing");
+  // Try to get the API key from multiple possible locations
+  // In this environment, process.env.API_KEY or process.env.GEMINI_API_KEY are the standard locations
+  let apiKey = "";
+  
+  try {
+    apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY || "";
+  } catch (e) {
+    console.warn("process.env is not accessible, trying window global");
   }
+
+  // If still not found, try window globals (some environments inject here)
+  if (!apiKey || apiKey === "undefined") {
+    apiKey = (window as any).API_KEY || (window as any).GEMINI_API_KEY || "";
+  }
+  
+  if (!apiKey || apiKey === "undefined") {
+    throw new Error("API Key가 설정되지 않았습니다. 상단의 'API 키 설정' 버튼을 통해 키를 선택해주세요. (만약 이미 선택하셨다면 페이지를 새로고침 해주세요)");
+  }
+  
   return new GoogleGenAI({ apiKey });
 };
 

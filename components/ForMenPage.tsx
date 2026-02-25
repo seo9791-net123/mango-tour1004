@@ -31,13 +31,13 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 bg-[#0a0a0a] border-y border-white/5">
+      <section className="py-8 bg-[#0a0a0a] border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4">
-           <div className="flex flex-col lg:flex-row gap-8 items-center mb-16">
-              <div className="flex-1 space-y-4">
-                 <h2 className="text-3xl md:text-5xl font-black uppercase mb-3 text-gold-500" style={{ fontFamily: 'serif' }}>{content.introTitle}</h2>
+           <div className="flex flex-col lg:flex-row gap-8 items-center mb-10">
+              <div className="flex-1 space-y-3">
+                 <h2 className="text-2xl md:text-3xl font-black uppercase mb-2 text-gold-500" style={{ fontFamily: 'serif' }}>{content.introTitle}</h2>
                  <div className="h-1 w-12 bg-white/20"></div>
-                 <p className="text-xl leading-relaxed text-gray-300 font-bold whitespace-pre-line">{content.introText}</p>
+                 <p className="text-lg leading-relaxed text-gray-300 font-bold whitespace-pre-line">{content.introText}</p>
                  <div className="pt-3">
                     <button 
                       onClick={() => alert('커뮤니티에 비공개 글로 작성 하시면 답변 및 연락을 드리겠습니다')}
@@ -48,11 +48,11 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
                  </div>
               </div>
               <div className="flex-1 w-full">
-                 <img src={content.introImage} className="w-full h-[300px] object-cover rounded-3xl shadow-[0_0_20px_rgba(197,160,40,0.1)] border border-white/10" alt="Nightlife" />
+                 <img src={content.introImage} className="w-full h-[250px] object-cover rounded-3xl shadow-[0_0_20px_rgba(197,160,40,0.1)] border border-white/10" alt="Nightlife" />
               </div>
            </div>
 
-           <div className="mb-16">
+           <div className="mb-10">
              <PageSectionList sections={content.sections} />
            </div>
 

@@ -18,16 +18,43 @@ export const driveService = {
   // 구글 스크립트가 로드될 때까지 기다리는 헬퍼 함수
   waitForScript: () => {
     return new Promise<void>((resolve, reject) => {
+      // 스크립트가 없으면 동적으로 추가 시도
+      if (typeof window !== 'undefined') {
+        if (!document.getElementById('gapi-script')) {
+          const script = document.createElement('script');
+          script.id = 'gapi-script';
+          script.src = 'https://apis.google.com/js/api.js';
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
+        }
+        if (!document.getElementById('gis-script')) {
+          const script = document.createElement('script');
+          script.id = 'gis-script';
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
+        }
+      }
+
       let attempts = 0;
       const interval = setInterval(() => {
-        if (typeof window !== 'undefined' && window.gapi && window.google) {
+        const hasGapi = typeof window !== 'undefined' && !!window.gapi;
+        const hasGoogle = typeof window !== 'undefined' && !!window.google;
+        
+        if (hasGapi && hasGoogle) {
           clearInterval(interval);
           resolve();
         }
+        
         attempts++;
-        if (attempts > 20) { // 10초 대기
+        if (attempts > 40) { // 20초 대기
           clearInterval(interval);
-          reject(new Error("Google API 스크립트 로드 실패. 페이지를 새로고침 해주세요."));
+          let missing = [];
+          if (!hasGapi) missing.push("GAPI (api.js)");
+          if (!hasGoogle) missing.push("GIS (client)");
+          reject(new Error(`Google API 스크립트 로드 실패 (${missing.join(", ")}). 네트워크 상태를 확인하거나 페이지를 새로고침 해주세요.`));
         }
       }, 500);
     });

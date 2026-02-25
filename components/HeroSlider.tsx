@@ -36,12 +36,20 @@ const HeroSlider: React.FC<Props> = ({ images }) => {
           />
         </div>
       ))}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-black/30 pointer-events-none">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-black/30">
         <h1 className="text-3xl md:text-4xl font-bold mb-2 drop-shadow-lg text-gold-400">MANGO TOUR</h1>
         <p className="text-lg md:text-xl font-light drop-shadow-md">베트남 프리미엄 골프 & 럭셔리 투어</p>
-        <div className="mt-4 px-6 py-1.5 border-2 border-white/50 rounded-full hover:bg-white/20 transition backdrop-blur-sm text-sm">
-          특별한 당신을 위한 최고의 여행
-        </div>
+        <button 
+          onClick={() => {
+            // This is a bit tricky since HeroSlider doesn't have access to setCurrentPage
+            // We'll use a custom event or just let the user click the icon menu
+            // But for now, let's just make it a visual element or use a window dispatch
+            window.dispatchEvent(new CustomEvent('navigate-to-planner'));
+          }}
+          className="mt-6 px-8 py-2.5 bg-gold-500 hover:bg-gold-600 text-white font-bold rounded-full transition shadow-lg transform hover:scale-105 active:scale-95 flex items-center gap-2 pointer-events-auto"
+        >
+          <span>✈️</span> 나만의 여행 만들기
+        </button>
       </div>
     </div>
   );

@@ -28,16 +28,16 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-12 max-w-7xl mx-auto px-4">
-        <div className="text-center mb-10">
-           <h2 className="text-2xl md:text-3xl font-bold uppercase mb-3 text-deepgreen">{content.introTitle}</h2>
-           <div className="h-1 w-16 bg-gold-500 mx-auto mb-6"></div>
-           <p className="max-w-4xl mx-auto text-xl leading-relaxed text-gray-700 font-bold mb-12">{content.introText}</p>
+      <section className="py-8 max-w-7xl mx-auto px-4">
+        <div className="text-center mb-6">
+           <h2 className="text-xl md:text-2xl font-bold uppercase mb-2 text-deepgreen">{content.introTitle}</h2>
+           <div className="h-1 w-16 bg-gold-500 mx-auto mb-4"></div>
+           <p className="max-w-4xl mx-auto text-lg leading-relaxed text-gray-700 font-bold mb-8">{content.introText}</p>
            
            <PageSectionList sections={content.sections} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
            <div className="md:col-span-2 lg:col-span-2 relative h-[300px] overflow-hidden rounded-2xl shadow-xl group">
               <img src={content.introImage} className="w-full h-full object-cover group-hover:scale-[1.02] transition duration-500" alt="Main Food" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">

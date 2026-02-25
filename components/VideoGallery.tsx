@@ -23,28 +23,36 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   // Handle New Video File Upload using Storage
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setIsUploading(true);
-      setUploadProgress(0);
-      try {
-        const videoUrl = await uploadFile(file, 'videos', (progress) => {
-          setUploadProgress(progress);
-        });
-        
-        const newVideo: VideoItem = {
-          id: Date.now().toString(),
-          title: file.name.replace(/\.[^/.]+$/, ""),
-          url: videoUrl
-        };
+    if (!file) return;
 
-        onUpdateVideos([newVideo, ...videos]);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      } catch (error) {
-        alert('동영상 업로드 실패: ' + error);
-      } finally {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }
+    console.log("Selected video file:", file.name, file.size, file.type);
+
+    // Reset input immediately to allow re-selection of the same file
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    try {
+      console.log("Starting upload process...");
+      const videoUrl = await uploadFile(file, 'videos', (progress) => {
+        setUploadProgress(progress);
+      });
+      
+      console.log("Upload complete. URL:", videoUrl);
+      const newVideo: VideoItem = {
+        id: Date.now().toString(),
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        url: videoUrl
+      };
+
+      // Ensure we are using the latest videos from props
+      onUpdateVideos([newVideo, ...videos]);
+    } catch (error) {
+      console.error("Video upload error:", error);
+      alert('동영상 업로드 실패: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -97,7 +105,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   };
 
   return (
-    <section className={`py-8 bg-gray-900 text-white ${onBack ? 'min-h-screen' : ''}`}>
+    <section className={`py-6 bg-gray-900 text-white ${onBack ? 'min-h-screen' : ''}`}>
       <div className="max-w-7xl mx-auto px-4">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
