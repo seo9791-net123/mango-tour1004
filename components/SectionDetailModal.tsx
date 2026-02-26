@@ -14,7 +14,7 @@ const SectionDetailModal: React.FC<Props> = ({ section, onClose }) => {
     : [];
 
   return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-0 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[10000] flex items-start md:items-center justify-center p-0 bg-black/80 backdrop-blur-md animate-fade-in pt-20 md:pt-0">
       <div className="bg-white overflow-hidden shadow-2xl max-w-4xl w-full h-full md:h-[95vh] md:max-h-[95vh] flex flex-col animate-scale-in">
         {/* Header */}
         <div className="px-4 md:px-10 py-6 border-b flex justify-between items-center bg-white sticky top-0 z-10">

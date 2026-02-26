@@ -277,7 +277,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans pb-20 md:pb-0">
-      <header className="sticky top-0 z-40 bg-white shadow-md">
+      <header className="sticky top-0 z-30 bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
           <button onClick={() => window.location.href = '/'} className="flex items-center gap-2">
              <div className="w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-xs">M</div>
@@ -455,7 +455,7 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 bg-black/60 flex items-start md:items-center justify-center z-[10000] px-4 backdrop-blur-sm animate-fade-in pt-20 md:pt-0">
           <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl relative transform transition-all animate-fade-in-up">
             <button onClick={() => { setShowAuthModal(false); resetAuthFields(); }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
             <h2 className="text-2xl font-bold text-center mb-6 text-deepgreen">{authMode === 'login' ? '로그인' : '회원가입'}</h2>

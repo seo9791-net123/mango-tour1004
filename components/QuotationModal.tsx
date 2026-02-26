@@ -65,7 +65,7 @@ ${inquiryText || '(내용 없음)'}
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000] p-0 backdrop-blur-sm print:p-0 print:block print:bg-white print:static">
+    <div className="fixed inset-0 bg-black/60 flex items-start md:items-center justify-center z-[10000] p-0 backdrop-blur-sm print:p-0 print:block print:bg-white print:static pt-20 md:pt-0">
       <div className="printable-area bg-white w-full max-w-4xl h-full md:h-[95vh] md:max-h-[95vh] overflow-hidden shadow-2xl relative flex flex-col print:h-auto print:shadow-none print:w-full print:max-w-none">
         
         {/* Paper Header */}

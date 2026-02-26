@@ -85,7 +85,7 @@ const ChatRoom: React.FC<Props> = ({ user, onReqLogin, isOpen, onClose }) => {
   }
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 w-[calc(100%-2rem)] md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden max-h-[60vh] md:max-h-[600px] animate-fade-in-up">
+    <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 w-[calc(100%-2rem)] md:w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[10000] flex flex-col overflow-hidden max-h-[60vh] md:max-h-[600px] animate-fade-in-up">
       {/* Header */}
       <div className="bg-deepgreen p-4 flex justify-between items-center text-white shadow-md">
         <div>
