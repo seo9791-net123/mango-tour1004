@@ -33,7 +33,7 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
   };
 
   return (
-    <div className="py-6 bg-gray-50 min-h-[600px] animate-fade-in">
+    <div className="py-6 bg-gray-50 min-h-[600px] animate-fade-in pb-20 md:pb-0">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">

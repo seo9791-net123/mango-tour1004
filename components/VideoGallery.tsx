@@ -138,7 +138,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   };
 
   return (
-    <section className={`py-6 bg-gray-900 text-white ${onBack ? 'min-h-screen' : ''}`}>
+    <section className={`py-6 bg-gray-900 text-white ${onBack ? 'min-h-screen' : ''} pb-20 md:pb-0`}>
       <div className="max-w-7xl mx-auto px-4">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">

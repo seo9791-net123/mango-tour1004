@@ -247,7 +247,7 @@ ${inquiryText || '(내용 없음)'}
         </div>
 
         {/* Actions Footer */}
-        <div className="no-print bg-gray-100 p-3 pb-6 md:pb-4 border-t flex justify-between md:justify-end gap-2 sticky bottom-0 z-20 shadow-inner">
+        <div className="no-print bg-gray-100 p-3 pb-20 md:pb-4 border-t flex justify-between md:justify-end gap-2 sticky bottom-0 z-20 shadow-inner">
           <button 
             onClick={onClose} 
             className="flex-1 md:flex-none px-2 md:px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-white transition text-[11px] md:text-sm whitespace-nowrap"

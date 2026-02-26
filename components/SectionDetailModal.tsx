@@ -92,7 +92,7 @@ const SectionDetailModal: React.FC<Props> = ({ section, onClose }) => {
         </div>
 
         {/* Footer Actions */}
-        <div className="px-4 md:px-10 py-6 border-t bg-gray-50 flex gap-3">
+        <div className="px-4 md:px-10 py-6 pb-20 md:pb-6 border-t bg-gray-50 flex gap-3">
           <button 
             onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
             className="flex-1 py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition transform active:scale-95 flex items-center justify-center gap-2"

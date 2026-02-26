@@ -10,7 +10,7 @@ interface Props {
 
 const FoodPage: React.FC<Props> = ({ content, onBack }) => {
   return (
-    <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in">
+    <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in pb-20 md:pb-0">
       {/* Compact Hero - 180px */}
       <section className="relative h-[180px] flex items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 z-0">

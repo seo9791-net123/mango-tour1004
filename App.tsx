@@ -259,10 +259,18 @@ const App: React.FC = () => {
 
   if (!isDataLoaded) {
     return (
-      <div className="min-h-screen bg-deepgreen flex flex-col items-center justify-center text-white p-8">
-        <div className="w-16 h-16 border-4 border-gold-400 border-t-transparent rounded-full animate-spin mb-6"></div>
-        <h2 className="text-xl font-bold mb-2">서버와 통신 중입니다...</h2>
-        <p className="text-sm opacity-60">최신 여행 정보를 불러오고 있습니다.</p>
+      <div className="min-h-screen bg-deepgreen flex flex-col items-center justify-center text-white p-8 text-center relative overflow-hidden">
+        {/* Atmospheric Background */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,#c5a028_0%,transparent_70%)] opacity-20 blur-3xl"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_80%,#004d40_0%,transparent_50%)] opacity-40 blur-3xl"></div>
+        </div>
+        
+        <div className="relative z-10">
+          <div className="w-20 h-20 border-4 border-gold-400 border-t-transparent rounded-full animate-spin mb-8 mx-auto shadow-[0_0_30px_rgba(197,160,40,0.3)]"></div>
+          <h2 className="text-3xl font-black mb-3 tracking-tight animate-pulse" style={{ fontFamily: 'serif' }}>설레는 여행 준비 중!</h2>
+          <p className="text-sm opacity-70 font-medium tracking-widest uppercase">MANGO TOUR IS PREPARING YOUR TRIP</p>
+        </div>
       </div>
     );
   }

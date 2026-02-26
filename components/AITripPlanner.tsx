@@ -54,7 +54,7 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
   };
 
   return (
-    <div className={onBack ? "min-h-screen bg-white" : ""}>
+    <div className={(onBack ? "min-h-screen bg-white" : "") + " pb-20 md:pb-0"}>
       {/* Header if onBack exists (Page Mode) */}
       {onBack && (
          <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
