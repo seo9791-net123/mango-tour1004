@@ -15,8 +15,8 @@ export const uploadFile = async (
   folder: string = "uploads", 
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  const cloudName = localStorage.getItem('cloudinary_cloud_name') || "Cloud Name"; 
-  const uploadPreset = localStorage.getItem('cloudinary_upload_preset') || "mango-tour";
+  const cloudName = (localStorage.getItem('cloudinary_cloud_name') || "").trim(); 
+  const uploadPreset = (localStorage.getItem('cloudinary_upload_preset') || "").trim();
 
   // 이미지 파일인 경우 압축 시도
   let uploadData: Blob | File = file;
@@ -30,10 +30,18 @@ export const uploadFile = async (
   }
 
   // 1. Cloudinary (XHR for progress)
-  if (cloudName && uploadPreset && cloudName !== "Cloud Name" && cloudName.trim() !== "") {
-    console.log(`Attempting Cloudinary upload to ${cloudName}...`);
+  // Only attempt Cloudinary if BOTH cloudName and uploadPreset are set and valid
+  const isCloudinaryConfigured = cloudName && 
+                                uploadPreset && 
+                                cloudName !== "Cloud Name" && 
+                                cloudName.trim() !== "" &&
+                                uploadPreset.trim() !== "";
+
+  if (isCloudinaryConfigured) {
+    console.log(`Attempting Cloudinary upload to ${cloudName} with preset ${uploadPreset}...`);
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
+      // Use 'auto' for resource type to handle images and videos automatically
       xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`);
 
       xhr.upload.onprogress = (event) => {
@@ -50,15 +58,17 @@ export const uploadFile = async (
           resolve(response.secure_url);
         } else {
           let errorMsg = 'Cloudinary 업로드 실패';
+          let detailedError = '';
           try {
             const response = JSON.parse(xhr.responseText);
             if (response.error?.message) {
-              errorMsg += `: ${response.error.message}`;
+              detailedError = response.error.message;
+              errorMsg += `: ${detailedError}`;
             }
           } catch (e) {}
           
-          if (xhr.status === 401) {
-            errorMsg += " (API Key/Cloud Name 오류. Cloud Name이 정확하고 Preset이 'Unsigned'인지 확인하세요)";
+          if (xhr.status === 401 || detailedError.includes('API key')) {
+            errorMsg += "\n\n[해결 방법]\n1. Cloud Name이 정확한지 확인하세요.\n2. Cloudinary 설정에서 Upload Preset이 'Unsigned'로 설정되어 있는지 확인하세요.\n3. Preset 이름이 정확한지 확인하세요.";
           }
           
           console.error("Cloudinary upload error:", xhr.responseText);

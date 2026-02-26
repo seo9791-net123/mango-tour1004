@@ -32,10 +32,11 @@ ${product ? `📌 상품명: ${product.title}
 📍 지역: ${product.location}
 ⏰ 일정: ${product.duration}
 💰 견적가: ${product.price.toLocaleString()} VND
-📝 포함사항: ${product.description}` : `📌 AI 맞춤 플랜
+📝 포함사항: ${product.description}` : `📌 맞춤 여행 플랜
 📝 테마: ${plan?.summary}
 💰 예상 견적: ${plan?.totalCost}
-✅ 옵션: 가이드 ${plan?.options?.guide}, 차량 ${plan?.options?.vehicle}`}
+✅ 옵션: 가이드 ${plan?.options?.guide}, 차량 ${plan?.options?.vehicle}
+📝 추가 요청사항: ${plan?.remarks || '(없음)'}`}
 
 --------------------------------
 [🗣️ 추가 문의 내용]
@@ -64,8 +65,8 @@ ${inquiryText || '(내용 없음)'}
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000] p-0 md:p-4 backdrop-blur-sm print:p-0 print:block print:bg-white print:static">
-      <div className="printable-area bg-white w-full max-w-2xl h-full md:h-[90vh] md:max-h-[90vh] overflow-hidden md:rounded-xl shadow-2xl relative flex flex-col print:h-auto print:shadow-none print:w-full print:max-w-none">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000] p-0 backdrop-blur-sm print:p-0 print:block print:bg-white print:static">
+      <div className="printable-area bg-white w-full max-w-4xl h-full md:h-[95vh] md:max-h-[95vh] overflow-hidden shadow-2xl relative flex flex-col print:h-auto print:shadow-none print:w-full print:max-w-none">
         
         {/* Paper Header */}
         <div className="bg-deepgreen text-white p-6 sticky top-0 z-10 shadow-md print:static print:shadow-none print:bg-deepgreen print:text-white print:print-color-adjust-exact">
@@ -79,8 +80,8 @@ ${inquiryText || '(내용 없음)'}
         </div>
 
         {/* Paper Body */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-8 print:p-0 print:overflow-visible print:bg-white">
-          <div className="bg-white shadow-lg border border-gray-200 p-6 md:p-8 min-h-full relative print:shadow-none print:border-none print:p-0">
+        <div className="flex-1 overflow-y-auto bg-gray-50 p-0 md:p-4 print:p-0 print:overflow-visible print:bg-white">
+          <div className="bg-white shadow-lg border-x border-gray-200 p-4 md:p-10 min-h-full relative print:shadow-none print:border-none print:p-0">
             
             {/* Header Info */}
             <div className="flex justify-between items-end mb-8 border-b-2 border-deepgreen pb-4">
@@ -135,6 +136,12 @@ ${inquiryText || '(내용 없음)'}
                                <td className="py-2 pl-3 text-sm md:text-base">{plan.options.vehicle}</td>
                              </tr>
                           </>
+                        )}
+                        {plan?.remarks && (
+                          <tr className="border-b">
+                            <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">비고</td>
+                            <td className="py-2 pl-3 text-sm md:text-base text-gray-700">{plan.remarks}</td>
+                          </tr>
                         )}
                       </>
                     )}

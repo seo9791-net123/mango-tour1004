@@ -14,10 +14,10 @@ const ProductDetailModal: React.FC<Props> = ({ product, onClose }) => {
     : [product.image]; // Fallback to main product image
 
   return (
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-scale-in">
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-0 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="bg-white overflow-hidden shadow-2xl max-w-4xl w-full h-full md:h-[95vh] md:max-h-[95vh] flex flex-col animate-scale-in">
         {/* Header */}
-        <div className="p-6 border-b flex justify-between items-center bg-white sticky top-0 z-10">
+        <div className="px-4 md:px-10 py-6 border-b flex justify-between items-center bg-white sticky top-0 z-10">
           <h2 className="text-2xl font-black text-deepgreen">{product.title}</h2>
           <button 
             onClick={onClose}
@@ -28,7 +28,7 @@ const ProductDetailModal: React.FC<Props> = ({ product, onClose }) => {
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto flex-1 p-6 space-y-8">
+        <div className="overflow-y-auto flex-1 px-4 md:px-10 py-6 space-y-8">
           {/* Image Slider / Gallery */}
           <div className="space-y-4">
             <div className="aspect-video rounded-3xl overflow-hidden bg-gray-100 shadow-inner relative">
@@ -82,7 +82,7 @@ const ProductDetailModal: React.FC<Props> = ({ product, onClose }) => {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t bg-gray-50 flex gap-3">
+        <div className="px-4 md:px-10 py-6 border-t bg-gray-50 flex gap-3">
           <button 
             onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
             className="flex-1 py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition transform active:scale-95 flex items-center justify-center gap-2"

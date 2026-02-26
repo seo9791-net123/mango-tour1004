@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { LOCATIONS, THEMES, ACCOMMODATIONS, DURATIONS, VEHICLE_OPTIONS } from '../constants';
 import { TripPlanRequest, TripPlanResult } from '../types';
-import { generateTripPlan } from '../services/geminiService';
 
 interface Props {
   onPlanGenerated: (plan: TripPlanResult) => void;
@@ -19,48 +18,39 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
     duration: DURATIONS[0],
     pax: 4,
     guide: '예',
-    vehicle: VEHICLE_OPTIONS[0]
+    vehicle: VEHICLE_OPTIONS[0],
+    remarks: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check for API Key if using Gemini 3 models
-    if (window.aistudio) {
-      const hasKey = await window.aistudio.hasSelectedApiKey();
-      if (!hasKey) {
-        if (confirm('AI 기능을 사용하려면 API 키 선택이 필요합니다. 키 선택 창을 여시겠습니까?\n(무료 모델을 선택하시면 비용이 발생하지 않습니다.)')) {
-          await window.aistudio.openSelectKey();
-        }
-        return;
-      }
-    }
-
-    // Additional check for process.env.API_KEY in case hasSelectedApiKey is true but env is not updated
-    const currentKey = (typeof process !== 'undefined' && process.env ? (process.env.API_KEY || process.env.GEMINI_API_KEY) : null) || (window as any).API_KEY;
-    if (!currentKey || currentKey === "undefined") {
-       if (confirm('API 키가 아직 시스템에 반영되지 않았습니다. 키 선택 창을 다시 한 번 확인하시겠습니까?')) {
-         if (window.aistudio) await window.aistudio.openSelectKey();
-       }
-       return;
-    }
-
     setLoading(true);
-    try {
-      const result = await generateTripPlan(formData);
-      // Pass the selected options to the result for display
-      result.options = {
+    // Simulate a brief processing time for a better UX
+    setTimeout(() => {
+      const result: TripPlanResult = {
+        itinerary: [
+          { day: 1, activities: ["고객 맞춤 일정 상담 후 확정", "현지 가이드 미팅", "자유 일정 또는 추천 명소 방문"] }
+        ],
+        costBreakdown: [
+          { item: `숙박 (${formData.accommodation})`, cost: "상담 후 견적 산출" },
+          { item: `차량 (${formData.vehicle})`, cost: "상담 후 견적 산출" },
+          { item: `가이드 (${formData.guide})`, cost: "상담 후 견적 산출" },
+          { item: "기타 요청사항", cost: formData.remarks || "없음" }
+        ],
+        totalCost: "상담 후 확정",
+        summary: `${formData.destination} ${formData.duration} ${formData.theme} 여행 맞춤 견적 요청`,
+        remarks: formData.remarks,
+        options: {
           guide: formData.guide,
           vehicle: formData.vehicle
+        }
       };
+      
       setIsModalOpen(false);
       onPlanGenerated(result);
-    } catch (error) {
-      console.error("Trip plan generation error:", error);
-      alert('여행 계획을 생성하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
       setLoading(false);
-    }
+    }, 800);
   };
 
   return (
@@ -77,20 +67,12 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
                     ←
                     </button>
                     <h2 className="text-xl font-bold text-deepgreen">
-                        나만의 여행 만들기 (AI)
+                        나만의 여행 만들기
                     </h2>
                 </div>
-                {window.aistudio && (
-                  <button 
-                    onClick={() => window.aistudio.openSelectKey()}
-                    className="text-[10px] font-bold text-gold-600 bg-gold-50 px-3 py-1.5 rounded-full border border-gold-200 hover:bg-gold-100 transition self-start md:self-auto"
-                  >
-                    🔑 API 키 설정/변경
-                  </button>
-                )}
             </div>
             <p className="text-gray-600 mb-4 pl-0 md:pl-11 text-xs">
-                인공지능이 고객님의 취향을 분석하여 최적의 일정과 견적을 제안합니다.
+                고객님의 취향에 맞는 최적의 일정과 견적을 전문가가 직접 제안해 드립니다.
             </p>
          </div>
       )}
@@ -100,21 +82,21 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
         <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/travel_planning/1920/800')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
         <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
           <span className="inline-block py-0.5 px-2 rounded-full bg-gold-500/20 border border-gold-500 text-gold-400 text-xs font-bold mb-4 animate-pulse">
-             ✨ AI TRAVEL GENIUS
+             ✨ CUSTOM TRAVEL DESIGN
           </span>
           <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">
-            꿈꾸던 여행, <span className="text-gold-400">AI</span>가 현실로 만들어 드립니다
+            꿈꾸던 여행, <span className="text-gold-400">망고투어</span>가 현실로 만들어 드립니다
           </h2>
           <p className="text-sm text-gray-300 mb-6 max-w-2xl mx-auto">
             원하는 여행지, 테마, 인원만 선택하세요. <br className="hidden md:block"/>
-            상세한 일정표와 투명한 견적서를 즉시 받아보실 수 있습니다.
+            전문 상담원이 상세한 일정표와 투명한 견적서를 직접 안내해 드립니다.
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
             className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-gold-500 text-lg rounded-full hover:bg-gold-600 hover:shadow-lg hover:-translate-y-1 focus:outline-none ring-offset-2 focus:ring-2 ring-gold-400"
           >
             <span className="mr-2 text-2xl">✈️</span>
-            AI로 나만의 여행상품 만들기
+            나만의 여행상품 만들기
             <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 animate-ping opacity-0 group-hover:opacity-100 duration-1000"></div>
           </button>
         </div>
@@ -130,9 +112,9 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { step: '01', title: '취향 선택', desc: '여행지, 테마, 인원 등 고객님의 취향을 AI에게 알려주세요.', icon: '🎯' },
-              { step: '02', title: 'AI 맞춤 설계', desc: 'Gemini AI가 최적의 동선과 합리적인 견적을 즉시 산출합니다.', icon: '⚡' },
-              { step: '03', title: '상담 및 확정', desc: '생성된 견적서를 바탕으로 전문가와 최종 상담 후 여행을 시작하세요.', icon: '🤝' }
+              { step: '01', title: '취향 선택', desc: '여행지, 테마, 인원 등 고객님의 취향을 알려주세요.', icon: '🎯' },
+              { step: '02', title: '전문가 맞춤 설계', desc: '망고투어 전문가가 최적의 동선과 합리적인 견적을 산출합니다.', icon: '⚡' },
+              { step: '03', title: '상담 및 확정', desc: '제안된 견적서를 바탕으로 최종 상담 후 여행을 시작하세요.', icon: '🤝' }
             ].map((item, i) => (
               <div key={i} className="relative group">
                 <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
@@ -159,7 +141,7 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
               <div>
                  <h3 className="text-gold-600 font-bold tracking-widest text-[10px] md:text-xs mb-2 uppercase">DIRECT CUSTOM INQUIRY</h3>
                  <h2 className="text-2xl md:text-3xl font-black text-deepgreen leading-tight">
-                    AI보다 더 정교한<br/>
+                    더 정교한<br/>
                     <span className="text-gold-500">1:1 맞춤 상담</span>이 필요하신가요?
                  </h2>
               </div>
@@ -339,6 +321,16 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
                       ))}
                     </div>
                   </div>
+
+                  <div className="col-span-1 md:col-span-2 space-y-1.5">
+                    <label className="text-xs font-bold text-gray-700 block mb-1">비고 (추가 요청사항)</label>
+                    <textarea
+                      className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition text-sm h-24 resize-none"
+                      placeholder="원하시는 골프장, 호텔, 식사 등 자유롭게 입력해주세요."
+                      value={formData.remarks}
+                      onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 <div className="pt-3">
@@ -357,17 +349,14 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>AI가 일정을 계획하는 중입니다...</span>
+                        <span>견적서를 생성하는 중입니다...</span>
                       </>
                     ) : (
                       <>
-                        <span>🚀</span> 여행 일정 및 견적 생성하기
+                        <span>🚀</span> 여행 견적 생성하기
                       </>
                     )}
                   </button>
-                  <p className="text-center text-[10px] text-gray-500 mt-2">
-                    * AI 분석을 통해 최적의 동선과 비용을 산출합니다. (약 5-10초 소요)
-                  </p>
                 </div>
               </form>
             </div>

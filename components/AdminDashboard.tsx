@@ -66,6 +66,8 @@ const AdminDashboard: React.FC<Props> = ({
   const [fbStorageBucket, setFbStorageBucket] = useState(localStorage.getItem('fb_storage_bucket') || '');
   const [fbMessagingSenderId, setFbMessagingSenderId] = useState(localStorage.getItem('fb_messaging_sender_id') || '');
   const [fbAppId, setFbAppId] = useState(localStorage.getItem('fb_app_id') || '');
+  const [fbDatabaseURL, setFbDatabaseURL] = useState(localStorage.getItem('fb_database_url') || '');
+  const [fbMeasurementId, setFbMeasurementId] = useState(localStorage.getItem('fb_measurement_id') || '');
 
   // Cloudinary Config
   const [showCloudinaryConfig, setShowCloudinaryConfig] = useState(false);
@@ -448,6 +450,8 @@ const AdminDashboard: React.FC<Props> = ({
     localStorage.setItem('fb_storage_bucket', fbStorageBucket);
     localStorage.setItem('fb_messaging_sender_id', fbMessagingSenderId);
     localStorage.setItem('fb_app_id', fbAppId);
+    localStorage.setItem('fb_database_url', fbDatabaseURL);
+    localStorage.setItem('fb_measurement_id', fbMeasurementId);
     alert('Firebase 설정이 저장되었습니다. 변경사항을 적용하기 위해 페이지가 새로고침됩니다.');
     window.location.reload();
   };
@@ -556,14 +560,19 @@ const AdminDashboard: React.FC<Props> = ({
                     설정 저장
                 </button>
             </div>
-            <div className="mt-4 p-3 bg-white/50 rounded-xl text-[10px] text-pink-700 space-y-1">
-                <p className="font-bold">⚠️ 중요: Cloudinary 설정 가이드</p>
-                <p>1. <a href="https://cloudinary.com" target="_blank" className="underline">cloudinary.com</a> 가입 후 Dashboard에서 <b>Cloud Name</b>을 복사해 넣으세요.</p>
-                <p>2. Settings(톱니바퀴) &gt; Upload &gt; <b>Upload presets</b>에서 'Add upload preset' 클릭</p>
-                <p>3. Signing Mode를 반드시 <b>Unsigned</b>로 변경하세요. (기본값은 Signed이며, 이 경우 업로드가 실패합니다.)</p>
-                <p>4. 생성된 프리셋의 이름을 <b>Upload Preset</b> 칸에 입력하세요.</p>
-                <p>5. <b>동영상 업로드 주의:</b> 프리셋 설정 중 <b>Incoming Transformation</b>은 비워두세요. (g_auto 설정 시 동영상 업로드 에러 발생)</p>
-                <p>6. <b>용량 제한:</b> 무료 계정은 파일당 용량 제한이 있을 수 있습니다. (현재 앱에서 자동 압축을 지원합니다.)</p>
+            <div className="mt-4 p-4 bg-white/80 rounded-xl text-xs text-pink-700 space-y-2 border border-pink-200">
+                <p className="font-bold text-sm flex items-center gap-2">⚠️ Cloudinary 설정 필수 체크리스트</p>
+                <div className="space-y-1.5 pl-1">
+                  <p>1. <b>Cloud Name:</b> 대시보드 메인에 있는 이름을 정확히 입력하세요.</p>
+                  <p>2. <b>Upload Preset:</b> Settings &gt; Upload &gt; Upload presets에서 생성한 이름을 입력하세요.</p>
+                  <p className="text-red-600 font-bold bg-red-50 p-1 rounded">3. Signing Mode: 반드시 'Unsigned'로 설정해야 합니다. (Signed로 되어 있으면 "Unknown API key" 에러가 발생합니다.)</p>
+                  <p>4. <b>Incoming Transformation:</b> 비디오 업로드 시 에러가 난다면 이 설정을 비워두세요.</p>
+                </div>
+                <div className="pt-2 border-t border-pink-100 mt-2">
+                  <a href="https://cloudinary.com/console/settings/upload" target="_blank" className="inline-flex items-center gap-1 bg-pink-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-pink-700 transition">
+                    Cloudinary 설정 페이지 바로가기 ↗
+                  </a>
+                </div>
             </div>
         </div>
       )}
@@ -596,6 +605,14 @@ const AdminDashboard: React.FC<Props> = ({
                 <div>
                     <label className="block text-[10px] font-bold text-orange-600 mb-1">App ID</label>
                     <input type="text" value={fbAppId} onChange={e => setFbAppId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="1:123456:web:abc123" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Database URL (Optional)</label>
+                    <input type="text" value={fbDatabaseURL} onChange={e => setFbDatabaseURL(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="https://your-db.firebaseio.com" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Measurement ID (Optional)</label>
+                    <input type="text" value={fbMeasurementId} onChange={e => setFbMeasurementId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="G-XXXXXX" />
                 </div>
             </div>
             <div className="flex justify-end">

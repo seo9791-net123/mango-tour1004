@@ -28,8 +28,8 @@ const SliderPopup: React.FC<Props> = ({ slides, images, initialIndex = 0, onClos
   const currentItem = data[currentIndex];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="relative bg-white rounded-[2rem] overflow-hidden shadow-2xl max-w-4xl w-full animate-scale-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="relative bg-white overflow-hidden shadow-2xl max-w-4xl w-full h-full md:h-auto md:rounded-[2rem] animate-scale-in">
         {/* Close Button */}
         <button 
           onClick={onClose}

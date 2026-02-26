@@ -29,6 +29,7 @@ export interface VideoItem {
   id: string;
   title: string;
   url: string; // URL or Embed source
+  category?: '골프' | '여행' | '먹거리' | '기타';
 }
 
 export interface Comment {
@@ -61,6 +62,7 @@ export interface TripPlanRequest {
   pax: number;
   guide: string;    // '예' | '아니오'
   vehicle: string;  // '7인승' | '16인승' etc
+  remarks?: string;
 }
 
 export interface TripPlanResult {
@@ -68,6 +70,7 @@ export interface TripPlanResult {
   costBreakdown: Array<{ item: string; cost: string }>;
   totalCost: string;
   summary: string;
+  remarks?: string;
   options?: { // To display selected options in quotation
     guide: string;
     vehicle: string;
@@ -106,6 +109,11 @@ export interface PageContent {
   galleryImages: string[];
   sections: PageSection[]; // Manageable text blocks for the admin
   slides?: PageSlide[];    // Optional gallery slides
+}
+
+export interface AppSettings {
+  geminiApiKey?: string;
+  isAIPublic: boolean;
 }
 
 export interface PopupNotification {
