@@ -76,16 +76,16 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                       <span className="font-black text-lg text-red-600">${product.price.toLocaleString()} USD~</span>
                       <button 
                         onClick={() => handlePreviewClick(product)}
-                        className="text-gold-600 font-bold text-xs hover:underline"
+                        className="text-gold-600 font-bold text-base hover:underline"
                       >
                         미리보기 +
                       </button>
                     </div>
                     <button 
                       onClick={() => onProductClick(product.id)}
-                      className="w-full bg-deepgreen text-white py-2.5 rounded-lg text-xs font-bold hover:bg-opacity-90 transition flex items-center justify-center gap-1 shadow-md"
+                      className="w-full bg-deepgreen text-white py-3 rounded-lg text-base font-bold hover:bg-opacity-90 transition flex items-center justify-center gap-1 shadow-md"
                     >
-                      견적보기 <span className="text-xs">↗</span>
+                      견적보기 <span className="text-base">↗</span>
                     </button>
                   </div>
                 </div>

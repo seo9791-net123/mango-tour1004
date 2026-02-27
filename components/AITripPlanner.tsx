@@ -333,7 +333,7 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`w-full py-3 rounded-lg font-bold text-white text-sm shadow-lg flex justify-center items-center gap-2 transition-all ${
+                    className={`w-full py-4 rounded-lg font-bold text-white text-lg shadow-lg flex justify-center items-center gap-2 transition-all ${
                       loading 
                         ? 'bg-gray-400 cursor-not-allowed' 
                         : 'bg-gold-500 hover:bg-gold-600 hover:shadow-xl hover:-translate-y-0.5'

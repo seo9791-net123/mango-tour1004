@@ -4,25 +4,27 @@ import { TripPlanRequest, TripPlanResult } from "../types";
 
 const createClient = () => {
   // Try to get the API key from multiple possible locations
-  // In this environment, process.env.API_KEY or process.env.GEMINI_API_KEY are the standard locations
   let apiKey = "";
   
   try {
-    apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY || "";
+    // Standard platform location
+    apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+    
+    // Vite fallback
+    if (!apiKey || apiKey === "undefined") {
+      apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
+    }
   } catch (e) {
-    console.warn("process.env is not accessible, trying window global");
+    console.warn("Environment variables access failed, trying window global");
   }
 
-  // If still not found, try window globals (some environments inject here)
+  // If still not found, try window globals
   if (!apiKey || apiKey === "undefined") {
     apiKey = (window as any).API_KEY || (window as any).GEMINI_API_KEY || "";
   }
   
-  if (!apiKey || apiKey === "undefined") {
-    throw new Error("API Key가 설정되지 않았습니다. 상단의 'API 키 설정' 버튼을 통해 키를 선택해주세요. (만약 이미 선택하셨다면 페이지를 새로고침 해주세요)");
-  }
-  
-  return new GoogleGenAI({ apiKey });
+  // Return a client even if apiKey is empty; the try-catch in calling functions will handle failures
+  return new GoogleGenAI({ apiKey: apiKey || "dummy_key_for_fallback" });
 };
 
 export const generateTripPlan = async (request: TripPlanRequest): Promise<TripPlanResult> => {

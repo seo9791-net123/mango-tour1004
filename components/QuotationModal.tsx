@@ -255,14 +255,14 @@ ${inquiryText || '(내용 없음)'}
         <div className="no-print bg-gray-100 p-3 pb-20 md:pb-4 border-t flex justify-between md:justify-end gap-2 sticky bottom-0 z-20 shadow-inner">
           <button 
             onClick={onClose} 
-            className="flex-1 md:flex-none px-2 md:px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-white transition text-[11px] md:text-sm whitespace-nowrap"
+            className="flex-1 md:flex-none px-2 md:px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-bold hover:bg-white transition text-base md:text-lg whitespace-nowrap"
           >
             닫기
           </button>
           {product && (
             <button 
               onClick={() => setShowPreview(true)} 
-              className="flex-1 md:flex-none px-2 md:px-6 py-3 rounded-lg bg-deepgreen text-white font-bold hover:bg-green-800 shadow-lg flex items-center justify-center gap-1 md:gap-2 transition transform hover:-translate-y-0.5 text-[11px] md:text-sm whitespace-nowrap"
+              className="flex-1 md:flex-none px-2 md:px-6 py-3 rounded-lg bg-deepgreen text-white font-bold hover:bg-green-800 shadow-lg flex items-center justify-center gap-1 md:gap-2 transition transform hover:-translate-y-0.5 text-base md:text-lg whitespace-nowrap"
             >
                <span className="hidden sm:inline">🖼️</span> 
                <span>미리보기</span>
@@ -270,7 +270,7 @@ ${inquiryText || '(내용 없음)'}
           )}
           <button 
             onClick={() => setShowInquiry(true)} 
-            className="flex-1 md:flex-none px-2 md:px-6 py-3 rounded-lg bg-gold-500 text-white font-bold hover:bg-gold-600 shadow-lg flex items-center justify-center gap-1 md:gap-2 transition transform hover:-translate-y-0.5 text-[11px] md:text-sm whitespace-nowrap"
+            className="flex-1 md:flex-none px-2 md:px-6 py-3 rounded-lg bg-gold-500 text-white font-bold hover:bg-gold-600 shadow-lg flex items-center justify-center gap-1 md:gap-2 transition transform hover:-translate-y-0.5 text-base md:text-lg whitespace-nowrap"
           >
              <span className="hidden sm:inline">💬</span> 
              <span>상담 및 문의</span>
