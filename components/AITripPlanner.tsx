@@ -333,7 +333,7 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`w-full py-4 rounded-lg font-bold text-white text-lg shadow-lg flex justify-center items-center gap-2 transition-all ${
+                    className={`w-full py-4 rounded-lg font-bold text-white text-xl shadow-lg flex justify-center items-center gap-2 transition-all ${
                       loading 
                         ? 'bg-gray-400 cursor-not-allowed' 
                         : 'bg-gold-500 hover:bg-gold-600 hover:shadow-xl hover:-translate-y-0.5'
@@ -352,10 +352,13 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
                       </div>
                     ) : (
                       <>
-                        <span>🚀</span> 여행 견적 생성하기
+                        <span>🚀</span> 여행 일정 및 견적 생성하기
                       </>
                     )}
                   </button>
+                  <p className="text-[10px] text-gray-500 mt-2 text-center font-medium">
+                    * AI 분석을 통해 최적의 동선과 비용을 산출합니다. (약 5~10초 소요)
+                  </p>
                 </div>
               </form>
             </div>
