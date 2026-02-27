@@ -29,10 +29,10 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
       </section>
 
       <section className="py-8 max-w-7xl mx-auto px-4">
-        <div className="text-center mb-6">
+        <div className="text-left mb-6">
            <h2 className="text-xl md:text-2xl font-bold uppercase mb-2 text-deepgreen">{content.introTitle}</h2>
-           <div className="h-1 w-16 bg-gold-500 mx-auto mb-4"></div>
-           <p className="max-w-4xl mx-auto text-lg leading-relaxed text-gray-700 font-bold mb-8">{content.introText}</p>
+           <div className="h-1 w-16 bg-gold-500 mb-4"></div>
+           <p className="text-lg leading-relaxed text-gray-700 font-bold mb-8">{content.introText}</p>
            
            <PageSectionList sections={content.sections} />
         </div>

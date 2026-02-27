@@ -71,29 +71,67 @@ const App: React.FC = () => {
   // --- Firestore Integration Handlers ---
 
   // Debounced Sync Functions
+  const isSyncing = useRef<Record<string, boolean>>({});
+
   const debouncedSyncProducts = useRef(debounce(async (newProducts: Product[]) => {
-    await firestoreService.syncCollection('products', newProducts);
-  }, 1000)).current;
+    if (isLocalMode || isSyncing.current['products']) return;
+    isSyncing.current['products'] = true;
+    try {
+      await firestoreService.syncCollection('products', newProducts);
+    } finally {
+      isSyncing.current['products'] = false;
+    }
+  }, 3000)).current;
 
   const debouncedSyncVideos = useRef(debounce(async (newVideos: VideoItem[]) => {
-    await firestoreService.syncCollection('videos', newVideos);
-  }, 1000)).current;
+    if (isLocalMode || isSyncing.current['videos']) return;
+    isSyncing.current['videos'] = true;
+    try {
+      await firestoreService.syncCollection('videos', newVideos);
+    } finally {
+      isSyncing.current['videos'] = false;
+    }
+  }, 3000)).current;
 
   const debouncedSyncPosts = useRef(debounce(async (newPosts: CommunityPost[]) => {
-    await firestoreService.syncCollection('posts', newPosts);
-  }, 1000)).current;
+    if (isLocalMode || isSyncing.current['posts']) return;
+    isSyncing.current['posts'] = true;
+    try {
+      await firestoreService.syncCollection('posts', newPosts);
+    } finally {
+      isSyncing.current['posts'] = false;
+    }
+  }, 3000)).current;
 
   const debouncedSyncPages = useRef(debounce(async (newContents: Record<string, PageContent>) => {
-    await firestoreService.syncAllPages(newContents);
-  }, 1500)).current;
+    if (isLocalMode || isSyncing.current['pages']) return;
+    isSyncing.current['pages'] = true;
+    try {
+      await firestoreService.syncAllPages(newContents);
+    } finally {
+      isSyncing.current['pages'] = false;
+    }
+  }, 5000)).current;
 
   const debouncedSyncSettings = useRef(debounce(async (key: 'heroImages' | 'menuItems', data: any) => {
-    await firestoreService.saveSettings(key, data);
-  }, 1000)).current;
+    if (isLocalMode || isSyncing.current[`settings_${key}`]) return;
+    isSyncing.current[`settings_${key}`] = true;
+    try {
+      await firestoreService.saveSettings(key, data);
+    } finally {
+      isSyncing.current[`settings_${key}`] = false;
+    }
+  }, 3000)).current;
 
   const debouncedSyncPopup = useRef(debounce(async (newPopup: PopupNotification) => {
-    await firestoreService.savePopup(newPopup);
-  }, 1000)).current;
+    if (isLocalMode || isSyncing.current['popup']) return;
+    isSyncing.current['popup'] = true;
+    try {
+      await firestoreService.savePopup(newPopup);
+    } finally {
+      isSyncing.current['popup'] = false;
+    }
+  }, 3000)).current;
 
   // Initial Data Load
   useEffect(() => {

@@ -38,14 +38,14 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
       </section>
 
       <section className="py-8 bg-gray-50 text-black border-b">
-        <div className="max-w-7xl mx-auto px-4 text-center">
+        <div className="max-w-7xl mx-auto px-4 text-left">
            <h2 className="text-2xl md:text-3xl font-black uppercase mb-3 tracking-wide text-deepgreen">{content.introTitle}</h2>
-           <div className="h-1 w-16 bg-gold-500 mx-auto mb-4"></div>
-           <p className="max-w-4xl mx-auto text-lg leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-8">{content.introText}</p>
+           <div className="h-1 w-16 bg-gold-500 mb-4"></div>
+           <p className="text-lg leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-8">{content.introText}</p>
            
            <PageSectionList sections={content.sections} />
 
-           <div className="mt-8 text-center mb-6">
+           <div className="mt-8 text-left mb-6">
               <h3 className="text-gold-600 font-bold tracking-widest text-[10px] mb-1 uppercase">GALLERY</h3>
               <h2 className="text-2xl font-bold uppercase text-deepgreen">골프 코스 갤러리</h2>
            </div>

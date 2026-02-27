@@ -32,16 +32,16 @@ const EventPage: React.FC<Props> = ({ content, onBack }) => {
       </section>
 
       <section className="py-8 max-w-7xl mx-auto px-4">
-        <div className="text-center mb-8">
+        <div className="text-left mb-8">
            <h2 className="text-2xl md:text-3xl font-black text-deepgreen uppercase mb-2 tracking-tight">{content.introTitle}</h2>
-           <div className="h-1 w-16 bg-gold-500 mx-auto mb-4"></div>
-           <p className="max-w-4xl mx-auto text-sm leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-8">{content.introText}</p>
+           <div className="h-1 w-16 bg-gold-500 mb-4"></div>
+           <p className="text-sm leading-relaxed text-gray-700 font-bold whitespace-pre-line mb-8">{content.introText}</p>
            
            <PageSectionList sections={content.sections} />
         </div>
 
         <div className="mt-8">
-           <div className="text-center mb-6">
+           <div className="text-left mb-6">
               <h3 className="text-gold-600 font-bold tracking-widest text-[10px] mb-1 uppercase">EVENT GALLERY</h3>
               <h2 className="text-2xl font-bold uppercase text-deepgreen">이벤트 현장 갤러리</h2>
            </div>

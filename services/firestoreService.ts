@@ -188,7 +188,7 @@ export const firestoreService = {
    * - 없어진 아이템은 삭제
    */
   async syncCollection(collectionName: string, newItems: any[]) {
-    if (!db) return;
+    if (!db || !navigator.onLine) return;
 
     try {
       // 1. 현재 DB에 있는 모든 ID 가져오기
@@ -221,8 +221,11 @@ export const firestoreService = {
       console.error(`Error syncing ${collectionName}:`, e);
       if (e.message?.includes('exceeds the maximum allowed size')) {
         alert(`❌ 저장 실패: '${collectionName}' 데이터가 너무 큽니다 (1MB 제한 초과).\n\n원인: 고화질 이미지를 너무 많이 추가했거나, 이미지 서버(Cloudinary) 연결 실패로 이미지가 텍스트(Base64)로 저장되었습니다.\n\n해결방법: 최근에 추가한 큰 이미지를 삭제하거나, 이미지 용량을 줄여서 다시 시도해주세요.`);
+      } else if (e.code === 'resource-exhausted') {
+        console.warn("Firestore write stream exhausted. Skipping this sync to prevent overload.");
       } else {
-        alert("데이터 저장 중 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
+        // 너무 잦은 알림 방지를 위해 콘솔 출력만 수행
+        console.warn("데이터 저장 중 오류가 발생했습니다. 네트워크 상태를 확인해주세요.");
       }
     }
   },
@@ -231,12 +234,16 @@ export const firestoreService = {
    * 설정 데이터(이미지 배열, 메뉴 아이템) 저장
    */
   async saveSettings(key: 'heroImages' | 'menuItems', data: any) {
-    if (!db) return;
+    if (!db || !navigator.onLine) return;
     try {
       const ref = doc(db, COLLECTIONS.SETTINGS, "global");
       await setDoc(ref, { [key]: data }, { merge: true });
-    } catch (e) {
-      console.error("Error saving settings:", e);
+    } catch (e: any) {
+      if (e.code === 'resource-exhausted') {
+        console.warn("Firestore write stream exhausted. Skipping settings save.");
+      } else {
+        console.error("Error saving settings:", e);
+      }
     }
   },
 
@@ -244,32 +251,49 @@ export const firestoreService = {
    * 페이지 컨텐츠 저장
    */
   async savePageContent(pageId: string, content: PageContent) {
-    if (!db) return;
+    if (!db || !navigator.onLine) return;
     try {
       const ref = doc(db, COLLECTIONS.PAGES, pageId);
       await setDoc(ref, content, { merge: true });
-    } catch (e) {
-      console.error("Error saving page:", e);
+    } catch (e: any) {
+      if (e.code === 'resource-exhausted') {
+        console.warn("Firestore write stream exhausted. Skipping page save.");
+      } else {
+        console.error("Error saving page:", e);
+      }
     }
   },
   
   // 전체 페이지 컨텐츠 객체 저장용 헬퍼
   async syncAllPages(pages: Record<string, PageContent>) {
-      const batch = writeBatch(db);
-      Object.values(pages).forEach(page => {
-          const ref = doc(db, COLLECTIONS.PAGES, page.id);
-          batch.set(ref, page, { merge: true });
-      });
-      await batch.commit();
+      if (!db || !navigator.onLine) return;
+      try {
+        const batch = writeBatch(db);
+        Object.values(pages).forEach(page => {
+            const ref = doc(db, COLLECTIONS.PAGES, page.id);
+            batch.set(ref, page, { merge: true });
+        });
+        await batch.commit();
+      } catch (e: any) {
+        if (e.code === 'resource-exhausted') {
+          console.warn("Firestore write stream exhausted. Skipping all pages sync.");
+        } else {
+          console.error("Error syncing all pages:", e);
+        }
+      }
   },
 
   async savePopup(popup: PopupNotification) {
-    if (!db) return;
+    if (!db || !navigator.onLine) return;
     try {
       const ref = doc(db, COLLECTIONS.POPUP, "main");
       await setDoc(ref, popup, { merge: true });
-    } catch (e) {
-      console.error("Error saving popup:", e);
+    } catch (e: any) {
+      if (e.code === 'resource-exhausted') {
+        console.warn("Firestore write stream exhausted. Skipping popup save.");
+      } else {
+        console.error("Error saving popup:", e);
+      }
     }
   }
 };
