@@ -434,10 +434,8 @@ const AdminDashboard: React.FC<Props> = ({
   };
 
   const handleRemoveSection = (index: number) => {
-    if (!confirm('이 섹션을 삭제하시겠습니까?')) return;
+    if (!window.confirm('이 섹션을 삭제하시겠습니까?')) return;
     const newSections = pageForm.sections.filter((_, i) => i !== index);
-    // Use functional update to ensure we have the latest state if needed, 
-    // but here we are passing the new array directly to handlePageFieldChange
     handlePageFieldChange('sections', newSections);
   };
 
@@ -1051,7 +1049,8 @@ const AdminDashboard: React.FC<Props> = ({
                             <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-2 relative group">
                                 <button 
                                   onClick={() => handleRemoveSection(idx)}
-                                  className="absolute top-2 right-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                                  className="absolute top-2 right-2 w-6 h-6 bg-red-50 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-full flex items-center justify-center transition-all shadow-sm z-10"
+                                  title="섹션 삭제"
                                 >
                                   ✕
                                 </button>
