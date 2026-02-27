@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { LOCATIONS, THEMES, ACCOMMODATIONS, DURATIONS, VEHICLE_OPTIONS } from '../constants';
 import { TripPlanRequest, TripPlanResult } from '../types';
+import { generateTripPlan } from '../services/geminiService';
 
 interface Props {
   onPlanGenerated: (plan: TripPlanResult) => void;
@@ -26,31 +27,26 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
     e.preventDefault();
     
     setLoading(true);
-    // Simulate a brief processing time for a better UX
-    setTimeout(() => {
-      const result: TripPlanResult = {
-        itinerary: [
-          { day: 1, activities: ["고객 맞춤 일정 상담 후 확정", "현지 가이드 미팅", "자유 일정 또는 추천 명소 방문"] }
-        ],
-        costBreakdown: [
-          { item: `숙박 (${formData.accommodation})`, cost: "상담 후 견적 산출" },
-          { item: `차량 (${formData.vehicle})`, cost: "상담 후 견적 산출" },
-          { item: `가이드 (${formData.guide})`, cost: "상담 후 견적 산출" },
-          { item: "기타 요청사항", cost: formData.remarks || "없음" }
-        ],
-        totalCost: "상담 후 확정",
-        summary: `${formData.destination} ${formData.duration} ${formData.theme} 여행 맞춤 견적 요청`,
-        remarks: formData.remarks,
+    try {
+      const result = await generateTripPlan(formData);
+      // Add options to the result for display in QuotationModal
+      const resultWithExtras: TripPlanResult = {
+        ...result,
         options: {
           guide: formData.guide,
           vehicle: formData.vehicle
-        }
+        },
+        remarks: formData.remarks
       };
       
       setIsModalOpen(false);
-      onPlanGenerated(result);
+      onPlanGenerated(resultWithExtras);
+    } catch (error: any) {
+      console.error("Failed to generate trip plan:", error);
+      alert(error.message || "견적 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (

@@ -18,7 +18,7 @@ const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
   if (!product && !plan) return null;
 
   // Determine content source
-  const title = product ? product.title : 'AI 맞춤 여행 견적';
+  const title = product ? product.title : '나만의 여행 맞춤 견적';
   const price = product ? `${product.price.toLocaleString()} USD` : plan?.totalCost;
   const itinerary = product ? product.itinerary : plan?.itinerary;
   const location = product ? product.location : '맞춤 여행지';
@@ -98,7 +98,7 @@ ${inquiryText || '(내용 없음)'}
             {/* Title Section */}
             <div className="mb-8 avoid-break">
                <h3 className="text-lg font-bold mb-4 border-l-4 border-gold-500 pl-3 text-deepgreen">
-                 {product ? '상품 상세 정보' : 'AI 맞춤 여행 제안'}
+                 {product ? '상품 상세 정보' : '나만의 여행 맞춤 견적'}
                </h3>
                
                {/* Basic Info Table */}
@@ -146,12 +146,17 @@ ${inquiryText || '(내용 없음)'}
                       </>
                     )}
                     <tr className="border-b-2 border-deepgreen bg-yellow-50/50 print:bg-gray-100 print:print-color-adjust-exact">
-                      <td className="py-3 font-bold text-red-600 pl-2 text-xs md:text-sm">견적 금액</td>
+                      <td className="py-3 font-bold text-red-600 pl-2 text-xs md:text-sm">
+                        {product ? '견적 금액' : '예상 견적 금액'}
+                      </td>
                       <td className="py-3 pl-3">
                         <span className="font-bold text-lg md:text-xl text-red-600">{price}</span>
                         <span className="text-[10px] md:text-sm font-normal text-gray-500 ml-2">
                           (항공권 제외{product ? ', 1인 기준' : ''})
                         </span>
+                        {!product && (
+                          <div className="text-[10px] text-gray-500 mt-1 font-bold">※ 정확한 금액은 상담해주세요.</div>
+                        )}
                       </td>
                     </tr>
                   </tbody>
