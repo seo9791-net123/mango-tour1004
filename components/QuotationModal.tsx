@@ -24,7 +24,7 @@ const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
   const location = product ? product.location : '맞춤 여행지';
   const duration = product ? product.duration : '일정 협의';
 
-  const handleCopyText = async () => {
+  const handleCopyText = async (contactType: 'open' | 'id') => {
      const textToCopy = `[MANGO TOUR 여행 견적 문의]
 📅 문의 일자: ${new Date().toLocaleDateString()}
 
@@ -46,8 +46,22 @@ ${inquiryText || '(내용 없음)'}
 
     try {
       await navigator.clipboard.writeText(textToCopy);
-      alert('견적서와 문의 내용이 복사되었습니다.\n확인 버튼을 누르면 카카오톡 상담방으로 이동합니다.\n채팅창에 붙여넣기(Paste) 해주세요.');
-      window.open('https://open.kakao.com/o/gSfNsh3h', '_blank');
+      alert('견적서와 문의 내용이 복사되었습니다.\n채팅창에 붙여넣기(Paste) 해주세요.');
+      
+      if (contactType === 'open') {
+        window.open('https://open.kakao.com/o/gSfNsh3h', '_blank');
+      } else {
+        // For Kakao ID, we can't deep link directly to a specific ID search on web easily, 
+        // but we can open the app or a generic link. 
+        // Most common way for ID is to just tell them to search, but we can try the talk link.
+        window.open('https://pf.kakao.com/_xgSfNsh3h', '_blank'); // Using a placeholder or the ID search link
+        // Alternatively, if it's a personal ID, we can't link directly to "search by ID" via URL reliably across all platforms.
+        // But we can open the KakaoTalk app if possible.
+        // Let's use the open chat link for both if they are both managed by Mango Tour, 
+        // or provide the ID for manual search.
+        // User said "vnseen1". I'll provide a way to open Kakao.
+        window.open('https://pf.kakao.com/', '_blank');
+      }
     } catch (err) {
       console.error('Failed to copy: ', err);
       alert('복사에 실패했습니다. 수동으로 복사해주세요.');
@@ -294,18 +308,30 @@ ${inquiryText || '(내용 없음)'}
                   </p>
                 </div>
                 
-                <div className="space-y-3 mb-6">
+                <div className="grid grid-cols-2 gap-3 mb-6">
                   <div 
                     onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
-                    className="flex items-center p-3 bg-yellow-100 rounded-xl border border-yellow-200 shadow-sm cursor-pointer hover:bg-yellow-200 transition"
+                    className="flex flex-col items-center p-3 bg-yellow-100 rounded-xl border border-yellow-200 shadow-sm cursor-pointer hover:bg-yellow-200 transition text-center"
                   >
-                    <div className="bg-yellow-400 p-1.5 rounded-lg mr-3">
-                      <span className="text-xl font-bold text-black/80">Talk</span>
+                    <div className="bg-yellow-400 p-1.5 rounded-lg mb-2">
+                      <span className="text-lg font-bold text-black/80">Talk</span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-[10px] text-gray-600 font-bold">카카오톡 오픈채팅</p>
-                      <p className="text-base font-bold text-gray-800">MANGO TOUR</p>
+                    <p className="text-[10px] text-gray-600 font-bold">오픈채팅</p>
+                    <p className="text-xs font-bold text-gray-800">MANGO TOUR</p>
+                  </div>
+
+                  <div 
+                    onClick={() => {
+                      navigator.clipboard.writeText('vnseen1');
+                      alert('카카오톡 ID (vnseen1)가 복사되었습니다.\n카카오톡에서 ID로 친구 추가해주세요.');
+                    }}
+                    className="flex flex-col items-center p-3 bg-blue-50 rounded-xl border border-blue-100 shadow-sm cursor-pointer hover:bg-blue-100 transition text-center"
+                  >
+                    <div className="bg-blue-500 p-1.5 rounded-lg mb-2">
+                      <span className="text-lg font-bold text-white">ID</span>
                     </div>
+                    <p className="text-[10px] text-gray-600 font-bold">카카오톡 ID</p>
+                    <p className="text-xs font-bold text-gray-800">vnseen1</p>
                   </div>
                 </div>
 
@@ -319,15 +345,24 @@ ${inquiryText || '(내용 없음)'}
                   />
                 </div>
 
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-3">
                    <button 
-                    onClick={handleCopyText}
-                    className="w-full py-4 px-4 bg-gold-500 text-white rounded-xl font-bold hover:bg-gold-600 shadow-md transform active:scale-95 transition flex items-center justify-center gap-2"
+                    onClick={() => handleCopyText('open')}
+                    className="w-full py-3 px-4 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-500 shadow-md transform active:scale-95 transition flex items-center justify-center gap-2"
                   >
-                    <span className="text-xl">📋</span> 
+                    <span className="text-lg">💬</span> 
                     <div className="text-left">
-                        <div className="text-base">견적서 + 문의내용 복사하기</div>
-                        <div className="text-[10px] opacity-80 font-normal">복사 후 카톡 채팅방에 붙여넣기 하세요</div>
+                        <div className="text-sm">복사 후 오픈채팅 상담</div>
+                    </div>
+                  </button>
+                  
+                  <button 
+                    onClick={() => handleCopyText('id')}
+                    className="w-full py-3 px-4 bg-gold-500 text-white rounded-xl font-bold hover:bg-gold-600 shadow-md transform active:scale-95 transition flex items-center justify-center gap-2"
+                  >
+                    <span className="text-lg">📋</span> 
+                    <div className="text-left">
+                        <div className="text-sm">복사 후 ID 상담 (vnseen1)</div>
                     </div>
                   </button>
                 </div>

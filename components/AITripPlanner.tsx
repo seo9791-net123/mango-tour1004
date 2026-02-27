@@ -158,13 +158,24 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
                    </li>
                  ))}
               </ul>
-              <div className="pt-4">
+              <div className="pt-4 flex flex-col sm:flex-row gap-3">
                  <button 
                    onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
-                   className="px-8 py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-xl hover:bg-opacity-90 transition flex items-center gap-3"
+                   className="flex-1 px-6 py-4 bg-yellow-400 text-black rounded-2xl font-bold shadow-xl hover:bg-yellow-500 transition flex items-center justify-center gap-3"
                  >
                     <span className="text-2xl">💬</span>
-                    전문가에게 직접 문의하기
+                    오픈채팅 문의
+                 </button>
+                 <button 
+                   onClick={() => {
+                     navigator.clipboard.writeText('vnseen1');
+                     alert('카카오톡 ID (vnseen1)가 복사되었습니다.\n카카오톡에서 ID로 친구 추가해주세요.');
+                     window.open('https://pf.kakao.com/', '_blank');
+                   }}
+                   className="flex-1 px-6 py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-xl hover:bg-opacity-90 transition flex items-center justify-center gap-3"
+                 >
+                    <span className="text-2xl">🆔</span>
+                    카톡 ID: vnseen1
                  </button>
               </div>
            </div>

@@ -94,22 +94,6 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
           </div>
         )}
 
-        {/* Custom Planner CTA */}
-        <div className="mt-12 bg-white rounded-2xl p-8 border border-gray-100 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-           <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gold-100 flex items-center justify-center text-3xl shadow-inner">✨</div>
-              <div>
-                 <h3 className="text-xl font-black text-deepgreen">원하는 상품이 없으신가요?</h3>
-                 <p className="text-gray-500 text-sm">AI가 고객님의 취향에 딱 맞는 여행을 즉시 설계해 드립니다.</p>
-              </div>
-           </div>
-           <button 
-             onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-planner'))}
-             className="px-8 py-4 bg-gold-500 text-white font-bold rounded-2xl hover:bg-gold-600 transition shadow-lg transform hover:-translate-y-1 active:scale-95 flex items-center gap-2"
-           >
-              나만의 여행 만들기 (AI) ✈️
-           </button>
-        </div>
       </div>
 
       {selectedDetail && (
