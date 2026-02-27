@@ -19,7 +19,7 @@ const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
 
   // Determine content source
   const title = product ? product.title : 'AI 맞춤 여행 견적';
-  const price = product ? `${product.price.toLocaleString()} VND` : plan?.totalCost;
+  const price = product ? `${product.price.toLocaleString()} USD` : plan?.totalCost;
   const itinerary = product ? product.itinerary : plan?.itinerary;
   const location = product ? product.location : '맞춤 여행지';
   const duration = product ? product.duration : '일정 협의';
@@ -31,7 +31,7 @@ const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
 ${product ? `📌 상품명: ${product.title}
 📍 지역: ${product.location}
 ⏰ 일정: ${product.duration}
-💰 견적가: ${product.price.toLocaleString()} VND
+💰 견적가: ${product.price.toLocaleString()} USD
 📝 포함사항: ${product.description}` : `📌 맞춤 여행 플랜
 📝 테마: ${plan?.summary}
 💰 예상 견적: ${plan?.totalCost}

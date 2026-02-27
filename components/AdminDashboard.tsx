@@ -1,7 +1,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide } from '../types';
-import { INITIAL_PAGE_CONTENTS } from '../constants';
+import { 
+  INITIAL_PRODUCTS, 
+  INITIAL_VIDEOS, 
+  INITIAL_POSTS, 
+  HERO_IMAGES, 
+  SUB_MENU_ITEMS, 
+  INITIAL_PAGE_CONTENTS,
+  INITIAL_POPUP 
+} from '../constants';
 import { driveService } from '../services/googleDriveService';
 import { uploadFile } from '../services/uploadService';
 import { compressImage } from '../utils/imageUtils';
@@ -486,6 +494,30 @@ const AdminDashboard: React.FC<Props> = ({
     alert('데이터 백업 파일이 다운로드되었습니다. GitHub 저장소의 초기 데이터로 활용할 수 있습니다.');
   };
 
+  const handleConvertVndToUsd = () => {
+    if (!confirm('모든 상품의 가격을 VND에서 USD로 변환하시겠습니까? (금액을 25,000으로 나눕니다. 이미 달러인 경우 실행하지 마세요!)')) return;
+    const updated = products.map(p => ({
+      ...p,
+      price: p.price > 10000 ? Math.round(p.price / 25000) : p.price
+    }));
+    setProducts(updated);
+    alert('변환되었습니다. 잠시 후 서버에 자동 저장됩니다.');
+  };
+
+  const handleResetToDefaults = () => {
+    if (!confirm('모든 데이터를 USD 기준의 초기 상태로 리셋하시겠습니까? 현재 저장된 모든 데이터가 삭제됩니다.')) return;
+    
+    setHeroImages(HERO_IMAGES);
+    setMenuItems(SUB_MENU_ITEMS);
+    setProducts(INITIAL_PRODUCTS);
+    setPageContents(INITIAL_PAGE_CONTENTS);
+    setVideos(INITIAL_VIDEOS);
+    setPosts(INITIAL_POSTS);
+    setPopup(INITIAL_POPUP);
+    
+    alert('초기 데이터로 복구되었습니다. 잠시 후 서버와 동기화됩니다.');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-4 animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
@@ -493,6 +525,9 @@ const AdminDashboard: React.FC<Props> = ({
            <span className="text-3xl">🛠️</span> MANGO TOUR 관리 센터
         </h1>
         <div className="flex gap-2">
+            <button onClick={handleResetToDefaults} className="px-6 py-2 bg-red-50 text-red-600 rounded-full font-bold hover:bg-red-100 transition text-sm flex items-center gap-2">
+               <span>🔄</span> 데이터 초기화
+            </button>
             <button onClick={handleExportData} className="px-6 py-2 bg-gray-600 text-white rounded-full font-bold hover:bg-gray-700 transition text-sm flex items-center gap-2">
                <span>💾</span> 데이터 백업
             </button>
@@ -741,15 +776,23 @@ const AdminDashboard: React.FC<Props> = ({
           <div className="animate-fade-in-up">
             <div className="flex justify-between items-center mb-8 border-b pb-4">
               <h3 className="text-2xl font-bold text-gray-800 font-serif">상품 카탈로그 관리</h3>
-              <button 
-                onClick={() => {
-                  const newProd: Product = { id: Date.now().toString(), title: '새 여행 상품', description: '상품 설명을 입력하세요.', image: 'https://via.placeholder.com/800x600', price: 0, location: '지역', duration: '3박 5일', type: 'tour', itinerary: [] };
-                  setProducts([newProd, ...products]);
-                }} 
-                className="bg-gold-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg"
-              >
-                + 새 상품 추가
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleConvertVndToUsd}
+                  className="bg-blue-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-blue-600 transition text-sm"
+                >
+                  VND -&gt; USD 변환
+                </button>
+                <button 
+                  onClick={() => {
+                    const newProd: Product = { id: Date.now().toString(), title: '새 여행 상품', description: '상품 설명을 입력하세요.', image: 'https://via.placeholder.com/800x600', price: 0, location: '지역', duration: '3박 5일', type: 'tour', itinerary: [] };
+                    setProducts([newProd, ...products]);
+                  }} 
+                  className="bg-gold-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg text-sm"
+                >
+                  + 새 상품 추가
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -776,7 +819,7 @@ const AdminDashboard: React.FC<Props> = ({
                      </div>
                      <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-0.5">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase">가격 (VND)</label>
+                           <label className="text-[10px] font-bold text-gray-400 uppercase">가격 (USD)</label>
                           <input type="number" className="w-full text-red-600 font-bold border-b outline-none" value={p.price} onChange={e => handleProductFieldChange(p.id, 'price', parseInt(e.target.value) || 0)} />
                         </div>
                         <div className="space-y-0.5">

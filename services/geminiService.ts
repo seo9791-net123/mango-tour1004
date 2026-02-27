@@ -45,25 +45,25 @@ export const generateTripPlan = async (request: TripPlanRequest): Promise<TripPl
        - 1st activity: Morning (오전)
        - 2nd activity: Afternoon (오후)
        - 3rd activity: Evening (저녁)
-    2. A cost breakdown table (estimated) for accommodation, golf/activities, food, and transport in VND.
-    3. A total estimated cost in VND.
+    2. A cost breakdown table (estimated) for accommodation, golf/activities, food, and transport in USD.
+    3. A total estimated cost in USD.
     4. A brief summary of the trip concept.
 
-    IMPORTANT PRICING RULES (CALCULATE STRICTLY in VND):
+    IMPORTANT PRICING RULES (CALCULATE STRICTLY in USD):
     1. Vehicle Cost (Calculate based on itinerary days):
-       - If Vehicle is '7인승': Add 2,500,000 VND per day.
-       - If Vehicle is '16인승': Add 3,000,000 VND per day.
-       - If Vehicle is '26인승': Add 4,500,000 VND per day (Estimate).
-       - If '선택안함': 0 VND.
+       - If Vehicle is '7인승': Add 100 USD per day.
+       - If Vehicle is '16인승': Add 120 USD per day.
+       - If Vehicle is '26인승': Add 180 USD per day (Estimate).
+       - If '선택안함': 0 USD.
     2. Guide Cost:
-       - If Guide Included is '예': Add 2,000,000 VND per day.
-       - If Guide Included is '아니오': 0 VND.
+       - If Guide Included is '예': Add 80 USD per day.
+       - If Guide Included is '아니오': 0 USD.
     3. Meal Policy: Include Hotel Breakfast & Golf Course Lunch costs. EXCLUDE Dinner cost.
     4. Airfare: EXCLUDE completely.
     5. Output: 
        - Explicitly mention in the summary or cost breakdown that "항공권 제외" (Airfare Excluded).
        - In 'costBreakdown', list the vehicle and guide costs separately if applicable.
-       - Format numbers with commas (e.g. 10,000,000 VND).
+       - Format numbers with commas (e.g. 1,000 USD).
 
     Respond in KOREAN (Hangul). Keep the itinerary descriptions concise.
   `;
@@ -151,13 +151,13 @@ const getMockTripPlan = (request: TripPlanRequest): TripPlanResult => {
       }
     ],
     costBreakdown: [
-      { item: "숙박비 (3박, 4성급 기준)", cost: "4,500,000 VND" },
-      { item: "차량 지원 (기사 포함)", cost: "3,000,000 VND" },
-      { item: "식비 (조식 포함, 중/석식)", cost: "2,500,000 VND" },
-      { item: "입장료 및 체험비", cost: "1,500,000 VND" },
-      { item: "가이드 비용", cost: "2,000,000 VND" }
+      { item: "숙박비 (3박, 4성급 기준)", cost: "180 USD" },
+      { item: "차량 지원 (기사 포함)", cost: "120 USD" },
+      { item: "식비 (조식 포함, 중/석식)", cost: "100 USD" },
+      { item: "입장료 및 체험비", cost: "60 USD" },
+      { item: "가이드 비용", cost: "80 USD" }
     ],
-    totalCost: "13,500,000 VND",
+    totalCost: "540 USD",
     summary: `[예시 견적] ${request.destination} ${request.duration} 여행입니다. ${request.theme} 테마에 맞춰 구성되었으며, ${request.pax}인 기준 견적입니다. (항공권 제외)`
   };
 };

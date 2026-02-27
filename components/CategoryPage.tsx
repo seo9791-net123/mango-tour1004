@@ -73,7 +73,7 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                   <p className="text-gray-600 text-base font-bold mb-4 line-clamp-3 h-auto leading-relaxed">{product.description}</p>
                   <div className="flex flex-col gap-2 mt-auto border-t pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-black text-lg text-red-600">{product.price.toLocaleString()} VND~</span>
+                      <span className="font-black text-lg text-red-600">${product.price.toLocaleString()} USD~</span>
                       <button 
                         onClick={() => handlePreviewClick(product)}
                         className="text-gold-600 font-bold text-xs hover:underline"
