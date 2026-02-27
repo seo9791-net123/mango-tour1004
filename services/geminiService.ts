@@ -3,28 +3,30 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { TripPlanRequest, TripPlanResult } from "../types";
 
 const createClient = () => {
-  // Try to get the API key from multiple possible locations
   let apiKey = "";
   
   try {
-    // Standard platform location
-    apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+    // 1. Try standard process.env (Vite handles this during build if configured, 
+    // or platform injects it)
+    apiKey = (process.env.GEMINI_API_KEY || process.env.API_KEY || "").trim();
     
-    // Vite fallback
+    // 2. Try Vite-specific import.meta.env
     if (!apiKey || apiKey === "undefined") {
-      apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
+      apiKey = ((import.meta as any).env?.VITE_GEMINI_API_KEY || "").trim();
+    }
+
+    // 3. Try window globals (some environments inject here)
+    if (!apiKey || apiKey === "undefined") {
+      apiKey = ((window as any).GEMINI_API_KEY || (window as any).API_KEY || "").trim();
     }
   } catch (e) {
-    console.warn("Environment variables access failed, trying window global");
+    console.error("Error accessing API key:", e);
   }
 
-  // If still not found, try window globals
-  if (!apiKey || apiKey === "undefined") {
-    apiKey = (window as any).API_KEY || (window as any).GEMINI_API_KEY || "";
-  }
-  
-  // Return a client even if apiKey is empty; the try-catch in calling functions will handle failures
-  return new GoogleGenAI({ apiKey: apiKey || "dummy_key_for_fallback" });
+  // If we still don't have a key, we'll try to proceed with an empty string 
+  // rather than a dummy string, as a dummy string might trigger 
+  // "invalid key" prompts from the platform.
+  return new GoogleGenAI({ apiKey: apiKey });
 };
 
 export const generateTripPlan = async (request: TripPlanRequest): Promise<TripPlanResult> => {
