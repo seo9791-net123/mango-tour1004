@@ -181,6 +181,13 @@ const getMockTripPlan = (request: TripPlanRequest): TripPlanResult => {
 export const classifyVideoCategory = async (title: string, description?: string): Promise<'골프' | '여행' | '먹거리' | '기타'> => {
   try {
     const ai = createClient();
+    
+    // If no API key is found, return '기타' immediately
+    const apiKey = (ai as any).apiKey;
+    if (!apiKey || apiKey === "undefined" || apiKey === "dummy_key_for_fallback") {
+      return '기타';
+    }
+
     const model = "gemini-3-flash-preview";
 
     const prompt = `
