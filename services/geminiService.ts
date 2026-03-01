@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { TripPlanRequest, TripPlanResult } from "../types";
+import { TripPlanRequest, TripPlanResult, CustomTripRequest } from "../types";
 
 const createClient = () => {
   let apiKey = "";
@@ -122,7 +122,13 @@ export const generateTripPlan = async (request: TripPlanRequest): Promise<TripPl
     });
 
     if (response.text) {
-      return JSON.parse(response.text) as TripPlanResult;
+      const parsed = JSON.parse(response.text);
+      return {
+        itinerary: Array.isArray(parsed.itinerary) ? parsed.itinerary : [],
+        costBreakdown: Array.isArray(parsed.costBreakdown) ? parsed.costBreakdown : [],
+        totalCost: parsed.totalCost || "0 USD",
+        summary: parsed.summary || ""
+      } as TripPlanResult;
     }
     throw new Error("No response text generated");
   } catch (error) {
@@ -172,6 +178,131 @@ const getMockTripPlan = (request: TripPlanRequest): TripPlanResult => {
     ],
     totalCost: "540 USD",
     summary: `[예시 견적] ${request.destination} ${request.duration} 여행입니다. ${request.theme} 테마에 맞춰 구성되었으며, ${request.pax}인 기준 견적입니다. (항공권 제외)`
+  };
+};
+
+export const generateCustomTripPlan = async (request: CustomTripRequest): Promise<TripPlanResult> => {
+  const ai = createClient();
+  
+  const apiKey = (ai as any).apiKey;
+  if (!apiKey || apiKey === "undefined" || apiKey === "dummy_key_for_fallback") {
+    console.warn("No Gemini API key found. Returning mock data.");
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return getMockCustomTripPlan(request);
+  }
+
+  const model = "gemini-3-flash-preview";
+
+  const dailyPlansStr = request.dailyPlans.map(dp => `
+    Day ${dp.day} (${dp.date}):
+    - Location: ${dp.location}
+    - Accommodation: ${dp.accommodation}
+    - People: ${dp.personCount}
+    - Daily Requests: ${dp.dailyRequests}
+    - Transport: ${dp.transportService.useRentCar ? dp.transportService.carType : 'None'}
+    - Guide: ${dp.transportService.useGuide ? 'Yes' : 'No'}
+  `).join('\n');
+
+  const prompt = `
+    Create a highly detailed travel itinerary for a client named ${request.clientName}.
+    
+    Trip Details:
+    - Arrival: ${request.arrivalDate} at ${request.arrivalTime}
+    - Departure: ${request.departureDate} at ${request.departureTime}
+    - Duration: ${request.durationSummary}
+    
+    Daily Preferences:
+    ${dailyPlansStr}
+    
+    Extra Remarks: ${request.extraRemarks}
+
+    REQUIREMENTS:
+    1. You MUST provide a detailed daily itinerary in the 'itinerary' array.
+    2. For each day, include at least 3 specific activities (Morning, Afternoon, Evening).
+    3. Each activity must be a descriptive sentence in Korean.
+    4. Provide a 'costBreakdown' array with estimated costs ONLY for items NOT handled by the app (e.g., Golf fees, Entrance fees, Meals, Massage) in VND.
+    5. DO NOT include costs for Accommodation, Vehicle/Transport, or Guide in your 'costBreakdown' as these are calculated automatically by the system.
+    6. Provide a 'totalCost' string in VND (sum of your suggested items).
+    7. Provide a 'summary' of the trip in Korean.
+
+    IMPORTANT: The 'itinerary' array MUST NOT be empty. It must contain one entry for each day of the trip.
+
+    Respond in KOREAN (Hangul).
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        maxOutputTokens: 20000,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            itinerary: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  day: { type: Type.NUMBER },
+                  activities: { 
+                    type: Type.ARRAY, 
+                    items: { type: Type.STRING } 
+                  }
+                }
+              }
+            },
+            costBreakdown: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  item: { type: Type.STRING },
+                  cost: { type: Type.STRING }
+                }
+              }
+            },
+            totalCost: { type: Type.STRING },
+            summary: { type: Type.STRING }
+          }
+        }
+      }
+    });
+
+    if (response.text) {
+      const parsed = JSON.parse(response.text);
+      return {
+        itinerary: Array.isArray(parsed.itinerary) ? parsed.itinerary : [],
+        costBreakdown: Array.isArray(parsed.costBreakdown) ? parsed.costBreakdown : [],
+        totalCost: parsed.totalCost || "0 VND",
+        summary: parsed.summary || ""
+      } as TripPlanResult;
+    }
+    throw new Error("No response text generated");
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    return getMockCustomTripPlan(request);
+  }
+};
+
+const getMockCustomTripPlan = (request: CustomTripRequest): TripPlanResult => {
+  return {
+    itinerary: request.dailyPlans.map(dp => ({
+      day: dp.day,
+      activities: [
+        `09:00: ${dp.location} 주요 명소 관광`,
+        `13:00: 현지 맛집에서 중식 및 휴식`,
+        `19:00: ${dp.location} 야경 감상 및 석식`
+      ]
+    })),
+    costBreakdown: [
+      { item: "숙박비 (전 일정)", cost: "5,000,000 VND" },
+      { item: "전용 차량 및 가이드", cost: "3,500,000 VND" },
+      { item: "식비 및 입장료", cost: "2,000,000 VND" }
+    ],
+    totalCost: "10,500,000 VND",
+    summary: `${request.clientName}님의 ${request.durationSummary} 베트남 맞춤 여행 일정입니다. 요청하신 ${request.dailyPlans[0].accommodation}급 숙소와 전용 차량 서비스를 포함하여 구성되었습니다.`
   };
 };
 

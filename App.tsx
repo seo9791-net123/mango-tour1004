@@ -18,8 +18,8 @@ import ForMenPage from './components/ForMenPage';
 import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
 import BottomNav from './components/BottomNav';
-import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP } from './constants';
-import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem, PopupNotification } from './types';
+import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_TRIP_PLANNER_SETTINGS } from './constants';
+import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem, PopupNotification, TripPlannerSettings } from './types';
 import { firestoreService } from './services/firestoreService';
 import { debounce } from './utils/debounce';
 
@@ -43,6 +43,7 @@ const App: React.FC = () => {
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const [popup, setPopup] = useState<PopupNotification>(INITIAL_POPUP);
+  const [tripPlannerSettings, setTripPlannerSettings] = useState<TripPlannerSettings>(INITIAL_TRIP_PLANNER_SETTINGS);
   const [showPopup, setShowPopup] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -133,6 +134,16 @@ const App: React.FC = () => {
     }
   }, 3000)).current;
 
+  const debouncedSyncTripPlanner = useRef(debounce(async (newSettings: TripPlannerSettings) => {
+    if (isLocalMode || isSyncing.current['trip_planner']) return;
+    isSyncing.current['trip_planner'] = true;
+    try {
+      await firestoreService.saveTripPlannerSettings(newSettings);
+    } finally {
+      isSyncing.current['trip_planner'] = false;
+    }
+  }, 3000)).current;
+
   // Initial Data Load
   useEffect(() => {
     const initData = async () => {
@@ -155,6 +166,7 @@ const App: React.FC = () => {
         setPosts(data.posts);
         setPageContents(data.pageContents);
         setPopup(data.popup);
+        if (data.tripPlannerSettings) setTripPlannerSettings(data.tripPlannerSettings);
         
         // Check if popup should be shown (e.g., once per session or if active)
         const popupClosed = sessionStorage.getItem('mango_popup_closed');
@@ -210,6 +222,11 @@ const App: React.FC = () => {
   const handleUpdatePopup = async (newPopup: PopupNotification) => {
     setPopup(newPopup);
     debouncedSyncPopup(newPopup);
+  };
+
+  const handleUpdateTripPlannerSettings = async (newSettings: TripPlannerSettings) => {
+    setTripPlannerSettings(newSettings);
+    debouncedSyncTripPlanner(newSettings);
   };
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -315,7 +332,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans pb-20 md:pb-0">
-      <header className="sticky top-0 z-30 bg-white shadow-md">
+      <header className="sticky top-0 z-30 bg-white shadow-md no-print">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
           <button onClick={() => window.location.href = '/'} className="flex items-center gap-2">
              <div className="w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-xs">M</div>
@@ -381,6 +398,7 @@ const App: React.FC = () => {
             videos={videos} setVideos={handleUpdateVideos}
             posts={posts} setPosts={handleUpdatePosts}
             popup={popup} setPopup={handleUpdatePopup}
+            tripPlannerSettings={tripPlannerSettings} setTripPlannerSettings={handleUpdateTripPlannerSettings}
             setCurrentPage={setCurrentPage}
           />
         ) : (
@@ -398,7 +416,12 @@ const App: React.FC = () => {
               ) : selectedCategory === '커뮤니티' ? (
                 <CommunityBoard posts={posts} user={user} onUpdatePosts={handleUpdatePosts} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '여행 만들기' ? (
-                <AITripPlanner onPlanGenerated={(plan) => setGeneratedPlan(plan)} onBack={() => setCurrentPage('home')} />
+                <AITripPlanner 
+                  settings={tripPlannerSettings} 
+                  onPlanGenerated={(plan) => setGeneratedPlan(plan)} 
+                  onBack={() => setCurrentPage('home')} 
+                  isAdmin={isAdmin}
+                />
               ) : selectedCategory === '비지니스' ? (
                 <BusinessPage content={pageContents['business']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '호텔&빌라' ? (
@@ -423,7 +446,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs">
+      <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs no-print">
          <p>MANGO TOUR TRAVEL AGENCY | +84 77 803 8743 | 
            <a href="https://open.kakao.com/o/gSfNsh3h" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
              Kakao: <span className="font-bold">MANGO TOUR</span>

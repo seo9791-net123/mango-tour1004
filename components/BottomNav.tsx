@@ -18,7 +18,7 @@ const BottomNav: React.FC<Props> = ({ currentPage, selectedCategory, onNavigate,
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[100] md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[100] md:hidden no-print">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = item.id === 'chat' 

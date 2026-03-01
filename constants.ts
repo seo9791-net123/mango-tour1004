@@ -1,5 +1,5 @@
 
-import { Product, VideoItem, CommunityPost, PageContent, PopupNotification } from './types';
+import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, TripPlannerSettings } from './types';
 
 export const LOCATIONS = ['호치민', '붕따우', '무이네', '달랏'];
 export const THEMES = ['골프', '관광', '먹거리', '비지니스'];
@@ -7,6 +7,48 @@ export const ACCOMMODATIONS = ['3성급', '4성급', '호텔 숙박(5성급)', '
 
 export const DURATIONS = ['3박 5일', '4박 6일', '5박 7일', '기타(직접상담)'];
 export const VEHICLE_OPTIONS = ['선택안함', '7인승', '16인승', '26인승', '기타'];
+
+export const DEFAULT_UNIT_PRICES = {
+  accommodation: {
+    '3성급': 700000,
+    '4성급': 1300000,
+    '호텔 숙박(5성급)': 3500000,
+    '풀빌라': 8000000
+  },
+  rentCar: {
+    '7인승': 3000000,
+    '7인승 리무진': 4000000,
+    '16인승': 5000000,
+    '26인승': 5500000
+  },
+  guide: {
+    korean: 3000000
+  }
+};
+
+export const INITIAL_TRIP_PLANNER_SETTINGS: TripPlannerSettings = {
+  recommendedThemes: [
+    {
+      id: 'golf',
+      title: '골프 투어',
+      description: '베트남 최고의 골프장에서 즐기는 라운딩',
+      image: 'https://picsum.photos/seed/golf/800/600'
+    },
+    {
+      id: 'family',
+      title: '가족 여행',
+      description: '온 가족이 함께하는 편안하고 즐거운 추억',
+      image: 'https://picsum.photos/seed/family/800/600'
+    },
+    {
+      id: 'healing',
+      title: '힐링/스파',
+      description: '지친 몸과 마음을 달래는 최고의 휴식',
+      image: 'https://picsum.photos/seed/spa/800/600'
+    }
+  ],
+  unitPrices: DEFAULT_UNIT_PRICES
+};
 
 export const TERMS_OF_SERVICE = `
 [제1조 예약 및 결제 안내]

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide } from '../types';
+import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide, TripPlannerSettings, RecommendedTheme } from '../types';
 import { 
   INITIAL_PRODUCTS, 
   INITIAL_VIDEOS, 
@@ -30,6 +30,8 @@ interface Props {
   setPosts: (posts: CommunityPost[]) => void;
   popup: PopupNotification;
   setPopup: (popup: PopupNotification) => void;
+  tripPlannerSettings: TripPlannerSettings;
+  setTripPlannerSettings: (settings: TripPlannerSettings) => void;
   setCurrentPage: (page: 'home' | 'admin' | 'category') => void;
 }
 
@@ -49,9 +51,11 @@ const AdminDashboard: React.FC<Props> = ({
   setPosts,
   popup,
   setPopup,
+  tripPlannerSettings,
+  setTripPlannerSettings,
   setCurrentPage
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'pages' | 'menu' | 'popup'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'pages' | 'menu' | 'popup' | 'trip_planner'>('users');
   
   const heroFileInputRef = useRef<HTMLInputElement>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -725,6 +729,7 @@ const AdminDashboard: React.FC<Props> = ({
           { id: 'products', label: '🛍️ 상품' },
           { id: 'pages', label: '📄 페이지' },
           { id: 'popup', label: '🔔 팝업' },
+          { id: 'trip_planner', label: '✈️ 여행 만들기' },
           { id: 'menu', label: '🔘 메뉴' },
         ].map(tab => (
           <button
@@ -740,6 +745,160 @@ const AdminDashboard: React.FC<Props> = ({
       </div>
 
       <div className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-50 min-h-[600px]">
+        {/* Trip Planner Settings */}
+        {activeTab === 'trip_planner' && (
+          <div className="animate-fade-in-up space-y-12">
+            <section>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 font-serif">추천 테마 설정</h3>
+                <button 
+                  onClick={() => {
+                    const newTheme: RecommendedTheme = {
+                      id: Date.now().toString(),
+                      title: '새 테마',
+                      description: '테마 설명을 입력하세요.',
+                      image: 'https://picsum.photos/seed/new/800/600'
+                    };
+                    setTripPlannerSettings({
+                      ...tripPlannerSettings,
+                      recommendedThemes: [...tripPlannerSettings.recommendedThemes, newTheme]
+                    });
+                  }}
+                  className="bg-gold-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg text-sm"
+                >
+                  + 테마 추가
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {tripPlannerSettings.recommendedThemes.map((theme, idx) => (
+                  <div key={theme.id} className="bg-gray-50 rounded-3xl p-6 border border-gray-100 shadow-sm">
+                    <div className="aspect-video rounded-2xl overflow-hidden mb-4 relative group">
+                      <img src={theme.image} className="w-full h-full object-cover" alt={theme.title} referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                        <label className="bg-white text-deepgreen px-4 py-2 rounded-full font-bold text-xs cursor-pointer shadow-lg">
+                          이미지 교체
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={(e) => handleFileUpload(e, (url) => {
+                              const updated = [...tripPlannerSettings.recommendedThemes];
+                              updated[idx] = { ...updated[idx], image: url };
+                              setTripPlannerSettings({ ...tripPlannerSettings, recommendedThemes: updated });
+                            })} 
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <input 
+                        type="text" 
+                        value={theme.title} 
+                        onChange={(e) => {
+                          const updated = [...tripPlannerSettings.recommendedThemes];
+                          updated[idx] = { ...updated[idx], title: e.target.value };
+                          setTripPlannerSettings({ ...tripPlannerSettings, recommendedThemes: updated });
+                        }}
+                        className="w-full p-3 rounded-xl border-none font-bold text-lg focus:ring-2 focus:ring-gold-500 outline-none"
+                        placeholder="테마 제목"
+                      />
+                      <textarea 
+                        value={theme.description} 
+                        onChange={(e) => {
+                          const updated = [...tripPlannerSettings.recommendedThemes];
+                          updated[idx] = { ...updated[idx], description: e.target.value };
+                          setTripPlannerSettings({ ...tripPlannerSettings, recommendedThemes: updated });
+                        }}
+                        className="w-full p-3 rounded-xl border-none text-sm text-gray-500 focus:ring-2 focus:ring-gold-500 outline-none h-20 resize-none"
+                        placeholder="테마 설명"
+                      />
+                      <button 
+                        onClick={() => {
+                          if (!confirm('이 테마를 삭제하시겠습니까?')) return;
+                          const updated = tripPlannerSettings.recommendedThemes.filter((_, i) => i !== idx);
+                          setTripPlannerSettings({ ...tripPlannerSettings, recommendedThemes: updated });
+                        }}
+                        className="w-full py-2 bg-red-50 text-red-500 rounded-xl font-bold text-xs hover:bg-red-100 transition"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="bg-gray-900 rounded-[2.5rem] p-10 text-white">
+              <h3 className="text-2xl font-bold mb-8 flex items-center gap-3">
+                <span className="text-green-400">💰</span> 기본 단가 설정 (VND)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-800 pb-2">🏢 숙박 시설 (인당/박당)</h4>
+                  {Object.entries(tripPlannerSettings.unitPrices.accommodation).map(([key, val]) => (
+                    <div key={key} className="flex items-center justify-between gap-4">
+                      <span className="text-xs font-bold text-gray-300 w-24">{key}</span>
+                      <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl flex-1 border border-white/10">
+                        <span className="text-[10px] font-bold text-gray-500">VND</span>
+                        <input 
+                          type="number" 
+                          value={val} 
+                          onChange={(e) => {
+                            const updated = { ...tripPlannerSettings.unitPrices };
+                            updated.accommodation[key] = parseInt(e.target.value);
+                            setTripPlannerSettings({ ...tripPlannerSettings, unitPrices: updated });
+                          }}
+                          className="bg-transparent border-none w-full font-bold text-sm outline-none text-white"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-6">
+                  <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-800 pb-2">🚐 차량 렌트 (일당)</h4>
+                  {Object.entries(tripPlannerSettings.unitPrices.rentCar).map(([key, val]) => (
+                    <div key={key} className="flex items-center justify-between gap-4">
+                      <span className="text-xs font-bold text-gray-300 w-24">{key}</span>
+                      <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl flex-1 border border-white/10">
+                        <span className="text-[10px] font-bold text-gray-500">VND</span>
+                        <input 
+                          type="number" 
+                          value={val} 
+                          onChange={(e) => {
+                            const updated = { ...tripPlannerSettings.unitPrices };
+                            updated.rentCar[key] = parseInt(e.target.value);
+                            setTripPlannerSettings({ ...tripPlannerSettings, unitPrices: updated });
+                          }}
+                          className="bg-transparent border-none w-full font-bold text-sm outline-none text-white"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest border-b border-gray-800 pb-2 mt-8">👤 가이드 서비스 (일당)</h4>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-xs font-bold text-gray-300 w-24">한국어 가이드</span>
+                    <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl flex-1 border border-white/10">
+                      <span className="text-[10px] font-bold text-gray-500">VND</span>
+                      <input 
+                        type="number" 
+                        value={tripPlannerSettings.unitPrices.guide.korean} 
+                        onChange={(e) => {
+                          const updated = { ...tripPlannerSettings.unitPrices };
+                          updated.guide.korean = parseInt(e.target.value);
+                          setTripPlannerSettings({ ...tripPlannerSettings, unitPrices: updated });
+                        }}
+                        className="bg-transparent border-none w-full font-bold text-sm outline-none text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
         {/* Hero Slide */}
         {activeTab === 'hero' && (
            <div className="animate-fade-in-up">

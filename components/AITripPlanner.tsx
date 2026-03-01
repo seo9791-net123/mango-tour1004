@@ -1,383 +1,776 @@
 
-import React, { useState } from 'react';
-import { LOCATIONS, THEMES, ACCOMMODATIONS, DURATIONS, VEHICLE_OPTIONS } from '../constants';
-import { TripPlanRequest, TripPlanResult } from '../types';
-import { generateTripPlan } from '../services/geminiService';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import { LOCATIONS, ACCOMMODATIONS } from '../constants';
+import { CustomTripRequest, TripPlanResult, TripPlannerSettings } from '../types';
+import { generateCustomTripPlan } from '../services/geminiService';
 
 interface Props {
+  settings: TripPlannerSettings;
   onPlanGenerated: (plan: TripPlanResult) => void;
   onBack?: () => void;
+  isAdmin?: boolean;
 }
 
-const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const AITripPlanner: React.FC<Props> = ({ settings, onPlanGenerated, onBack, isAdmin = false }) => {
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<TripPlanRequest>({
-    destination: LOCATIONS[0],
-    theme: THEMES[0],
-    accommodation: ACCOMMODATIONS[0],
-    duration: DURATIONS[0],
-    pax: 4,
-    guide: '예',
-    vehicle: VEHICLE_OPTIONS[0],
-    remarks: ''
+  const [showPriceSettings, setShowPriceSettings] = useState(false);
+  const [unitPrices, setUnitPrices] = useState(settings?.unitPrices || {
+    accommodation: { '3성급': 0, '4성급': 0, '호텔 숙박(5성급)': 0, '풀빌라': 0 },
+    rentCar: { '7인승': 0, '7인승 리무진': 0, '16인승': 0, '26인승': 0 },
+    guide: { korean: 0 }
+  });
+  const [generatedPlan, setGeneratedPlan] = useState<TripPlanResult | null>(null);
+  const [nameError, setNameError] = useState(false);
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
+  const quotationRef = useRef<HTMLDivElement>(null);
+
+  // Update unit prices if settings change
+  useEffect(() => {
+    if (settings?.unitPrices) {
+      setUnitPrices(settings.unitPrices);
+    }
+  }, [settings?.unitPrices]);
+
+  const [formData, setFormData] = useState<CustomTripRequest>({
+    clientName: '',
+    arrivalDate: new Date().toISOString().split('T')[0],
+    arrivalTime: '10:00',
+    departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    departureTime: '22:00',
+    durationSummary: '4일 (3박 4일)',
+    dailyPlans: [],
+    extraRemarks: ''
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Calculate duration summary whenever dates change
+  useEffect(() => {
+    const start = new Date(formData.arrivalDate);
+    const end = new Date(formData.departureDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     
+    if (diffDays > 0) {
+      const summary = `${diffDays}일 (${diffDays - 1}박 ${diffDays}일)`;
+      setFormData(prev => ({ ...prev, durationSummary: summary }));
+      
+      // Update daily plans array length
+      setFormData(prev => {
+        const newDailyPlans = [...prev.dailyPlans];
+        if (newDailyPlans.length < diffDays) {
+          for (let i = newDailyPlans.length; i < diffDays; i++) {
+            const currentDate = new Date(start);
+            currentDate.setDate(start.getDate() + i);
+            newDailyPlans.push({
+              day: i + 1,
+              date: currentDate.toISOString().split('T')[0].substring(5).replace('-', '.'),
+              location: LOCATIONS[0],
+              accommodation: ACCOMMODATIONS[1], // Default to 4-star
+              personCount: 2,
+              dailyRequests: '',
+              transportService: {
+                useRentCar: true,
+                carType: '7인승',
+                useGuide: false
+              }
+            });
+          }
+        } else if (newDailyPlans.length > diffDays) {
+          newDailyPlans.splice(diffDays);
+        }
+        return { ...prev, dailyPlans: newDailyPlans };
+      });
+    }
+  }, [formData.arrivalDate, formData.departureDate]);
+
+  const handleStartPlanning = () => {
+    if (!formData.clientName.trim()) {
+      setNameError(true);
+      alert('고객명을 입력해주세요.');
+      return;
+    }
+    setNameError(false);
+    setStep(2);
+    window.scrollTo(0, 0);
+  };
+
+  const handleSubmit = async () => {
     setLoading(true);
     try {
-      const result = await generateTripPlan(formData);
-      // Add options to the result for display in QuotationModal
-      const resultWithExtras: TripPlanResult = {
+      const result = await generateCustomTripPlan(formData);
+      
+      // Calculate costs based on unit prices
+      let accTotal = 0;
+      let transportTotal = 0;
+      
+      formData.dailyPlans.forEach(dp => {
+        // Accommodation
+        const accPrice = unitPrices.accommodation[dp.accommodation as keyof typeof unitPrices.accommodation] || 0;
+        accTotal += accPrice * dp.personCount;
+        
+        // Transport
+        if (dp.transportService.useRentCar) {
+          const carPrice = unitPrices.rentCar[dp.transportService.carType as keyof typeof unitPrices.rentCar] || 0;
+          transportTotal += carPrice;
+        }
+        
+        // Guide
+        if (dp.transportService.useGuide) {
+          transportTotal += unitPrices.guide.korean;
+        }
+      });
+
+      // Calculate costs from Gemini's breakdown
+      let aiTotal = 0;
+      const rawAiBreakdown = Array.isArray(result.costBreakdown) ? result.costBreakdown : [];
+      
+      // Filter out any items that mention accommodation to avoid double counting with our calculated total
+      const aiBreakdown = rawAiBreakdown.filter(item => 
+        !item.item.includes('숙박') && 
+        !item.item.toLowerCase().includes('accommodation') &&
+        !item.item.toLowerCase().includes('hotel')
+      );
+
+      aiBreakdown.forEach(item => {
+        const costStr = item.cost.replace(/[^0-9]/g, '');
+        if (costStr) aiTotal += parseInt(costStr);
+      });
+
+      const totalVND = accTotal + transportTotal + aiTotal;
+      
+      // Fallback itinerary if Gemini returns empty
+      const finalItinerary = (Array.isArray(result.itinerary) && result.itinerary.length > 0) 
+        ? result.itinerary 
+        : formData.dailyPlans.map(dp => ({
+            day: dp.day,
+            activities: [
+              `09:00: ${dp.location} 주요 명소 관광 및 자유 일정`,
+              `13:00: 현지 추천 맛집에서 중식 (개별 부담)`,
+              `19:00: ${dp.location} 야경 감상 및 석식 후 호텔(${dp.accommodation}) 휴식`
+            ]
+          }));
+
+      const finalResult: TripPlanResult = {
         ...result,
-        options: {
-          guide: formData.guide,
-          vehicle: formData.vehicle
-        },
-        remarks: formData.remarks
+        itinerary: finalItinerary,
+        totalCost: `${totalVND.toLocaleString()} VND`,
+        costBreakdown: [
+          ...aiBreakdown,
+          { item: "숙박비 합계", cost: `${accTotal.toLocaleString()} VND` },
+          { item: "차량 및 가이드 합계", cost: `${transportTotal.toLocaleString()} VND` }
+        ]
       };
       
-      setIsModalOpen(false);
-      onPlanGenerated(resultWithExtras);
-    } catch (error: any) {
-      console.error("Failed to generate trip plan:", error);
-      alert(error.message || "견적 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      setGeneratedPlan(finalResult);
+      onPlanGenerated(finalResult);
+      setStep(3);
+    } catch (error) {
+      console.error(error);
+      alert('견적 생성 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className={(onBack ? "min-h-screen bg-white" : "") + " pb-20 md:pb-0"}>
-      {/* Header if onBack exists (Page Mode) */}
-      {onBack && (
-         <div className="max-w-7xl mx-auto px-4 pt-6 pb-2">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
-                <div className="flex items-center gap-3">
-                    <button
-                    onClick={onBack}
-                    className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition shadow-sm text-gray-600"
-                    >
-                    ←
-                    </button>
-                    <h2 className="text-xl font-bold text-deepgreen">
-                        나만의 여행 만들기
-                    </h2>
-                </div>
+  const handleSave = () => {
+    localStorage.setItem('saved_trip_plan', JSON.stringify(formData));
+    alert('현재 설정이 저장되었습니다.');
+  };
+
+  const handleLoad = () => {
+    const saved = localStorage.getItem('saved_trip_plan');
+    if (saved) {
+      setFormData(JSON.parse(saved));
+      alert('저장된 설정을 불러왔습니다.');
+    } else {
+      alert('저장된 설정이 없습니다.');
+    }
+  };
+
+  const handleSaveImage = async () => {
+    if (!quotationRef.current) return;
+    
+    try {
+      setLoading(true);
+      const canvas = await html2canvas(quotationRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      const link = document.createElement('a');
+      link.download = `망고투어_견적서_${formData.clientName}_${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Image save error:', error);
+      alert('이미지 저장 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Step 1: Basic Info View
+  if (step === 1) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden p-8 md:p-12 animate-fade-in">
+          <div className="mb-8">
+            <h1 className="text-4xl font-black text-gray-900 mb-2">여행 견적 시작</h1>
+            <p className="text-gray-500 font-medium">고객 정보와 비행기 일정을 입력해주세요.</p>
+          </div>
+
+          <div className="space-y-8">
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">CLIENT NAME</label>
+              <input 
+                type="text"
+                placeholder="예: 홍길동"
+                className={`w-full p-5 bg-gray-50 border-2 rounded-2xl text-xl font-bold outline-none transition ${nameError ? 'border-red-500 bg-red-50' : 'border-transparent focus:ring-2 focus:ring-blue-500'}`}
+                value={formData.clientName}
+                onChange={(e) => {
+                  setFormData({ ...formData, clientName: e.target.value });
+                  if (e.target.value.trim()) setNameError(false);
+                }}
+              />
+              {nameError && <p className="text-red-500 text-xs font-bold mt-2 ml-1">⚠️ 고객명을 입력하셔야 다음 단계로 진행할 수 있습니다.</p>}
             </div>
-            <p className="text-gray-600 mb-4 pl-0 md:pl-11 text-xs">
-                고객님의 취향에 맞는 최적의 일정과 견적을 전문가가 직접 제안해 드립니다.
-            </p>
-         </div>
-      )}
 
-      {/* Hero CTA Section */}
-      <section className={`py-12 bg-gradient-to-br from-gray-900 to-deepgreen relative overflow-hidden text-white ${onBack ? 'rounded-2xl mx-4 mb-8 shadow-xl' : ''}`}>
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/travel_planning/1920/800')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
-        <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
-          <span className="inline-block py-0.5 px-2 rounded-full bg-gold-500/20 border border-gold-500 text-gold-400 text-xs font-bold mb-4 animate-pulse">
-             ✨ CUSTOM TRAVEL DESIGN
-          </span>
-          <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">
-            꿈꾸던 여행, <span className="text-gold-400">망고투어</span>가 현실로 만들어 드립니다
-          </h2>
-          <p className="text-sm text-gray-300 mb-6 max-w-2xl mx-auto">
-            원하는 여행지, 테마, 인원만 선택하세요. <br className="hidden md:block"/>
-            전문 상담원이 상세한 일정표와 투명한 견적서를 직접 안내해 드립니다.
-          </p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-gold-500 text-lg rounded-full hover:bg-gold-600 hover:shadow-lg hover:-translate-y-1 focus:outline-none ring-offset-2 focus:ring-2 ring-gold-400"
-          >
-            <span className="mr-2 text-2xl">✈️</span>
-            나만의 여행상품 만들기
-            <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 animate-ping opacity-0 group-hover:opacity-100 duration-1000"></div>
-          </button>
-        </div>
-      </section>
-
-      {/* How it Works Section */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl font-black text-deepgreen mb-2">여행이 만들어지는 과정</h2>
-            <p className="text-gray-500 text-sm">단 3단계면 충분합니다. 나머지는 망고투어가 책임집니다.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { step: '01', title: '취향 선택', desc: '여행지, 테마, 인원 등 고객님의 취향을 알려주세요.', icon: '🎯' },
-              { step: '02', title: '전문가 맞춤 설계', desc: '망고투어 전문가가 최적의 동선과 합리적인 견적을 산출합니다.', icon: '⚡' },
-              { step: '03', title: '상담 및 확정', desc: '제안된 견적서를 바탕으로 최종 상담 후 여행을 시작하세요.', icon: '🤝' }
-            ].map((item, i) => (
-              <div key={i} className="relative group">
-                <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                  <div className="text-4xl mb-4">{item.icon}</div>
-                  <div className="text-gold-500 font-black text-4xl opacity-10 absolute top-6 right-8 group-hover:opacity-20 transition-opacity">{item.step}</div>
-                  <h3 className="text-lg font-bold text-deepgreen mb-2">{item.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
-                </div>
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
-                    <span className="text-gray-300 text-2xl">→</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Manual Inquiry Section */}
-      <section className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-           <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                 <h3 className="text-gold-600 font-bold tracking-widest text-[10px] md:text-xs mb-2 uppercase">DIRECT CUSTOM INQUIRY</h3>
-                 <h2 className="text-2xl md:text-3xl font-black text-deepgreen leading-tight">
-                    더 정교한<br/>
-                    <span className="text-gold-500">1:1 맞춤 상담</span>이 필요하신가요?
-                 </h2>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">ARRIVAL (도착)</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="date"
+                    className="flex-1 p-4 bg-gray-50 border-none rounded-xl font-bold text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.arrivalDate}
+                    onChange={(e) => setFormData({ ...formData, arrivalDate: e.target.value })}
+                  />
+                  <input 
+                    type="time"
+                    className="w-24 p-4 bg-gray-50 border-none rounded-xl font-bold text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.arrivalTime}
+                    onChange={(e) => setFormData({ ...formData, arrivalTime: e.target.value })}
+                  />
+                </div>
               </div>
-              <p className="text-gray-600 leading-relaxed font-medium text-sm md:text-base">
-                 망고투어의 전문 상담원이 고객님의 모든 요구사항을 반영하여<br className="hidden md:block"/>
-                 세상에 단 하나뿐인 특별한 여행 상품을 직접 설계해 드립니다.
-              </p>
-              <ul className="space-y-3">
-                 {[
-                   '대규모 단체 행사 및 기업 연수 전문',
-                   'VVIP를 위한 초호화 럭셔리 빌라 및 전용기 서비스',
-                   '특수 목적 여행 (웨딩, 촬영, 비즈니스 미팅 등)',
-                   '실시간 항공권 및 호텔 최저가 조합'
-                 ].map((item, i) => (
-                   <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700">
-                      <span className="w-5 h-5 rounded-full bg-gold-100 text-gold-600 flex items-center justify-center text-[10px]">✓</span>
-                      {item}
-                   </li>
-                 ))}
-              </ul>
-              <div className="pt-4 flex flex-col sm:flex-row gap-3">
-                 <button 
-                   onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
-                   className="flex-1 px-6 py-4 bg-yellow-400 text-black rounded-2xl font-bold shadow-xl hover:bg-yellow-500 transition flex items-center justify-center gap-3"
-                 >
-                    <span className="text-2xl">💬</span>
-                    오픈채팅 문의
-                 </button>
-                 <button 
-                   onClick={() => {
-                     navigator.clipboard.writeText('vnseen1');
-                     alert('카카오톡 ID (vnseen1)가 복사되었습니다.\n카카오톡에서 ID로 친구 추가해주세요.');
-                     window.open('https://pf.kakao.com/', '_blank');
-                   }}
-                   className="flex-1 px-6 py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-xl hover:bg-opacity-90 transition flex items-center justify-center gap-3"
-                 >
-                    <span className="text-2xl">🆔</span>
-                    카톡 ID: vnseen1
-                 </button>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">DEPARTURE (출발)</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="date"
+                    className="flex-1 p-4 bg-gray-50 border-none rounded-xl font-bold text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.departureDate}
+                    onChange={(e) => setFormData({ ...formData, departureDate: e.target.value })}
+                  />
+                  <input 
+                    type="time"
+                    className="w-24 p-4 bg-gray-50 border-none rounded-xl font-bold text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.departureTime}
+                    onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}
+                  />
+                </div>
               </div>
-           </div>
-           
-           <div className="relative">
-              <div className="absolute -inset-4 bg-gold-500/10 rounded-[2.5rem] rotate-3"></div>
-              <div className="relative bg-white border border-gray-100 p-8 rounded-[2rem] shadow-2xl">
-                 <div className="flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 rounded-full bg-gold-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">M</div>
-                    <div>
-                       <p className="text-xs font-bold text-gray-400 uppercase">Customer Service</p>
-                       <p className="text-lg font-black text-deepgreen">MANGO TOUR 실시간 상담</p>
-                    </div>
-                 </div>
-                 
-                 <div className="space-y-4 mb-8">
-                    <div className="flex gap-3">
-                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">👤</div>
-                       <div className="bg-gray-100 p-3 rounded-2xl rounded-tl-none text-xs text-gray-700 font-medium">
-                          안녕하세요! 어떤 여행을 계획 중이신가요?
-                       </div>
-                    </div>
-                    <div className="flex gap-3 flex-row-reverse">
-                       <div className="w-8 h-8 rounded-full bg-gold-500 flex items-center justify-center shrink-0 text-white text-[10px] font-bold">YOU</div>
-                       <div className="bg-gold-500 p-3 rounded-2xl rounded-tr-none text-xs text-white font-bold shadow-md">
-                          다낭 3박 4일 골프 투어 견적 부탁드려요.
-                       </div>
-                    </div>
-                 </div>
-                 
-                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-center">
-                    <p className="text-[10px] text-gray-400 mb-2 font-bold">상담 가능 시간: 09:00 - 22:00 (연중무휴)</p>
-                    <div className="flex justify-center gap-4">
-                       <div className="text-center">
-                          <p className="text-lg font-black text-deepgreen">98%</p>
-                          <p className="text-[8px] text-gray-500 font-bold uppercase">Response Rate</p>
-                       </div>
-                       <div className="w-px bg-gray-200 h-8 self-center"></div>
-                       <div className="text-center">
-                          <p className="text-lg font-black text-deepgreen">5min</p>
-                          <p className="text-[8px] text-gray-500 font-bold uppercase">Avg. Response</p>
-                       </div>
-                    </div>
-                 </div>
-              </div>
-           </div>
-        </div>
-      </section>
-
-      {/* Form Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl w-full max-w-xl overflow-hidden shadow-2xl transform transition-all animate-fade-in-up">
-            <div className="bg-deepgreen px-5 py-3 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <span>📝</span> 여행 취향 설정
-              </h3>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="text-white/60 hover:text-white transition text-xl"
-              >
-                &times;
-              </button>
             </div>
 
-            <div className="p-6 bg-gray-50 max-h-[80vh] overflow-y-auto">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">여행지</label>
-                    <select
-                      className="w-full p-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition text-sm"
-                      value={formData.destination}
-                      onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+            <div className="bg-blue-50 p-6 rounded-2xl flex items-center gap-4 border border-blue-100">
+              <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-2xl shadow-sm">📅</div>
+              <div>
+                <p className="font-black text-blue-900">선택한 일정: {formData.durationSummary}</p>
+                <p className="text-xs text-blue-600 font-medium">비행기 시간을 고려하여 AI가 일정을 구성합니다.</p>
+              </div>
+            </div>
+
+            <button 
+              type="button"
+              onClick={handleStartPlanning}
+              className="w-full py-6 bg-blue-600 text-white rounded-2xl text-2xl font-black shadow-xl hover:bg-blue-700 transition transform hover:-translate-y-1 active:scale-95 flex items-center justify-center"
+            >
+              여정 계획 시작하기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 2: Detail Settings View
+  if (step === 2) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-20">
+        {/* Header */}
+        <header className="bg-white border-b sticky top-0 z-50 px-4 py-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg">망</div>
+            <div>
+              <h2 className="text-sm font-black text-blue-900">망고 투어 <span className="text-blue-500 font-bold">VIETNAM</span></h2>
+              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">TRAVEL CONCIERGE</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-blue-700 transition">
+              <span>📥</span> 저장
+            </button>
+            <button onClick={handleLoad} className="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-gray-50 transition">
+              <span>📤</span> 불러오기
+            </button>
+            <button onClick={() => {
+              if (onBack) onBack();
+              else setStep(1);
+            }} className="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-gray-50 transition">
+              <span>🏠</span> 처음으로
+            </button>
+            {isAdmin && (
+              <button onClick={() => setShowPriceSettings(true)} className="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-gray-50 transition">
+                <span>⚙️</span> 단가 설정
+              </button>
+            )}
+          </div>
+        </header>
+
+        <main className="max-w-5xl mx-auto px-4 py-10">
+          <div className="flex justify-between items-center mb-10">
+            <h1 className="text-4xl font-black text-gray-900">여정 세부 설정</h1>
+            <button onClick={() => setStep(1)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-300 transition">기간 수정</button>
+          </div>
+
+          <div className="space-y-8">
+            {/* Recommended Themes Selection */}
+            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-xl animate-fade-in-up">
+              <h3 className="text-lg font-black text-blue-900 mb-6 flex items-center gap-2">
+                <span>🌟</span> 추천 테마로 일괄 설정
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {settings.recommendedThemes.map((theme) => {
+                  const isSelected = selectedThemeId === theme.id;
+                  return (
+                    <button
+                      key={theme.id}
+                      onClick={() => {
+                        const updatedPlans = formData.dailyPlans.map(p => ({ ...p, dailyRequests: theme.title }));
+                        setFormData({ ...formData, dailyPlans: updatedPlans });
+                        setSelectedThemeId(theme.id);
+                      }}
+                      className={`flex flex-col items-center p-4 rounded-2xl shadow-sm transition-all duration-300 group border-2 relative ${
+                        isSelected 
+                          ? 'bg-blue-50 border-blue-500 shadow-lg scale-105 z-10' 
+                          : 'bg-white border-gray-100 hover:shadow-md hover:border-blue-200'
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs shadow-md animate-bounce">
+                          ✓
+                        </div>
+                      )}
+                      <div className={`w-16 h-16 rounded-full overflow-hidden mb-3 border-2 transition-all duration-300 ${
+                        isSelected ? 'border-blue-500 ring-4 ring-blue-100' : 'border-gray-50 group-hover:border-blue-300'
+                      }`}>
+                        <img src={theme.image} className="w-full h-full object-cover" alt={theme.title} referrerPolicy="no-referrer" />
+                      </div>
+                      <span className={`text-sm font-black transition-colors duration-300 ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>{theme.title}</span>
+                      <span className={`text-[10px] mt-1 transition-colors duration-300 font-medium ${isSelected ? 'text-blue-500' : 'text-gray-400'}`}>{theme.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {formData.dailyPlans.map((plan, idx) => (
+              <div key={idx} className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-xl relative animate-fade-in-up" style={{ animationDelay: `${idx * 0.1}s` }}>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+                  <div className="flex flex-col">
+                    <span className="inline-block w-12 py-1 bg-gray-900 text-white text-[10px] font-black rounded-full text-center mb-4 uppercase">DAY {plan.day}</span>
+                    <span className="text-3xl font-black text-gray-900">{plan.date}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">LOCATION</label>
+                    <select 
+                      className="w-full p-4 bg-blue-50 border-2 border-blue-100 rounded-xl font-bold text-sm text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none hover:bg-blue-100 transition-colors"
+                      value={plan.location}
+                      onChange={(e) => {
+                        const newPlans = [...formData.dailyPlans];
+                        newPlans[idx].location = e.target.value;
+                        setFormData({ ...formData, dailyPlans: newPlans });
+                      }}
                     >
                       {LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                     </select>
                   </div>
-                  
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">여행 테마</label>
-                    <select
-                      className="w-full p-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition text-sm"
-                      value={formData.theme}
-                      onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ACCOMMODATION</label>
+                    <select 
+                      className="w-full p-4 bg-amber-50 border-2 border-amber-100 rounded-xl font-bold text-sm text-amber-900 focus:ring-2 focus:ring-amber-500 outline-none hover:bg-amber-100 transition-colors"
+                      value={plan.accommodation}
+                      onChange={(e) => {
+                        const newPlans = [...formData.dailyPlans];
+                        newPlans[idx].accommodation = e.target.value;
+                        setFormData({ ...formData, dailyPlans: newPlans });
+                      }}
                     >
-                      {THEMES.map(theme => <option key={theme} value={theme}>{theme}</option>)}
+                      {Object.keys(unitPrices.accommodation).map(acc => <option key={acc} value={acc}>{acc}</option>)}
                     </select>
+                    <div className="flex items-center gap-2 mt-2 bg-amber-100/50 p-3 rounded-xl">
+                      <span className="text-amber-600 text-sm">👤</span>
+                      <input 
+                        type="number" 
+                        min="1"
+                        className="w-full bg-transparent border-none font-bold text-xs outline-none text-amber-900"
+                        value={plan.personCount}
+                        onChange={(e) => {
+                          const newPlans = [...formData.dailyPlans];
+                          newPlans[idx].personCount = parseInt(e.target.value);
+                          setFormData({ ...formData, dailyPlans: newPlans });
+                        }}
+                      />
+                    </div>
+                    <p className="text-[8px] text-gray-400 mt-1">* 인원수에 따라 모든 비용(숙박, 투어 등)이 자동 계산됩니다.</p>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">숙소 등급</label>
-                    <select
-                      className="w-full p-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition text-sm"
-                      value={formData.accommodation}
-                      onChange={(e) => setFormData({ ...formData, accommodation: e.target.value })}
-                    >
-                      {ACCOMMODATIONS.map(acc => <option key={acc} value={acc}>{acc}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">여행 일정 (기간)</label>
-                    <select
-                      className="w-full p-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition text-sm"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    >
-                      {DURATIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">인원 수</label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-full p-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition text-sm"
-                      value={formData.pax}
-                      onChange={(e) => setFormData({ ...formData, pax: parseInt(e.target.value) })}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">DAILY REQUESTS</label>
+                    <textarea 
+                      className="w-full p-4 bg-indigo-50 border-2 border-indigo-100 rounded-xl font-bold text-xs text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none placeholder:text-indigo-300 hover:bg-indigo-100 transition-colors"
+                      placeholder="해당 일자 특별 요청 (예: 씨푸드 중식)"
+                      value={plan.dailyRequests}
+                      onChange={(e) => {
+                        const newPlans = [...formData.dailyPlans];
+                        newPlans[idx].dailyRequests = e.target.value;
+                        setFormData({ ...formData, dailyPlans: newPlans });
+                      }}
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700">렌트카 (기사 포함)</label>
-                    <select
-                      className="w-full p-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition text-sm"
-                      value={formData.vehicle}
-                      onChange={(e) => setFormData({ ...formData, vehicle: e.target.value })}
-                    >
-                      {VEHICLE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">TRANSPORT & SERVICE</label>
+                    <div className="space-y-3">
+                      <label className={`flex items-center gap-2 p-3 rounded-xl border transition cursor-pointer ${plan.transportService.useRentCar ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-400'}`}>
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          checked={plan.transportService.useRentCar}
+                          onChange={(e) => {
+                            const newPlans = [...formData.dailyPlans];
+                            newPlans[idx].transportService.useRentCar = e.target.checked;
+                            setFormData({ ...formData, dailyPlans: newPlans });
+                          }}
+                        />
+                        <span className="text-xs font-black">🚐 렌트카 사용</span>
+                      </label>
+                      
+                      {plan.transportService.useRentCar && (
+                        <select 
+                          className="w-full p-3 bg-white border border-gray-200 rounded-xl font-bold text-xs text-gray-800 outline-none"
+                          value={plan.transportService.carType}
+                          onChange={(e) => {
+                            const newPlans = [...formData.dailyPlans];
+                            newPlans[idx].transportService.carType = e.target.value;
+                            setFormData({ ...formData, dailyPlans: newPlans });
+                          }}
+                        >
+                          {Object.keys(unitPrices.rentCar).map(car => <option key={car} value={car}>{car}</option>)}
+                        </select>
+                      )}
 
-                  <div className="col-span-1 md:col-span-2 space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700 block mb-1">가이드 이용 여부</label>
-                    <div className="flex gap-3">
-                      {['예', '아니오'].map(option => (
-                        <label key={option} className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 border rounded-lg hover:bg-gray-50 flex-1 justify-center text-sm">
-                          <input
-                            type="radio"
-                            name="guide"
-                            value={option}
-                            checked={formData.guide === option}
-                            onChange={(e) => setFormData({ ...formData, guide: e.target.value })}
-                            className="w-3 h-3 text-gold-500 focus:ring-gold-500"
-                          />
-                          <span className={formData.guide === option ? 'font-bold text-gold-600' : 'text-gray-700'}>{option}</span>
-                        </label>
-                      ))}
+                      <label className={`flex items-center gap-2 p-3 rounded-xl border transition cursor-pointer ${plan.transportService.useGuide ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-400'}`}>
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          checked={plan.transportService.useGuide}
+                          onChange={(e) => {
+                            const newPlans = [...formData.dailyPlans];
+                            newPlans[idx].transportService.useGuide = e.target.checked;
+                            setFormData({ ...formData, dailyPlans: newPlans });
+                          }}
+                        />
+                        <span className="text-xs font-black">👤 가이드 동행</span>
+                      </label>
                     </div>
                   </div>
-
-                  <div className="col-span-1 md:col-span-2 space-y-1.5">
-                    <label className="text-xs font-bold text-gray-700 block mb-1">비고 (추가 요청사항)</label>
-                    <textarea
-                      className="w-full p-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-gold-500 outline-none transition text-sm h-24 resize-none"
-                      placeholder="원하시는 골프장, 호텔, 식사 등 자유롭게 입력해주세요."
-                      value={formData.remarks}
-                      onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-                    />
-                  </div>
                 </div>
+              </div>
+            ))}
 
-                <div className="pt-3">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={`w-full py-4 rounded-lg font-bold text-white text-xl shadow-lg flex justify-center items-center gap-2 transition-all ${
-                      loading 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-gold-500 hover:bg-gold-600 hover:shadow-xl hover:-translate-y-0.5'
-                    }`}
-                  >
-                    {loading ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-2">
-                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span>Gemini AI가 견적을 생성 중입니다...</span>
-                        </div>
-                        <span className="text-[10px] opacity-70 font-normal">잠시만 기다려주세요 (약 3~5초 소요)</span>
-                      </div>
-                    ) : (
-                      <>
-                        <span>🚀</span> 여행 일정 및 견적 생성하기
-                      </>
-                    )}
-                  </button>
-                  <p className="text-[10px] text-gray-500 mt-2 text-center font-medium">
-                    * AI 분석을 통해 최적의 동선과 비용을 산출합니다. (약 5~10초 소요)
-                  </p>
-                </div>
-              </form>
+            <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-xl">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-black text-blue-900 flex items-center gap-2">
+                  <span>📄</span> 기타 비고 및 추가 금액 설정
+                </h3>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-blue-700 transition">
+                  <span>+</span> 항목 추가
+                </button>
+              </div>
+              <div className="p-10 border-2 border-dashed border-gray-100 rounded-2xl text-center">
+                <p className="text-gray-400 font-bold text-sm">추가된 비고 항목이 없습니다. 특이사항이나 별도 비용을 입력하세요.</p>
+              </div>
+              <p className="text-[8px] text-gray-400 mt-4">* 여기에 입력된 내용은 견적서 하단 요약표에 자동으로 합산되어 표시됩니다.</p>
             </div>
           </div>
+
+          <div className="mt-12 flex justify-center">
+            <button 
+              onClick={handleSubmit}
+              disabled={loading}
+              className={`px-12 py-6 rounded-full text-2xl font-black shadow-2xl transition transform hover:-translate-y-1 active:scale-95 flex items-center gap-4 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 text-white hover:bg-black'}`}
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>AI 일정 및 견적 생성 중...</span>
+                </>
+              ) : (
+                <>
+                  <span>📋</span> AI 일정 및 견적 생성
+                </>
+              )}
+            </button>
+          </div>
+        </main>
+
+        {/* Price Settings Modal */}
+        {showPriceSettings && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-3xl overflow-hidden animate-fade-in-up">
+              <div className="bg-gray-900 p-8 text-white flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-black flex items-center gap-3">
+                    <span className="text-green-400">🛡️</span> 관리자 단가 설정
+                  </h3>
+                  <p className="text-xs text-gray-400 font-bold mt-1">항목별 일일 기준 단가(VND)를 설정합니다.</p>
+                </div>
+                <button onClick={() => setShowPriceSettings(false)} className="text-gray-400 hover:text-white transition text-3xl">&times;</button>
+              </div>
+              
+              <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-6">
+                  <h4 className="text-sm font-black text-blue-900 flex items-center gap-2 border-b pb-2">
+                    <span>🏢</span> 숙박 시설 (인당/박당)
+                  </h4>
+                  {Object.entries(unitPrices.accommodation).map(([key, val]) => (
+                    <div key={key} className="flex items-center justify-between gap-4">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{key}</span>
+                      <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl flex-1">
+                        <span className="text-[10px] font-bold text-gray-300">VND</span>
+                        <input 
+                          type="number" 
+                          className="w-full bg-transparent border-none font-black text-right outline-none text-sm"
+                          value={val}
+                          onChange={(e) => {
+                            const newPrices = { ...unitPrices };
+                            newPrices.accommodation[key] = parseInt(e.target.value);
+                            setUnitPrices(newPrices);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-6">
+                  <h4 className="text-sm font-black text-green-700 flex items-center gap-2 border-b pb-2">
+                    <span>🚐</span> 렌트카 (일당)
+                  </h4>
+                  {Object.entries(unitPrices.rentCar).map(([key, val]) => (
+                    <div key={key} className="flex items-center justify-between gap-4">
+                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{key}</span>
+                      <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl flex-1">
+                        <span className="text-[10px] font-bold text-gray-300">VND</span>
+                        <input 
+                          type="number" 
+                          className="w-full bg-transparent border-none font-black text-right outline-none text-sm"
+                          value={val}
+                          onChange={(e) => {
+                            const newPrices = { ...unitPrices };
+                            newPrices.rentCar[key] = parseInt(e.target.value);
+                            setUnitPrices(newPrices);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  <h4 className="text-sm font-black text-red-700 flex items-center gap-2 border-b pb-2 pt-4">
+                    <span>👤</span> 가이드 (일당)
+                  </h4>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">한국어 가이드</span>
+                    <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl flex-1">
+                      <span className="text-[10px] font-bold text-gray-300">VND</span>
+                      <input 
+                        type="number" 
+                        className="w-full bg-transparent border-none font-black text-right outline-none text-sm"
+                        value={unitPrices.guide.korean}
+                        onChange={(e) => {
+                          const newPrices = { ...unitPrices };
+                          newPrices.guide.korean = parseInt(e.target.value);
+                          setUnitPrices(newPrices);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-10 pt-0">
+                <button 
+                  onClick={() => setShowPriceSettings(false)}
+                  className="w-full py-5 bg-gray-900 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-black transition"
+                >
+                  설정 저장 후 닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Step 3: Preview View
+  if (step === 3 && generatedPlan) {
+    return (
+      <div className="min-h-screen bg-gray-100 pb-20">
+        {/* Header */}
+        <header className="bg-white border-b sticky top-0 z-50 px-4 py-3 flex items-center justify-between shadow-sm no-print">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg">망</div>
+            <div>
+              <h2 className="text-sm font-black text-blue-900">망고 투어 <span className="text-blue-500 font-bold">PREVIEW</span></h2>
+              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">TRAVEL CONCIERGE</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setStep(2)}
+              className="px-4 py-2 bg-gray-900 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-black transition"
+            >
+              <span>📄</span> 상세 일정/금액 수정
+            </button>
+            <button 
+              onClick={handlePrint}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-red-600 transition"
+            >
+              <span>📥</span> 인쇄/PDF
+            </button>
+            <button 
+              onClick={handleSaveImage}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-blue-700 transition"
+            >
+              <span>🖼️</span> 이미지 저장
+            </button>
+            <button onClick={() => {
+              if (window.confirm('새로운 견적을 작성하시겠습니까?')) {
+                setStep(1);
+                setGeneratedPlan(null);
+              }
+            }} className="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-gray-50 transition">
+              <span>🔄</span> 새 견적
+            </button>
+          </div>
+        </header>
+
+        <div className="max-w-5xl mx-auto my-10 px-4 no-print">
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-3 text-blue-700 mb-6">
+            <span className="text-xl">📄</span>
+            <p className="text-sm font-bold">아래는 A4 용지 규격에 맞춘 인쇄 미리보기입니다. [인쇄/PDF] 버튼을 눌러 저장하세요.</p>
+          </div>
         </div>
-      )}
+
+        <div className="flex justify-center bg-gray-100 py-10 overflow-x-auto print:bg-white print:p-0 print:m-0">
+          <div 
+            ref={quotationRef}
+            className="printable-area bg-white shadow-2xl print:shadow-none animate-fade-in"
+            style={{ 
+              width: '210mm', 
+              minHeight: '297mm', 
+              padding: '20mm',
+              margin: '0 auto'
+            }}
+          >
+          <div className="flex justify-between items-start mb-12">
+            <div>
+              <h1 className="text-3xl font-black text-gray-900 italic tracking-tighter mb-1">망고 투어 <span className="text-blue-600">VIETNAM</span></h1>
+              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-[0.2em]">PREMIUM ITINERARY & OFFICIAL QUOTATION</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xl font-black text-blue-600 underline underline-offset-8">{formData.clientName} 님 귀하</p>
+              <p className="text-[10px] text-gray-400 font-bold mt-4">{new Date().toLocaleDateString()} 발행</p>
+            </div>
+          </div>
+
+          <div className="space-y-12 mb-16">
+            {generatedPlan.itinerary.map((day, idx) => (
+              <div key={idx} className="relative pl-20 border-l border-gray-100 pb-12 last:pb-0 break-inside-avoid">
+                <div className="absolute left-[-12px] top-0 w-6 h-6 rounded-full bg-white border-4 border-gray-900 z-10"></div>
+                <div className="absolute left-[-60px] top-0 flex flex-col items-center">
+                  <span className="bg-gray-900 text-white text-[8px] font-black px-2 py-0.5 rounded-full mb-1">DAY {day.day}</span>
+                  <span className="text-xs font-black text-gray-400">{formData.dailyPlans[idx]?.date}</span>
+                </div>
+
+                <div className="space-y-6">
+                  {day.activities.map((act, i) => (
+                    <div key={i} className="flex items-start gap-6 group">
+                      <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-xl shadow-sm group-hover:bg-blue-50 transition">
+                        {i === 0 ? '🏨' : i === 1 ? '🍽️' : '📸'}
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-sm font-bold text-gray-800 leading-relaxed">{act}</p>
+                        <p className="text-[10px] text-gray-400 mt-1 font-medium">
+                          {formData.dailyPlans[idx]?.location} | {formData.dailyPlans[idx]?.accommodation}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gray-50 rounded-3xl p-10 border border-gray-100 break-inside-avoid">
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest mb-8 border-b pb-4">QUOTATION SUMMARY</h2>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-2">
+                <span>ITEM DESCRIPTION</span>
+                <span>AMOUNT (VND)</span>
+              </div>
+
+              {generatedPlan.costBreakdown.map((cost, i) => (
+                <div key={i} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-none">
+                  <div>
+                    <p className="text-sm font-black text-gray-800">{cost.item}</p>
+                    <p className="text-[10px] text-gray-400 font-bold">전 일정 합산 기준</p>
+                  </div>
+                  <p className="text-sm font-black text-blue-600 underline underline-offset-4">{cost.cost}</p>
+                </div>
+              ))}
+
+              <div className="mt-10 bg-gray-900 text-white p-6 rounded-2xl flex justify-between items-center shadow-xl">
+                <span className="text-lg font-black uppercase tracking-widest">Total Estimate Balance</span>
+                <span className="text-3xl font-black text-green-400">{generatedPlan.totalCost} ₫</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">THANK YOU FOR CHOOSING 망고 투어 VIETNAM</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
+}
+
+  return null;
 };
 
 export default AITripPlanner;

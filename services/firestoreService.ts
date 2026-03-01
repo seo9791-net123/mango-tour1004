@@ -10,7 +10,8 @@ import {
 import { db, isDefaultConfig } from "./firebaseConfig";
 import { 
   PageContent,
-  PopupNotification
+  PopupNotification,
+  TripPlannerSettings
 } from "../types";
 import { 
   INITIAL_PRODUCTS, 
@@ -19,7 +20,8 @@ import {
   HERO_IMAGES, 
   SUB_MENU_ITEMS, 
   INITIAL_PAGE_CONTENTS,
-  INITIAL_POPUP
+  INITIAL_POPUP,
+  INITIAL_TRIP_PLANNER_SETTINGS
 } from "../constants";
 
 // 데이터 컬렉션 이름 정의
@@ -29,7 +31,8 @@ const COLLECTIONS = {
   POSTS: "posts",
   PAGES: "pages",
   SETTINGS: "settings", // Hero Images, Menu Items 등을 저장
-  POPUP: "popup"
+  POPUP: "popup",
+  TRIP_PLANNER: "trip_planner"
 };
 
 export const firestoreService = {
@@ -56,6 +59,7 @@ export const firestoreService = {
         posts: INITIAL_POSTS,
         pageContents: INITIAL_PAGE_CONTENTS,
         popup: INITIAL_POPUP,
+        tripPlannerSettings: INITIAL_TRIP_PLANNER_SETTINGS,
         isDefaultConfig: true
       };
     }
@@ -130,6 +134,16 @@ export const firestoreService = {
         setDoc(popupRef, INITIAL_POPUP).catch(e => console.warn("Failed to seed popup:", e));
       }
 
+      // 7. Trip Planner Settings
+      const tpRef = doc(db, COLLECTIONS.TRIP_PLANNER, "settings");
+      const tpSnap = await withTimeout(getDoc(tpRef));
+      let tripPlannerSettings = INITIAL_TRIP_PLANNER_SETTINGS;
+      if (tpSnap.exists()) {
+        tripPlannerSettings = tpSnap.data() as TripPlannerSettings;
+      } else {
+        setDoc(tpRef, INITIAL_TRIP_PLANNER_SETTINGS).catch(e => console.warn("Failed to seed trip planner settings:", e));
+      }
+
       return {
         heroImages,
         menuItems,
@@ -138,6 +152,7 @@ export const firestoreService = {
         posts,
         pageContents,
         popup,
+        tripPlannerSettings,
         isDefaultConfig
       };
 
@@ -153,6 +168,7 @@ export const firestoreService = {
         posts: INITIAL_POSTS,
         pageContents: INITIAL_PAGE_CONTENTS,
         popup: INITIAL_POPUP,
+        tripPlannerSettings: INITIAL_TRIP_PLANNER_SETTINGS,
         isDefaultConfig: true
       };
     }
@@ -293,6 +309,20 @@ export const firestoreService = {
         console.warn("Firestore write stream exhausted. Skipping popup save.");
       } else {
         console.error("Error saving popup:", e);
+      }
+    }
+  },
+
+  async saveTripPlannerSettings(settings: TripPlannerSettings) {
+    if (!db || !navigator.onLine) return;
+    try {
+      const ref = doc(db, COLLECTIONS.TRIP_PLANNER, "settings");
+      await setDoc(ref, settings, { merge: true });
+    } catch (e: any) {
+      if (e.code === 'resource-exhausted') {
+        console.warn("Firestore write stream exhausted. Skipping trip planner settings save.");
+      } else {
+        console.error("Error saving trip planner settings:", e);
       }
     }
   }

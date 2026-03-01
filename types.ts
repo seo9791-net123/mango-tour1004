@@ -77,6 +77,43 @@ export interface TripPlanResult {
   };
 }
 
+export interface DailyPlan {
+  day: number;
+  date: string;
+  location: string;
+  accommodation: string;
+  personCount: number;
+  dailyRequests: string;
+  transportService: {
+    useRentCar: boolean;
+    carType: string;
+    useGuide: boolean;
+  };
+}
+
+export interface CustomTripRequest {
+  clientName: string;
+  arrivalDate: string;
+  arrivalTime: string;
+  departureDate: string;
+  departureTime: string;
+  durationSummary: string;
+  dailyPlans: DailyPlan[];
+  extraRemarks: string;
+}
+
+export interface UnitPrices {
+  accommodation: {
+    [key: string]: number;
+  };
+  rentCar: {
+    [key: string]: number;
+  };
+  guide: {
+    korean: number;
+  };
+}
+
 export interface ChatMessage {
   id: string;
   sender: string;
@@ -109,6 +146,18 @@ export interface PageContent {
   galleryImages: string[];
   sections: PageSection[]; // Manageable text blocks for the admin
   slides?: PageSlide[];    // Optional gallery slides
+}
+
+export interface RecommendedTheme {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+}
+
+export interface TripPlannerSettings {
+  recommendedThemes: RecommendedTheme[];
+  unitPrices: UnitPrices;
 }
 
 export interface AppSettings {
