@@ -31,6 +31,7 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
     }
   }, [settings?.unitPrices]);
 
+  const [extraItems, setExtraItems] = useState<Array<{ id: string, label: string, cost: number }>>([]);
   const [formData, setFormData] = useState<CustomTripRequest>({
     clientName: '',
     arrivalDate: new Date().toISOString().split('T')[0],
@@ -131,17 +132,29 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
       
       // Filter out any items that mention accommodation to avoid double counting with our calculated total
       const aiBreakdown = rawAiBreakdown.filter(item => 
+        item && item.item && 
         !item.item.includes('숙박') && 
         !item.item.toLowerCase().includes('accommodation') &&
         !item.item.toLowerCase().includes('hotel')
       );
 
       aiBreakdown.forEach(item => {
-        const costStr = item.cost.replace(/[^0-9]/g, '');
-        if (costStr) aiTotal += parseInt(costStr);
+        if (item && item.cost) {
+          const costStr = String(item.cost).replace(/[^0-9]/g, '');
+          if (costStr) {
+            const val = parseInt(costStr);
+            if (!isNaN(val)) aiTotal += val;
+          }
+        }
       });
 
-      const totalVND = accTotal + transportTotal + aiTotal;
+      // Add manual extra items
+      let manualTotal = 0;
+      extraItems.forEach(item => {
+        manualTotal += item.cost;
+      });
+
+      const totalVND = accTotal + transportTotal + aiTotal + manualTotal;
       
       // Fallback itinerary if Gemini returns empty
       const finalItinerary = (Array.isArray(result.itinerary) && result.itinerary.length > 0) 
@@ -161,6 +174,7 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
         totalCost: `${totalVND.toLocaleString()} VND`,
         costBreakdown: [
           ...aiBreakdown,
+          ...extraItems.map(item => ({ item: item.label, cost: `${item.cost.toLocaleString()} VND` })),
           { item: "숙박비 합계", cost: `${accTotal.toLocaleString()} VND` },
           { item: "차량 및 가이드 합계", cost: `${transportTotal.toLocaleString()} VND` }
         ],
@@ -547,13 +561,68 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                 <h3 className="text-lg font-black text-blue-900 flex items-center gap-2">
                   <span>📄</span> 기타 비고 및 추가 금액 설정
                 </h3>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-blue-700 transition">
+                <button 
+                  onClick={() => {
+                    setExtraItems([...extraItems, { id: Date.now().toString(), label: '', cost: 0 }]);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-blue-700 transition"
+                >
                   <span>+</span> 항목 추가
                 </button>
               </div>
-              <div className="p-10 border-2 border-dashed border-gray-100 rounded-2xl text-center">
-                <p className="text-gray-400 font-bold text-sm">추가된 비고 항목이 없습니다. 특이사항이나 별도 비용을 입력하세요.</p>
-              </div>
+              
+              {extraItems.length === 0 ? (
+                <div className="p-10 border-2 border-dashed border-gray-100 rounded-2xl text-center">
+                  <p className="text-gray-400 font-bold text-sm">추가된 비고 항목이 없습니다. 특이사항이나 별도 비용을 입력하세요.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {extraItems.map((item, idx) => (
+                    <div key={item.id} className="flex flex-col md:flex-row gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100 animate-fade-in-up">
+                      <div className="flex-1">
+                        <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 block">항목 명칭</label>
+                        <input 
+                          type="text"
+                          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="예: 마사지 추가, 골프 라운딩 추가"
+                          value={item.label}
+                          onChange={(e) => {
+                            const newItems = [...extraItems];
+                            newItems[idx].label = e.target.value;
+                            setExtraItems(newItems);
+                          }}
+                        />
+                      </div>
+                      <div className="w-full md:w-48">
+                        <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 block">금액 (VND)</label>
+                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2">
+                          <span className="text-[10px] font-bold text-gray-300">VND</span>
+                          <input 
+                            type="number"
+                            className="w-full bg-transparent border-none font-black text-right outline-none text-sm"
+                            value={item.cost}
+                            onChange={(e) => {
+                              const newItems = [...extraItems];
+                              newItems[idx].cost = parseInt(e.target.value) || 0;
+                              setExtraItems(newItems);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-end">
+                        <button 
+                          onClick={() => {
+                            setExtraItems(extraItems.filter(i => i.id !== item.id));
+                          }}
+                          className="w-full md:w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <p className="text-[8px] text-gray-400 mt-4">* 여기에 입력된 내용은 견적서 하단 요약표에 자동으로 합산되어 표시됩니다.</p>
             </div>
           </div>
