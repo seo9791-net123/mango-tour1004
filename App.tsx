@@ -418,7 +418,6 @@ const App: React.FC = () => {
               ) : selectedCategory === '여행 만들기' ? (
                 <AITripPlanner 
                   settings={tripPlannerSettings} 
-                  onPlanGenerated={(plan) => setGeneratedPlan(plan)} 
                   onBack={() => setCurrentPage('home')} 
                   isAdmin={isAdmin}
                 />

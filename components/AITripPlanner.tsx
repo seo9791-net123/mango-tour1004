@@ -1,18 +1,16 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import html2canvas from 'html2canvas';
 import { LOCATIONS, ACCOMMODATIONS } from '../constants';
 import { CustomTripRequest, TripPlanResult, TripPlannerSettings } from '../types';
 import { generateCustomTripPlan } from '../services/geminiService';
 
 interface Props {
   settings: TripPlannerSettings;
-  onPlanGenerated: (plan: TripPlanResult) => void;
   onBack?: () => void;
   isAdmin?: boolean;
 }
 
-const AITripPlanner: React.FC<Props> = ({ settings, onPlanGenerated, onBack, isAdmin = false }) => {
+const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPriceSettings, setShowPriceSettings] = useState(false);
@@ -97,10 +95,16 @@ const AITripPlanner: React.FC<Props> = ({ settings, onPlanGenerated, onBack, isA
 
   const handleSubmit = async () => {
     setLoading(true);
+    if (!formData.dailyPlans || formData.dailyPlans.length === 0) {
+      alert('여행 일정이 설정되지 않았습니다. 날짜를 다시 확인해주세요.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const result = await generateCustomTripPlan(formData);
       
-      // Calculate costs based on unit prices
+      if (!result) throw new Error('AI 일정 생성 실패');
       let accTotal = 0;
       let transportTotal = 0;
       
@@ -159,12 +163,17 @@ const AITripPlanner: React.FC<Props> = ({ settings, onPlanGenerated, onBack, isA
           ...aiBreakdown,
           { item: "숙박비 합계", cost: `${accTotal.toLocaleString()} VND` },
           { item: "차량 및 가이드 합계", cost: `${transportTotal.toLocaleString()} VND` }
-        ]
+        ],
+        options: {
+          guide: formData.dailyPlans.some(dp => dp.transportService.useGuide) ? '한국어 가이드 포함' : '가이드 미포함',
+          vehicle: formData.dailyPlans.find(dp => dp.transportService.useRentCar)?.transportService.carType || '차량 미포함'
+        }
       };
       
       setGeneratedPlan(finalResult);
-      onPlanGenerated(finalResult);
+      // onPlanGenerated(finalResult); // Remove this to avoid double preview (AITripPlanner has its own)
       setStep(3);
+      window.scrollTo(0, 0);
     } catch (error) {
       console.error(error);
       alert('견적 생성 중 오류가 발생했습니다.');
@@ -188,31 +197,67 @@ const AITripPlanner: React.FC<Props> = ({ settings, onPlanGenerated, onBack, isA
     }
   };
 
-  const handleSaveImage = async () => {
-    if (!quotationRef.current) return;
+  const handleOpenPreview = () => {
+    if (!generatedPlan || !quotationRef.current) return;
     
-    try {
-      setLoading(true);
-      const canvas = await html2canvas(quotationRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      const link = document.createElement('a');
-      link.download = `망고투어_견적서_${formData.clientName}_${new Date().toISOString().split('T')[0]}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    } catch (error) {
-      console.error('Image save error:', error);
-      alert('이미지 저장 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
+    const printWindow = window.open('', '_blank', 'width=900,height=1000,scrollbars=yes');
+    if (!printWindow) {
+      alert('팝업 차단을 해제해주세요.');
+      return;
     }
-  };
 
-  const handlePrint = () => {
-    window.print();
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>견적서 미리보기 - 망고 투어</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script>
+            tailwind.config = {
+              theme: {
+                extend: {
+                  colors: {
+                    gold: {
+                      400: '#D4AF37',
+                      500: '#C5A028',
+                      600: '#B4901C',
+                    },
+                    deepgreen: '#004d40',
+                  }
+                }
+              }
+            }
+          </script>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+            body { font-family: 'Noto Sans KR', sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
+            .a4-page { width: 210mm; min-height: 297mm; padding: 20mm; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+            @media print {
+              @page { margin: 0; size: A4; }
+              body { background: white; padding: 0; }
+              .a4-page { box-shadow: none; margin: 0; width: 100%; padding: 10mm !important; }
+              .no-print { display: none !important; }
+            }
+            .break-inside-avoid { break-inside: avoid; }
+            .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+            @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print flex justify-center mb-6">
+            <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">
+              🖨️ PDF 저장 / 인쇄하기
+            </button>
+          </div>
+          <div class="a4-page animate-fade-in">
+            ${quotationRef.current.innerHTML}
+          </div>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
   // Step 1: Basic Info View
@@ -656,16 +701,10 @@ const AITripPlanner: React.FC<Props> = ({ settings, onPlanGenerated, onBack, isA
               <span>📄</span> 상세 일정/금액 수정
             </button>
             <button 
-              onClick={handlePrint}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-red-600 transition"
+              onClick={handleOpenPreview}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-green-700 transition"
             >
-              <span>📥</span> 인쇄/PDF
-            </button>
-            <button 
-              onClick={handleSaveImage}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-md hover:bg-blue-700 transition"
-            >
-              <span>🖼️</span> 이미지 저장
+              <span>🖼️</span> 미리보기
             </button>
             <button onClick={() => {
               if (window.confirm('새로운 견적을 작성하시겠습니까?')) {
