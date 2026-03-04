@@ -40,7 +40,7 @@ export const generateTripPlan = async (request: TripPlanRequest): Promise<TripPl
     return getMockTripPlan(request);
   }
 
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-3.1-flash-lite-preview";
 
   const prompt = `
     Create a detailed travel itinerary and cost breakdown for a trip to Vietnam.
@@ -191,7 +191,7 @@ export const generateCustomTripPlan = async (request: CustomTripRequest): Promis
     return getMockCustomTripPlan(request);
   }
 
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-3.1-flash-lite-preview";
 
   const dailyPlansStr = request.dailyPlans.map(dp => `
     Day ${dp.day} (${dp.date}):
@@ -319,7 +319,7 @@ export const classifyVideoCategory = async (title: string, description?: string)
       return '기타';
     }
 
-    const model = "gemini-3-flash-preview";
+    const model = "gemini-3.1-flash-lite-preview";
 
     const prompt = `
       다음 동영상의 제목과 설명을 분석하여 가장 적합한 카테고리 하나를 선택하세요.
