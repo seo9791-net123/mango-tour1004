@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LOCATIONS, ACCOMMODATIONS } from '../constants';
 import { CustomTripRequest, TripPlanResult, TripPlannerSettings } from '../types';
 import { generateCustomTripPlan } from '../services/geminiService';
+import QuotationModal from './QuotationModal';
 
 interface Props {
   settings: TripPlannerSettings;
@@ -13,6 +14,7 @@ interface Props {
 const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [showQuotation, setShowQuotation] = useState(false);
   const [showPriceSettings, setShowPriceSettings] = useState(false);
   const [unitPrices, setUnitPrices] = useState(settings?.unitPrices || {
     accommodation: { '3성급': 0, '4성급': 0, '호텔 숙박(5성급)': 0, '풀빌라': 0 },
@@ -212,66 +214,7 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
   };
 
   const handleOpenPreview = () => {
-    if (!generatedPlan || !quotationRef.current) return;
-    
-    const printWindow = window.open('', '_blank', 'width=900,height=1000,scrollbars=yes');
-    if (!printWindow) {
-      alert('팝업 차단을 해제해주세요.');
-      return;
-    }
-
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>견적서 미리보기 - 망고 투어</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <script>
-            tailwind.config = {
-              theme: {
-                extend: {
-                  colors: {
-                    gold: {
-                      400: '#D4AF37',
-                      500: '#C5A028',
-                      600: '#B4901C',
-                    },
-                    deepgreen: '#004d40',
-                  }
-                }
-              }
-            }
-          </script>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
-            body { font-family: 'Noto Sans KR', sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
-            .a4-page { width: 210mm; min-height: 297mm; padding: 20mm; margin: 0 auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-            @media print {
-              @page { margin: 0; size: A4; }
-              body { background: white; padding: 0; }
-              .a4-page { box-shadow: none; margin: 0; width: 100%; padding: 10mm !important; }
-              .no-print { display: none !important; }
-            }
-            .break-inside-avoid { break-inside: avoid; }
-            .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
-            @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-          </style>
-        </head>
-        <body>
-          <div class="no-print flex justify-center mb-6">
-            <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">
-              🖨️ PDF 저장 / 인쇄하기
-            </button>
-          </div>
-          <div class="a4-page animate-fade-in">
-            ${quotationRef.current.innerHTML}
-          </div>
-        </body>
-      </html>
-    `;
-    
-    printWindow.document.write(html);
-    printWindow.document.close();
+    setShowQuotation(true);
   };
 
   // Step 1: Basic Info View
@@ -398,13 +341,22 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
             <button onClick={() => setStep(1)} className="px-3 py-1.5 md:px-4 md:py-2 bg-gray-200 text-gray-700 rounded-lg text-[10px] md:text-xs font-bold hover:bg-gray-300 transition">기간 수정</button>
           </div>
 
-          <div className="space-y-4 md:space-y-8">
+          {showQuotation && generatedPlan && (
+            <QuotationModal plan={generatedPlan} onClose={() => setShowQuotation(false)} />
+          )}
+
+          <div className="flex justify-between items-center mb-4 md:mb-6">
+            <h1 className="text-2xl md:text-5xl font-black text-gray-900">여정 세부 설정</h1>
+            <button onClick={() => setStep(1)} className="px-4 py-2 md:px-6 md:py-3 bg-gray-200 text-gray-700 rounded-xl text-xs md:text-sm font-bold hover:bg-gray-300 transition">기간 수정</button>
+          </div>
+
+          <div className="space-y-3 md:space-y-6">
             {/* Recommended Themes Selection */}
-            <div className="bg-white rounded-2xl md:rounded-[2rem] p-4 md:p-8 border border-gray-100 shadow-xl animate-fade-in-up">
-              <h3 className="text-sm md:text-lg font-black text-blue-900 mb-3 md:mb-6 flex items-center gap-2">
+            <div className="bg-white rounded-3xl md:rounded-[3rem] p-4 md:p-10 border border-gray-100 shadow-xl animate-fade-in-up">
+              <h3 className="text-base md:text-xl font-black text-blue-900 mb-4 md:mb-8 flex items-center gap-2">
                 <span>🌟</span> 추천 테마로 일괄 설정
               </h3>
-              <div className="grid grid-cols-3 gap-2 md:gap-4">
+              <div className="grid grid-cols-3 gap-3 md:gap-6">
                 {(settings?.recommendedThemes || []).map((theme) => {
                   const isSelected = selectedThemeId === theme.id;
                   return (
@@ -415,24 +367,24 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                         setFormData({ ...formData, dailyPlans: updatedPlans });
                         setSelectedThemeId(theme.id);
                       }}
-                      className={`flex flex-col items-center p-1.5 md:p-4 rounded-xl md:rounded-2xl shadow-sm transition-all duration-300 group border-2 relative ${
+                      className={`flex flex-col items-center p-2 md:p-6 rounded-2xl md:rounded-3xl shadow-sm transition-all duration-300 group border-2 relative ${
                         isSelected 
                           ? 'bg-blue-50 border-blue-500 shadow-lg scale-105 z-10' 
                           : 'bg-white border-gray-100 hover:shadow-md hover:border-blue-200'
                       }`}
                     >
                       {isSelected && (
-                        <div className="absolute top-0.5 right-0.5 md:top-2 md:right-2 w-3.5 h-3.5 md:w-6 md:h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-[7px] md:text-xs shadow-md animate-bounce">
+                        <div className="absolute top-1 right-1 md:top-3 md:right-3 w-4 h-4 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-[8px] md:text-sm shadow-md animate-bounce">
                           ✓
                         </div>
                       )}
-                      <div className={`w-10 h-10 md:w-16 md:h-16 rounded-full overflow-hidden mb-1.5 md:mb-3 border-2 transition-all duration-300 ${
-                        isSelected ? 'border-blue-500 ring-1 md:ring-4 ring-blue-100' : 'border-gray-50 group-hover:border-blue-300'
+                      <div className={`w-12 h-12 md:w-20 md:h-20 rounded-full overflow-hidden mb-2 md:mb-4 border-2 transition-all duration-300 ${
+                        isSelected ? 'border-blue-500 ring-2 md:ring-4 ring-blue-100' : 'border-gray-50 group-hover:border-blue-300'
                       }`}>
                         <img src={theme.image} className="w-full h-full object-cover" alt={theme.title} referrerPolicy="no-referrer" />
                       </div>
-                      <span className={`text-[9px] md:text-sm font-black transition-colors duration-300 text-center line-clamp-1 ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>{theme.title}</span>
-                      <span className={`hidden md:block text-[10px] mt-1 transition-colors duration-300 font-medium ${isSelected ? 'text-blue-500' : 'text-gray-400'}`}>{theme.description}</span>
+                      <span className={`text-xs md:text-base font-black transition-colors duration-300 text-center line-clamp-1 ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>{theme.title}</span>
+                      <span className={`hidden md:block text-xs mt-1 transition-colors duration-300 font-medium ${isSelected ? 'text-blue-500' : 'text-gray-400'}`}>{theme.description}</span>
                     </button>
                   );
                 })}
@@ -440,17 +392,17 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
             </div>
 
             {formData.dailyPlans.map((plan, idx) => (
-              <div key={idx} className="bg-white rounded-xl md:rounded-[2rem] p-4 md:p-8 border border-gray-100 shadow-xl relative animate-fade-in-up" style={{ animationDelay: `${idx * 0.1}s` }}>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-8">
-                  <div className="flex flex-row md:flex-col justify-between md:justify-start items-center md:items-start border-b md:border-none pb-2 md:pb-0 mb-1 md:mb-0">
-                    <span className="inline-block px-2 py-0.5 bg-gray-900 text-white text-[9px] font-black rounded-full text-center uppercase">DAY {plan.day}</span>
-                    <span className="text-lg md:text-3xl font-black text-gray-900">{plan.date}</span>
+              <div key={idx} className="bg-white rounded-2xl md:rounded-[2rem] p-3 md:p-6 border border-gray-100 shadow-lg relative animate-fade-in-up" style={{ animationDelay: `${idx * 0.1}s` }}>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-6">
+                  <div className="flex flex-row md:flex-col justify-between md:justify-start items-center md:items-start border-b md:border-none pb-2 mb-1">
+                    <span className="inline-block px-3 py-0.5 bg-gray-900 text-white text-xs font-black rounded-full text-center uppercase">DAY {plan.day}</span>
+                    <span className="text-2xl md:text-5xl font-black text-gray-900">{plan.date}</span>
                   </div>
 
-                  <div className="space-y-1 md:space-y-2">
-                    <label className="text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">LOCATION</label>
+                  <div className="space-y-2 md:space-y-3">
+                    <label className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">LOCATION</label>
                     <select 
-                      className="w-full p-2.5 md:p-4 bg-blue-50 border-2 border-blue-100 rounded-xl font-bold text-[11px] md:text-sm text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none hover:bg-blue-100 transition-colors"
+                      className="w-full p-4 md:p-5 bg-blue-50 border-2 border-blue-100 rounded-2xl font-bold text-sm md:text-base text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none hover:bg-blue-100 transition-colors"
                       value={plan.location}
                       onChange={(e) => {
                         const newPlans = [...formData.dailyPlans];
@@ -462,10 +414,10 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                     </select>
                   </div>
 
-                  <div className="space-y-1 md:space-y-2">
-                    <label className="text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">ACCOMMODATION</label>
+                  <div className="space-y-2 md:space-y-3">
+                    <label className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">ACCOMMODATION</label>
                     <select 
-                      className="w-full p-2.5 md:p-4 bg-amber-50 border-2 border-amber-100 rounded-xl font-bold text-[11px] md:text-sm text-amber-900 focus:ring-2 focus:ring-amber-500 outline-none hover:bg-amber-100 transition-colors"
+                      className="w-full p-4 md:p-5 bg-amber-50 border-2 border-amber-100 rounded-2xl font-bold text-sm md:text-base text-amber-900 focus:ring-2 focus:ring-amber-500 outline-none hover:bg-amber-100 transition-colors"
                       value={plan.accommodation}
                       onChange={(e) => {
                         const newPlans = [...formData.dailyPlans];
@@ -475,12 +427,12 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                     >
                       {Object.keys(unitPrices.accommodation).map(acc => <option key={acc} value={acc}>{acc}</option>)}
                     </select>
-                    <div className="flex items-center gap-2 mt-1.5 bg-amber-100/50 p-2 md:p-3 rounded-xl">
-                      <span className="text-amber-600 text-[11px] md:text-sm">👤</span>
+                    <div className="flex items-center gap-3 mt-2 bg-amber-100/50 p-4 rounded-2xl">
+                      <span className="text-amber-600 text-base">👤</span>
                       <input 
                         type="number" 
                         min="1"
-                        className="w-full bg-transparent border-none font-bold text-[10px] md:text-xs outline-none text-amber-900"
+                        className="w-full bg-transparent border-none font-bold text-sm md:text-base outline-none text-amber-900"
                         value={plan.personCount}
                         onChange={(e) => {
                           const newPlans = [...formData.dailyPlans];
@@ -491,10 +443,10 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                     </div>
                   </div>
 
-                  <div className="space-y-1 md:space-y-2">
-                    <label className="text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">DAILY REQUESTS</label>
+                  <div className="space-y-2 md:space-y-3">
+                    <label className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">DAILY REQUESTS</label>
                     <textarea 
-                      className="w-full p-2.5 md:p-4 bg-indigo-50 border-2 border-indigo-100 rounded-xl font-bold text-[10px] md:text-xs text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none h-16 md:h-24 resize-none placeholder:text-indigo-300 hover:bg-indigo-100 transition-colors"
+                      className="w-full p-4 md:p-5 bg-indigo-50 border-2 border-indigo-100 rounded-2xl font-bold text-sm text-indigo-900 focus:ring-2 focus:ring-indigo-500 outline-none h-24 md:h-32 resize-none placeholder:text-indigo-300 hover:bg-indigo-100 transition-colors"
                       placeholder="해당 일자 특별 요청 (예: 씨푸드 중식)"
                       value={plan.dailyRequests}
                       onChange={(e) => {
@@ -505,13 +457,13 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                     />
                   </div>
 
-                  <div className="space-y-1 md:space-y-2">
-                    <label className="text-[7px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">TRANSPORT & SERVICE</label>
-                    <div className="space-y-1.5 md:space-y-3">
-                      <label className={`flex items-center gap-2 p-2 md:p-3 rounded-xl border transition cursor-pointer ${plan.transportService.useRentCar ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-400'}`}>
+                  <div className="space-y-2 md:space-y-3">
+                    <label className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">TRANSPORT & SERVICE</label>
+                    <div className="space-y-2 md:space-y-4">
+                      <label className={`flex items-center gap-3 p-4 rounded-2xl border transition cursor-pointer ${plan.transportService.useRentCar ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-400'}`}>
                         <input 
                           type="checkbox" 
-                          className="w-3 h-3 md:w-4 md:h-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
                           checked={plan.transportService.useRentCar}
                           onChange={(e) => {
                             const newPlans = [...formData.dailyPlans];
@@ -519,12 +471,12 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                             setFormData({ ...formData, dailyPlans: newPlans });
                           }}
                         />
-                        <span className="text-[10px] md:text-xs font-black">🚐 렌트카</span>
+                        <span className="text-sm md:text-base font-black">🚐 렌트카</span>
                       </label>
                       
                       {plan.transportService.useRentCar && (
                         <select 
-                          className="w-full p-3 bg-white border border-gray-200 rounded-xl font-bold text-xs text-gray-800 outline-none"
+                          className="w-full p-4 bg-white border border-gray-200 rounded-2xl font-bold text-sm text-gray-800 outline-none"
                           value={plan.transportService.carType}
                           onChange={(e) => {
                             const newPlans = [...formData.dailyPlans];
@@ -536,10 +488,10 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                         </select>
                       )}
 
-                      <label className={`flex items-center gap-2 p-2 md:p-3 rounded-xl border transition cursor-pointer ${plan.transportService.useGuide ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-400'}`}>
+                      <label className={`flex items-center gap-3 p-4 rounded-2xl border transition cursor-pointer ${plan.transportService.useGuide ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-400'}`}>
                         <input 
                           type="checkbox" 
-                          className="w-3 h-3 md:w-4 md:h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           checked={plan.transportService.useGuide}
                           onChange={(e) => {
                             const newPlans = [...formData.dailyPlans];
@@ -547,7 +499,7 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                             setFormData({ ...formData, dailyPlans: newPlans });
                           }}
                         />
-                        <span className="text-[10px] md:text-xs font-black">👤 가이드</span>
+                        <span className="text-sm md:text-base font-black">👤 가이드</span>
                       </label>
                     </div>
                   </div>
@@ -555,34 +507,34 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
               </div>
             ))}
 
-            <div className="bg-white rounded-2xl md:rounded-[2rem] p-3 md:p-8 border border-gray-100 shadow-xl">
-              <div className="flex justify-between items-center mb-3 md:mb-6">
-                <h3 className="text-sm md:text-lg font-black text-blue-900 flex items-center gap-2">
+            <div className="bg-white rounded-3xl md:rounded-[3rem] p-4 md:p-10 border border-gray-100 shadow-xl">
+              <div className="flex justify-between items-center mb-4 md:mb-8">
+                <h3 className="text-base md:text-xl font-black text-blue-900 flex items-center gap-2">
                   <span>📄</span> 기타 비고 및 추가 금액 설정
                 </h3>
                 <button 
                   onClick={() => {
                     setExtraItems([...extraItems, { id: Date.now().toString(), label: '', cost: 0 }]);
                   }}
-                  className="px-2.5 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg text-[9px] md:text-xs font-bold flex items-center gap-1 shadow-md hover:bg-blue-700 transition"
+                  className="px-4 py-2 md:px-6 md:py-3 bg-blue-600 text-white rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 shadow-md hover:bg-blue-700 transition"
                 >
                   <span>+</span> 항목 추가
                 </button>
               </div>
               
               {extraItems.length === 0 ? (
-                <div className="p-8 md:p-10 border-2 border-dashed border-gray-100 rounded-2xl text-center">
-                  <p className="text-gray-400 font-bold text-xs md:text-sm">추가된 비고 항목이 없습니다. 특이사항이나 별도 비용을 입력하세요.</p>
+                <div className="p-10 md:p-16 border-2 border-dashed border-gray-100 rounded-3xl text-center">
+                  <p className="text-gray-400 font-bold text-sm md:text-base">추가된 비고 항목이 없습니다. 특이사항이나 별도 비용을 입력하세요.</p>
                 </div>
               ) : (
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-3 md:space-y-6">
                   {extraItems.map((item, idx) => (
-                    <div key={item.id} className="flex flex-col md:flex-row gap-3 md:gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100 animate-fade-in-up">
+                    <div key={item.id} className="flex flex-col md:flex-row gap-4 md:gap-6 bg-gray-50 p-5 md:p-6 rounded-3xl border border-gray-100 animate-fade-in-up">
                       <div className="flex-1">
-                        <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 block">항목 명칭</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">항목 명칭</label>
                         <input 
                           type="text"
-                          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs md:text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-sm md:text-base font-bold outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="예: 마사지 추가, 골프 라운딩 추가"
                           value={item.label}
                           onChange={(e) => {
@@ -592,13 +544,13 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                           }}
                         />
                       </div>
-                      <div className="w-full md:w-48">
-                        <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 block">금액 (VND)</label>
-                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5">
-                          <span className="text-[10px] font-bold text-gray-300">VND</span>
+                      <div className="w-full md:w-64">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">금액 (VND)</label>
+                        <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-2xl px-5 py-4">
+                          <span className="text-xs md:text-sm font-bold text-gray-300">VND</span>
                           <input 
                             type="number"
-                            className="w-full bg-transparent border-none font-black text-right outline-none text-xs md:text-sm"
+                            className="w-full bg-transparent border-none font-black text-right outline-none text-sm md:text-base"
                             value={item.cost}
                             onChange={(e) => {
                               const newItems = [...extraItems];
@@ -613,7 +565,7 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                           onClick={() => {
                             setExtraItems(extraItems.filter(i => i.id !== item.id));
                           }}
-                          className="w-full md:w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition"
+                          className="w-full md:w-16 h-14 md:h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-100 transition"
                         >
                           ✕
                         </button>
@@ -622,7 +574,7 @@ const AITripPlanner: React.FC<Props> = ({ settings, onBack, isAdmin = false }) =
                   ))}
                 </div>
               )}
-              <p className="text-[8px] text-gray-400 mt-4">* 여기에 입력된 내용은 견적서 하단 요약표에 자동으로 합산되어 표시됩니다.</p>
+              <p className="text-[10px] text-gray-400 mt-6">* 여기에 입력된 내용은 견적서 하단 요약표에 자동으로 합산되어 표시됩니다.</p>
             </div>
           </div>
 
