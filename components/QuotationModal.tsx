@@ -218,27 +218,11 @@ ${inquiryText || '(내용 없음)'}
             {/* Cost Breakdown */}
             {plan && (
               <div className="mb-8 break-inside-avoid">
-                <p className="font-bold mb-4 text-deepgreen text-lg border-b pb-2">포함 내역 상세</p>
-                <table className="w-full border-collapse rounded-lg overflow-hidden border border-gray-200">
-                  <thead>
-                    <tr className="bg-gray-100 text-gray-600 text-sm print:bg-gray-200 print:print-color-adjust-exact">
-                      <th className="p-3 text-left font-bold">항목</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {plan.costBreakdown.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
-                        <td className="p-3 text-gray-700">{item.item}</td>
-                      </tr>
-                    ))}
-                    <tr className="bg-deepgreen/10 print:bg-gray-100 print:print-color-adjust-exact">
-                      <td className="p-4 flex justify-between items-center">
-                        <span className="font-bold text-deepgreen">총 합계 <span className="text-xs font-normal text-gray-500 ml-1">(항공권 제외)</span></span>
-                        <span className="text-right font-bold text-xl text-deepgreen">{plan.totalCost}</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <p className="font-bold mb-4 text-deepgreen text-lg border-b pb-2">최종 견적 요약</p>
+                <div className="bg-deepgreen/10 p-6 rounded-lg flex justify-between items-center print:bg-gray-100 print:print-color-adjust-exact">
+                  <span className="font-bold text-deepgreen text-lg">총 합계 <span className="text-xs font-normal text-gray-500 ml-1">(항공권 제외)</span></span>
+                  <span className="text-right font-bold text-2xl text-deepgreen">{plan.totalCost}</span>
+                </div>
               </div>
             )}
 
