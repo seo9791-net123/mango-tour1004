@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import HeroSlider from './components/HeroSlider';
 import IconMenu from './components/IconMenu';
-import AITripPlanner from './components/AITripPlanner';
 import VideoGallery from './components/VideoGallery';
 import CommunityBoard from './components/CommunityBoard';
 import ChatRoom from './components/ChatRoom';
@@ -18,8 +17,8 @@ import ForMenPage from './components/ForMenPage';
 import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
 import BottomNav from './components/BottomNav';
-import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_TRIP_PLANNER_SETTINGS } from './constants';
-import { User, Product, VideoItem, CommunityPost, TripPlanResult, PageContent, MenuItem, PopupNotification, TripPlannerSettings } from './types';
+import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP } from './constants';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification } from './types';
 import { firestoreService } from './services/firestoreService';
 import { debounce } from './utils/debounce';
 
@@ -43,7 +42,6 @@ const App: React.FC = () => {
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const [popup, setPopup] = useState<PopupNotification>(INITIAL_POPUP);
-  const [tripPlannerSettings, setTripPlannerSettings] = useState<TripPlannerSettings>(INITIAL_TRIP_PLANNER_SETTINGS);
   const [showPopup, setShowPopup] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -134,16 +132,6 @@ const App: React.FC = () => {
     }
   }, 3000)).current;
 
-  const debouncedSyncTripPlanner = useRef(debounce(async (newSettings: TripPlannerSettings) => {
-    if (isLocalMode || isSyncing.current['trip_planner']) return;
-    isSyncing.current['trip_planner'] = true;
-    try {
-      await firestoreService.saveTripPlannerSettings(newSettings);
-    } finally {
-      isSyncing.current['trip_planner'] = false;
-    }
-  }, 3000)).current;
-
   // Initial Data Load
   useEffect(() => {
     const initData = async () => {
@@ -166,7 +154,6 @@ const App: React.FC = () => {
         setPosts(data.posts);
         setPageContents(data.pageContents);
         setPopup(data.popup);
-        if (data.tripPlannerSettings) setTripPlannerSettings(data.tripPlannerSettings);
         
         // Check if popup should be shown (e.g., once per session or if active)
         const popupClosed = sessionStorage.getItem('mango_popup_closed');
@@ -224,11 +211,6 @@ const App: React.FC = () => {
     debouncedSyncPopup(newPopup);
   };
 
-  const handleUpdateTripPlannerSettings = async (newSettings: TripPlannerSettings) => {
-    setTripPlannerSettings(newSettings);
-    debouncedSyncTripPlanner(newSettings);
-  };
-
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('mango_users_db');
     return saved ? JSON.parse(saved) : [
@@ -243,17 +225,6 @@ const App: React.FC = () => {
   }, [users]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
-  const [generatedPlan, setGeneratedPlan] = useState<TripPlanResult | undefined>(undefined);
-
-  useEffect(() => {
-    const handleNavigate = () => {
-      setSelectedCategory('여행 만들기');
-      setCurrentPage('category');
-      window.scrollTo(0, 0);
-    };
-    window.addEventListener('navigate-to-planner', handleNavigate);
-    return () => window.removeEventListener('navigate-to-planner', handleNavigate);
-  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,7 +369,6 @@ const App: React.FC = () => {
             videos={videos} setVideos={handleUpdateVideos}
             posts={posts} setPosts={handleUpdatePosts}
             popup={popup} setPopup={handleUpdatePopup}
-            tripPlannerSettings={tripPlannerSettings} setTripPlannerSettings={handleUpdateTripPlannerSettings}
             setCurrentPage={setCurrentPage}
           />
         ) : (
@@ -415,14 +385,22 @@ const App: React.FC = () => {
                 <VideoGallery videos={videos} user={user} onUpdateVideos={handleUpdateVideos} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '커뮤니티' ? (
                 <CommunityBoard posts={posts} user={user} onUpdatePosts={handleUpdatePosts} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
-              ) : selectedCategory === '여행 만들기' ? (
-                <AITripPlanner 
-                  settings={tripPlannerSettings} 
-                  onBack={() => setCurrentPage('home')} 
-                  isAdmin={isAdmin}
-                />
               ) : selectedCategory === '비지니스' ? (
                 <BusinessPage content={pageContents['business']} onBack={() => setCurrentPage('home')} />
+              ) : selectedCategory === '여행 만들기' ? (
+                <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+                  <div className="mb-6 flex justify-center">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center text-4xl">🛠️</div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">현재 페이지를 업데이트 중입니다</h2>
+                  <p className="text-gray-500 mb-8">더 나은 서비스를 위해 준비 중입니다. 잠시만 기다려 주세요.</p>
+                  <button 
+                    onClick={() => setCurrentPage('home')}
+                    className="px-6 py-2 bg-deepgreen text-white rounded-full font-bold hover:bg-opacity-90 transition"
+                  >
+                    홈으로 돌아가기
+                  </button>
+                </div>
               ) : selectedCategory === '호텔&빌라' ? (
                 <HotelVillaPage content={pageContents['hotel']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '골프' ? (
@@ -510,8 +488,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {(selectedProduct || generatedPlan) && (
-        <QuotationModal product={selectedProduct} plan={generatedPlan} onClose={() => { setSelectedProduct(undefined); setGeneratedPlan(undefined); }} />
+      {selectedProduct && (
+        <QuotationModal product={selectedProduct} onClose={() => { setSelectedProduct(undefined); }} />
       )}
 
       {showAuthModal && (

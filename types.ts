@@ -54,66 +54,6 @@ export interface CommunityPost {
   adminReply?: string;
 }
 
-export interface TripPlanRequest {
-  destination: string;
-  theme: string;
-  accommodation: string;
-  duration: string;
-  pax: number;
-  guide: string;    // '예' | '아니오'
-  vehicle: string;  // '7인승' | '16인승' etc
-  remarks?: string;
-}
-
-export interface TripPlanResult {
-  itinerary: Array<{ day: number; activities: string[] }>;
-  costBreakdown: Array<{ item: string; cost: string }>;
-  totalCost: string;
-  summary: string;
-  remarks?: string;
-  options?: { // To display selected options in quotation
-    guide: string;
-    vehicle: string;
-  };
-}
-
-export interface DailyPlan {
-  day: number;
-  date: string;
-  location: string;
-  accommodation: string;
-  personCount: number;
-  dailyRequests: string;
-  transportService: {
-    useRentCar: boolean;
-    carType: string;
-    useGuide: boolean;
-  };
-}
-
-export interface CustomTripRequest {
-  clientName: string;
-  arrivalDate: string;
-  arrivalTime: string;
-  departureDate: string;
-  departureTime: string;
-  durationSummary: string;
-  dailyPlans: DailyPlan[];
-  extraRemarks: string;
-}
-
-export interface UnitPrices {
-  accommodation: {
-    [key: string]: number;
-  };
-  rentCar: {
-    [key: string]: number;
-  };
-  guide: {
-    korean: number;
-  };
-}
-
 export interface ChatMessage {
   id: string;
   sender: string;
@@ -146,18 +86,6 @@ export interface PageContent {
   galleryImages: string[];
   sections: PageSection[]; // Manageable text blocks for the admin
   slides?: PageSlide[];    // Optional gallery slides
-}
-
-export interface RecommendedTheme {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-}
-
-export interface TripPlannerSettings {
-  recommendedThemes: RecommendedTheme[];
-  unitPrices: UnitPrices;
 }
 
 export interface AppSettings {

@@ -1,42 +1,36 @@
 
 import React, { useState } from 'react';
-import { Product, TripPlanResult } from '../types';
-import { TERMS_OF_SERVICE } from '../constants';
+import { Product } from '../types';
 import ProductDetailModal from './ProductDetailModal';
 
 interface Props {
-  product?: Product;
-  plan?: TripPlanResult;
+  product: Product;
   onClose: () => void;
 }
 
-const QuotationModal: React.FC<Props> = ({ product, plan, onClose }) => {
+const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
   const [showInquiry, setShowInquiry] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [inquiryText, setInquiryText] = useState('');
 
-  if (!product && !plan) return null;
+  if (!product) return null;
 
   // Determine content source
-  const title = product ? product.title : '나만의 여행 맞춤 견적';
-  const price = product ? `${product.price.toLocaleString()} USD` : plan?.totalCost;
-  const itinerary = product ? product.itinerary : plan?.itinerary;
-  const location = product ? product.location : '맞춤 여행지';
-  const duration = product ? product.duration : '일정 협의';
+  const title = product.title;
+  const price = `${product.price.toLocaleString()} USD`;
+  const itinerary = product.itinerary;
+  const location = product.location;
+  const duration = product.duration;
 
   const handleCopyText = async (contactType: 'open' | 'id') => {
      const textToCopy = `[MANGO TOUR 여행 견적 문의]
 📅 문의 일자: ${new Date().toLocaleDateString()}
 
-${product ? `📌 상품명: ${product.title}
+📌 상품명: ${product.title}
 📍 지역: ${product.location}
 ⏰ 일정: ${product.duration}
 💰 견적가: ${product.price.toLocaleString()} USD
-📝 포함사항: ${product.description}` : `📌 맞춤 여행 플랜
-📝 테마: ${plan?.summary}
-💰 예상 견적: ${plan?.totalCost}
-✅ 옵션: 가이드 ${plan?.options?.guide}, 차량 ${plan?.options?.vehicle}
-📝 추가 요청사항: ${plan?.remarks || '(없음)'}`}
+📝 포함사항: ${product.description}
 
 --------------------------------
 [🗣️ 추가 문의 내용]
@@ -112,67 +106,35 @@ ${inquiryText || '(내용 없음)'}
             {/* Title Section */}
             <div className="mb-8 avoid-break">
                <h3 className="text-lg font-bold mb-4 border-l-4 border-gold-500 pl-3 text-deepgreen">
-                 {product ? '상품 상세 정보' : '나만의 여행 맞춤 견적'}
+                 상품 상세 정보
                </h3>
                
                {/* Basic Info Table */}
                <table className="w-full mb-6 text-sm md:text-base table-fixed">
                   <tbody>
-                    {product ? (
-                      <>
-                        <tr className="border-b">
-                          <td className="py-2 font-bold w-20 md:w-24 text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">상품명</td>
-                          <td className="py-2 pl-3 text-sm md:text-base">{title}</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">지역/일정</td>
-                          <td className="py-2 pl-3 text-sm md:text-base">{location} / {duration}</td>
-                        </tr>
-                        <tr className="border-b">
-                          <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">포함사항</td>
-                          <td className="py-2 pl-3 text-sm md:text-base text-gray-700">{product.description}</td>
-                        </tr>
-                      </>
-                    ) : (
-                      <>
-                        <tr className="border-b">
-                          <td className="py-2 font-bold w-20 md:w-24 text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">여행 컨셉</td>
-                          <td className="py-2 pl-3 italic text-sm md:text-base">"{plan?.summary}"</td>
-                        </tr>
-                        {plan?.options && (
-                          <>
-                             <tr className="border-b">
-                               <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">가이드</td>
-                               <td className="py-2 pl-3 text-sm md:text-base">{plan.options.guide}</td>
-                             </tr>
-                             <tr className="border-b">
-                               <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">차량</td>
-                               <td className="py-2 pl-3 text-sm md:text-base">{plan.options.vehicle}</td>
-                             </tr>
-                          </>
-                        )}
-                        {plan?.remarks && (
-                          <tr className="border-b">
-                            <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">비고</td>
-                            <td className="py-2 pl-3 text-sm md:text-base text-gray-700">{plan.remarks}</td>
-                          </tr>
-                        )}
-                      </>
-                    )}
-                    <tr className="border-b-2 border-deepgreen bg-yellow-50/50 print:bg-gray-100 print:print-color-adjust-exact">
-                      <td className="py-3 font-bold text-red-600 pl-2 text-xs md:text-sm">
-                        {product ? '견적 금액' : '예상 견적 금액'}
-                      </td>
-                      <td className="py-3 pl-3">
-                        <span className="font-bold text-lg md:text-xl text-red-600">{price}</span>
-                        <span className="text-[10px] md:text-sm font-normal text-gray-500 ml-2">
-                          (항공권 제외{product ? ', 1인 기준' : ''})
-                        </span>
-                        {!product && (
-                          <div className="text-[10px] text-gray-500 mt-1 font-bold">※ 정확한 금액은 상담해주세요.</div>
-                        )}
-                      </td>
-                    </tr>
+                     <tr className="border-b">
+                       <td className="py-2 font-bold w-20 md:w-24 text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">상품명</td>
+                       <td className="py-2 pl-3 text-sm md:text-base">{title}</td>
+                     </tr>
+                     <tr className="border-b">
+                       <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">지역/일정</td>
+                       <td className="py-2 pl-3 text-sm md:text-base">{location} / {duration}</td>
+                     </tr>
+                     <tr className="border-b">
+                       <td className="py-2 font-bold text-gray-600 bg-gray-50 pl-2 text-xs md:text-sm">포함사항</td>
+                       <td className="py-2 pl-3 text-sm md:text-base text-gray-700">{product.description}</td>
+                     </tr>
+                     <tr className="border-b-2 border-deepgreen bg-yellow-50/50 print:bg-gray-100 print:print-color-adjust-exact">
+                       <td className="py-3 font-bold text-red-600 pl-2 text-xs md:text-sm">
+                         견적 금액
+                       </td>
+                       <td className="py-3 pl-3">
+                         <span className="font-bold text-lg md:text-xl text-red-600">{price}</span>
+                         <span className="text-[10px] md:text-sm font-normal text-gray-500 ml-2">
+                           (항공권 제외, 1인 기준)
+                         </span>
+                       </td>
+                     </tr>
                   </tbody>
                </table>
             </div>
@@ -213,25 +175,6 @@ ${inquiryText || '(내용 없음)'}
                   상세 일정이 제공되지 않는 상품입니다. 상담원을 통해 문의해주세요.
                 </div>
               )}
-            </div>
-
-            {/* Cost Breakdown */}
-            {plan && (
-              <div className="mb-8 break-inside-avoid">
-                <p className="font-bold mb-4 text-deepgreen text-lg border-b pb-2">최종 견적 요약</p>
-                <div className="bg-deepgreen/10 p-6 rounded-lg flex justify-between items-center print:bg-gray-100 print:print-color-adjust-exact">
-                  <span className="font-bold text-deepgreen text-lg">총 합계 <span className="text-xs font-normal text-gray-500 ml-1">(항공권 제외)</span></span>
-                  <span className="text-right font-bold text-2xl text-deepgreen">{plan.totalCost}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Terms of Service Section */}
-            <div className="mb-8 break-inside-avoid">
-              <p className="font-bold mb-4 text-deepgreen text-lg border-b pb-2">이용 약관 및 유의사항</p>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-xs text-gray-600 whitespace-pre-line leading-relaxed h-auto overflow-visible print:bg-white print:border-gray-300">
-                {TERMS_OF_SERVICE}
-              </div>
             </div>
 
             {/* Footer Terms */}
