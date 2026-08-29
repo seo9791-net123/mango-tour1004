@@ -3,6 +3,25 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "./firebaseConfig";
 import { compressImage } from "../utils/imageUtils";
 
+// 인메모리 및 로컬스토리지 연동 설정
+let inMemoryCloudName: string = "";
+let inMemoryUploadPreset: string = "";
+
+export const getCloudinaryConfig = () => {
+  const cloudName = inMemoryCloudName || (typeof localStorage !== 'undefined' ? localStorage.getItem('cloudinary_cloud_name') : '') || "";
+  const uploadPreset = inMemoryUploadPreset || (typeof localStorage !== 'undefined' ? localStorage.getItem('cloudinary_upload_preset') : '') || "";
+  return { cloudName: cloudName.trim(), uploadPreset: uploadPreset.trim() };
+};
+
+export const setCloudinaryConfig = (cloudName: string, uploadPreset: string) => {
+  inMemoryCloudName = (cloudName || "").trim();
+  inMemoryUploadPreset = (uploadPreset || "").trim();
+  if (typeof localStorage !== 'undefined') {
+    if (inMemoryCloudName) localStorage.setItem('cloudinary_cloud_name', inMemoryCloudName);
+    if (inMemoryUploadPreset) localStorage.setItem('cloudinary_upload_preset', inMemoryUploadPreset);
+  }
+};
+
 /**
  * 파일을 Firebase Storage 또는 Cloudinary에 업로드하며 진행률을 추적합니다.
  * @param file 업로드할 파일 객체
@@ -15,8 +34,7 @@ export const uploadFile = async (
   folder: string = "uploads", 
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  const cloudName = (localStorage.getItem('cloudinary_cloud_name') || "").trim(); 
-  const uploadPreset = (localStorage.getItem('cloudinary_upload_preset') || "").trim();
+  const { cloudName, uploadPreset } = getCloudinaryConfig();
 
   // 이미지 파일인 경우 압축 시도
   let uploadData: Blob | File = file;
@@ -34,7 +52,7 @@ export const uploadFile = async (
   const isCloudinaryConfigured = cloudName && 
                                 uploadPreset && 
                                 cloudName !== "Cloud Name" && 
-                                cloudName.trim() !== "" &&
+                                cloudName.trim() !== "" && 
                                 uploadPreset.trim() !== "";
 
   if (isCloudinaryConfigured) {
@@ -92,7 +110,7 @@ export const uploadFile = async (
   // 2. Firebase Storage (uploadBytesResumable for progress)
   if (!storage) {
     console.error("Firebase Storage not initialized");
-    throw new Error("Firebase Storage가 초기화되지 않았습니다. 설정(Firebase Config)을 확인해주세요.");
+    throw new Error("Firebase Storage가 초기화되지 않았습니다. 설정(Firebase Config 또는 Cloudinary)을 확인해주세요.");
   }
 
   console.log(`Attempting Firebase Storage upload to folder: ${folder}...`);

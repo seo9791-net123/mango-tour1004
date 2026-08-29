@@ -102,6 +102,102 @@ export interface PopupNotification {
   link?: string;
 }
 
+// AI Trip Planner Types
+export interface TripPlanRequest {
+  destination: string;
+  theme: string;
+  accommodation: string;
+  duration: string;
+  pax: number;
+  guide: '예' | '아니오';
+  vehicle: string;
+  remarks?: string;
+}
+
+export interface TripPlanResult {
+  itinerary: Array<{ day: number; activities: string[] }>;
+  costBreakdown: Array<{ item: string; cost: string }>;
+  totalCost: string;
+  summary: string;
+  remarks?: string;
+  options?: {
+    guide: string;
+    vehicle: string;
+  };
+}
+
+export interface PackageOptionItem {
+  id: string;
+  category: 'golf' | 'hotel' | 'vehicle' | 'meal' | 'activity' | 'guide' | 'etc';
+  name: string;
+  description?: string;
+  priceUSD: number; // Price per person in USD
+  isDefaultIncluded: boolean;
+  isRequired?: boolean;
+}
+
+export interface CustomTripPackage {
+  id: string;
+  title: string;
+  subtitle: string;
+  location: string; // '호치민', '붕따우', '달랏', '호치민+붕따우', '호치민+달랏', '달랏+붕따우'
+  duration: string; // '4박 5일'
+  golfCourses: string[];
+  image: string;
+  detailImages?: string[];
+  basePriceUSD: number;
+  summary: string;
+  highlightBadges: string[];
+  itinerary: Array<{
+    day: number;
+    title: string;
+    activities: string[];
+  }>;
+  options: PackageOptionItem[];
+}
+
+export interface SelectedProduct {
+  id: string;
+  name: string;
+  theme: string;
+  price: number;
+  weekendPrice?: number;
+}
+
+export interface DailyPlan {
+  day: number;
+  date: string;
+  location: string;
+  accommodation: string;
+  personCount: number;
+  activeTheme: string;
+  dailyRequests: string;
+  selectedProducts: SelectedProduct[];
+  transportService: {
+    useRentCar: boolean;
+    carType: string;
+    useGuide: boolean;
+  };
+}
+
+export interface CustomTripRequest {
+  clientName: string;
+  defaultPersonCount: number;
+  arrivalDate: string;
+  arrivalTime: string;
+  departureDate: string;
+  departureTime: string;
+  durationSummary: string;
+  extraRemarks: string;
+  dailyPlans: DailyPlan[];
+}
+
+export interface UnitPrices {
+  hotels: { [key: string]: number };
+  cars: { [key: string]: number };
+  guide: number;
+}
+
 declare global {
   interface Window {
     aistudio: {

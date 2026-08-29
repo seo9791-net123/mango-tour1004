@@ -1,39 +1,82 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { initializeFirestore } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
-// 제공해주신 설정값 적용 (localStorage 우선, 그 다음 환경 변수, 마지막으로 하드코딩된 값)
+// URL 파라미터를 통한 다른 컴퓨터/기기 설정 자동 감지 및 저장 (?sync_config=... 또는 ?fb_config=...)
+if (typeof window !== 'undefined' && window.location) {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const syncParam = params.get('sync_config') || params.get('fb_config');
+    if (syncParam) {
+      const decodedJson = decodeURIComponent(atob(syncParam));
+      const config = JSON.parse(decodedJson);
+      if (config.fbApiKey) localStorage.setItem('fb_api_key', config.fbApiKey);
+      if (config.fbAuthDomain) localStorage.setItem('fb_auth_domain', config.fbAuthDomain);
+      if (config.fbDatabaseURL) localStorage.setItem('fb_database_url', config.fbDatabaseURL);
+      if (config.fbProjectId) localStorage.setItem('fb_project_id', config.fbProjectId);
+      if (config.fbStorageBucket) localStorage.setItem('fb_storage_bucket', config.fbStorageBucket);
+      if (config.fbMessagingSenderId) localStorage.setItem('fb_messaging_sender_id', config.fbMessagingSenderId);
+      if (config.fbAppId) localStorage.setItem('fb_app_id', config.fbAppId);
+      if (config.fbMeasurementId) localStorage.setItem('fb_measurement_id', config.fbMeasurementId);
+      if (config.cloudName) localStorage.setItem('cloudinary_cloud_name', config.cloudName);
+      if (config.uploadPreset) localStorage.setItem('cloudinary_upload_preset', config.uploadPreset);
+      console.log("Config successfully synchronized from URL parameter.");
+    }
+  } catch (e) {
+    console.warn("Failed to parse sync_config from URL parameter:", e);
+  }
+}
+
+// 기본 권장 설정값 (다른 컴퓨터에서도 기본적으로 동일한 DB를 바라보도록 유지)
+export const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCMBakjmKmcJl6WEFkSjmPS7iKRJSPNlf0",
+  authDomain: "gen-lang-client-0698853496.firebaseapp.com",
+  databaseURL: "https://gen-lang-client-0698853496-default-rtdb.firebaseio.com",
+  projectId: "gen-lang-client-0698853496",
+  storageBucket: "gen-lang-client-0698853496.appspot.com",
+  messagingSenderId: "517438076",
+  appId: "1:517438076:web:eb2d6156caf063415427f9",
+  measurementId: "G-EF42069ZSS"
+};
+
+// 설정값 적용 (localStorage 우선, 그 다음 환경 변수, 마지막으로 기본 내장 설정)
 const firebaseConfig = {
-  apiKey: localStorage.getItem('fb_api_key') || import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCMBakjmKmcJl6WEFkSjmPS7iKRJSPNlf0",
-  authDomain: localStorage.getItem('fb_auth_domain') || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gen-lang-client-0698853496.firebaseapp.com",
-  databaseURL: localStorage.getItem('fb_database_url') || "https://gen-lang-client-0698853496-default-rtdb.firebaseio.com",
-  projectId: localStorage.getItem('fb_project_id') || import.meta.env.VITE_FIREBASE_PROJECT_ID || "gen-lang-client-0698853496",
-  storageBucket: localStorage.getItem('fb_storage_bucket') || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gen-lang-client-0698853496.appspot.com",
-  messagingSenderId: localStorage.getItem('fb_messaging_sender_id') || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "517438076",
-  appId: localStorage.getItem('fb_app_id') || import.meta.env.VITE_FIREBASE_APP_ID || "1:517438076:web:eb2d6156caf063415427f9",
-  measurementId: localStorage.getItem('fb_measurement_id') || "G-EF42069ZSS"
+  apiKey: localStorage.getItem('fb_api_key') || import.meta.env.VITE_FIREBASE_API_KEY || DEFAULT_FIREBASE_CONFIG.apiKey,
+  authDomain: localStorage.getItem('fb_auth_domain') || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || DEFAULT_FIREBASE_CONFIG.authDomain,
+  databaseURL: localStorage.getItem('fb_database_url') || DEFAULT_FIREBASE_CONFIG.databaseURL,
+  projectId: localStorage.getItem('fb_project_id') || import.meta.env.VITE_FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_CONFIG.projectId,
+  storageBucket: localStorage.getItem('fb_storage_bucket') || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || DEFAULT_FIREBASE_CONFIG.storageBucket,
+  messagingSenderId: localStorage.getItem('fb_messaging_sender_id') || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+  appId: localStorage.getItem('fb_app_id') || import.meta.env.VITE_FIREBASE_APP_ID || DEFAULT_FIREBASE_CONFIG.appId,
+  measurementId: localStorage.getItem('fb_measurement_id') || DEFAULT_FIREBASE_CONFIG.measurementId
 };
 
 const isDefaultConfig = !localStorage.getItem('fb_project_id') && !import.meta.env.VITE_FIREBASE_PROJECT_ID;
 
-// Firebase 앱 초기화 (싱글톤 패턴)
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// Firebase 앱 및 Firestore 안전한 초기화
+let app: any = null;
+try {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+} catch (e) {
+  console.error("Firebase app initialization failed:", e);
+}
 
-// Firestore 초기화 (네트워크 환경에 따른 롱폴링 강제 설정)
-// experimentalForceLongPolling: true와 experimentalAutoDetectLongPolling: false를 함께 사용하여
-// WebSocket 시도를 완전히 차단하고 HTTP 롱폴링만 사용하도록 합니다.
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  experimentalAutoDetectLongPolling: false,
-  // 일부 환경에서 fetch 스트림 문제로 오프라인 에러가 발생하는 것을 방지
-  useFetchStreams: false,
-} as any); // useFetchStreams는 일부 버전에 따라 타입 정의가 다를 수 있어 any 처리
+let db: any = null;
+let auth: any = null;
+let storage: any = null;
 
-const auth = getAuth(app);
-const storage = getStorage(app);
+if (app) {
+  try {
+    db = getFirestore(app);
+    auth = getAuth(app);
+    storage = getStorage(app);
+  } catch (e) {
+    console.error("Firebase services initialization failed:", e);
+  }
+}
 
-console.log("Firebase initialized with Long Polling enabled");
+export { app, db, auth, storage, isDefaultConfig, firebaseConfig };
 
-export { app, db, auth, storage, isDefaultConfig };
+

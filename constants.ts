@@ -1,5 +1,5 @@
 
-import { Product, VideoItem, CommunityPost, PageContent, PopupNotification } from './types';
+import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, CustomTripPackage } from './types';
 
 export const LOCATIONS = ['호치민', '붕따우', '무이네', '달랏'];
 export const THEMES = ['골프', '관광', '먹거리', '비지니스'];
@@ -496,3 +496,342 @@ export const INITIAL_POPUP: PopupNotification = {
   isActive: false,
   image: 'https://images.unsplash.com/photo-1628753232870-6da09a967c9c?q=80&w=800'
 };
+
+export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
+  {
+    id: 'pkg-1',
+    title: '호치민 3색 명문 54홀 & 미식 럭셔리 투어',
+    subtitle: '떤선녓 CC + 롱탄 CC + 트윈도브스 CC 3회 라운딩 & 5성급 호텔',
+    location: '호치민',
+    duration: '4박 5일',
+    golfCourses: ['떤선녓 CC (18홀)', '롱탄 CC (18홀)', '트윈도브스 CC (18홀)'],
+    image: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800',
+      'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=800',
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800'
+    ],
+    basePriceUSD: 1180,
+    summary: '호치민 최고 인기 3대 명문 코스에서 매일 여유로운 라운딩을 즐기고, 1군 5성급 호텔과 호치민 명품 미식을 결합한 정통 프리미엄 골프 투어입니다.',
+    highlightBadges: ['4박 5일', '3회 54홀 라운딩', '호치민 5성급', '전용 리무진 밴'],
+    itinerary: [
+      { day: 1, title: '호치민 도착 & 체크인', activities: ['호치민 떤선녓 국제공항 VIP 단독 픽업 미팅', '호치민 1군 5성급 호텔 체크인 및 휴식', '웰컴 디너: 베트남 고급 정통 코스 요리', '호치민 랜드마크 81 야경 감상 및 자유 시간'] },
+      { day: 2, title: '떤선녓 CC 18홀 & 시내 관광', activities: ['호텔 조식 뷔페 후 골프장 이동 (약 20분 소요)', '떤선녓 CC 18홀 라운딩 (1인 1캐디 & 2인 1카트)', '클럽하우스 또는 시내 유명 한식당 중식', '노트르담 대성당, 중앙우체국, 통일궁 시티투어', '석식: 1군 사이공 강변 루프탑 스테이크 & 와인', '피로를 풀어주는 VIP 전신 힐링 마사지 (90분)'] },
+      { day: 3, title: '롱탄 CC 18홀 & 해산물 특식', activities: ['호텔 조식 후 롱탄 CC로 이동 (약 45분)', '베트남 최고 뷰를 자랑하는 롱탄 CC 18홀 라운딩', '클럽하우스 여유로운 중식', '사이공 스카이덱 전망대 관람 및 쇼핑', '석식: 칠리크랩 & 대하구이 프리미엄 씨푸드 만찬', '자유 일정 또는 추천 라이브 바 투어'] },
+      { day: 4, title: '트윈도브스 CC 18홀 & 나이트 라이프', activities: ['호텔 조식 후 빈증 트윈도브스 CC 이동 (약 50분)', 'KLPGA 개최 명문 트윈도브스 CC 18홀 라운딩', '골프 라운딩 후 개운한 샤워 및 중식', '호치민 벤탄 시장 및 고급 마켓 쇼핑 투어', '굿바이 디너: 최고급 숯불 와규 & 특식 바베큐', '사이공 강 디너 크루즈 및 야경 투어'] },
+      { day: 5, title: '체크아웃 & 귀국', activities: ['호텔 조식 및 여유로운 오전 휴식 후 체크아웃', '호치민 인기 카페거리 카페 쓰어다 티타임', '마지막 쇼핑 및 마사지 (옵션)', '공항 이동 및 떤선녓 국제공항 샌딩 (귀국)'] }
+    ],
+    options: [
+      { id: 'opt-1-1', category: 'golf', name: '3대 명문 코스 그린피 (54홀)', description: '떤선녓 18H + 롱탄 18H + 트윈도브스 18H 그린피 일체', priceUSD: 450, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-1-2', category: 'golf', name: '전동카트 & 1인 1캐디 피', description: '전 일정 2인 1카트 및 1인 1캐디 서비스 피 포함 (캐디팁 별도)', priceUSD: 120, isDefaultIncluded: true },
+      { id: 'opt-1-3', category: 'hotel', name: '호치민 1군 5성급 호텔 (4박/2인1실)', description: '호텔 조식 뷔페 포함 (카라벨 / 르메르디앙 급)', priceUSD: 360, isDefaultIncluded: true },
+      { id: 'opt-1-4', category: 'vehicle', name: '전 일정 단독 VIP 전용 리무진 밴', description: '공항 픽업/샌딩 + 골프장 + 시내 투어 기사 포함 전용 차량', priceUSD: 110, isDefaultIncluded: true },
+      { id: 'opt-1-5', category: 'guide', name: '한국어 전문 가이드 전 일정 동행', description: '골프 체크인/아웃 지원 및 시내 일정 올케어', priceUSD: 60, isDefaultIncluded: true },
+      { id: 'opt-1-6', category: 'meal', name: '프리미엄 웰컴 & 굿바이 특식 (석식 4회)', description: '고급 정통 베트남식, 씨푸드 만찬, 루프탑 디너, 숯불 바베큐', priceUSD: 80, isDefaultIncluded: true },
+      { id: 'opt-1-7', category: 'activity', name: 'VIP 전신 힐링 마사지 (90분 2회)', description: '골프 라운딩 후 피로를 풀어주는 프리미엄 마사지 & 스파', priceUSD: 50, isDefaultIncluded: false },
+      { id: 'opt-1-8', category: 'hotel', name: '호텔 싱글룸 (1인 1실) 업그레이드', description: '4박 동안 혼자 객실을 단독 사용하는 독방 업그레이드', priceUSD: 180, isDefaultIncluded: false },
+      { id: 'opt-1-9', category: 'golf', name: '4일차 9홀 추가 라운딩 (총 27홀)', description: '트윈도브스 CC 9홀 추가 그린피+카트+캐디', priceUSD: 90, isDefaultIncluded: false }
+    ]
+  },
+  {
+    id: 'pkg-2',
+    title: '호치민 VIP 마스터스 4색 72홀 익스트림 골프',
+    subtitle: '매일 18홀 라운딩 (떤선녓 + 롱탄 + 정산 + 송베 CC) & 풀빌라/스위트',
+    location: '호치민',
+    duration: '4박 5일',
+    golfCourses: ['떤선녓 CC (18홀)', '롱탄 CC (18홀)', '태광 정산 CC (18홀)', '송베 CC (18홀)'],
+    image: 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=800',
+      'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800'
+    ],
+    basePriceUSD: 1390,
+    summary: '오직 골프만을 위한 궁극의 마스터스 투어! 4박 5일간 매일 다른 4개 명문 골프장에서 총 72홀을 정복하는 VIP 골퍼 맞춤 상품입니다.',
+    highlightBadges: ['4박 5일', '4회 72홀 완주', 'VIP 전용 보트/스피드보트', '매일 마사지 케어'],
+    itinerary: [
+      { day: 1, title: '호치민 도착 & 떤선녓 CC 야간 18홀', activities: ['오전 떤선녓 국제공항 도착 후 전용 의전 픽업', '호치민 떤선녓 CC 이동 후 첫 18홀 라운딩', '호텔 체크인 및 휴식', '석식: 한국인 입맛에 맞춘 프리미엄 숯불 갈비 특식'] },
+      { day: 2, title: '보트 타고 떠나는 태광 정산 CC 18홀', activities: ['호텔 조식 후 전용 선착장 이동', '스피드보트 타고 동나이강을 건너 정산 CC 도착 (이색 체험)', '정산 CC 18홀 라운딩 (한국식 잔디 & 최상급 관리)', '클럽하우스 중식 및 스피드보트로 호치민 복귀', '전신 스포츠 마사지 90분 & 저녁 특식'] },
+      { day: 3, title: '롱탄 CC 18홀 챔피언십 코스', activities: ['호텔 조식 후 롱탄 CC 출발', '롱탄 CC 레이크 & 힐 18홀 라운딩', '라운딩 후 호치민 시내 복귀', '석식: 최고급 생선회 & 랍스터 씨푸드 파티', '호치민 2군 타오디엔 펍 투어'] },
+      { day: 4, title: '송베 CC 18홀 & 환송 만찬', activities: ['호텔 조식 후 송베 CC 이동', '송베 CC 로터스/사막 코스 18홀 라운딩', '클럽하우스 중식 후 시내 복귀 및 쇼핑', '굿바이 갈라 디너 & 와인 파티'] },
+      { day: 5, title: '체크아웃 & 귀국', activities: ['호텔 조식 및 레이트 체크아웃', '호치민 시내 기념품 쇼핑 및 공항 샌딩'] }
+    ],
+    options: [
+      { id: 'opt-2-1', category: 'golf', name: '4개 골프장 그린피 (총 72홀)', description: '떤선녓 + 정산 + 롱탄 + 송베 매일 18홀 그린피', priceUSD: 590, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-2-2', category: 'golf', name: '전동카트 & 1인 1캐디 피 (4회)', description: '전 일정 카트비 및 1인 1캐디 피 포함', priceUSD: 160, isDefaultIncluded: true },
+      { id: 'opt-2-3', category: 'vehicle', name: '정산 CC 왕복 전용 스피드보트', description: '동나이강 럭셔리 스피드보트 왕복 승선권', priceUSD: 50, isDefaultIncluded: true },
+      { id: 'opt-2-4', category: 'hotel', name: '호치민 5성급 호텔 숙박 (4박/2인1실)', description: '호텔 조식 뷔페 및 수영장/사우나 이용', priceUSD: 360, isDefaultIncluded: true },
+      { id: 'opt-2-5', category: 'vehicle', name: '전 일정 전용 16인승/VIP 리무진', description: '기사 포함 단독 전용 차량 및 유류비/통행료 일체', priceUSD: 120, isDefaultIncluded: true },
+      { id: 'opt-2-6', category: 'activity', name: '매일 라운딩 후 전신 마사지 (90분 3회)', description: '피로회복 전문 오일 & 핫스톤 마사지', priceUSD: 80, isDefaultIncluded: true },
+      { id: 'opt-2-7', category: 'hotel', name: '단독 럭셔리 프라이빗 풀빌라 업그레이드', description: '호텔 대신 4베드룸 단독 풀빌라 전체 대여 (팀당)', priceUSD: 220, isDefaultIncluded: false },
+      { id: 'opt-2-8', category: 'guide', name: '한국인 골프 전문 투어 매니저 동행', description: '전 일정 티타임 조율 및 VIP 의전 전담', priceUSD: 70, isDefaultIncluded: false }
+    ]
+  },
+  {
+    id: 'pkg-3',
+    title: '붕따우 더 그랜드 호짬 카지노 & 세계 100대 블러프 골프',
+    subtitle: '더 블러프 CC 36홀 + 붕따우 파라다이스 CC 18홀 & 5성급 카지노 리조트',
+    location: '붕따우',
+    duration: '4박 5일',
+    golfCourses: ['더 블러프 호짬 스트립 CC (36홀)', '붕따우 파라다이스 CC (18홀)'],
+    image: 'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800',
+      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800',
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800'
+    ],
+    basePriceUSD: 1290,
+    summary: '그렉 노먼이 설계한 세계 100대 링크스 코스 "더 블러프 CC"에서 바다를 조망하며 즐기는 럭셔리 골프와 5성급 카지노 복합 리조트의 환상적인 휴양 패키지입니다.',
+    highlightBadges: ['4박 5일', '세계 100대 코스', '5성급 카지노 리조트', '오션뷰 풀사이드 BBQ'],
+    itinerary: [
+      { day: 1, title: '호치민 도착 & 호짬 리조트 이동', activities: ['호치민 공항 전용 픽업 미팅 후 붕따우 호짬으로 이동 (약 2시간)', '5성급 더 그랜드 호짬 카지노 리조트 체크인', '인피니티 풀 수영 및 전용 비치 산책', '석식: 리조트 내 프리미엄 인터내셔널 뷔페 & 카지노 나이트'] },
+      { day: 2, title: '더 블러프 CC 1차 18홀 라운딩', activities: ['리조트 조식 후 골프장 이동 (리조트 바로 옆 3분 거리)', '세계 100대 명문 더 블러프 CC 18홀 라운딩 (오션뷰 링크스 코스)', '인피니티 레스토랑 중식', '리조트 스파 & 사우나 휴식', '석식: 호짬 로컬 활어 씨푸드 바베큐 만찬'] },
+      { day: 3, title: '더 블러프 CC 2차 18홀 라운딩', activities: ['리조트 조식 뷔페', '더 블러프 CC 2차 18홀 라운딩 (역방향 또는 다른 티박스 공략)', '클럽하우스 중식 및 해변 카바나 휴식', '붕따우 시내 예수상 & 등대 관광', '석식: 붕따우 야시장 해산물 특식'] },
+      { day: 4, title: '붕따우 파라다이스 CC 18홀 & 호치민 복귀', activities: ['체크아웃 후 붕따우 파라다이스 CC 이동', '해변 소나무 숲길을 따라 펼쳐진 파라다이스 CC 18홀 라운딩', '중식 후 호치민 시내로 이동 (호치민 1군 호텔 1박)', '호치민 1군 명품 쇼핑 및 루프탑 바'] },
+      { day: 5, title: '호치민 시내 관광 & 공항 샌딩', activities: ['호텔 조식 후 체크아웃', '호치민 시내 주요 명소 관광 & 기념품 쇼핑', '공항 샌딩 후 귀국'] }
+    ],
+    options: [
+      { id: 'opt-3-1', category: 'golf', name: '더 블러프 CC 2회 (36홀) + 파라다이스 1회 (18홀) 그린피', description: '총 54홀 그린피 전액 포함', priceUSD: 520, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-3-2', category: 'golf', name: '전동카트 & 1인 1캐디 피', description: '전 일정 카트비 및 캐디비 일체 포함', priceUSD: 120, isDefaultIncluded: true },
+      { id: 'opt-3-3', category: 'hotel', name: '5성급 더 그랜드 호짬 리조트 3박 + 호치민 1박', description: '전 일정 조식 뷔페 및 리조트 부대시설 이용', priceUSD: 420, isDefaultIncluded: true },
+      { id: 'opt-3-4', category: 'vehicle', name: '전 일정 단독 전용 리무진 밴 (호치민-붕따우 왕복 포함)', description: '전 일정 기사/유류비/통행료 포함', priceUSD: 130, isDefaultIncluded: true },
+      { id: 'opt-3-5', category: 'meal', name: '호짬 활어 씨푸드 & 특식 석식 (4회)', description: '대형 바닷가재, 칠리크랩, 리조트 디너 뷔페', priceUSD: 90, isDefaultIncluded: true },
+      { id: 'opt-3-6', category: 'activity', name: '카지노 웰컴 칩 바우처 ($50 상당)', description: '더 그랜드 호짬 카지노 게임 이용 바우처', priceUSD: 50, isDefaultIncluded: false },
+      { id: 'opt-3-7', category: 'hotel', name: '오션뷰 스위트룸 업그레이드 (팀당)', description: '남중국해가 파노라마로 펼쳐지는 스위트 객실', priceUSD: 150, isDefaultIncluded: false }
+    ]
+  },
+  {
+    id: 'pkg-4',
+    title: '호치민+붕따우 콤보 4박 5일 오션 & 시티 3색 골프',
+    subtitle: '더 블러프 CC + 롱탄 CC + 떤선녓 CC (붕따우 2박 + 호치민 2박)',
+    location: '호치민+붕따우',
+    duration: '4박 5일',
+    golfCourses: ['더 블러프 호짬 CC (18홀)', '롱탄 CC (18홀)', '떤선녓 CC (18홀)'],
+    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800',
+      'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800',
+      'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800'
+    ],
+    basePriceUSD: 1240,
+    summary: '호치민의 화려한 도심 골프와 붕따우의 시원한 오션뷰 링크스 코스를 한 번에 누리는 완벽한 2-in-1 콤비네이션 상품입니다.',
+    highlightBadges: ['4박 5일', '시티+오션 3색 골프', '붕따우 2박+호치민 2박', '최고 인기 베스트셀러'],
+    itinerary: [
+      { day: 1, title: '호치민 도착 & 붕따우 해변 이동', activities: ['호치민 공항 픽업 후 붕따우 해변 리조트로 이동', '붕따우 풀빌라 또는 5성급 호텔 체크인', '해변 노을 감상 및 웰컴 씨푸드 디너', '붕따우 비치 프론트 나이트 산책'] },
+      { day: 2, title: '더 블러프 호짬 CC 18홀 라운딩', activities: ['리조트 조식 후 더 블러프 CC로 이동', '더 블러프 CC 18홀 라운딩', '클럽하우스 중식 및 리조트 복귀', '전신 마사지 90분 & 바베큐 특식'] },
+      { day: 3, title: '롱탄 CC 18홀 & 호치민 도심 입성', activities: ['붕따우 체크아웃 후 롱탄 CC로 이동', '롱탄 CC 18홀 라운딩', '호치민 1군 5성급 호텔 체크인', '호치민 야시장 & 나이트 시티투어'] },
+      { day: 4, title: '떤선녓 CC 18홀 & 명품 쇼핑', activities: ['호텔 조식 후 떤선녓 CC 18홀 라운딩', '클럽하우스 중식 후 시내 쇼핑 투어', '굿바이 만찬: 호치민 프리미엄 비프 스테이크'] },
+      { day: 5, title: '체크아웃 & 귀국', activities: ['호텔 조식 및 체크아웃', '호치민 명소 관광 및 공항 샌딩'] }
+    ],
+    options: [
+      { id: 'opt-4-1', category: 'golf', name: '3대 명문 코스 그린피 54홀 (더블러프+롱탄+떤선녓)', description: '각 골프장 주중/주말 정규 18홀 그린피', priceUSD: 490, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-4-2', category: 'golf', name: '전동카트 & 1인 1캐디 피', description: '전 일정 2인 1카트 & 1인 1캐디 서비스', priceUSD: 120, isDefaultIncluded: true },
+      { id: 'opt-4-3', category: 'hotel', name: '붕따우 리조트 2박 + 호치민 5성급 2박', description: '전 일정 조식 뷔페 포함 (2인 1실)', priceUSD: 380, isDefaultIncluded: true },
+      { id: 'opt-4-4', category: 'vehicle', name: '전 일정 단독 전용 리무진 밴 (지역간 이동 일체)', description: '공항-붕따우-골프장-호치민-공항 풀코스', priceUSD: 140, isDefaultIncluded: true },
+      { id: 'opt-4-5', category: 'guide', name: '한국어 가이드 전 일정 동행', description: '전 일정 이동 및 체크인/골프 백 드랍 케어', priceUSD: 60, isDefaultIncluded: true },
+      { id: 'opt-4-6', category: 'meal', name: '지역별 대표 미식 특식 4회', description: '붕따우 씨푸드, 롱탄 특식, 호치민 바베큐 등', priceUSD: 80, isDefaultIncluded: true },
+      { id: 'opt-4-7', category: 'activity', name: 'VIP 마사지 90분 (2회)', description: '붕따우 1회 + 호치민 1회 힐링 마사지', priceUSD: 50, isDefaultIncluded: false }
+    ]
+  },
+  {
+    id: 'pkg-5',
+    title: '달랏 영원한 봄의 도시 18~24°C 힐링 3색 골프',
+    subtitle: '달랏 팔레스 CC + SAM 투옌람 CC + 달랏 1200 CC & 5성급 헤리티지 리조트',
+    location: '달랏',
+    duration: '4박 5일',
+    golfCourses: ['달랏 팔레스 헤리티지 CC (18홀)', 'SAM 투옌람 CC (18홀)', '더 달랏 1200 CC (18홀)'],
+    image: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
+      'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=800',
+      'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800'
+    ],
+    basePriceUSD: 1190,
+    summary: '해발 1,500m 고원에 위치하여 연중 18~24°C의 쾌적하고 서늘한 날씨! 땀 흘리지 않고 시원한 바람을 맞으며 즐기는 베트남 유일의 알프스풍 힐링 골프입니다.',
+    highlightBadges: ['4박 5일', '연중 18~24°C 봄날씨', '고원 3색 54홀', '달랏 5성급 리조트'],
+    itinerary: [
+      { day: 1, title: '달랏 리엔크엉 공항 도착 & 체크인', activities: ['달랏 공항 도착 후 전용 차량 미팅', '프랑스풍 5성급 아나만다라 리조트 체크인', '달랏 시내 쑤언흐엉 호수 산책 및 티타임', '석식: 달랏 특산 아티초크 갈비탕 & 와규 특식', '달랏 낭만 야시장 투어'] },
+      { day: 2, title: '1922년 역사와 전통의 달랏 팔레스 CC 18홀', activities: ['호텔 조식 후 달랏 팔레스 CC로 이동', '황제의 골프장 달랏 팔레스 CC 18홀 라운딩 (소나무 숲 코스)', '클럽하우스 중식', '다딴라 폭포 및 루지 체험 관광', '석식: 달랏 로컬 와인 & 훈제 바베큐 만찬', '달랏 고원 힐링 허브 스파 (90분)'] },
+      { day: 3, title: '호수 뷰 SAM 투옌람 CC 18홀 & 케이블카', activities: ['리조트 조식 후 SAM 투옌람 CC 이동', '투옌람 호수를 둘러싼 명품 SAM 투옌람 CC 18홀 라운딩', '클럽하우스 중식', '죽림선원 케이블카 관람 및 린푸옥 사원 투어', '석식: 달랏 철판 구이 & 고원 쌈밥 특식'] },
+      { day: 4, title: '더 달랏 1200 CC 18홀 & 와이너리 투어', activities: ['리조트 조식 후 더 달랏 1200 CC 이동', '해발 1200m에 위치한 챔피언십 더 달랏 1200 CC 18홀 라운딩', '클럽하우스 중식', '달랏 와인 양조장 방문 및 와인 시음회', '굿바이 디너: 프렌치 정통 코스 요리'] },
+      { day: 5, title: '체크아웃 & 귀국', activities: ['리조트 조식 및 체크아웃', '랑비앙 마운틴 전망대 관광', '기념품(달랏 커피, 건과일, 와인) 쇼핑 후 공항 샌딩'] }
+    ],
+    options: [
+      { id: 'opt-5-1', category: 'golf', name: '달랏 3대 명문 코스 그린피 54홀', description: '달랏 팔레스 + SAM 투옌람 + 더 달랏 1200', priceUSD: 460, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-5-2', category: 'golf', name: '전동카트 & 1인 1캐디 피', description: '전 일정 카트비 및 1인 1캐디 서비스', priceUSD: 120, isDefaultIncluded: true },
+      { id: 'opt-5-3', category: 'hotel', name: '달랏 5성급 리조트 4박 (2인 1실)', description: '아나만다라 빌라 / 달랏 팔레스 헤리티지 급', priceUSD: 360, isDefaultIncluded: true },
+      { id: 'opt-5-4', category: 'vehicle', name: '전 일정 달랏 전용 VIP 리무진 밴', description: '공항 픽업/샌딩 + 골프장 + 관광 전용 기사 포함', priceUSD: 110, isDefaultIncluded: true },
+      { id: 'opt-5-5', category: 'guide', name: '한국어 전문 가이드 전 일정 동행', description: '골프 체크인 및 달랏 맞춤 관광 안내', priceUSD: 60, isDefaultIncluded: true },
+      { id: 'opt-5-6', category: 'meal', name: '달랏 특산 미식 & 와인 특식 4회', description: '아티초크 갈비탕, 달랏 와인 바베큐, 프렌치 디너 등', priceUSD: 80, isDefaultIncluded: true },
+      { id: 'opt-5-7', category: 'activity', name: '달랏 와이너리 투어 & 와인 시음', description: '달랏 정통 와인 양조장 투어 및 프리미엄 시음', priceUSD: 40, isDefaultIncluded: false },
+      { id: 'opt-5-8', category: 'activity', name: '달랏 고원 힐링 허브 스파 (90분 2회)', description: '고원 천연 허브를 이용한 릴랙싱 스파', priceUSD: 60, isDefaultIncluded: false }
+    ]
+  },
+  {
+    id: 'pkg-6',
+    title: '달랏 VIP 헤리티지 팰리스 & 호수뷰 4회 라운딩 휴양',
+    subtitle: '달랏 팔레스 CC 2회 + SAM 투옌람 CC 2회 (총 72홀) & 프렌치 독채 빌라',
+    location: '달랏',
+    duration: '4박 5일',
+    golfCourses: ['달랏 팔레스 헤리티지 CC (36홀)', 'SAM 투옌람 CC (36홀)'],
+    image: 'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=800',
+      'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
+      'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800'
+    ],
+    basePriceUSD: 1350,
+    summary: '달랏의 양대 최고 명문 코스에서 집중적으로 4회(72홀) 라운딩하며, 프랑스 식민지 시절의 고풍스러운 독채 프렌치 빌라에서 럭셔리한 휴식을 즐기는 황제 골프 코스입니다.',
+    highlightBadges: ['4박 5일', '명문 코스 72홀 집중', '프렌치 헤리티지 빌라', '전 일정 프라이빗 케어'],
+    itinerary: [
+      { day: 1, title: '달랏 도착 & 프렌치 빌라 입실', activities: ['달랏 리엔크엉 공항 VIP 단독 픽업', '헤리티지 프렌치 럭셔리 빌라 체크인', '쑤언흐엉 호수 뷰 카페 애프터눈 티', '석식: 프랑스풍 퐁듀 & 와인 스페셜 만찬'] },
+      { day: 2, title: '달랏 팔레스 CC 1차 18홀 라운딩', activities: ['빌라 조식 후 달랏 팔레스 CC 이동', '달랏 팔레스 CC 1차 18홀 라운딩', '클럽하우스 중식 및 빌라 휴식', '온천 스파 & 전신 마사지 90분', '석식: 달랏 흑돼지 참숯 바베큐 파티'] },
+      { day: 3, title: 'SAM 투옌람 CC 1차 18홀 라운딩', activities: ['빌라 조식 후 SAM 투옌람 CC 이동', 'SAM 투옌람 CC 18홀 라운딩 (호수 전경 코스)', '클럽하우스 중식', '투옌람 호수 전용 보트 유람 및 힐링 산책', '석식: 철판 스테이크 & 달랏 수제 맥주'] },
+      { day: 4, title: '달랏 팔레스 CC 2차 18홀 라운딩 & 환송연', activities: ['빌라 조식 후 달랏 팔레스 CC 2차 라운딩', '18홀 라운딩 후 클럽하우스 중식', '달랏 야시장 및 프렌치 베이커리 투어', '굿바이 갈라 디너 & 와인 파티'] },
+      { day: 5, title: '체크아웃 & 귀국', activities: ['빌라 조식 후 여유로운 체크아웃', '커피 농장 방문 (루왁/위즐 커피 시음)', '공항 샌딩 및 출국'] }
+    ],
+    options: [
+      { id: 'opt-6-1', category: 'golf', name: '달랏 팔레스 2회 + 투옌람 2회 그린피 (총 72홀)', description: '정규 18홀 그린피 4회분 전액', priceUSD: 560, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-6-2', category: 'golf', name: '전동카트 & 1인 1캐디 피 (4회)', description: '전 일정 2인 1카트 & 1인 1캐디 피', priceUSD: 160, isDefaultIncluded: true },
+      { id: 'opt-6-3', category: 'hotel', name: '5성급 독채 프렌치 빌라 숙박 (4박)', description: '전 일정 조식 포함 및 전용 버틀러 서비스', priceUSD: 400, isDefaultIncluded: true },
+      { id: 'opt-6-4', category: 'vehicle', name: '달랏 전용 VIP 리무진 밴', description: '전 일정 기사 및 유류비 일체', priceUSD: 110, isDefaultIncluded: true },
+      { id: 'opt-6-5', category: 'meal', name: '특식 디너 4회 (와인 포함)', description: '프렌치 퐁듀, 흑돼지 바베큐, 스테이크 등', priceUSD: 90, isDefaultIncluded: true },
+      { id: 'opt-6-6', category: 'activity', name: '달랏 천연 온천 & 허브 마사지 (120분)', description: '고급 온천욕 및 전신 아로마 스파', priceUSD: 60, isDefaultIncluded: true },
+      { id: 'opt-6-7', category: 'activity', name: '투옌람 호수 전용 프라이빗 보트 투어', description: '단독 보트 탑승 및 호수 힐링 투어', priceUSD: 40, isDefaultIncluded: false }
+    ]
+  },
+  {
+    id: 'pkg-7',
+    title: '호치민+달랏 연계 4박 5일 메트로폴리스 & 고원 힐링 3색 골프',
+    subtitle: '호치민 롱탄 CC + 달랏 팔레스 CC + SAM 투옌람 CC (국내선 항공 연계)',
+    location: '호치민+달랏',
+    duration: '4박 5일',
+    golfCourses: ['호치민 롱탄 CC (18홀)', '달랏 팔레스 CC (18홀)', 'SAM 투옌람 CC (18홀)'],
+    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800',
+      'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
+      'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800'
+    ],
+    basePriceUSD: 1380,
+    summary: '열정적인 대도시 호치민의 명문 골프장과 시원한 고원 휴양지 달랏의 힐링 골프장을 국내선 항공으로 편리하게 연결한 최고의 복합 패키지입니다.',
+    highlightBadges: ['4박 5일', '호치민 2박 + 달랏 2박', '국내선 항공권 포함', '도심+고원 완벽 조화'],
+    itinerary: [
+      { day: 1, title: '호치민 도착 & 시티 체크인', activities: ['호치민 떤선녓 공항 픽업', '호치민 1군 5성급 호텔 체크인', '석식: 사이공 강변 고급 레스토랑 디너', '호치민 시티 야경 감상 및 자유 시간'] },
+      { day: 2, title: '호치민 롱탄 CC 18홀 라운딩 & 달랏 항공 이동', activities: ['호텔 조식 후 롱탄 CC 이동', '롱탄 CC 18홀 라운딩 후 샤워 및 중식', '떤선녓 국내선 공항 이동 후 달랏행 항공 탑승 (약 50분 소요)', '달랏 공항 픽업 후 5성급 리조트 체크인', '석식: 달랏 와인 & 로컬 특식'] },
+      { day: 3, title: '달랏 팔레스 CC 18홀 & 시내 투어', activities: ['리조트 조식 후 달랏 팔레스 CC 이동', '달랏 팔레스 CC 18홀 라운딩 (상쾌한 18도 기온)', '클럽하우스 중식', '달랏 사랑의 계곡 및 크레이지 하우스 관광', '석식: 달랏 야시장 특식 및 전신 마사지 90분'] },
+      { day: 4, title: 'SAM 투옌람 CC 18홀 & 힐링 휴식', activities: ['리조트 조식 후 SAM 투옌람 CC 이동', 'SAM 투옌람 CC 18홀 라운딩', '클럽하우스 중식 및 리조트 복귀', '달랏 커피 농장 투어', '굿바이 디너: 고원 특선 코스 요리'] },
+      { day: 5, title: '달랏 체크아웃 & 귀국', activities: ['리조트 조식 후 체크아웃', '달랏 공항 이동 및 호치민 경유 / 인천행 귀국'] }
+    ],
+    options: [
+      { id: 'opt-7-1', category: 'golf', name: '호치민 롱탄 18H + 달랏 팔레스 18H + 투옌람 18H 그린피', description: '3개 명문 골프장 총 54홀 그린피', priceUSD: 470, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-7-2', category: 'golf', name: '전동카트 & 1인 1캐디 피 (3회)', description: '전 일정 카트비 및 캐디비 일체', priceUSD: 120, isDefaultIncluded: true },
+      { id: 'opt-7-3', category: 'etc', name: '호치민-달랏 편도 국내선 항공권 (수하물 20kg+골프백)', description: '베트남항공 국내선 항공권 및 골프백 위탁 수하물', priceUSD: 110, isDefaultIncluded: true },
+      { id: 'opt-7-4', category: 'hotel', name: '호치민 5성급 2박 + 달랏 5성급 2박 (2인 1실)', description: '전 일정 조식 뷔페 포함', priceUSD: 380, isDefaultIncluded: true },
+      { id: 'opt-7-5', category: 'vehicle', name: '호치민 & 달랏 각 지역 단독 전용 리무진', description: '공항 픽업/샌딩 + 골프장 + 시내 전용 차량', priceUSD: 140, isDefaultIncluded: true },
+      { id: 'opt-7-6', category: 'guide', name: '지역별 전담 한국어 가이드', description: '호치민 및 달랏 현지 가이드 풀케어', priceUSD: 80, isDefaultIncluded: true },
+      { id: 'opt-7-7', category: 'meal', name: '호치민 & 달랏 대표 특식 4회', description: '지역별 대표 미식 석식 코스', priceUSD: 80, isDefaultIncluded: true }
+    ]
+  },
+  {
+    id: 'pkg-8',
+    title: '호치민 실속 올인클루시브 4박 5일 가성비 3색 골프',
+    subtitle: '송베 CC + 동나이 CC + 떤선녓 CC (4성급 중심가 호텔 & 실속 풀패키지)',
+    location: '호치민',
+    duration: '4박 5일',
+    golfCourses: ['송베 CC (18홀)', '동나이 CC (18홀)', '떤선녓 CC (18홀)'],
+    image: 'https://images.unsplash.com/photo-1592919505780-30395071b483?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1592919505780-30395071b483?q=80&w=800',
+      'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800',
+      'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=800'
+    ],
+    basePriceUSD: 890,
+    summary: '부담 없는 합리적인 가격에 호치민 인기 골프장 3곳을 알차게 라운딩할 수 있는 실속파 골퍼를 위한 넘버원 가성비 올인클루시브 상품입니다.',
+    highlightBadges: ['4박 5일', '실속 가성비 No.1', '3회 54홀 올포함', '호치민 시내 4성급'],
+    itinerary: [
+      { day: 1, title: '호치민 도착 & 시내 체크인', activities: ['호치민 공항 픽업 후 4성급 중심가 호텔 체크인', '석식: 베트남 대표 쌀국수 & 분짜 로컬 특식', '호치민 여행자 거리(부이비엔) 자유 탐방'] },
+      { day: 2, title: '송베 CC 18홀 & 마사지', activities: ['호텔 조식 후 송베 CC 이동 (약 40분)', '송베 CC 18홀 라운딩', '클럽하우스 중식 및 시내 복귀', '발 & 전신 마사지 90분', '석식: 한국인 맞춤 무제한 삼겹살 특식'] },
+      { day: 3, title: '동나이 CC 18홀 호수 코스', activities: ['호텔 조식 후 동나이 CC 출발', '동나이 CC 18홀 라운딩 (아름다운 호수 전경)', '클럽하우스 중식 후 시내 복귀', '벤탄 시장 및 사이공 센터 쇼핑', '석식: 베트남 로컬 해산물 요리'] },
+      { day: 4, title: '떤선녓 CC 18홀 & 굿바이 디너', activities: ['호텔 조식 후 떤선녓 CC 이동', '떤선녓 CC 18홀 라운딩', '샤워 후 시내 복귀', '굿바이 디너: 숯불 바베큐', '사이공 스카이덱 야경 감상'] },
+      { day: 5, title: '체크아웃 & 귀국', activities: ['호텔 조식 및 체크아웃', '시내 마트 쇼핑 후 공항 샌딩'] }
+    ],
+    options: [
+      { id: 'opt-8-1', category: 'golf', name: '송베 18H + 동나이 18H + 떤선녓 18H 그린피 (총 54홀)', description: '3개 골프장 주중 정규 그린피 일체', priceUSD: 380, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-8-2', category: 'golf', name: '전동카트 & 1인 1캐디 피', description: '전 일정 2인 1카트 & 1인 1캐디 피', priceUSD: 110, isDefaultIncluded: true },
+      { id: 'opt-8-3', category: 'hotel', name: '호치민 시내 4성급 호텔 숙박 (4박/2인1실)', description: '호텔 조식 뷔페 포함 (중심가 위치)', priceUSD: 220, isDefaultIncluded: true },
+      { id: 'opt-8-4', category: 'vehicle', name: '전 일정 단독 전용 차량 (기사/유류비 포함)', description: '공항 픽업/샌딩 및 골프장 이동 전용차량', priceUSD: 90, isDefaultIncluded: true },
+      { id: 'opt-8-5', category: 'meal', name: '실속 석식 4회 (삼겹살, 해산물, 바베큐 등)', description: '한국인 입맛에 딱 맞춘 알찬 석식', priceUSD: 60, isDefaultIncluded: true },
+      { id: 'opt-8-6', category: 'activity', name: '전신 마사지 90분 (1회)', description: '라운딩 후 개운한 전신 릴랙싱 마사지', priceUSD: 30, isDefaultIncluded: true },
+      { id: 'opt-8-7', category: 'hotel', name: '5성급 호텔로 업그레이드 (4박)', description: '4성급 대신 1군 5성급 호텔로 업그레이드', priceUSD: 140, isDefaultIncluded: false },
+      { id: 'opt-8-8', category: 'guide', name: '한국어 가이드 전 일정 동행', description: '전 일정 전담 가이드 케어 추가', priceUSD: 50, isDefaultIncluded: false }
+    ]
+  },
+  {
+    id: 'pkg-9',
+    title: '붕따우 독채 프라이빗 풀빌라 & VIP 골프 + 씨푸드 풀파티',
+    subtitle: '더 블러프 CC + 파라다이스 CC & 최고급 독채 풀빌라 + 통돼지 바베큐',
+    location: '붕따우',
+    duration: '4박 5일',
+    golfCourses: ['더 블러프 호짬 CC (18홀)', '붕따우 파라다이스 CC (36홀)'],
+    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=800',
+      'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800',
+      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800'
+    ],
+    basePriceUSD: 1320,
+    summary: '우리 팀만을 위한 대형 프라이빗 독채 풀빌라에서 수영과 BBQ 풀파티를 즐기고, 더 블러프 CC와 파라다이스 CC에서 여유로운 라운딩을 펼치는 동반자/비즈니스 맞춤 최고급 여행입니다.',
+    highlightBadges: ['4박 5일', '단독 독채 풀빌라', '통돼지 바베큐 풀파티', '프라이빗 골프 휴양'],
+    itinerary: [
+      { day: 1, title: '호치민 도착 & 붕따우 독채 풀빌라 입실', activities: ['호치민 공항 전용 픽업 미팅 후 붕따우로 이동', '붕따우 최고급 프라이빗 독채 풀빌라 체크인 (대형 개인 수영장, 노래방 완비)', '풀빌라 웰컴 풀사이드 파티', '석식: 풀빌라 전담 셰프의 통돼지 바베큐 & 씨푸드 그릴'] },
+      { day: 2, title: '더 블러프 호짬 CC 18홀 라운딩', activities: ['풀빌라 조식 후 더 블러프 CC로 이동', '세계 100대 코스 더 블러프 CC 18홀 라운딩', '클럽하우스 중식 및 풀빌라 복귀', '프라이빗 풀빌라 수영 & 자유 휴식', '석식: 붕따우 최고급 랍스터 & 다금바리 회 파티'] },
+      { day: 3, title: '붕따우 파라다이스 CC 1차 18홀 라운딩', activities: ['풀빌라 조식 후 파라다이스 CC 이동', '파라다이스 CC 18홀 라운딩', '중식 후 붕따우 케이블카 및 호마이 파크 관광', '풀빌라 출장 전신 마사지 120분 케어', '석식: 베트남 로컬 바베큐 & 맥주 파티'] },
+      { day: 4, title: '붕따우 파라다이스 CC 2차 18홀 & 호치민 이동', activities: ['풀빌라 조식 후 파라다이스 CC 2차 18홀 라운딩', '샤워 후 호치민 시내로 이동', '호치민 5성급 호텔 체크인 및 쇼핑', '굿바이 갈라 디너 & 사이공 스카이 라운지'] },
+      { day: 5, title: '체크아웃 & 귀국', activities: ['호텔 조식 및 여유로운 오전 휴식 후 체크아웃', '호치민 시내 관광 및 공항 샌딩 (귀국)'] }
+    ],
+    options: [
+      { id: 'opt-9-1', category: 'golf', name: '더 블러프 18H + 파라다이스 36H 그린피 (총 54홀)', description: '3회 54홀 그린피 전액', priceUSD: 480, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-9-2', category: 'golf', name: '전동카트 & 1인 1캐디 피', description: '전 일정 2인 1카트 & 1인 1캐디 피', priceUSD: 120, isDefaultIncluded: true },
+      { id: 'opt-9-3', category: 'hotel', name: '럭셔리 독채 프라이빗 풀빌라 3박 + 호치민 1박', description: '개인 수영장, 침실 4~5개 독채 전체 사용 (조식 포함)', priceUSD: 440, isDefaultIncluded: true },
+      { id: 'opt-9-4', category: 'vehicle', name: '전 일정 단독 전용 VIP 리무진 밴', description: '호치민-붕따우 왕복 및 전 일정 전용 기사', priceUSD: 130, isDefaultIncluded: true },
+      { id: 'opt-9-5', category: 'meal', name: '풀빌라 전담 셰프 통돼지 바베큐 & 랍스터 만찬', description: '풀사이드 특선 통돼지 구이 및 해산물 파티 (4회)', priceUSD: 100, isDefaultIncluded: true },
+      { id: 'opt-9-6', category: 'activity', name: '풀빌라 출장 VIP 전신 마사지 (120분)', description: '풀빌라에서 편안하게 받는 프라이빗 출장 스파', priceUSD: 50, isDefaultIncluded: true },
+      { id: 'opt-9-7', category: 'guide', name: '한국어 VIP 가이드 전 일정 풀케어', description: '골프 체크인 및 풀빌라 바베큐 파티 지원', priceUSD: 60, isDefaultIncluded: false }
+    ]
+  },
+  {
+    id: 'pkg-10',
+    title: '달랏+붕따우 알프스 & 오션 4박 5일 산과 바다 3색 골프',
+    subtitle: '달랏 팔레스 CC + SAM 투옌람 CC + 붕따우 더 블러프 CC (고원과 해변의 만남)',
+    location: '달랏+붕따우',
+    duration: '4박 5일',
+    golfCourses: ['달랏 팔레스 CC (18홀)', 'SAM 투옌람 CC (18홀)', '더 블러프 호짬 CC (18홀)'],
+    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=800',
+    detailImages: [
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=800',
+      'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
+      'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800'
+    ],
+    basePriceUSD: 1420,
+    summary: '해발 1,500m 시원한 달랏 고원에서 2일간 상쾌한 힐링 골프를 즐기고, 붕따우 해변으로 내려와 세계 100대 더 블러프 CC에서 남중국해 바다를 가르는 이색 하이브리드 투어입니다.',
+    highlightBadges: ['4박 5일', '달랏 2박 + 붕따우 2박', '산과 바다 3색 골프', '국내 최고 이색 코스'],
+    itinerary: [
+      { day: 1, title: '달랏 도착 & 고원 힐링 체크인', activities: ['달랏 공항 픽업 미팅 후 5성급 리조트 체크인', '달랏 쑤언흐엉 호수 산책 및 힐링 티타임', '석식: 달랏 특선 와규 & 와인 디너', '달랏 야시장 투어'] },
+      { day: 2, title: '달랏 팔레스 CC 18홀 & SAM 투옌람 뷰', activities: ['리조트 조식 후 달랏 팔레스 CC 18홀 라운딩', '클럽하우스 중식 및 달랏 주요 명소 관광', '달랏 힐링 허브 스파 (90분)', '석식: 달랏 흑돼지 참숯 바베큐'] },
+      { day: 3, title: 'SAM 투옌람 CC 18홀 & 붕따우 해변 이동', activities: ['리조트 조식 후 SAM 투옌람 CC 18홀 라운딩', '클럽하우스 중식 후 붕따우 호짬 리조트로 전용 차량 이동', '5성급 더 그랜드 호짬 리조트 체크인', '석식: 붕따우 활어 씨푸드 만찬 & 카지노'] },
+      { day: 4, title: '더 블러프 호짬 CC 18홀 & 오션 나이트', activities: ['리조트 조식 후 더 블러프 CC 18홀 라운딩 (바다 조망 링크스 코스)', '인피니티 레스토랑 중식 및 해변 수영', '석식: 리조트 풀사이드 디너 뷔페'] },
+      { day: 5, title: '체크아웃 & 호치민 공항 샌딩', activities: ['리조트 조식 후 체크아웃', '호치민 시내로 이동 후 쇼핑', '떤선녓 공항 샌딩 및 출국'] }
+    ],
+    options: [
+      { id: 'opt-10-1', category: 'golf', name: '달랏 팔레스 18H + SAM 투옌람 18H + 더 블러프 18H 그린피', description: '고원 2회 + 해변 1회 총 54홀 정규 그린피', priceUSD: 510, isDefaultIncluded: true, isRequired: true },
+      { id: 'opt-10-2', category: 'golf', name: '전동카트 & 1인 1캐디 피', description: '전 일정 2인 1카트 & 1인 1캐디 피', priceUSD: 120, isDefaultIncluded: true },
+      { id: 'opt-10-3', category: 'hotel', name: '달랏 5성급 리조트 2박 + 붕따우 호짬 리조트 2박', description: '전 일정 5성급 조식 포함 숙박', priceUSD: 420, isDefaultIncluded: true },
+      { id: 'opt-10-4', category: 'vehicle', name: '전 일정 단독 전용 VIP 리무진 밴 (달랏-붕따우 이동 포함)', description: '전용 기사, 유류비, 통행료 일체', priceUSD: 160, isDefaultIncluded: true },
+      { id: 'opt-10-5', category: 'guide', name: '한국어 전문 가이드 전 일정 동행', description: '골프 및 지역 이동 풀케어', priceUSD: 80, isDefaultIncluded: true },
+      { id: 'opt-10-6', category: 'meal', name: '고원 특식 & 해변 씨푸드 석식 4회', description: '달랏 와인 바베큐, 붕따우 랍스터 만찬 등', priceUSD: 90, isDefaultIncluded: true },
+      { id: 'opt-10-7', category: 'activity', name: '달랏 고원 스파 & 붕따우 마사지 패키지', description: '달랏 90분 + 붕따우 90분 총 2회 마사지', priceUSD: 60, isDefaultIncluded: false }
+    ]
+  }
+];
+

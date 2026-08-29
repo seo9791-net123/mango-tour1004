@@ -2,6 +2,7 @@
 import React, { useState, useRef } from 'react';
 import { CommunityPost, User, Comment } from '../types';
 import { uploadFile } from '../services/uploadService';
+import BackButton from './BackButton';
 
 interface Props {
   posts: CommunityPost[];
@@ -227,39 +228,63 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   };
 
   return (
-    <section className={`py-6 bg-gray-50 ${onBack ? 'min-h-screen' : ''} pb-20 md:pb-0`}>
-      <div className="max-w-7xl mx-auto px-4">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-end mb-6 gap-3">
-          <div className="flex items-center gap-3">
-             {onBack && (
-                <button
-                  onClick={onBack}
-                  className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition shadow-sm text-gray-600"
-                >
-                  ←
-                </button>
-             )}
-             <div>
-                <h2 className="text-3xl md:text-4xl font-black text-deepgreen mb-2">커뮤니티 & 여행 후기</h2>
-                <p className="text-gray-700 text-lg font-bold">회원님들의 생생한 여행 사진과 이야기를 들려주세요.</p>
-             </div>
+    <div className={`min-h-screen bg-gray-50 text-black font-sans overflow-x-hidden animate-fade-in pb-safe md:pb-0`}>
+      {/* Subpage Hero Banner */}
+      {onBack ? (
+        <section className="relative h-[160px] xs:h-[180px] sm:h-[220px] md:h-[260px] flex items-center justify-center overflow-hidden bg-black">
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80" 
+              alt="Community Hero" 
+              className="w-full h-full object-cover opacity-60" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
           </div>
           
-          <button
-            onClick={() => {
+          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
+            <BackButton onClick={onBack} variant="hero" label="메인으로" />
+          </div>
+
+          <div className="relative z-10 text-center px-4">
+            <h1 className="text-2xl xs:text-3xl md:text-4xl font-black text-white drop-shadow-2xl mb-1 uppercase tracking-tight break-keep">
+              커뮤니티 & 여행 후기
+            </h1>
+            <p className="text-[11px] xs:text-xs md:text-sm font-bold tracking-[0.25em] text-gold-400 uppercase break-keep">
+              MEMBER STORIES & REVIEWS
+            </p>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="py-5 sm:py-8 bg-gray-50 text-black">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+          
+          {/* Action Bar (Header or Title Bar) */}
+          <div className="flex flex-row justify-between items-center mb-5 sm:mb-7 gap-3 bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-200/80 shadow-sm">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base sm:text-lg md:text-xl font-black text-deepgreen tracking-tight flex items-center gap-1.5 truncate">
+                <span>💬</span>
+                <span>생생한 여행 이야기</span>
+              </h2>
+              <p className="text-[11px] sm:text-xs text-gray-500 font-medium mt-0.5 break-keep">
+                회원님들의 실제 여행 사진과 꿀팁을 확인하고 자유롭게 소통해보세요.
+              </p>
+            </div>
+            
+            <button
+              onClick={() => {
                 if(!user) {
-                    if(confirm('로그인 후 작성 가능합니다. 로그인 하시겠습니까?')) onReqLogin();
+                  if(confirm('로그인 후 작성 가능합니다. 로그인 하시겠습니까?')) onReqLogin();
                 } else {
-                    setIsAdding(true);
+                  setIsAdding(true);
                 }
-            }}
-            className="bg-gold-500 text-white px-4 py-2 rounded-full hover:bg-gold-600 transition font-bold shadow-md flex items-center gap-1 text-xs"
-          >
-            <span>✏️</span> 글쓰기
-          </button>
-        </div>
+              }}
+              className="bg-gold-500 hover:bg-gold-600 text-white px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 text-xs sm:text-sm shrink-0 active:scale-95 whitespace-nowrap"
+            >
+              <span>✏️</span>
+              <span>글쓰기</span>
+            </button>
+          </div>
 
         {/* Write Post Form */}
         {isAdding && (
@@ -379,6 +404,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
             ))}
         </div>
       </div>
+    </section>
 
       {/* Password Prompt Modal */}
       {showPasswordPrompt && (
@@ -641,7 +667,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 };
 

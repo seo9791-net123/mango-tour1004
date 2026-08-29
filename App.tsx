@@ -16,9 +16,10 @@ import CulturePage from './components/CulturePage';
 import ForMenPage from './components/ForMenPage';
 import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
+import TripPlanner from './components/TripPlanner';
 import BottomNav from './components/BottomNav';
-import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP } from './constants';
-import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification } from './types';
+import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES } from './constants';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage } from './types';
 import { firestoreService } from './services/firestoreService';
 import { debounce } from './utils/debounce';
 
@@ -42,13 +43,26 @@ const App: React.FC = () => {
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const [popup, setPopup] = useState<PopupNotification>(INITIAL_POPUP);
+  const [customPackages, setCustomPackages] = useState<CustomTripPackage[]>(() => {
+    const saved = localStorage.getItem('mango_custom_packages_db');
+    return saved ? JSON.parse(saved) : INITIAL_CUSTOM_PACKAGES;
+  });
   const [showPopup, setShowPopup] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
 
-  // --- Session Persistence ---
+  // --- Session Persistence & URL Sync Handling ---
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('sync_config') || params.get('fb_config')) {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        console.log("Sync config applied from URL parameter and query string cleaned.");
+      }
+    }
+
     const savedUser = localStorage.getItem('mango_user');
     if (savedUser) {
       try {
@@ -66,6 +80,15 @@ const App: React.FC = () => {
       localStorage.removeItem('mango_user');
     }
   }, [user]);
+
+  // Persist custom packages locally as well
+  useEffect(() => {
+    try {
+      localStorage.setItem('mango_custom_packages_db', JSON.stringify(customPackages));
+    } catch (e) {
+      console.warn("Failed to persist custom packages:", e);
+    }
+  }, [customPackages]);
 
   // --- Firestore Integration Handlers ---
 
@@ -132,6 +155,16 @@ const App: React.FC = () => {
     }
   }, 3000)).current;
 
+  const debouncedSyncCustomPackages = useRef(debounce(async (newPkgs: CustomTripPackage[]) => {
+    if (isLocalMode || isSyncing.current['custom_packages']) return;
+    isSyncing.current['custom_packages'] = true;
+    try {
+      await firestoreService.syncCollection('custom_packages', newPkgs);
+    } finally {
+      isSyncing.current['custom_packages'] = false;
+    }
+  }, 3000)).current;
+
   // Initial Data Load
   useEffect(() => {
     const initData = async () => {
@@ -154,6 +187,9 @@ const App: React.FC = () => {
         setPosts(data.posts);
         setPageContents(data.pageContents);
         setPopup(data.popup);
+        if (data.customPackages && data.customPackages.length > 0) {
+          setCustomPackages(data.customPackages);
+        }
         
         // Check if popup should be shown (e.g., once per session or if active)
         const popupClosed = sessionStorage.getItem('mango_popup_closed');
@@ -209,6 +245,16 @@ const App: React.FC = () => {
   const handleUpdatePopup = async (newPopup: PopupNotification) => {
     setPopup(newPopup);
     debouncedSyncPopup(newPopup);
+  };
+
+  const handleUpdateCustomPackages = async (newPkgs: CustomTripPackage[]) => {
+    setCustomPackages(newPkgs);
+    try {
+      localStorage.setItem('mango_custom_packages_db', JSON.stringify(newPkgs));
+    } catch (e) {
+      console.warn("Failed to write custom packages to localStorage:", e);
+    }
+    debouncedSyncCustomPackages(newPkgs);
   };
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -302,53 +348,64 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans pb-20 md:pb-0">
-      <header className="sticky top-0 z-30 bg-white shadow-md no-print">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center">
-          <button onClick={() => window.location.href = '/'} className="flex items-center gap-2">
-             <div className="w-6 h-6 bg-gold-500 rounded-full flex items-center justify-center text-white font-bold text-xs">M</div>
-             <h1 className="text-lg font-bold text-deepgreen tracking-tight uppercase">MANGO TOUR</h1>
+    <div className="min-h-screen bg-white flex flex-col font-sans pb-safe md:pb-0 select-text">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 no-print" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
+          {/* Logo */}
+          <button onClick={() => window.location.href = '/'} className="flex items-center gap-2 active:scale-95 transition-transform shrink-0">
+             <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gold-500 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-sm">M</div>
+             <h1 className="text-base sm:text-lg font-black text-deepgreen tracking-tight uppercase whitespace-nowrap">MANGO TOUR</h1>
           </button>
           
-          <nav className="flex gap-2 items-center">
+          {/* Right Navigation & Status */}
+          <nav className="flex items-center gap-1.5 sm:gap-2">
             {isAdmin && (
               <button 
                 onClick={() => setCurrentPage(currentPage === 'home' ? 'admin' : 'home')}
-                className={`px-3 py-1 rounded font-bold text-xs transition ${
-                  currentPage === 'admin' ? 'bg-deepgreen text-white' : 'bg-gray-100 text-deepgreen'
+                className={`px-2.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 shrink-0 shadow-sm ${
+                  currentPage === 'admin' ? 'bg-deepgreen text-white' : 'bg-gray-100 text-deepgreen hover:bg-gray-200'
                 }`}
               >
-                {currentPage === 'home' ? '⚙️ 관리자' : '🏠 메인'}
+                <span>{currentPage === 'home' ? '⚙️' : '🏠'}</span>
+                <span className="whitespace-nowrap">{currentPage === 'home' ? '관리자' : '메인'}</span>
               </button>
             )}
 
             {isAdmin && (
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border ${
+              <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                 isLocalMode 
                   ? 'bg-orange-50 text-orange-600 border-orange-200' 
                   : 'bg-green-50 text-green-600 border-green-200'
               }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${isLocalMode ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></span>
-                {isLocalMode ? 'LOCAL MODE' : 'CLOUD SYNC'}
+                {isLocalMode ? 'LOCAL' : 'SYNC'}
               </div>
             )}
 
             {user ? (
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-600 font-bold">{user.nickname}님</span>
-                <button onClick={handleLogout} className="text-xs text-gray-400 hover:text-red-500 transition">로그아웃</button>
+              <div className="flex items-center gap-1.5 sm:gap-2.5 bg-gray-50/80 px-2 py-1 rounded-xl border border-gray-200/60">
+                <span className="text-xs text-gray-800 font-bold whitespace-nowrap max-w-[85px] sm:max-w-[140px] truncate">
+                  {user.nickname}
+                </span>
+                <span className="text-gray-300 text-[10px]">|</span>
+                <button 
+                  onClick={handleLogout} 
+                  className="text-xs text-gray-500 hover:text-red-500 transition font-medium whitespace-nowrap active:scale-95"
+                >
+                  로그아웃
+                </button>
               </div>
             ) : (
-              <div className="flex gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5">
                 <button 
                   onClick={() => { setShowAuthModal(true); setAuthMode('login'); }} 
-                  className="px-3 py-1 bg-gold-500 text-white rounded-full text-xs font-bold hover:bg-gold-600 transition"
+                  className="px-3 py-1.5 bg-gold-500 text-white rounded-xl text-xs font-bold hover:bg-gold-600 transition active:scale-95 shadow-sm whitespace-nowrap"
                 >
                   로그인
                 </button>
                 <button 
                   onClick={() => { setShowAuthModal(true); setAuthMode('signup'); }} 
-                  className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold hover:bg-gray-200 transition"
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition active:scale-95 whitespace-nowrap"
                 >
                   회원가입
                 </button>
@@ -365,6 +422,7 @@ const App: React.FC = () => {
             heroImages={heroImages} setHeroImages={handleUpdateHeroImages}
             menuItems={menuItems} setMenuItems={handleUpdateMenuItems} 
             products={products} setProducts={handleUpdateProducts}
+            customPackages={customPackages} setCustomPackages={handleUpdateCustomPackages}
             pageContents={pageContents} setPageContents={handleUpdatePageContents}
             videos={videos} setVideos={handleUpdateVideos}
             posts={posts} setPosts={handleUpdatePosts}
@@ -375,7 +433,10 @@ const App: React.FC = () => {
           <>
             {currentPage === 'home' && (
               <>
-                <HeroSlider images={heroImages} />
+                <HeroSlider 
+                  images={heroImages} 
+                  onActionClick={() => handleMenuClick('여행 만들기')} 
+                />
                 <IconMenu items={menuItems} onItemClick={handleMenuClick} />
               </>
             )}
@@ -388,19 +449,7 @@ const App: React.FC = () => {
               ) : selectedCategory === '비지니스' ? (
                 <BusinessPage content={pageContents['business']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '여행 만들기' ? (
-                <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-                  <div className="mb-6 flex justify-center">
-                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center text-4xl">🛠️</div>
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-2">현재 페이지를 업데이트 중입니다</h2>
-                  <p className="text-gray-500 mb-8">더 나은 서비스를 위해 준비 중입니다. 잠시만 기다려 주세요.</p>
-                  <button 
-                    onClick={() => setCurrentPage('home')}
-                    className="px-6 py-2 bg-deepgreen text-white rounded-full font-bold hover:bg-opacity-90 transition"
-                  >
-                    홈으로 돌아가기
-                  </button>
-                </div>
+                <TripPlanner packages={customPackages} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '호텔&빌라' ? (
                 <HotelVillaPage content={pageContents['hotel']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '골프' ? (

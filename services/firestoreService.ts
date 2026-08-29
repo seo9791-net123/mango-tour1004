@@ -7,7 +7,8 @@ import {
   writeBatch,
   getDoc 
 } from "firebase/firestore";
-import { db, isDefaultConfig } from "./firebaseConfig";
+import { db } from "./firebaseConfig";
+import { setCloudinaryConfig } from "./uploadService";
 import { 
   PageContent,
   PopupNotification
@@ -19,7 +20,8 @@ import {
   HERO_IMAGES, 
   SUB_MENU_ITEMS, 
   INITIAL_PAGE_CONTENTS,
-  INITIAL_POPUP
+  INITIAL_POPUP,
+  INITIAL_CUSTOM_PACKAGES
 } from "../constants";
 
 // 데이터 컬렉션 이름 정의
@@ -28,8 +30,9 @@ const COLLECTIONS = {
   VIDEOS: "videos",
   POSTS: "posts",
   PAGES: "pages",
-  SETTINGS: "settings", // Hero Images, Menu Items 등을 저장
-  POPUP: "popup"
+  SETTINGS: "settings", // Hero Images, Menu Items, Cloudinary Config 등을 저장
+  POPUP: "popup",
+  CUSTOM_PACKAGES: "custom_packages"
 };
 
 export const firestoreService = {
@@ -39,25 +42,24 @@ export const firestoreService = {
    * 데이터가 없으면 초기값(constants.ts)으로 DB를 채웁니다.
    */
   async loadGlobalData() {
-    if (!db) throw new Error("Firestore is not initialized");
+    // Default fallback local data
+    const localDataFallback = {
+      heroImages: HERO_IMAGES,
+      menuItems: SUB_MENU_ITEMS,
+      products: INITIAL_PRODUCTS,
+      videos: INITIAL_VIDEOS,
+      posts: INITIAL_POSTS,
+      pageContents: INITIAL_PAGE_CONTENTS,
+      popup: INITIAL_POPUP,
+      customPackages: INITIAL_CUSTOM_PACKAGES,
+      cloudinaryConfig: { cloudName: '', uploadPreset: '' },
+      isDefaultConfig: true,
+      isLocal: true
+    };
 
-    // Check for keys in localStorage OR env vars OR hardcoded defaults
-    const hasEnvKeys = import.meta.env.VITE_FIREBASE_PROJECT_ID && import.meta.env.VITE_FIREBASE_PROJECT_ID !== "your-project";
-    const hasLocalKeys = localStorage.getItem('fb_project_id') && localStorage.getItem('fb_api_key');
-    const hasHardcodedKeys = true; // We now have hardcoded keys in firebaseConfig.ts
-
-    if (!hasEnvKeys && !hasLocalKeys && !hasHardcodedKeys) {
-      console.warn("Firebase configuration is missing or using placeholders. Using local data.");
-      return {
-        heroImages: HERO_IMAGES,
-        menuItems: SUB_MENU_ITEMS,
-        products: INITIAL_PRODUCTS,
-        videos: INITIAL_VIDEOS,
-        posts: INITIAL_POSTS,
-        pageContents: INITIAL_PAGE_CONTENTS,
-        popup: INITIAL_POPUP,
-        isDefaultConfig: true
-      };
+    if (!db) {
+      console.log("Firebase DB not initialized, using local fallback mode");
+      return localDataFallback;
     }
 
     // Helper for timeout
@@ -71,49 +73,41 @@ export const firestoreService = {
     try {
       console.log("Fetching data from Firestore server...");
       
-      // 1. Settings (Hero Images, Menu Items)
+      // 1. Settings (Hero Images, Menu Items, Cloudinary Image Server Config)
       const settingsRef = doc(db, COLLECTIONS.SETTINGS, "global");
-      
-      // 서버에서 직접 데이터를 가져오도록 시도 (캐시 무시)
-      // 오프라인 에러가 발생하면 여기서 잡힙니다.
-      // 타임아웃 3초 적용
       const settingsSnap = await withTimeout(getDoc(settingsRef));
       
       let heroImages = HERO_IMAGES;
       let menuItems = SUB_MENU_ITEMS;
+      let cloudinaryConfig = { cloudName: '', uploadPreset: '' };
 
       if (settingsSnap.exists()) {
         const data = settingsSnap.data();
         if (data.heroImages) heroImages = data.heroImages;
         if (data.menuItems) menuItems = data.menuItems;
-      } else {
-        // 초기 데이터 저장 (비동기로 실행하여 로딩 막지 않음)
-        setDoc(settingsRef, { heroImages, menuItems }).catch(e => console.warn("Failed to seed settings:", e));
+        if (data.cloudinaryConfig) {
+          cloudinaryConfig = data.cloudinaryConfig;
+          if (data.cloudinaryConfig.cloudName || data.cloudinaryConfig.uploadPreset) {
+            setCloudinaryConfig(data.cloudinaryConfig.cloudName || '', data.cloudinaryConfig.uploadPreset || '');
+            console.log("Applied cloud-synced Cloudinary settings from Firestore.");
+          }
+        }
       }
 
       // 2. Products
-      const products = await this.fetchOrSeedCollection(COLLECTIONS.PRODUCTS, INITIAL_PRODUCTS);
+      const products = await withTimeout(this.fetchOrSeedCollection(COLLECTIONS.PRODUCTS, INITIAL_PRODUCTS));
       
       // 3. Videos
-      const videos = await this.fetchOrSeedCollection(COLLECTIONS.VIDEOS, INITIAL_VIDEOS);
+      const videos = await withTimeout(this.fetchOrSeedCollection(COLLECTIONS.VIDEOS, INITIAL_VIDEOS));
       
       // 4. Posts
-      const posts = await this.fetchOrSeedCollection(COLLECTIONS.POSTS, INITIAL_POSTS);
+      const posts = await withTimeout(this.fetchOrSeedCollection(COLLECTIONS.POSTS, INITIAL_POSTS));
 
       // 5. Pages
-      // Pages는 Object 형태이므로 별도 처리
       let pageContents = { ...INITIAL_PAGE_CONTENTS };
       const pagesSnap = await withTimeout(getDocs(collection(db, COLLECTIONS.PAGES)));
       
-      if (pagesSnap.empty) {
-        // Seed Pages
-        const batch = writeBatch(db);
-        Object.values(INITIAL_PAGE_CONTENTS).forEach(page => {
-          const ref = doc(db, COLLECTIONS.PAGES, page.id);
-          batch.set(ref, page);
-        });
-        batch.commit().catch(e => console.warn("Failed to seed pages:", e));
-      } else {
+      if (!pagesSnap.empty) {
         pagesSnap.forEach(doc => {
           const data = doc.data() as PageContent;
           pageContents[data.id] = data;
@@ -126,9 +120,10 @@ export const firestoreService = {
       let popup = INITIAL_POPUP;
       if (popupSnap.exists()) {
         popup = popupSnap.data() as PopupNotification;
-      } else {
-        setDoc(popupRef, INITIAL_POPUP).catch(e => console.warn("Failed to seed popup:", e));
       }
+
+      // 7. Custom Trip Packages
+      const customPackages = await withTimeout(this.fetchOrSeedCollection(COLLECTIONS.CUSTOM_PACKAGES, INITIAL_CUSTOM_PACKAGES));
 
       return {
         heroImages,
@@ -138,23 +133,15 @@ export const firestoreService = {
         posts,
         pageContents,
         popup,
-        isDefaultConfig
+        customPackages,
+        cloudinaryConfig,
+        isDefaultConfig: false,
+        isLocal: false
       };
 
     } catch (error: any) {
       console.warn("Firestore offline, unreachable, or error occurred. Falling back to local data.", error.message);
-      
-      // 오프라인이거나 권한 문제, 또는 기타 모든 에러 발생 시 로컬 데이터 반환 (앱이 멈추지 않도록)
-      return {
-        heroImages: HERO_IMAGES,
-        menuItems: SUB_MENU_ITEMS,
-        products: INITIAL_PRODUCTS,
-        videos: INITIAL_VIDEOS,
-        posts: INITIAL_POSTS,
-        pageContents: INITIAL_PAGE_CONTENTS,
-        popup: INITIAL_POPUP,
-        isDefaultConfig: true
-      };
+      return localDataFallback;
     }
   },
 
@@ -233,7 +220,7 @@ export const firestoreService = {
   /**
    * 설정 데이터(이미지 배열, 메뉴 아이템) 저장
    */
-  async saveSettings(key: 'heroImages' | 'menuItems', data: any) {
+  async saveSettings(key: 'heroImages' | 'menuItems' | 'cloudinaryConfig', data: any) {
     if (!db || !navigator.onLine) return;
     try {
       const ref = doc(db, COLLECTIONS.SETTINGS, "global");
@@ -244,6 +231,26 @@ export const firestoreService = {
       } else {
         console.error("Error saving settings:", e);
       }
+    }
+  },
+
+  /**
+   * Cloudinary 이미지 서버 설정을 Firestore에 클라우드 동기화 저장
+   */
+  async saveCloudinaryConfig(cloudName: string, uploadPreset: string) {
+    if (!db || !navigator.onLine) return;
+    try {
+      const ref = doc(db, COLLECTIONS.SETTINGS, "global");
+      await setDoc(ref, { 
+        cloudinaryConfig: { 
+          cloudName: (cloudName || '').trim(), 
+          uploadPreset: (uploadPreset || '').trim(),
+          updatedAt: new Date().toISOString()
+        } 
+      }, { merge: true });
+      console.log("Cloudinary configuration saved to Firestore settings/global.");
+    } catch (e: any) {
+      console.error("Failed to save Cloudinary configuration to Firestore:", e);
     }
   },
 

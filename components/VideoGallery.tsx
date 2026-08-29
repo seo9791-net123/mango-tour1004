@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { VideoItem, User } from '../types';
 import { uploadFile } from '../services/uploadService';
 import { classifyVideoCategory } from '../services/geminiService';
+import BackButton from './BackButton';
 
 interface Props {
   videos: VideoItem[];
@@ -144,12 +145,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div className="flex items-center gap-3">
             {onBack && (
-              <button
-                onClick={onBack}
-                className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700 transition shadow-sm text-white text-sm"
-              >
-                ←
-              </button>
+              <BackButton onClick={onBack} variant="dark" label="메인으로" />
             )}
             <div>
               <h2 className="text-xl font-bold text-gold-400">동영상</h2>

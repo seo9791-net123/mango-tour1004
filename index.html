@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#004d40" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -23,6 +23,9 @@
                 600: '#B4901C',
               },
               deepgreen: '#004d40',
+            },
+            screens: {
+              'xs': '375px',
             }
           }
         }
@@ -31,10 +34,40 @@
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+      :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left, 0px);
+        --sar: env(safe-area-inset-right, 0px);
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
-        font-family: 'Noto Sans KR', sans-serif;
+        font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+        overscroll-behavior-y: none;
+      }
+      /* Prevent iOS font auto-zoom in form controls */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+      @media (min-width: 768px) {
+        input, select, textarea {
+          font-size: 14px !important;
+        }
+      }
+      /* Safe area utilities */
+      .pb-safe {
+        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+      .bottom-safe {
+        bottom: env(safe-area-inset-bottom, 0px);
       }
       /* Custom Scrollbar */
       ::-webkit-scrollbar {
@@ -111,13 +144,37 @@
   </head>
   <body>
     <div id="root"></div>
+    <div id="error-console" style="display: none; padding: 20px; background: #fff0f0; color: #ff0000; border: 2px solid #ff0000; margin: 20px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; font-size: 14px; position: fixed; bottom: 0; left: 0; right: 0; z-index: 999999; word-break: break-all; max-height: 40vh; overflow-y: auto;"><strong>JavaScript Runtime Error Catcher:</strong></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        var consoleDiv = document.getElementById('error-console');
+        if (consoleDiv) {
+          consoleDiv.style.display = 'block';
+          consoleDiv.innerText += '\nError: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+        }
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var consoleDiv = document.getElementById('error-console');
+        if (consoleDiv) {
+          consoleDiv.style.display = 'block';
+          consoleDiv.innerText += '\nUnhandled Rejection: ' + (e.reason?.message || e.reason || 'Unknown rejection');
+        }
+      });
+    </script>
     <script type="module" src="/index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(err => {
-            console.log('ServiceWorker registration failed: ', err);
-          });
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for (let registration of registrations) {
+            registration.unregister().then(function() {
+              console.log('ServiceWorker unregistered successfully in Dev');
+            });
+          }
+        });
+        caches.keys().then(function(names) {
+          for (let name of names) {
+            caches.delete(name);
+          }
         });
       }
     </script>

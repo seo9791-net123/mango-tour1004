@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide } from '../types';
+import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide, CustomTripPackage, PackageOptionItem } from '../types';
 import { 
   INITIAL_PRODUCTS, 
   INITIAL_VIDEOS, 
@@ -8,11 +8,17 @@ import {
   HERO_IMAGES, 
   SUB_MENU_ITEMS, 
   INITIAL_PAGE_CONTENTS,
-  INITIAL_POPUP 
+  INITIAL_POPUP,
+  INITIAL_CUSTOM_PACKAGES 
 } from '../constants';
 import { driveService } from '../services/googleDriveService';
-import { uploadFile } from '../services/uploadService';
+import { fetchGoogleSheetData } from '../services/googleSheetService';
+import { uploadFile, setCloudinaryConfig } from '../services/uploadService';
+import { firestoreService } from '../services/firestoreService';
+import { DEFAULT_FIREBASE_CONFIG, db } from '../services/firebaseConfig';
+import { doc, deleteDoc } from 'firebase/firestore';
 import { compressImage } from '../utils/imageUtils';
+import BackButton from './BackButton';
 
 interface Props {
   users: User[];
@@ -22,6 +28,8 @@ interface Props {
   setMenuItems: (items: MenuItem[]) => void;
   products: Product[];
   setProducts: (products: Product[]) => void;
+  customPackages?: CustomTripPackage[];
+  setCustomPackages?: (packages: CustomTripPackage[]) => void;
   pageContents: Record<string, PageContent>;
   setPageContents: (contents: Record<string, PageContent>) => void;
   videos: VideoItem[];
@@ -41,6 +49,8 @@ const AdminDashboard: React.FC<Props> = ({
   setMenuItems,
   products,
   setProducts,
+  customPackages = INITIAL_CUSTOM_PACKAGES,
+  setCustomPackages,
   pageContents,
   setPageContents,
   videos,
@@ -51,10 +61,16 @@ const AdminDashboard: React.FC<Props> = ({
   setPopup,
   setCurrentPage
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'pages' | 'menu' | 'popup'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'menu' | 'popup'>('users');
   
   const heroFileInputRef = useRef<HTMLInputElement>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [editingPackage, setEditingPackage] = useState<CustomTripPackage | null>(null);
+  const [packageToDelete, setPackageToDelete] = useState<CustomTripPackage | null>(null);
+  const [showResetPackageModal, setShowResetPackageModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [packageModalTab, setPackageModalTab] = useState<'basic' | 'options' | 'itinerary'>('basic');
   const [selectedPageId, setSelectedPageId] = useState<string>('business');
   const [pageForm, setPageForm] = useState<PageContent>(pageContents['business'] || INITIAL_PAGE_CONTENTS['business']);
 
@@ -369,6 +385,307 @@ const AdminDashboard: React.FC<Props> = ({
     handleProductFieldChange(productId, 'detailImages', detailImages);
   };
 
+  const handleConfirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    const prodId = productToDelete.id;
+    const updated = products.filter(item => item.id !== prodId);
+    setProducts(updated);
+    if (editingProductId === prodId) {
+      setEditingProductId(null);
+    }
+    setProductToDelete(null);
+    showToast('🗑️ 일반 상품이 삭제되었습니다.');
+    try {
+      if (db && navigator.onLine) {
+        await deleteDoc(doc(db, 'products', prodId));
+      }
+    } catch (e) {
+      console.warn("Direct Firestore delete failed for product:", e);
+    }
+  };
+
+  // --- Custom Trip Packages (4박 5일 골프 여행 상품) Handlers ---
+  const handlePackageFieldChange = (pkgId: string, field: keyof CustomTripPackage, value: any) => {
+    if (!setCustomPackages) return;
+    const updated = customPackages.map(pkg => pkg.id === pkgId ? { ...pkg, [field]: value } : pkg);
+    setCustomPackages(updated);
+    if (editingPackage && editingPackage.id === pkgId) {
+      setEditingPackage({ ...editingPackage, [field]: value });
+    }
+  };
+
+  const handlePackageOptionChange = (pkgId: string, optIndex: number, field: keyof PackageOptionItem, value: any) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg) return;
+    const newOptions = [...pkg.options];
+    newOptions[optIndex] = { ...newOptions[optIndex], [field]: value };
+    
+    // Auto-calculate basePriceUSD if option price changes
+    const newBasePrice = newOptions.reduce((sum, opt) => opt.isDefaultIncluded ? sum + (opt.priceUSD || 0) : sum, 0);
+    
+    const updated = customPackages.map(p => p.id === pkgId ? { ...p, options: newOptions, basePriceUSD: newBasePrice } : p);
+    setCustomPackages(updated);
+    if (editingPackage && editingPackage.id === pkgId) {
+      setEditingPackage({ ...editingPackage, options: newOptions, basePriceUSD: newBasePrice });
+    }
+  };
+
+  const handlePackageOptionAdd = (pkgId: string) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg) return;
+    const newOption: PackageOptionItem = {
+      id: `opt-${Date.now()}`,
+      category: 'golf',
+      name: '새 맞춤 옵션 항목',
+      description: '옵션에 대한 상세 설명을 입력하세요.',
+      priceUSD: 100,
+      isDefaultIncluded: true,
+      isRequired: false
+    };
+    const newOptions = [...pkg.options, newOption];
+    const newBasePrice = newOptions.reduce((sum, opt) => opt.isDefaultIncluded ? sum + (opt.priceUSD || 0) : sum, 0);
+    const updated = customPackages.map(p => p.id === pkgId ? { ...p, options: newOptions, basePriceUSD: newBasePrice } : p);
+    setCustomPackages(updated);
+    if (editingPackage && editingPackage.id === pkgId) {
+      setEditingPackage({ ...editingPackage, options: newOptions, basePriceUSD: newBasePrice });
+    }
+  };
+
+  const handlePackageOptionRemove = (pkgId: string, optIndex: number) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg) return;
+    const newOptions = pkg.options.filter((_, i) => i !== optIndex);
+    const newBasePrice = newOptions.reduce((sum, opt) => opt.isDefaultIncluded ? sum + (opt.priceUSD || 0) : sum, 0);
+    const updated = customPackages.map(p => p.id === pkgId ? { ...p, options: newOptions, basePriceUSD: newBasePrice } : p);
+    setCustomPackages(updated);
+    if (editingPackage && editingPackage.id === pkgId) {
+      setEditingPackage({ ...editingPackage, options: newOptions, basePriceUSD: newBasePrice });
+    }
+  };
+
+  const handlePackageItineraryDayAdd = (pkgId: string) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg) return;
+    const currentItin = pkg.itinerary || [];
+    const newDay = currentItin.length + 1;
+    const newItinerary = [
+      ...currentItin, 
+      { 
+        day: newDay, 
+        title: `Day ${newDay} 라운딩 및 자유일정`, 
+        activities: ['조식 후 골프장 이동', `Day ${newDay} 18홀 라운딩`, '석식 및 자유시간'] 
+      }
+    ];
+    handlePackageFieldChange(pkgId, 'itinerary', newItinerary);
+  };
+
+  const handlePackageItineraryDayRemove = (pkgId: string, dayIdx: number) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg || !pkg.itinerary) return;
+    if (pkg.itinerary.length <= 1) {
+      alert('일정표에는 최소 1개 이상의 일차가 있어야 합니다.');
+      return;
+    }
+    if (!confirm(`Day ${dayIdx + 1} 일차 일정을 삭제하시겠습니까?`)) return;
+    const newItinerary = pkg.itinerary.filter((_, i) => i !== dayIdx).map((d, i) => ({ ...d, day: i + 1 }));
+    handlePackageFieldChange(pkgId, 'itinerary', newItinerary);
+  };
+
+  const handlePackageItineraryDayMove = (pkgId: string, dayIdx: number, direction: 'up' | 'down') => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg || !pkg.itinerary) return;
+    const targetIdx = direction === 'up' ? dayIdx - 1 : dayIdx + 1;
+    if (targetIdx < 0 || targetIdx >= pkg.itinerary.length) return;
+    
+    const newItinerary = [...pkg.itinerary];
+    const temp = newItinerary[dayIdx];
+    newItinerary[dayIdx] = newItinerary[targetIdx];
+    newItinerary[targetIdx] = temp;
+    
+    const renumbered = newItinerary.map((d, i) => ({ ...d, day: i + 1 }));
+    handlePackageFieldChange(pkgId, 'itinerary', renumbered);
+  };
+
+  const handlePackageQuickDayAdjust = (pkgId: string, targetDays: number, durName?: string) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg) return;
+    const current = pkg.itinerary || [];
+    let updatedItinerary = [...current];
+
+    if (current.length < targetDays) {
+      for (let i = current.length + 1; i <= targetDays; i++) {
+        updatedItinerary.push({
+          day: i,
+          title: i === targetDays ? '체크아웃 & 공항 샌딩' : `Day ${i} 라운딩 및 투어`,
+          activities: i === targetDays ? ['호텔 체크아웃 및 쇼핑', '공항 전용 샌딩'] : ['조식 후 골프장 이동', `Day ${i} 18홀 라운딩`, '석식 및 자유시간']
+        });
+      }
+    } else if (current.length > targetDays) {
+      if (!confirm(`현재 ${current.length}일차 일정을 ${targetDays}일차 일정으로 줄이시겠습니까? (초과된 ${current.length - targetDays}개 일차는 삭제됩니다)`)) {
+        return;
+      }
+      updatedItinerary = updatedItinerary.slice(0, targetDays);
+    }
+
+    const updated = customPackages.map(p => {
+      if (p.id === pkgId) {
+        return {
+          ...p,
+          itinerary: updatedItinerary,
+          duration: durName || p.duration
+        };
+      }
+      return p;
+    });
+
+    setCustomPackages(updated);
+    if (editingPackage && editingPackage.id === pkgId) {
+      setEditingPackage({
+        ...editingPackage,
+        itinerary: updatedItinerary,
+        duration: durName || editingPackage.duration
+      });
+    }
+  };
+
+  const handlePackageItineraryTitleChange = (pkgId: string, dayIdx: number, title: string) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg || !pkg.itinerary) return;
+    const newItinerary = [...pkg.itinerary];
+    newItinerary[dayIdx] = { ...newItinerary[dayIdx], title };
+    handlePackageFieldChange(pkgId, 'itinerary', newItinerary);
+  };
+
+  const handlePackageItineraryActivityChange = (pkgId: string, dayIdx: number, actIdx: number, text: string) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg || !pkg.itinerary) return;
+    const newItinerary = [...pkg.itinerary];
+    const newActs = [...newItinerary[dayIdx].activities];
+    newActs[actIdx] = text;
+    newItinerary[dayIdx] = { ...newItinerary[dayIdx], activities: newActs };
+    handlePackageFieldChange(pkgId, 'itinerary', newItinerary);
+  };
+
+  const handlePackageItineraryActivityAdd = (pkgId: string, dayIdx: number) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg || !pkg.itinerary) return;
+    const newItinerary = [...pkg.itinerary];
+    newItinerary[dayIdx] = { ...newItinerary[dayIdx], activities: [...newItinerary[dayIdx].activities, '새 세부 일정 활동 입력'] };
+    handlePackageFieldChange(pkgId, 'itinerary', newItinerary);
+  };
+
+  const handlePackageItineraryActivityRemove = (pkgId: string, dayIdx: number, actIdx: number) => {
+    if (!setCustomPackages) return;
+    const pkg = customPackages.find(p => p.id === pkgId);
+    if (!pkg || !pkg.itinerary) return;
+    const newItinerary = [...pkg.itinerary];
+    newItinerary[dayIdx] = { ...newItinerary[dayIdx], activities: newItinerary[dayIdx].activities.filter((_, i) => i !== actIdx) };
+    handlePackageFieldChange(pkgId, 'itinerary', newItinerary);
+  };
+
+  const handleAddNewCustomPackage = () => {
+    if (!setCustomPackages) return;
+    const newPkg: CustomTripPackage = {
+      id: `custom-pkg-${Date.now()}`,
+      title: '베트남 신규 맞춤 골프 투어',
+      subtitle: '명문 골프 코스와 최고급 호텔에서 즐기는 프라이빗 투어',
+      location: '호치민',
+      duration: '4박 5일',
+      golfCourses: ['떤선녓 CC (18홀)', '롱탄 CC (18홀)', '트윈도브스 CC (18홀)'],
+      basePriceUSD: 1100,
+      image: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200',
+      summary: '원하는 골프장과 숙소, 옵션을 내 맘대로 조합하는 맞춤형 패키지',
+      highlightBadges: ['54홀 라운딩', '전용 리무진 밴', '5성급 호텔'],
+      itinerary: [
+        { day: 1, title: '공항 도착 & 호텔 체크인', activities: ['공항 전용 픽업', '호텔 체크인 및 시내 자유시간'] },
+        { day: 2, title: '18홀 라운딩', activities: ['조식 후 골프장 이동', '18홀 라운딩', '석식 및 자유시간'] },
+        { day: 3, title: '18홀 라운딩', activities: ['18홀 챔피언십 코스', '클럽하우스 중식', '스파 마사지'] },
+        { day: 4, title: '18홀 라운딩', activities: ['18홀 라운딩', '특식 석식'] },
+        { day: 5, title: '체크아웃 & 시내 관광 후 공항 샌딩', activities: ['체크아웃 및 시내 쇼핑', '공항 전용 샌딩'] },
+      ],
+      options: [
+        { id: `opt-${Date.now()}-1`, category: 'golf', name: '3회 그린피 (54홀)', description: '전 일정 54홀 그린피', priceUSD: 450, isDefaultIncluded: true, isRequired: true },
+        { id: `opt-${Date.now()}-2`, category: 'golf', name: '전동카트 (2인 1카트)', description: '라운딩 전동 카트피', priceUSD: 100, isDefaultIncluded: true, isRequired: false },
+        { id: `opt-${Date.now()}-3`, category: 'golf', name: '1인 1캐디피', description: '전 일정 1인 1전담 캐디', priceUSD: 90, isDefaultIncluded: true, isRequired: false },
+        { id: `opt-${Date.now()}-4`, category: 'hotel', name: '5성급 럭셔리 호텔 (4박 2인1실)', description: '시내 중심 5성급 특급 호텔', priceUSD: 320, isDefaultIncluded: true, isRequired: false },
+        { id: `opt-${Date.now()}-5`, category: 'vehicle', name: '전용 VIP 리무진 밴 (전 일정)', description: '공항/골프장 전용 기사 포함', priceUSD: 140, isDefaultIncluded: true, isRequired: false },
+      ]
+    };
+    const updated = [newPkg, ...customPackages];
+    setCustomPackages(updated);
+    setEditingPackage(newPkg);
+    setPackageModalTab('basic');
+    showToast('✨ 새 맞춤 여행 상품이 생성되었습니다.');
+  };
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
+
+  const handleRequestDeletePackage = (pkg: CustomTripPackage) => {
+    setPackageToDelete(pkg);
+  };
+
+  const handleConfirmDeletePackage = async () => {
+    if (!packageToDelete || !setCustomPackages) return;
+    const pkgId = packageToDelete.id;
+    const updated = customPackages.filter(p => p.id !== pkgId);
+    
+    // 1. React State 즉시 반영
+    setCustomPackages(updated);
+    
+    // 2. LocalStorage 즉시 영구 저장
+    try {
+      localStorage.setItem('mango_custom_packages_db', JSON.stringify(updated));
+    } catch (e) {
+      console.warn("Failed to write to localStorage:", e);
+    }
+
+    // 3. 편집 모달 열려있으면 닫기
+    if (editingPackage && editingPackage.id === pkgId) {
+      setEditingPackage(null);
+    }
+    
+    // 4. 모달 닫기 및 알림
+    setPackageToDelete(null);
+    showToast('🗑️ 상품이 성공적으로 삭제되었습니다.');
+
+    // 5. Firebase Firestore 실시간 삭제
+    try {
+      if (db && navigator.onLine) {
+        await deleteDoc(doc(db, 'custom_packages', pkgId));
+      }
+    } catch (e) {
+      console.warn("Direct Firestore delete failed:", e);
+    }
+  };
+
+  const handleConfirmResetPackages = () => {
+    if (!setCustomPackages) return;
+    setCustomPackages(INITIAL_CUSTOM_PACKAGES);
+    try {
+      localStorage.setItem('mango_custom_packages_db', JSON.stringify(INITIAL_CUSTOM_PACKAGES));
+    } catch (e) {
+      console.warn("Failed to write to localStorage:", e);
+    }
+    setEditingPackage(null);
+    setShowResetPackageModal(false);
+    showToast('🔄 기본 맞춤 여행 상품 목록으로 복구되었습니다.');
+  };
+
   // --- Page Handlers ---
   const handlePageFieldChange = async (field: keyof PageContent, value: any) => {
     const previousPageForm = { ...pageForm };
@@ -458,15 +775,163 @@ const AdminDashboard: React.FC<Props> = ({
     localStorage.setItem('fb_app_id', fbAppId);
     localStorage.setItem('fb_database_url', fbDatabaseURL);
     localStorage.setItem('fb_measurement_id', fbMeasurementId);
-    alert('Firebase 설정이 저장되었습니다. 변경사항을 적용하기 위해 페이지가 새로고침됩니다.');
+    alert('Firebase 설정이 로컬에 저장되었습니다. 변경사항을 적용하기 위해 페이지가 새로고침됩니다.');
     window.location.reload();
   };
 
-  const handleSaveCloudinaryConfig = () => {
+  const handleResetFirebaseConfig = () => {
+    if (!confirm('Firebase 설정을 기본 내장 표준 설정으로 복구하시겠습니까?')) return;
+    setFbApiKey(DEFAULT_FIREBASE_CONFIG.apiKey);
+    setFbAuthDomain(DEFAULT_FIREBASE_CONFIG.authDomain);
+    setFbProjectId(DEFAULT_FIREBASE_CONFIG.projectId);
+    setFbStorageBucket(DEFAULT_FIREBASE_CONFIG.storageBucket);
+    setFbMessagingSenderId(DEFAULT_FIREBASE_CONFIG.messagingSenderId);
+    setFbAppId(DEFAULT_FIREBASE_CONFIG.appId);
+    setFbDatabaseURL(DEFAULT_FIREBASE_CONFIG.databaseURL);
+    setFbMeasurementId(DEFAULT_FIREBASE_CONFIG.measurementId);
+    
+    localStorage.removeItem('fb_api_key');
+    localStorage.removeItem('fb_auth_domain');
+    localStorage.removeItem('fb_project_id');
+    localStorage.removeItem('fb_storage_bucket');
+    localStorage.removeItem('fb_messaging_sender_id');
+    localStorage.removeItem('fb_app_id');
+    localStorage.removeItem('fb_database_url');
+    localStorage.removeItem('fb_measurement_id');
+    alert('기본 Firebase 설정으로 복구되었습니다. 페이지가 새로고침됩니다.');
+    window.location.reload();
+  };
+
+  const handleSaveCloudinaryConfig = async () => {
     localStorage.setItem('cloudinary_cloud_name', cloudName);
     localStorage.setItem('cloudinary_upload_preset', uploadPreset);
-    alert('Cloudinary 설정이 저장되었습니다.');
+    setCloudinaryConfig(cloudName, uploadPreset);
+    
+    // Firestore 클라우드에도 저장하여 다른 컴퓨터에서 접속 시 자동으로 적용되도록 함
+    try {
+      await firestoreService.saveCloudinaryConfig(cloudName, uploadPreset);
+      alert('✅ Cloudinary 이미지 서버 설정이 저장되었습니다!\n\n클라우드(Firestore)에도 동기화되어 이제 다른 컴퓨터 및 모바일 기기에서도 동일한 이미지 서버가 자동으로 적용됩니다.');
+    } catch (e) {
+      alert('Cloudinary 설정이 로컬에 저장되었습니다.');
+    }
     setShowCloudinaryConfig(false);
+  };
+
+  // 다른 컴퓨터 동기화용 원클릭 링크 복사
+  const handleCopySyncUrl = () => {
+    const configPayload = {
+      fbApiKey: fbApiKey || DEFAULT_FIREBASE_CONFIG.apiKey,
+      fbAuthDomain: fbAuthDomain || DEFAULT_FIREBASE_CONFIG.authDomain,
+      fbProjectId: fbProjectId || DEFAULT_FIREBASE_CONFIG.projectId,
+      fbStorageBucket: fbStorageBucket || DEFAULT_FIREBASE_CONFIG.storageBucket,
+      fbMessagingSenderId: fbMessagingSenderId || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+      fbAppId: fbAppId || DEFAULT_FIREBASE_CONFIG.appId,
+      fbDatabaseURL: fbDatabaseURL || DEFAULT_FIREBASE_CONFIG.databaseURL,
+      fbMeasurementId: fbMeasurementId || DEFAULT_FIREBASE_CONFIG.measurementId,
+      cloudName: cloudName,
+      uploadPreset: uploadPreset
+    };
+
+    const encoded = btoa(encodeURIComponent(JSON.stringify(configPayload)));
+    const origin = window.location.origin;
+    const pathname = window.location.pathname;
+    const syncUrl = `${origin}${pathname}?sync_config=${encoded}`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(syncUrl).then(() => {
+        alert('🔗 [다른 컴퓨터 원클릭 동기화 링크]가 클립보드에 복사되었습니다!\n\n다른 컴퓨터나 휴대폰의 웹 브라우저에서 이 링크를 한 번만 열면 모든 Firebase 및 이미지 서버 설정이 즉시 자동으로 동기화됩니다.');
+      }).catch(() => {
+        prompt('아래 동기화 링크를 복사하여 다른 컴퓨터에서 접속하세요:', syncUrl);
+      });
+    } else {
+      prompt('아래 동기화 링크를 복사하여 다른 컴퓨터에서 접속하세요:', syncUrl);
+    }
+  };
+
+  // 전체 설정 코드 복사 (JSON)
+  const handleCopyAllConfigJson = () => {
+    const configPayload = {
+      fbApiKey: fbApiKey || DEFAULT_FIREBASE_CONFIG.apiKey,
+      fbAuthDomain: fbAuthDomain || DEFAULT_FIREBASE_CONFIG.authDomain,
+      fbProjectId: fbProjectId || DEFAULT_FIREBASE_CONFIG.projectId,
+      fbStorageBucket: fbStorageBucket || DEFAULT_FIREBASE_CONFIG.storageBucket,
+      fbMessagingSenderId: fbMessagingSenderId || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+      fbAppId: fbAppId || DEFAULT_FIREBASE_CONFIG.appId,
+      fbDatabaseURL: fbDatabaseURL || DEFAULT_FIREBASE_CONFIG.databaseURL,
+      fbMeasurementId: fbMeasurementId || DEFAULT_FIREBASE_CONFIG.measurementId,
+      cloudName: cloudName,
+      uploadPreset: uploadPreset
+    };
+
+    const jsonStr = JSON.stringify(configPayload, null, 2);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(jsonStr).then(() => {
+        alert('📋 [설정 JSON 코드]가 복사되었습니다!\n\n다른 컴퓨터의 관리자 화면에서 [📥 설정 코드 붙여넣기]를 눌러 적용하실 수 있습니다.');
+      }).catch(() => {
+        prompt('설정 JSON 코드:', jsonStr);
+      });
+    } else {
+      prompt('설정 JSON 코드:', jsonStr);
+    }
+  };
+
+  // 설정 코드 붙여넣기 / 불러오기
+  const handlePasteAllConfigJson = () => {
+    const input = prompt('복사한 설정 JSON 코드 또는 동기화 링크(?sync_config=...)를 붙여넣어 주세요:');
+    if (!input || !input.trim()) return;
+
+    try {
+      let config: any = null;
+      const trimmed = input.trim();
+      
+      if (trimmed.includes('sync_config=') || trimmed.includes('fb_config=')) {
+        const match = trimmed.match(/[?&](?:sync_config|fb_config)=([^&#]+)/);
+        if (match && match[1]) {
+          const decoded = decodeURIComponent(atob(match[1]));
+          config = JSON.parse(decoded);
+        }
+      } else {
+        config = JSON.parse(trimmed);
+      }
+
+      if (!config) {
+        alert('올바른 설정 코드가 아닙니다.');
+        return;
+      }
+
+      if (config.fbApiKey) setFbApiKey(config.fbApiKey);
+      if (config.fbAuthDomain) setFbAuthDomain(config.fbAuthDomain);
+      if (config.fbProjectId) setFbProjectId(config.fbProjectId);
+      if (config.fbStorageBucket) setFbStorageBucket(config.fbStorageBucket);
+      if (config.fbMessagingSenderId) setFbMessagingSenderId(config.fbMessagingSenderId);
+      if (config.fbAppId) setFbAppId(config.fbAppId);
+      if (config.fbDatabaseURL) setFbDatabaseURL(config.fbDatabaseURL);
+      if (config.fbMeasurementId) setFbMeasurementId(config.fbMeasurementId);
+      if (config.cloudName) setCloudName(config.cloudName);
+      if (config.uploadPreset) setUploadPreset(config.uploadPreset);
+
+      // Save to localStorage directly
+      if (config.fbApiKey) localStorage.setItem('fb_api_key', config.fbApiKey);
+      if (config.fbAuthDomain) localStorage.setItem('fb_auth_domain', config.fbAuthDomain);
+      if (config.fbProjectId) localStorage.setItem('fb_project_id', config.fbProjectId);
+      if (config.fbStorageBucket) localStorage.setItem('fb_storage_bucket', config.fbStorageBucket);
+      if (config.fbMessagingSenderId) localStorage.setItem('fb_messaging_sender_id', config.fbMessagingSenderId);
+      if (config.fbAppId) localStorage.setItem('fb_app_id', config.fbAppId);
+      if (config.fbDatabaseURL) localStorage.setItem('fb_database_url', config.fbDatabaseURL);
+      if (config.fbMeasurementId) localStorage.setItem('fb_measurement_id', config.fbMeasurementId);
+      if (config.cloudName) localStorage.setItem('cloudinary_cloud_name', config.cloudName);
+      if (config.uploadPreset) localStorage.setItem('cloudinary_upload_preset', config.uploadPreset);
+
+      if (config.cloudName && config.uploadPreset) {
+        setCloudinaryConfig(config.cloudName, config.uploadPreset);
+        firestoreService.saveCloudinaryConfig(config.cloudName, config.uploadPreset);
+      }
+
+      alert('🎉 설정이 성공적으로 적용되었습니다! 새로고침합니다.');
+      window.location.reload();
+    } catch (e: any) {
+      alert('설정 코드를 파싱하는데 실패했습니다: ' + e.message);
+    }
   };
 
   const handleExportData = () => {
@@ -474,6 +939,7 @@ const AdminDashboard: React.FC<Props> = ({
       heroImages,
       menuItems,
       products,
+      customPackages,
       videos,
       posts,
       pageContents,
@@ -508,6 +974,7 @@ const AdminDashboard: React.FC<Props> = ({
     setHeroImages(HERO_IMAGES);
     setMenuItems(SUB_MENU_ITEMS);
     setProducts(INITIAL_PRODUCTS);
+    if (setCustomPackages) setCustomPackages(INITIAL_CUSTOM_PACKAGES);
     setPageContents(INITIAL_PAGE_CONTENTS);
     setVideos(INITIAL_VIDEOS);
     setPosts(INITIAL_POSTS);
@@ -516,30 +983,125 @@ const AdminDashboard: React.FC<Props> = ({
     alert('초기 데이터로 복구되었습니다. 잠시 후 서버와 동기화됩니다.');
   };
 
+  const handleSyncFromGoogleSheet = async () => {
+    if (!confirm('구글 시트에서 데이터를 가져와 상품 목록을 업데이트하시겠습니까? (기존 상품 목록에 추가됩니다)')) return;
+    
+    setIsSyncing(true);
+    try {
+      const sheetData = await fetchGoogleSheetData();
+      if (sheetData && sheetData.length > 0) {
+        const newProducts: Product[] = sheetData.map((row, index) => {
+          const productName = row['상품명'] || row['productName'] || row['name'] || row['col_2'] || '새 상품';
+          const priceStr = String(row['기본 단가'] || row['price'] || row['col_3'] || '0').replace(/,/g, '');
+          const theme = String(row['테마'] || row['theme'] || row['category'] || row['col_1'] || '').trim();
+          
+          let type: 'golf' | 'tour' | 'hotel' = 'tour';
+          if (theme.includes('골프')) type = 'golf';
+          if (theme.includes('호텔') || theme.includes('숙박')) type = 'hotel';
+
+          return {
+            id: `gs-${Date.now()}-${index}`,
+            title: String(productName),
+            description: String(row['설명'] || row['description'] || row['col_5'] || '구글 시트에서 가져온 상품입니다.'),
+            image: String(row['이미지'] || row['image'] || row['col_6'] || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800'),
+            price: parseInt(priceStr) || 0,
+            location: String(row['지역'] || row['location'] || row['col_0'] || '지역').trim(),
+            duration: String(row['기간'] || row['duration'] || '3박 5일'),
+            type: type,
+            itinerary: []
+          };
+        });
+
+        // 중복 체크 (제목 기준)
+        const existingTitles = new Set(products.map(p => p.title));
+        const uniqueNewProducts = newProducts.filter(p => !existingTitles.has(p.title));
+
+        if (uniqueNewProducts.length === 0) {
+          alert('새로 추가할 상품이 없습니다. (이미 모든 상품이 등록되어 있습니다)');
+        } else {
+          setProducts([...uniqueNewProducts, ...products]);
+          alert(`${uniqueNewProducts.length}개의 새로운 상품이 구글 시트에서 성공적으로 동기화되었습니다!`);
+        }
+      } else {
+        alert('구글 시트에서 데이터를 가져오지 못했습니다. 시트 설정을 확인해주세요.');
+      }
+    } catch (error) {
+      console.error("Sync Error:", error);
+      alert('동기화 중 오류가 발생했습니다.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-4 animate-fade-in-up">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-        <h1 className="text-2xl font-bold text-deepgreen flex items-center gap-2">
-           <span className="text-3xl">🛠️</span> MANGO TOUR 관리 센터
-        </h1>
-        <div className="flex gap-2">
-            <button onClick={handleResetToDefaults} className="px-6 py-2 bg-red-50 text-red-600 rounded-full font-bold hover:bg-red-100 transition text-sm flex items-center gap-2">
-               <span>🔄</span> 데이터 초기화
-            </button>
-            <button onClick={handleExportData} className="px-6 py-2 bg-gray-600 text-white rounded-full font-bold hover:bg-gray-700 transition text-sm flex items-center gap-2">
-               <span>💾</span> 데이터 백업
-            </button>
-            <button onClick={() => setShowCloudinaryConfig(!showCloudinaryConfig)} className="px-6 py-2 bg-pink-50 text-pink-600 rounded-full font-bold hover:bg-pink-100 transition text-sm flex items-center gap-2">
-               <span>🖼️</span> 이미지 서버 설정
-            </button>
-            <button onClick={() => setShowFirebaseConfig(!showFirebaseConfig)} className="px-6 py-2 bg-orange-50 text-orange-600 rounded-full font-bold hover:bg-orange-100 transition text-sm flex items-center gap-2">
-               <span>🔥</span> Firebase 연동 설정
-            </button>
-            <button onClick={() => setShowDriveConfig(!showDriveConfig)} className="px-6 py-2 bg-blue-50 text-blue-600 rounded-full font-bold hover:bg-blue-100 transition text-sm flex items-center gap-2">
-               <span>☁️</span> 구글 드라이브 연동 설정
-            </button>
-            <button onClick={() => setCurrentPage('home')} className="px-6 py-2 bg-gray-100 text-gray-600 rounded-full font-bold hover:bg-gray-200 transition text-sm">나가기</button>
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-6 animate-fade-in-up">
+      {/* Top Bar: Title & Back Button */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-black text-deepgreen flex items-center gap-2">
+            <span className="text-2xl sm:text-3xl">🛠️</span> MANGO TOUR 관리 센터
+          </h1>
+          <p className="text-xs text-gray-500 mt-0.5">베트남 골프/투어 통합 관리 및 실시간 클라우드 연동</p>
         </div>
+        <div className="self-end sm:self-auto shrink-0">
+          <BackButton onClick={() => setCurrentPage('home')} variant="light" label="메인으로 나가기" className="px-3.5 py-2 text-xs sm:text-sm shadow-xs font-bold" />
+        </div>
+      </div>
+
+      {/* Top Quick Actions Grid (좌우 여백 없이 칸에 딱 맞게 정렬) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 w-full mb-4">
+        <button 
+          type="button"
+          onClick={handleResetToDefaults} 
+          className="w-full py-2.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs active:scale-98"
+        >
+          <span className="shrink-0 text-base">🔄</span>
+          <span className="truncate">데이터 초기화</span>
+        </button>
+        <button 
+          type="button"
+          onClick={handleExportData} 
+          className="w-full py-2.5 px-3 bg-gray-700 hover:bg-gray-800 text-white border border-gray-700 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs active:scale-98"
+        >
+          <span className="shrink-0 text-base">💾</span>
+          <span className="truncate">데이터 백업</span>
+        </button>
+        <button 
+          type="button"
+          onClick={() => setShowCloudinaryConfig(!showCloudinaryConfig)} 
+          className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 ${
+            showCloudinaryConfig 
+              ? 'bg-pink-600 text-white border-pink-600' 
+              : 'bg-pink-50 hover:bg-pink-100 text-pink-700 border-pink-200'
+          }`}
+        >
+          <span className="shrink-0 text-base">🖼️</span>
+          <span className="truncate">이미지 서버 설정</span>
+        </button>
+        <button 
+          type="button"
+          onClick={() => setShowFirebaseConfig(!showFirebaseConfig)} 
+          className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 ${
+            showFirebaseConfig 
+              ? 'bg-orange-600 text-white border-orange-600' 
+              : 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200'
+          }`}
+        >
+          <span className="shrink-0 text-base">🔥</span>
+          <span className="truncate">Firebase 연동 설정</span>
+        </button>
+        <button 
+          type="button"
+          onClick={() => setShowDriveConfig(!showDriveConfig)} 
+          className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 col-span-2 sm:col-span-1 md:col-span-1 ${
+            showDriveConfig 
+              ? 'bg-blue-600 text-white border-blue-600' 
+              : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
+          }`}
+        >
+          <span className="shrink-0 text-base">☁️</span>
+          <span className="truncate">구글 드라이브 연동</span>
+        </button>
       </div>
 
       {/* Global Upload Loading Indicator */}
@@ -572,38 +1134,73 @@ const AdminDashboard: React.FC<Props> = ({
 
       {/* Cloudinary Config Panel */}
       {showCloudinaryConfig && (
-        <div className="bg-pink-50 border border-pink-100 rounded-2xl p-6 mb-8 animate-fade-in">
-            <h3 className="text-lg font-bold text-pink-800 mb-4 flex items-center gap-2">🖼️ Cloudinary 이미지/비디오 서버 설정</h3>
-            <p className="text-xs text-pink-600 mb-4">Firebase Storage 생성이 안 될 경우 사용하는 강력한 대안입니다. 무료로 사용 가능합니다.</p>
+        <div className="bg-pink-50 border border-pink-100 rounded-2xl p-6 mb-8 animate-fade-in shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-pink-800 flex items-center gap-2">
+                  🖼️ Cloudinary 이미지/비디오 서버 설정
+                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold border border-emerald-200">
+                    🌐 클라우드 자동 동기화 지원
+                  </span>
+                </h3>
+                <p className="text-xs text-pink-600 mt-1">
+                  여기서 저장한 설정은 <strong>Firestore 클라우드 DB</strong>에 저장되어, <strong>다른 컴퓨터나 휴대폰에서 접속하더라도 자동으로 동일한 이미지 서버 설정이 적용</strong>됩니다.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopySyncUrl}
+                  className="px-3 py-1.5 bg-white border border-pink-300 text-pink-700 hover:bg-pink-100 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-xs"
+                >
+                  🔗 다른 PC 동기화 링크 복사
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label className="block text-[10px] font-bold text-pink-600 mb-1">Cloud Name</label>
-                    <input type="text" value={cloudName} onChange={e => setCloudName(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm" placeholder="your_cloud_name" />
+                    <input type="text" value={cloudName} onChange={e => setCloudName(e.target.value)} className="w-full p-2.5 rounded-lg border border-pink-200 bg-white focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm" placeholder="your_cloud_name" />
                 </div>
                 <div>
                     <label className="block text-[10px] font-bold text-pink-600 mb-1">Upload Preset (Unsigned)</label>
-                    <input type="text" value={uploadPreset} onChange={e => setUploadPreset(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-pink-300 text-sm" placeholder="your_preset_name" />
+                    <input type="text" value={uploadPreset} onChange={e => setUploadPreset(e.target.value)} className="w-full p-2.5 rounded-lg border border-pink-200 bg-white focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm" placeholder="your_preset_name" />
                 </div>
             </div>
-            <div className="flex justify-end">
-                <button 
-                    onClick={handleSaveCloudinaryConfig} 
-                    className="px-6 py-2 bg-pink-600 text-white rounded-lg font-bold text-sm hover:bg-pink-700 transition shadow-md"
-                >
-                    설정 저장
-                </button>
-            </div>
-            <div className="mt-4 p-4 bg-white/80 rounded-xl text-xs text-pink-700 space-y-2 border border-pink-200">
-                <p className="font-bold text-sm flex items-center gap-2">⚠️ Cloudinary 설정 필수 체크리스트</p>
-                <div className="space-y-1.5 pl-1">
-                  <p>1. <b>Cloud Name:</b> 대시보드 메인에 있는 이름을 정확히 입력하세요.</p>
-                  <p>2. <b>Upload Preset:</b> Settings &gt; Upload &gt; Upload presets에서 생성한 이름을 입력하세요.</p>
-                  <p className="text-red-600 font-bold bg-red-50 p-1 rounded">3. Signing Mode: 반드시 'Unsigned'로 설정해야 합니다. (Signed로 되어 있으면 "Unknown API key" 에러가 발생합니다.)</p>
-                  <p>4. <b>Incoming Transformation:</b> 비디오 업로드 시 에러가 난다면 이 설정을 비워두세요.</p>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div className="text-xs text-pink-700 font-medium">
+                  {cloudName && uploadPreset ? (
+                    <span className="text-emerald-700 flex items-center gap-1 font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                      현재 이미지 서버 연동 활성화 상태 (Cloud: {cloudName})
+                    </span>
+                  ) : (
+                    <span className="text-amber-700">⚠️ 이미지 서버 미설정 시 기본 저장소 또는 Base64로 처리됩니다.</span>
+                  )}
                 </div>
-                <div className="pt-2 border-t border-pink-100 mt-2">
-                  <a href="https://cloudinary.com/console/settings/upload" target="_blank" className="inline-flex items-center gap-1 bg-pink-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-pink-700 transition">
-                    Cloudinary 설정 페이지 바로가기 ↗
+                <div className="flex gap-2">
+                  <button 
+                      onClick={handleSaveCloudinaryConfig} 
+                      className="px-6 py-2 bg-pink-600 text-white rounded-lg font-bold text-sm hover:bg-pink-700 transition shadow-md flex items-center gap-1.5"
+                  >
+                      <span>💾</span> 설정 저장 및 클라우드 동기화
+                  </button>
+                </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-white/90 rounded-xl text-xs text-pink-800 space-y-2 border border-pink-200">
+                <p className="font-bold text-sm flex items-center gap-2">⚠️ Cloudinary 설정 가이드 및 다른 기기 적용</p>
+                <div className="space-y-1.5 pl-1 text-[11px] leading-relaxed text-gray-700">
+                  <p>1. <b>클라우드 자동 공유:</b> 여기서 [설정 저장] 버튼을 누르면 Firebase에 자동 저장되어 다른 PC에서 새로고침만 해도 동일한 이미지 서버가 바로 동작합니다.</p>
+                  <p>2. <b>Cloud Name:</b> Cloudinary 메인 대시보드 상단의 이름을 입력하세요.</p>
+                  <p>3. <b>Upload Preset:</b> Settings &gt; Upload &gt; Upload presets에서 생성한 <strong>Unsigned</strong> 프리셋 이름을 입력하세요.</p>
+                  <p className="text-rose-700 font-bold bg-rose-50 p-1.5 rounded border border-rose-200">※ Signing Mode는 반드시 'Unsigned'여야 브라우저에서 직접 다이렉트 업로드가 가능합니다.</p>
+                </div>
+                <div className="pt-2 border-t border-pink-100 mt-2 flex flex-wrap gap-2">
+                  <a href="https://cloudinary.com/console/settings/upload" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 bg-pink-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-pink-700 transition text-xs">
+                    Cloudinary 콘솔 설정 페이지 바로가기 ↗
                   </a>
                 </div>
             </div>
@@ -612,51 +1209,117 @@ const AdminDashboard: React.FC<Props> = ({
 
       {/* Firebase Config Panel */}
       {showFirebaseConfig && (
-        <div className="bg-orange-50 border border-orange-100 rounded-2xl p-6 mb-8 animate-fade-in">
-            <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center gap-2">🔥 Firebase 실시간 DB 설정</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-600 mb-1">API Key</label>
-                    <input type="password" value={fbApiKey} onChange={e => setFbApiKey(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="AIza..." />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Auth Domain</label>
-                    <input type="text" value={fbAuthDomain} onChange={e => setFbAuthDomain(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="your-project.firebaseapp.com" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Project ID</label>
-                    <input type="text" value={fbProjectId} onChange={e => setFbProjectId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="your-project-id" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Storage Bucket</label>
-                    <input type="text" value={fbStorageBucket} onChange={e => setFbStorageBucket(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="your-project.appspot.com" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Messaging Sender ID</label>
-                    <input type="text" value={fbMessagingSenderId} onChange={e => setFbMessagingSenderId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="123456789" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-600 mb-1">App ID</label>
-                    <input type="text" value={fbAppId} onChange={e => setFbAppId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="1:123456:web:abc123" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Database URL (Optional)</label>
-                    <input type="text" value={fbDatabaseURL} onChange={e => setFbDatabaseURL(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="https://your-db.firebaseio.com" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-600 mb-1">Measurement ID (Optional)</label>
-                    <input type="text" value={fbMeasurementId} onChange={e => setFbMeasurementId(e.target.value)} className="w-full p-2 rounded border focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm" placeholder="G-XXXXXX" />
-                </div>
-            </div>
-            <div className="flex justify-end">
-                <button 
-                    onClick={handleSaveFirebaseConfig} 
-                    className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700 transition shadow-md"
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 mb-8 animate-fade-in shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-orange-900 flex items-center gap-2">
+                  🔥 Firebase 실시간 DB 및 다른 컴퓨터 연동
+                  <span className="text-[10px] bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-bold border border-orange-300">
+                    다중 컴퓨터/기기 동기화 지원
+                  </span>
+                </h3>
+                <p className="text-xs text-orange-700 mt-1">
+                  다른 컴퓨터나 모바일 기기에서도 동일한 실시간 데이터베이스를 사용하려면 아래의 <strong>[원클릭 동기화 링크]</strong> 또는 <strong>[설정 코드 복사]</strong> 기능을 사용하세요.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopySyncUrl}
+                  className="px-3 py-1.5 bg-orange-600 text-white hover:bg-orange-700 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm"
+                  title="다른 컴퓨터에서 열기만 하면 모든 연동 설정이 자동 완료되는 링크를 복사합니다."
                 >
-                    설정 저장 및 새로고침
+                  🔗 다른 PC 원클릭 동기화 링크 복사
                 </button>
+                <button
+                  type="button"
+                  onClick={handleCopyAllConfigJson}
+                  className="px-3 py-1.5 bg-white border border-orange-300 text-orange-800 hover:bg-orange-100 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-xs"
+                  title="전체 설정을 JSON 텍스트로 복사합니다."
+                >
+                  📋 설정 코드 복사 (JSON)
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePasteAllConfigJson}
+                  className="px-3 py-1.5 bg-white border border-orange-300 text-orange-800 hover:bg-orange-100 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-xs"
+                  title="복사한 JSON 또는 동기화 링크를 붙여넣어 즉시 적용합니다."
+                >
+                  📥 설정 코드 붙여넣기
+                </button>
+              </div>
             </div>
-            <p className="text-[10px] text-orange-400 mt-3">* Firebase 콘솔의 '프로젝트 설정'에서 확인한 값을 입력해 주세요. 저장 후 앱이 새로고침됩니다.</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1">API Key</label>
+                    <input type="password" value={fbApiKey} onChange={e => setFbApiKey(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="AIza..." />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Auth Domain</label>
+                    <input type="text" value={fbAuthDomain} onChange={e => setFbAuthDomain(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="your-project.firebaseapp.com" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Project ID</label>
+                    <input type="text" value={fbProjectId} onChange={e => setFbProjectId(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="your-project-id" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Storage Bucket</label>
+                    <input type="text" value={fbStorageBucket} onChange={e => setFbStorageBucket(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="your-project.appspot.com" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Messaging Sender ID</label>
+                    <input type="text" value={fbMessagingSenderId} onChange={e => setFbMessagingSenderId(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="123456789" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1">App ID</label>
+                    <input type="text" value={fbAppId} onChange={e => setFbAppId(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="1:123456:web:abc123" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Database URL (Optional)</label>
+                    <input type="text" value={fbDatabaseURL} onChange={e => setFbDatabaseURL(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="https://your-db.firebaseio.com" />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Measurement ID (Optional)</label>
+                    <input type="text" value={fbMeasurementId} onChange={e => setFbMeasurementId(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="G-XXXXXX" />
+                </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleResetFirebaseConfig}
+                  className="text-xs text-orange-700 hover:text-orange-900 underline font-semibold transition"
+                >
+                  🔄 기본 권장 설정으로 초기화
+                </button>
+                <div className="flex gap-2">
+                  <button 
+                      onClick={handleSaveFirebaseConfig} 
+                      className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700 transition shadow-md flex items-center gap-1.5"
+                  >
+                      <span>💾</span> 설정 저장 및 새로고침
+                  </button>
+                </div>
+            </div>
+
+            {/* 다른 컴퓨터 접속 및 동기화 안내 박스 */}
+            <div className="mt-4 p-4 bg-white/90 rounded-xl text-xs text-orange-900 border border-orange-200 space-y-2.5">
+                <p className="font-bold text-sm text-orange-950 flex items-center gap-1.5">
+                  💡 다른 컴퓨터에서 동일하게 연동하여 사용하는 3가지 방법
+                </p>
+                <ul className="space-y-1.5 text-[11px] leading-relaxed text-gray-700 pl-1">
+                  <li>
+                    <strong className="text-orange-800">방법 1 (가장 쉬움 - 원클릭 링크):</strong> 우측 상단의 <strong>[🔗 다른 PC 원클릭 동기화 링크 복사]</strong>를 클릭한 뒤, 다른 컴퓨터의 웹 브라우저 주소창에 붙여넣어 접속하시면 Firebase 및 이미지 서버 설정이 1초 만에 자동 동기화됩니다.
+                  </li>
+                  <li>
+                    <strong className="text-orange-800">방법 2 (설정 코드 복사/붙여넣기):</strong> <strong>[📋 설정 코드 복사]</strong>를 눌러 코드를 복사한 뒤, 다른 컴퓨터의 관리자 화면에서 <strong>[📥 설정 코드 붙여넣기]</strong>를 누르면 즉시 모든 설정값이 채워지고 적용됩니다.
+                  </li>
+                  <li>
+                    <strong className="text-orange-800">방법 3 (이미지 서버 자동 동기화):</strong> Cloudinary 이미지 서버 설정은 Firebase DB에 클라우드 자동 저장되므로, 동일한 Firebase 프로젝트에 연결되어 있다면 이미지 서버 설정은 아무것도 입력하지 않아도 자동으로 동기화됩니다.
+                  </li>
+                </ul>
+            </div>
         </div>
       )}
 
@@ -717,29 +1380,39 @@ const AdminDashboard: React.FC<Props> = ({
         </div>
       )}
       
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4 border-b-2 border-gray-100 overflow-x-auto pb-1 scrollbar-hide">
-        {[
-          { id: 'users', label: '👥 회원' },
-          { id: 'hero', label: '🖼️ 슬라이드' },
-          { id: 'products', label: '🛍️ 상품' },
-          { id: 'pages', label: '📄 페이지' },
-          { id: 'popup', label: '🔔 팝업' },
-          { id: 'menu', label: '🔘 메뉴' },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-6 py-3 font-bold rounded-t-xl transition-all whitespace-nowrap ${
-              activeTab === tab.id ? 'bg-deepgreen text-white shadow-lg -translate-y-1' : 'bg-gray-50 text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Navigation Tabs (좌우 여백 없이 칸에 딱 맞게 배치된 세련된 탭 바) */}
+      <div className="w-full mb-5 bg-gray-100/90 p-1.5 rounded-2xl border border-gray-200/80 shadow-xs">
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 sm:gap-1.5 w-full">
+          {[
+            { id: 'users', icon: '👥', label: '회원' },
+            { id: 'hero', icon: '🖼️', label: '슬라이드' },
+            { id: 'products', icon: '🛍️', label: '일반 상품' },
+            { id: 'planner', icon: '⛳', label: '맞춤 여행' },
+            { id: 'pages', icon: '📄', label: '페이지' },
+            { id: 'popup', icon: '🔔', label: '팝업' },
+            { id: 'menu', icon: '🔘', label: '메뉴' },
+          ].map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`w-full py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all text-center ${
+                  isActive
+                    ? 'bg-deepgreen text-white shadow-md'
+                    : 'text-gray-600 hover:text-deepgreen hover:bg-white/80'
+                }`}
+              >
+                <span className="text-sm shrink-0">{tab.icon}</span>
+                <span className="truncate">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-gray-50 min-h-[600px]">
+      <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-100 min-h-[600px]">
         {/* Hero Slide */}
         {activeTab === 'hero' && (
            <div className="animate-fade-in-up">
@@ -780,6 +1453,13 @@ const AdminDashboard: React.FC<Props> = ({
                   className="bg-blue-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-blue-600 transition text-sm"
                 >
                   VND -&gt; USD 변환
+                </button>
+                <button 
+                  onClick={handleSyncFromGoogleSheet}
+                  disabled={isSyncing}
+                  className={`bg-green-600 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-green-700 transition text-sm flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-wait' : ''}`}
+                >
+                  {isSyncing ? '🔄 동기화 중...' : '📊 구글 시트 동기화'}
                 </button>
                 <button 
                   onClick={() => {
@@ -919,15 +1599,668 @@ const AdminDashboard: React.FC<Props> = ({
                      )}
 
                      <div className="flex gap-2 pt-2">
-                        <button onClick={() => setEditingProductId(editingProductId === p.id ? null : p.id)} className={`flex-1 py-2 rounded-xl font-bold text-xs transition ${editingProductId === p.id ? 'bg-gold-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
-                           {editingProductId === p.id ? '편집 완료' : '상세 편집'}
+                        <button 
+                          type="button"
+                          onClick={() => setEditingProductId(editingProductId === p.id ? null : p.id)} 
+                          className={`flex-1 py-2 rounded-xl font-bold text-xs transition cursor-pointer ${editingProductId === p.id ? 'bg-gold-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                        >
+                          {editingProductId === p.id ? '편집 완료' : '상세 편집'}
                         </button>
-                        <button onClick={() => { if(confirm('이 상품을 영구 삭제하시겠습니까?')) setProducts(products.filter(item => item.id !== p.id)) }} className="px-4 py-2 bg-red-50 text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition">삭제</button>
+                        <button 
+                          type="button"
+                          onClick={() => setProductToDelete(p)} 
+                          className="px-4 py-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-xs font-bold transition border border-red-200 cursor-pointer active:scale-95"
+                        >
+                          삭제
+                        </button>
                      </div>
                    </div>
                  </div>
                ))}
             </div>
+          </div>
+        )}
+
+        {/* 맞춤 여행 상품 관리 (Planner Tab) */}
+        {activeTab === 'planner' && (
+          <div className="animate-fade-in-up space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
+                  <span>⛳</span> 맞춤 여행 / 골프 상품 관리 ({customPackages.length}개)
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  호치민, 붕따우, 달랏 등 다양한 지역의 맞춤 여행 상품을 관리하고, 기간(3박4일, 4박5일 등) 및 고객 선택 옵션(그린피, 호텔, 차량 등), 일차별 일정을 자유롭게 추가/축소할 수 있습니다.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResetPackageModal(true)}
+                  className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer border border-red-200"
+                >
+                  <span>🔄</span> 기본 상품 초기화
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddNewCustomPackage}
+                  className="px-5 py-2.5 bg-deepgreen text-white rounded-xl font-bold text-xs hover:bg-gold-600 transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                >
+                  <span>➕</span> 상품 등록
+                </button>
+              </div>
+            </div>
+
+            {/* Packages Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {customPackages.map((pkg) => (
+                <div 
+                  key={pkg.id} 
+                  className={`bg-white rounded-3xl border transition-all overflow-hidden flex flex-col justify-between ${
+                    editingPackage?.id === pkg.id 
+                      ? 'ring-4 ring-gold-400 border-gold-400 shadow-xl' 
+                      : 'border-gray-200 hover:shadow-lg'
+                  }`}
+                >
+                  <div>
+                    {/* Image & Badges */}
+                    <div 
+                      className="relative h-44 bg-gray-100 overflow-hidden cursor-pointer group"
+                      onClick={() => {
+                        setEditingPackage(pkg);
+                        setPackageModalTab('basic');
+                      }}
+                    >
+                      <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                        <span className="px-3 py-1.5 bg-gold-500 text-white font-black text-xs rounded-xl shadow-lg">
+                          ✏️ 클릭하여 편집창 열기
+                        </span>
+                      </div>
+                      <div className="absolute top-3 left-3 flex gap-1.5">
+                        <span className="px-2.5 py-1 bg-black/70 text-white rounded-lg text-[10px] font-bold">
+                          📍 {pkg.location}
+                        </span>
+                        <span className="px-2.5 py-1 bg-gold-500 text-white rounded-lg text-[10px] font-bold shadow">
+                          {pkg.duration}
+                        </span>
+                      </div>
+                      <div className="absolute bottom-3 right-3 px-3 py-1 bg-deepgreen/90 text-white rounded-xl text-xs font-black shadow">
+                        기본 ${pkg.basePriceUSD?.toLocaleString()}
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4 space-y-2.5">
+                      <div className="flex flex-wrap gap-1">
+                        {pkg.highlightBadges?.map((badge, bIdx) => (
+                          <span key={bIdx} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded">
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                      <h4 
+                        className="font-bold text-base text-gray-900 line-clamp-1 cursor-pointer hover:text-gold-600 transition"
+                        onClick={() => {
+                          setEditingPackage(pkg);
+                          setPackageModalTab('basic');
+                        }}
+                      >
+                        {pkg.title}
+                      </h4>
+                      <p className="text-xs text-gray-500 line-clamp-2">{pkg.subtitle}</p>
+                      
+                      <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-[11px] space-y-1">
+                        <div className="font-bold text-deepgreen">⛳ 골프 코스:</div>
+                        <div className="text-gray-600 line-clamp-1">{pkg.golfCourses?.join(' · ')}</div>
+                        <div className="font-bold text-gray-500 mt-1 flex justify-between items-center">
+                          <span>✓ 체크 옵션 항목: {pkg.options?.length || 0}개</span>
+                          <span>📅 일정: {pkg.itinerary?.length || 0}일차</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="p-4 pt-0 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPackage(pkg);
+                        setPackageModalTab('basic');
+                      }}
+                      className="flex-1 py-2.5 bg-gradient-to-r from-deepgreen to-gold-600 hover:from-gold-600 hover:to-deepgreen text-white rounded-xl font-bold text-xs transition shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                    >
+                      <span>⚙️</span> 상세 및 옵션 편집창 열기
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRequestDeletePackage(pkg)}
+                      className="px-3.5 py-2.5 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border border-red-200 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1 active:scale-95 cursor-pointer"
+                      title="상품 삭제"
+                    >
+                      <span>🗑️</span> 삭제
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Dedicated High-Priority Modal Window for Editing Package */}
+            {editingPackage && (
+              <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+                <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl border-2 border-gold-400 max-h-[92vh] flex flex-col overflow-hidden animate-scale-in my-auto">
+                  
+                  {/* Modal Header */}
+                  <div className="bg-gradient-to-r from-deepgreen via-gray-900 to-deepgreen text-white p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gold-500/40">
+                    <div className="flex items-center gap-3">
+                      <span className="w-10 h-10 rounded-2xl bg-gold-500 text-white font-black flex items-center justify-center text-lg shadow shrink-0">
+                        ⛳
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 bg-gold-400/20 text-gold-300 rounded-md text-[10px] font-black border border-gold-400/40">
+                            4박 5일 맞춤 골프 상품 편집기
+                          </span>
+                          <span className="text-xs text-emerald-300 font-bold">
+                            📍 {editingPackage.location} · {editingPackage.duration}
+                          </span>
+                        </div>
+                        <h3 className="text-base sm:text-xl font-black text-white line-clamp-1 mt-0.5">
+                          {editingPackage.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <button
+                        onClick={() => setEditingPackage(null)}
+                        className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition border border-white/20"
+                      >
+                        ✕ 닫기
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingPackage(null);
+                          alert('수정 내용이 안전하게 저장되었습니다.');
+                        }}
+                        className="px-4 py-2 bg-gold-500 hover:bg-gold-600 text-white text-xs font-black rounded-xl transition shadow-lg flex items-center gap-1 active:scale-95"
+                      >
+                        <span>✓</span> 편집 완료 & 저장
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Modal Navigation Tabs */}
+                  <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-2.5 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setPackageModalTab('basic')}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ${
+                        packageModalTab === 'basic'
+                          ? 'bg-deepgreen text-white shadow-md'
+                          : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      <span>📝</span> 기본 정보 & 이미지
+                    </button>
+                    <button
+                      onClick={() => setPackageModalTab('options')}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ${
+                        packageModalTab === 'options'
+                          ? 'bg-deepgreen text-white shadow-md'
+                          : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      <span>✓</span> 고객 선택 옵션 관리 ({editingPackage.options?.length || 0}개)
+                    </button>
+                    <button
+                      onClick={() => setPackageModalTab('itinerary')}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ${
+                        packageModalTab === 'itinerary'
+                          ? 'bg-deepgreen text-white shadow-md'
+                          : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      <span>📅</span> 4박 5일 일정표 ({editingPackage.itinerary?.length || 0}일차)
+                    </button>
+                  </div>
+
+                  {/* Modal Body Container */}
+                  <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
+
+                    {/* TAB 1: BASIC INFO */}
+                    {packageModalTab === 'basic' && (
+                      <div className="space-y-6 animate-fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                          <div className="md:col-span-2">
+                            <label className="font-bold text-gray-700 block mb-1">상품명 (타이틀) *</label>
+                            <input
+                              type="text"
+                              className="w-full p-3 bg-white border border-gray-300 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-gold-500"
+                              value={editingPackage.title}
+                              onChange={(e) => handlePackageFieldChange(editingPackage.id, 'title', e.target.value)}
+                              placeholder="예: [호치민 4박5일] 명문 3대 코스 54홀 프리미엄 골프"
+                            />
+                          </div>
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">지역 분류</label>
+                            <select
+                              className="w-full p-3 bg-white border border-gray-300 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-gold-500"
+                              value={editingPackage.location}
+                              onChange={(e) => handlePackageFieldChange(editingPackage.id, 'location', e.target.value)}
+                            >
+                              <option value="호치민">호치민</option>
+                              <option value="붕따우">붕따우</option>
+                              <option value="달랏">달랏</option>
+                              <option value="호치민+달랏">호치민+달랏</option>
+                              <option value="호치민+붕따우">호치민+붕따우</option>
+                              <option value="달랏+붕따우">달랏+붕따우</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">서브 타이틀 (한 줄 설명)</label>
+                            <input
+                              type="text"
+                              className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gold-500 font-bold"
+                              value={editingPackage.subtitle}
+                              onChange={(e) => handlePackageFieldChange(editingPackage.id, 'subtitle', e.target.value)}
+                              placeholder="예: 호치민 시내 중심 5성 호텔과 최고급 명문 골프장 3곳 라운딩"
+                            />
+                          </div>
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">여행 기간</label>
+                            <div className="flex flex-wrap gap-1.5 mb-1.5">
+                              {['2박 3일', '3박 4일', '4박 5일', '5박 6일', '6박 7일', '7박 8일'].map((dur) => (
+                                <button
+                                  key={dur}
+                                  type="button"
+                                  onClick={() => handlePackageFieldChange(editingPackage.id, 'duration', dur)}
+                                  className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition border ${
+                                    editingPackage.duration === dur
+                                      ? 'bg-deepgreen text-white border-deepgreen'
+                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-200'
+                                  }`}
+                                >
+                                  {dur}
+                                </button>
+                              ))}
+                            </div>
+                            <input
+                              type="text"
+                              className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gold-500 font-bold text-xs"
+                              value={editingPackage.duration}
+                              onChange={(e) => handlePackageFieldChange(editingPackage.id, 'duration', e.target.value)}
+                              placeholder="예: 4박 5일 또는 직접 입력"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Image Preview & URL/Upload */}
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
+                          <label className="font-bold text-gray-800 text-xs block">대표 썸네일 이미지</label>
+                          <div className="flex flex-col sm:flex-row gap-4 items-start">
+                            <div className="w-full sm:w-44 h-28 bg-gray-200 rounded-xl overflow-hidden border shrink-0">
+                              <img src={editingPackage.image} alt="Preview" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1 space-y-2 w-full">
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  className="flex-1 p-2 bg-white border border-gray-300 rounded-xl text-xs outline-none"
+                                  value={editingPackage.image}
+                                  onChange={(e) => handlePackageFieldChange(editingPackage.id, 'image', e.target.value)}
+                                  placeholder="이미지 URL 직접 입력"
+                                />
+                                <label className="px-4 py-2 bg-deepgreen text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-gold-600 whitespace-nowrap shadow-sm">
+                                  📁 파일 업로드
+                                  <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileUpload(e, (url) => handlePackageFieldChange(editingPackage.id, 'image', url))}
+                                  />
+                                </label>
+                              </div>
+                              <p className="text-[11px] text-gray-400">
+                                Unsplash 이미지 주소나 컴퓨터에 있는 골프장 사진 파일을 직접 업로드하실 수 있습니다.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">골프 코스 목록 (쉼표 , 로 구분)</label>
+                            <input
+                              type="text"
+                              className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gold-500"
+                              value={editingPackage.golfCourses?.join(', ') || ''}
+                              onChange={(e) => handlePackageFieldChange(editingPackage.id, 'golfCourses', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                              placeholder="예: 떤선녓 CC (18홀), 롱탄 CC (18홀), 트윈도브스 CC (18홀)"
+                            />
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {editingPackage.golfCourses?.map((gc, gcIdx) => (
+                                <span key={gcIdx} className="px-2 py-1 bg-deepgreen/10 text-deepgreen text-[10px] font-bold rounded-lg">
+                                  ⛳ {gc}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">하이라이트 배지 태그 (쉼표 , 로 구분)</label>
+                            <input
+                              type="text"
+                              className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gold-500"
+                              value={editingPackage.highlightBadges?.join(', ') || ''}
+                              onChange={(e) => handlePackageFieldChange(editingPackage.id, 'highlightBadges', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                              placeholder="예: 54홀 라운딩, 5성급 호텔, 전용 VIP 리무진"
+                            />
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {editingPackage.highlightBadges?.map((hb, hbIdx) => (
+                                <span key={hbIdx} className="px-2 py-1 bg-gold-100 text-gold-800 text-[10px] font-bold rounded-lg">
+                                  ★ {hb}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    )}
+
+                    {/* TAB 2: OPTIONS CHECKLIST MANAGER */}
+                    {packageModalTab === 'options' && (
+                      <div className="space-y-4 animate-fade-in">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b pb-3">
+                          <div>
+                            <h5 className="font-black text-base text-deepgreen flex items-center gap-1.5">
+                              <span>✓</span> 고객 선택 항목 리스트 (총 {editingPackage.options?.length || 0}개 항목)
+                            </h5>
+                            <p className="text-xs text-gray-500">
+                              고객이 견적 페이지에서 켜고 끌 수 있는 세부 항목입니다. 단가(USD)와 기본 포함 여부를 설정하세요.
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handlePackageOptionAdd(editingPackage.id)}
+                            className="px-4 py-2 bg-deepgreen hover:bg-gold-600 text-white rounded-xl text-xs font-black transition shadow-sm"
+                          >
+                            + 새 옵션 항목 추가
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {editingPackage.options?.map((opt, optIdx) => (
+                            <div key={opt.id || optIdx} className="bg-gray-50 hover:bg-gold-50/20 p-4 rounded-2xl border border-gray-200 transition space-y-3 text-xs">
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                                
+                                <div className="md:col-span-2">
+                                  <label className="text-[10px] text-gray-400 block font-bold mb-0.5">카테고리</label>
+                                  <select
+                                    value={opt.category}
+                                    onChange={(e) => handlePackageOptionChange(editingPackage.id, optIdx, 'category', e.target.value)}
+                                    className="w-full p-2 bg-white border rounded-xl text-xs font-bold outline-none"
+                                  >
+                                    <option value="golf">⛳ 골프</option>
+                                    <option value="hotel">🏨 숙박</option>
+                                    <option value="vehicle">🚐 차량</option>
+                                    <option value="meal">🦞 식사</option>
+                                    <option value="activity">💆 스파/투어</option>
+                                    <option value="guide">👨‍💼 가이드</option>
+                                    <option value="flight">✈️ 항공</option>
+                                    <option value="etc">✨ 기타</option>
+                                  </select>
+                                </div>
+
+                                <div className="md:col-span-4">
+                                  <label className="text-[10px] text-gray-400 block font-bold mb-0.5">항목명 *</label>
+                                  <input
+                                    type="text"
+                                    value={opt.name}
+                                    onChange={(e) => handlePackageOptionChange(editingPackage.id, optIdx, 'name', e.target.value)}
+                                    className="w-full p-2 bg-white border rounded-xl font-bold text-xs outline-none focus:ring-1 focus:ring-gold-500"
+                                    placeholder="예: 3회 그린피 (54홀)"
+                                  />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                  <label className="text-[10px] text-gray-400 block font-bold mb-0.5">1인 단가 ($ USD) *</label>
+                                  <input
+                                    type="number"
+                                    value={opt.priceUSD}
+                                    onChange={(e) => handlePackageOptionChange(editingPackage.id, optIdx, 'priceUSD', parseInt(e.target.value) || 0)}
+                                    className="w-full p-2 bg-white border rounded-xl font-black text-xs text-deepgreen outline-none"
+                                  />
+                                </div>
+
+                                <div className="md:col-span-3 flex items-center gap-4 pt-4 md:pt-0">
+                                  <label className="flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1.5 rounded-lg border">
+                                    <input
+                                      type="checkbox"
+                                      checked={opt.isDefaultIncluded}
+                                      onChange={(e) => handlePackageOptionChange(editingPackage.id, optIdx, 'isDefaultIncluded', e.target.checked)}
+                                      className="w-4 h-4 text-deepgreen accent-deepgreen rounded cursor-pointer"
+                                    />
+                                    <span className="text-[11px] font-bold text-gray-700">기본포함</span>
+                                  </label>
+
+                                  <label className="flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1.5 rounded-lg border">
+                                    <input
+                                      type="checkbox"
+                                      checked={opt.isRequired}
+                                      onChange={(e) => handlePackageOptionChange(editingPackage.id, optIdx, 'isRequired', e.target.checked)}
+                                      className="w-4 h-4 text-red-500 accent-red-500 rounded cursor-pointer"
+                                    />
+                                    <span className="text-[11px] font-bold text-red-600">필수 항목</span>
+                                  </label>
+                                </div>
+
+                                <div className="md:col-span-1 text-right">
+                                  <button
+                                    onClick={() => handlePackageOptionRemove(editingPackage.id, optIdx)}
+                                    className="px-2.5 py-1.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg text-xs font-bold transition"
+                                    title="옵션 삭제"
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+
+                              </div>
+
+                              <div>
+                                <input
+                                  type="text"
+                                  placeholder="고객 안내용 세부 설명 (예: 전 일정 18홀 라운딩 3회 그린피 포함)"
+                                  value={opt.description || ''}
+                                  onChange={(e) => handlePackageOptionChange(editingPackage.id, optIdx, 'description', e.target.value)}
+                                  className="w-full p-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-600 outline-none"
+                                />
+                              </div>
+
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 3: ITINERARY MANAGER */}
+                    {packageModalTab === 'itinerary' && (
+                      <div className="space-y-4 animate-fade-in">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3">
+                          <div>
+                            <h5 className="font-black text-base text-deepgreen flex items-center gap-1.5">
+                              <span>📅</span> {editingPackage.duration || `${editingPackage.itinerary?.length || 0}일차`} 맞춤 일정표 관리 (총 {editingPackage.itinerary?.length || 0}일차)
+                            </h5>
+                            <p className="text-xs text-gray-500">
+                              일차를 자유롭게 추가하거나 줄일 수 있으며, 순서 변경 및 일차별 세부 활동을 구성하세요.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handlePackageItineraryDayAdd(editingPackage.id)}
+                            className="px-4 py-2 bg-deepgreen text-white rounded-xl text-xs font-bold hover:bg-gold-600 transition shadow-sm flex items-center gap-1 self-start sm:self-auto"
+                          >
+                            + 일차(Day) 추가
+                          </button>
+                        </div>
+
+                        {/* Quick Day Presets */}
+                        <div className="bg-emerald-50/80 p-3 rounded-2xl border border-emerald-200 flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-bold text-deepgreen">⚡ 빠른 일정 칸 수 조정:</span>
+                          {[
+                            { label: '3일 (2박 3일)', days: 3, dur: '2박 3일' },
+                            { label: '4일 (3박 4일)', days: 4, dur: '3박 4일' },
+                            { label: '5일 (4박 5일)', days: 5, dur: '4박 5일' },
+                            { label: '6일 (5박 6일)', days: 6, dur: '5박 6일' },
+                            { label: '7일 (6박 7일)', days: 7, dur: '6박 7일' },
+                          ].map(preset => (
+                            <button
+                              key={preset.days}
+                              type="button"
+                              onClick={() => handlePackageQuickDayAdjust(editingPackage.id, preset.days, preset.dur)}
+                              className="px-2.5 py-1 bg-white hover:bg-deepgreen hover:text-white text-gray-700 rounded-lg text-xs font-bold transition border border-emerald-300 shadow-xs active:scale-95"
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="space-y-4">
+                          {editingPackage.itinerary?.map((day, dIdx) => (
+                            <div key={dIdx} className="bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 space-y-3 text-xs">
+                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
+                                  <span className="px-3 py-1.5 bg-deepgreen text-white font-black rounded-xl text-xs shrink-0 shadow-xs">
+                                    Day {day.day}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={day.title}
+                                    onChange={(e) => handlePackageItineraryTitleChange(editingPackage.id, dIdx, e.target.value)}
+                                    placeholder="일정 제목 (예: 호치민 공항 도착 및 호텔 체크인)"
+                                    className="flex-1 p-2 bg-white border border-gray-300 rounded-xl font-bold text-xs outline-none focus:ring-1 focus:ring-gold-500"
+                                  />
+                                </div>
+                                
+                                <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                                  <button
+                                    type="button"
+                                    disabled={dIdx === 0}
+                                    onClick={() => handlePackageItineraryDayMove(editingPackage.id, dIdx, 'up')}
+                                    className="px-2 py-1 bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-30 rounded-lg text-xs font-bold transition"
+                                    title="위로 이동"
+                                  >
+                                    ▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={dIdx === (editingPackage.itinerary?.length || 0) - 1}
+                                    onClick={() => handlePackageItineraryDayMove(editingPackage.id, dIdx, 'down')}
+                                    className="px-2 py-1 bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-30 rounded-lg text-xs font-bold transition"
+                                    title="아래로 이동"
+                                  >
+                                    ▼
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePackageItineraryDayRemove(editingPackage.id, dIdx)}
+                                    className="text-red-500 font-bold text-xs hover:bg-red-50 px-2.5 py-1 rounded-lg transition border border-red-200"
+                                  >
+                                    일차 삭제
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2 pl-4 border-l-2 border-deepgreen/40">
+                                <label className="text-[11px] font-bold text-gray-500 block">세부 활동 목록:</label>
+                                {day.activities.map((act, aIdx) => (
+                                  <div key={aIdx} className="flex gap-2 items-center">
+                                    <span className="text-gray-400 text-xs font-bold">{aIdx + 1}.</span>
+                                    <input
+                                      type="text"
+                                      value={act}
+                                      onChange={(e) => handlePackageItineraryActivityChange(editingPackage.id, dIdx, aIdx, e.target.value)}
+                                      className="flex-1 p-2 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:border-gold-400"
+                                      placeholder="활동 내용 입력"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handlePackageItineraryActivityRemove(editingPackage.id, dIdx, aIdx)}
+                                      className="text-gray-400 hover:text-red-500 text-xs px-2 py-1"
+                                      title="활동 삭제"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ))}
+                                <button
+                                  type="button"
+                                  onClick={() => handlePackageItineraryActivityAdd(editingPackage.id, dIdx)}
+                                  className="text-deepgreen hover:underline text-xs font-black mt-1.5 inline-block"
+                                >
+                                  + 활동 추가
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="pt-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handlePackageItineraryDayAdd(editingPackage.id)}
+                            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-deepgreen font-black text-xs rounded-2xl transition border-2 border-dashed border-gray-300 flex items-center justify-center gap-1.5"
+                          >
+                            <span>➕</span> 새로운 일차(Day {(editingPackage.itinerary?.length || 0) + 1}) 추가하기
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* Modal Sticky Footer */}
+                  <div className="bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 font-bold">기본 산출가:</span>
+                        <span className="text-lg font-black text-deepgreen">${editingPackage.basePriceUSD?.toLocaleString()}</span>
+                        <span className="text-xs text-gray-400 font-bold">(약 {((editingPackage.basePriceUSD || 0) * 1360).toLocaleString()}원)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRequestDeletePackage(editingPackage)}
+                        className="px-3.5 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 rounded-xl font-bold text-xs transition border border-red-200 flex items-center gap-1 active:scale-95 cursor-pointer shadow-xs"
+                      >
+                        🗑️ 상품 삭제
+                      </button>
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <button
+                        onClick={() => setEditingPackage(null)}
+                        className="flex-1 sm:flex-none px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xs rounded-xl transition"
+                      >
+                        닫기
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingPackage(null);
+                          alert('수정 내용이 저장되었습니다.');
+                        }}
+                        className="flex-1 sm:flex-none px-6 py-2.5 bg-deepgreen hover:bg-gold-600 text-white font-black text-xs rounded-xl shadow-md transition active:scale-95"
+                      >
+                        ✓ 편집 완료 및 닫기
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1351,6 +2684,159 @@ const AdminDashboard: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {/* 0. General Product Delete Confirmation Modal */}
+      {productToDelete && (
+        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-red-200 overflow-hidden animate-scale-in p-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
+              🛍️
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-black text-gray-900">일반 상품 삭제</h4>
+              <p className="text-xs text-gray-500 mt-1">
+                선택하신 상품을 상품 목록 및 DB에서 영구히 삭제하시겠습니까?
+              </p>
+            </div>
+
+            <div className="bg-red-50/80 p-3.5 rounded-2xl border border-red-200 text-left flex items-center gap-3">
+              {productToDelete.image && (
+                <img 
+                  src={productToDelete.image} 
+                  alt={productToDelete.title} 
+                  className="w-12 h-12 rounded-xl object-cover border border-red-200 shrink-0" 
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold text-red-600">[{productToDelete.type || '상품'}] {productToDelete.location} · {productToDelete.duration}</div>
+                <div className="text-xs font-black text-gray-900 truncate">{productToDelete.title}</div>
+                <div className="text-[11px] text-gray-500 font-bold mt-0.5">${productToDelete.price?.toLocaleString()}</div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setProductToDelete(null)}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteProduct}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-black text-xs rounded-xl transition shadow-md shadow-red-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+              >
+                <span>🗑️</span> 영구 삭제하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Custom Trip Package Delete Confirmation Modal */}
+      {packageToDelete && (
+        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-red-200 overflow-hidden animate-scale-in p-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
+              🗑️
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-black text-gray-900">맞춤 여행 상품 삭제</h4>
+              <p className="text-xs text-gray-500 mt-1">
+                선택하신 상품을 데이터베이스 및 목록에서 영구히 삭제하시겠습니까?
+              </p>
+            </div>
+
+            <div className="bg-red-50/80 p-3.5 rounded-2xl border border-red-200 text-left flex items-center gap-3">
+              {packageToDelete.image && (
+                <img 
+                  src={packageToDelete.image} 
+                  alt={packageToDelete.title} 
+                  className="w-12 h-12 rounded-xl object-cover border border-red-200 shrink-0" 
+                />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold text-red-600">📍 {packageToDelete.location} · {packageToDelete.duration}</div>
+                <div className="text-xs font-black text-gray-900 truncate">{packageToDelete.title}</div>
+                <div className="text-[11px] text-gray-500 font-bold mt-0.5">기본 ${packageToDelete.basePriceUSD?.toLocaleString()}</div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setPackageToDelete(null)}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeletePackage}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-black text-xs rounded-xl transition shadow-md shadow-red-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+              >
+                <span>🗑️</span> 영구 삭제하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Custom Trip Package Reset Confirmation Modal */}
+      {showResetPackageModal && (
+        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-amber-200 overflow-hidden animate-scale-in p-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
+              🔄
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-black text-gray-900">맞춤 상품 목록 기본값 복구</h4>
+              <p className="text-xs text-gray-500 mt-1">
+                현재 등록/수정된 맞춤 여행 상품 목록을 초기 표준 10개 상품 데이터로 덮어쓰시겠습니까?
+              </p>
+            </div>
+
+            <div className="bg-amber-50 p-3 rounded-2xl border border-amber-200 text-xs text-amber-800 font-bold text-left">
+              ⚠️ 주의: 사용자가 임의로 추가하거나 수정한 맞춤 여행 상품이 기본 템플릿 데이터로 초기화됩니다.
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetPackageModal(false)}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmResetPackages}
+                className="flex-1 py-3 bg-amber-600 hover:bg-amber-700 text-white font-black text-xs rounded-xl transition shadow-md shadow-amber-200 active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+              >
+                <span>🔄</span> 기본값으로 복구
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Floating Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[10001] bg-gray-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3 animate-fade-in-up">
+          <span className="text-sm font-black">{toastMessage}</span>
+          <button 
+            type="button" 
+            onClick={() => setToastMessage(null)}
+            className="text-white/60 hover:text-white text-xs font-bold ml-2"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };

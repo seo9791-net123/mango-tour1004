@@ -1,34 +1,35 @@
-import Papa from 'papaparse';
 
-export interface Product {
-  상품명: string;
-  지역: string;
-  일: string;
-  가격: string;
-  포함사항: string;
+/**
+ * 구글 시트 데이터를 가져오는 서비스
+ * Spreadsheet ID: 1uNgl7yiBS1UsLIWUmRI8M3Qin-wNmKmq8EqFio7YlJ0
+ */
+
+export interface SheetRow {
+  [key: string]: string;
 }
 
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1U_dxaQcuI7sGGCjTNJAxLgIEXmAatBve0q5lhi_rgFU/export?format=csv&gid=0';
-
-export const fetchProductsFromSheet = async (): Promise<Product[]> => {
+export const fetchGoogleSheetData = async (sheetId: string = '1uNgl7yiBS1UsLIWUmRI8M3Qin-wNmKmq8EqFio7YlJ0'): Promise<SheetRow[]> => {
   try {
-    const response = await fetch(SHEET_URL);
-    const csvText = await response.text();
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+    const response = await fetch(url);
+    const text = await response.text();
     
-    return new Promise((resolve, reject) => {
-      Papa.parse<Product>(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          resolve(results.data);
-        },
-        error: (error: Error) => {
-          reject(error);
-        }
+    // Google Sheets JSON response has a prefix that needs to be removed
+    const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+    const data = JSON.parse(jsonString);
+    
+    const cols = data.table.cols.map((col: any) => col.label || 'column');
+    const rows = data.table.rows.map((row: any) => {
+      const rowData: SheetRow = {};
+      row.c.forEach((cell: any, i: number) => {
+        rowData[cols[i] || `col_${i}`] = cell ? (cell.v !== null ? String(cell.v) : '') : '';
       });
+      return rowData;
     });
+    
+    return rows;
   } catch (error) {
-    console.error('Error fetching products from Google Sheet:', error);
+    console.error("Error fetching Google Sheet data:", error);
     return [];
   }
 };
