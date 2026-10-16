@@ -172,7 +172,7 @@ ${inquiryText || '(내용 없음)'}
             {/* Footer Terms */}
             <div className="mt-4 pt-3 border-t border-gray-100 text-[10px] sm:text-xs text-gray-500 text-center leading-relaxed">
               <p>※ MANGO TOUR : 59 LE VAN THIEM PMH Q7. HOCHIMINH</p>
-              <p>Contact: +84 77 803 8743</p>
+              <p>Contact: <a href="tel:+84377204451" className="hover:text-deepgreen underline font-semibold">+84 37 720 4451</a></p>
             </div>
           </div>
         </div>
@@ -216,7 +216,7 @@ ${inquiryText || '(내용 없음)'}
                   자동으로 복사되어 상담이 수월해집니다.
                 </p>
                 
-                <div className="grid grid-cols-2 gap-2.5 mb-4">
+                <div className="grid grid-cols-2 gap-2.5 mb-3">
                   <div 
                     onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
                     className="flex flex-col items-center p-3 bg-yellow-50 rounded-xl border border-yellow-200 cursor-pointer hover:bg-yellow-100 active:scale-95 transition text-center"
@@ -241,6 +241,25 @@ ${inquiryText || '(내용 없음)'}
                     <p className="text-[10px] text-gray-500 font-bold">카카오톡 ID</p>
                     <p className="text-xs font-bold text-gray-900">vnseen1</p>
                   </div>
+                </div>
+
+                {/* Direct Phone Call Button */}
+                <div className="mb-4">
+                  <a 
+                    href="tel:+84377204451"
+                    className="flex items-center justify-between p-2.5 px-3.5 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition text-emerald-900 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📞</span>
+                      <div className="text-left">
+                        <p className="text-[10px] font-bold text-emerald-700">전화 직접 상담</p>
+                        <p className="text-xs font-black text-emerald-950">+84 37 720 4451</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-lg group-hover:bg-emerald-700 transition">
+                      전화걸기
+                    </span>
+                  </a>
                 </div>
 
                 <div className="mb-4">

@@ -136,6 +136,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, onBack }) => {
       text += `📝 [고객 요청사항]\n${customerNotes}\n`;
     }
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `📞 망고투어 고객센터: +84 37 720 4451\n`;
     text += `📧 이메일 접수처: seo9791@gmail.com\n`;
     text += `💬 실시간 1:1 카카오톡 상담: https://open.kakao.com/o/gSfNsh3h`;
     return text;
@@ -866,6 +867,14 @@ export const TripPlanner: React.FC<Props> = ({ packages, onBack }) => {
                         </span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Brand & Phone Footer in Quotation Card */}
+                  <div className="pt-2 text-[10px] text-gray-400 border-t border-gray-100 flex items-center justify-between">
+                    <span>MANGO TOUR GOLF & TRAVEL</span>
+                    <a href="tel:+84377204451" className="hover:text-deepgreen font-bold text-gray-600">
+                      TEL: +84 37 720 4451
+                    </a>
                   </div>
                 </div>
 
