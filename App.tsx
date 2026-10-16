@@ -38,7 +38,10 @@ const App: React.FC = () => {
   // Data State
   const [heroImages, setHeroImages] = useState<string[]>(HERO_IMAGES);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(SUB_MENU_ITEMS);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('mango_products_db');
+    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+  });
   const [videos, setVideos] = useState<VideoItem[]>(INITIAL_VIDEOS);
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
@@ -81,7 +84,15 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  // Persist custom packages locally as well
+  // Persist products and custom packages locally as well
+  useEffect(() => {
+    try {
+      localStorage.setItem('mango_products_db', JSON.stringify(products));
+    } catch (e) {
+      console.warn("Failed to persist products:", e);
+    }
+  }, [products]);
+
   useEffect(() => {
     try {
       localStorage.setItem('mango_custom_packages_db', JSON.stringify(customPackages));
@@ -224,6 +235,11 @@ const App: React.FC = () => {
 
   const handleUpdateProducts = async (newProducts: Product[]) => {
     setProducts(newProducts);
+    try {
+      localStorage.setItem('mango_products_db', JSON.stringify(newProducts));
+    } catch (e) {
+      console.warn("Failed to write products to localStorage:", e);
+    }
     debouncedSyncProducts(newProducts);
   };
 

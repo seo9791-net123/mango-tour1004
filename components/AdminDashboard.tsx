@@ -385,16 +385,31 @@ const AdminDashboard: React.FC<Props> = ({
     handleProductFieldChange(productId, 'detailImages', detailImages);
   };
 
-  const handleConfirmDeleteProduct = async () => {
-    if (!productToDelete) return;
-    const prodId = productToDelete.id;
+  const handleDeleteProduct = (product: Product, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const confirmed = window.confirm(`[상품 삭제 확인]\n\n'${product.title}' 상품을 삭제하시겠습니까?`);
+    if (confirmed) {
+      executeDeleteProduct(product);
+    }
+  };
+
+  const executeDeleteProduct = async (target: Product) => {
+    const prodId = target.id;
     const updated = products.filter(item => item.id !== prodId);
     setProducts(updated);
+    try {
+      localStorage.setItem('mango_products_db', JSON.stringify(updated));
+    } catch (e) {
+      console.warn("Failed to write products to localStorage:", e);
+    }
     if (editingProductId === prodId) {
       setEditingProductId(null);
     }
     setProductToDelete(null);
-    showToast('🗑️ 일반 상품이 삭제되었습니다.');
+    showToast(`🗑️ '${target.title}' 상품이 삭제되었습니다.`);
     try {
       if (db && navigator.onLine) {
         await deleteDoc(doc(db, 'products', prodId));
@@ -402,6 +417,11 @@ const AdminDashboard: React.FC<Props> = ({
     } catch (e) {
       console.warn("Direct Firestore delete failed for product:", e);
     }
+  };
+
+  const handleConfirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    await executeDeleteProduct(productToDelete);
   };
 
   // --- Custom Trip Packages (4박 5일 골프 여행 상품) Handlers ---
@@ -635,13 +655,20 @@ const AdminDashboard: React.FC<Props> = ({
     }, 3500);
   };
 
-  const handleRequestDeletePackage = (pkg: CustomTripPackage) => {
-    setPackageToDelete(pkg);
+  const handleDeletePackage = (pkg: CustomTripPackage, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const confirmed = window.confirm(`[맞춤 여행 상품 삭제 확인]\n\n'${pkg.title}' (${pkg.location} / ${pkg.duration}) 상품을 삭제하시겠습니까?`);
+    if (confirmed) {
+      executeDeletePackage(pkg);
+    }
   };
 
-  const handleConfirmDeletePackage = async () => {
-    if (!packageToDelete || !setCustomPackages) return;
-    const pkgId = packageToDelete.id;
+  const executeDeletePackage = async (target: CustomTripPackage) => {
+    if (!setCustomPackages) return;
+    const pkgId = target.id;
     const updated = customPackages.filter(p => p.id !== pkgId);
     
     // 1. React State 즉시 반영
@@ -661,7 +688,7 @@ const AdminDashboard: React.FC<Props> = ({
     
     // 4. 모달 닫기 및 알림
     setPackageToDelete(null);
-    showToast('🗑️ 상품이 성공적으로 삭제되었습니다.');
+    showToast(`🗑️ '${target.title}' 상품이 성공적으로 삭제되었습니다.`);
 
     // 5. Firebase Firestore 실시간 삭제
     try {
@@ -671,6 +698,15 @@ const AdminDashboard: React.FC<Props> = ({
     } catch (e) {
       console.warn("Direct Firestore delete failed:", e);
     }
+  };
+
+  const handleRequestDeletePackage = (pkg: CustomTripPackage) => {
+    setPackageToDelete(pkg);
+  };
+
+  const handleConfirmDeletePackage = async () => {
+    if (!packageToDelete) return;
+    await executeDeletePackage(packageToDelete);
   };
 
   const handleConfirmResetPackages = () => {
@@ -1608,10 +1644,10 @@ const AdminDashboard: React.FC<Props> = ({
                         </button>
                         <button 
                           type="button"
-                          onClick={() => setProductToDelete(p)} 
-                          className="px-4 py-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-xs font-bold transition border border-red-200 cursor-pointer active:scale-95"
+                          onClick={(e) => handleDeleteProduct(p, e)} 
+                          className="px-4 py-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-xs font-bold transition border border-red-200 cursor-pointer active:scale-95 flex items-center gap-1"
                         >
-                          삭제
+                          <span>🗑️</span> 삭제
                         </button>
                      </div>
                    </div>
@@ -1735,7 +1771,7 @@ const AdminDashboard: React.FC<Props> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleRequestDeletePackage(pkg)}
+                      onClick={(e) => handleDeletePackage(pkg, e)}
                       className="px-3.5 py-2.5 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white border border-red-200 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1 active:scale-95 cursor-pointer"
                       title="상품 삭제"
                     >
@@ -1772,7 +1808,14 @@ const AdminDashboard: React.FC<Props> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeletePackage(editingPackage, e)}
+                        className="px-3.5 py-2 bg-red-600/80 hover:bg-red-600 text-white text-xs font-bold rounded-xl transition border border-red-400/40 flex items-center gap-1 active:scale-95"
+                      >
+                        <span>🗑️</span> 상품 삭제
+                      </button>
                       <button
                         onClick={() => setEditingPackage(null)}
                         className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition border border-white/20"
