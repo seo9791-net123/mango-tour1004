@@ -18,8 +18,8 @@ import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
 import TripPlanner from './components/TripPlanner';
 import BottomNav from './components/BottomNav';
-import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES } from './constants';
-import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage } from './types';
+import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage, MasterOptionPool } from './types';
 import { firestoreService } from './services/firestoreService';
 import { debounce } from './utils/debounce';
 
@@ -49,6 +49,10 @@ const App: React.FC = () => {
   const [customPackages, setCustomPackages] = useState<CustomTripPackage[]>(() => {
     const saved = localStorage.getItem('mango_custom_packages_db');
     return saved ? JSON.parse(saved) : INITIAL_CUSTOM_PACKAGES;
+  });
+  const [masterOptionPool, setMasterOptionPool] = useState<MasterOptionPool>(() => {
+    const saved = localStorage.getItem('mango_master_options_pool_db');
+    return saved ? JSON.parse(saved) : INITIAL_MASTER_OPTION_POOL;
   });
   const [showPopup, setShowPopup] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -84,7 +88,7 @@ const App: React.FC = () => {
     }
   }, [user]);
 
-  // Persist products and custom packages locally as well
+  // Persist products, custom packages, and master option pool locally
   useEffect(() => {
     try {
       localStorage.setItem('mango_products_db', JSON.stringify(products));
@@ -100,6 +104,14 @@ const App: React.FC = () => {
       console.warn("Failed to persist custom packages:", e);
     }
   }, [customPackages]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mango_master_options_pool_db', JSON.stringify(masterOptionPool));
+    } catch (e) {
+      console.warn("Failed to persist master options pool:", e);
+    }
+  }, [masterOptionPool]);
 
   // --- Firestore Integration Handlers ---
 
@@ -273,6 +285,15 @@ const App: React.FC = () => {
     debouncedSyncCustomPackages(newPkgs);
   };
 
+  const handleUpdateMasterOptionPool = (newPool: MasterOptionPool) => {
+    setMasterOptionPool(newPool);
+    try {
+      localStorage.setItem('mango_master_options_pool_db', JSON.stringify(newPool));
+    } catch (e) {
+      console.warn("Failed to write master options pool to localStorage:", e);
+    }
+  };
+
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('mango_users_db');
     return saved ? JSON.parse(saved) : [
@@ -439,6 +460,7 @@ const App: React.FC = () => {
             menuItems={menuItems} setMenuItems={handleUpdateMenuItems} 
             products={products} setProducts={handleUpdateProducts}
             customPackages={customPackages} setCustomPackages={handleUpdateCustomPackages}
+            masterOptionPool={masterOptionPool} setMasterOptionPool={handleUpdateMasterOptionPool}
             pageContents={pageContents} setPageContents={handleUpdatePageContents}
             videos={videos} setVideos={handleUpdateVideos}
             posts={posts} setPosts={handleUpdatePosts}
@@ -465,7 +487,7 @@ const App: React.FC = () => {
               ) : selectedCategory === '비지니스' ? (
                 <BusinessPage content={pageContents['business']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '여행 만들기' ? (
-                <TripPlanner packages={customPackages} onBack={() => setCurrentPage('home')} />
+                <TripPlanner packages={customPackages} masterOptionPool={masterOptionPool} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '호텔&빌라' ? (
                 <HotelVillaPage content={pageContents['hotel']} onBack={() => setCurrentPage('home')} />
               ) : selectedCategory === '골프' ? (

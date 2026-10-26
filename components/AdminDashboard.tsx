@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide, CustomTripPackage, PackageOptionItem } from '../types';
+import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
 import { 
   INITIAL_PRODUCTS, 
   INITIAL_VIDEOS, 
@@ -9,7 +9,8 @@ import {
   SUB_MENU_ITEMS, 
   INITIAL_PAGE_CONTENTS,
   INITIAL_POPUP,
-  INITIAL_CUSTOM_PACKAGES 
+  INITIAL_CUSTOM_PACKAGES,
+  INITIAL_MASTER_OPTION_POOL 
 } from '../constants';
 import { driveService } from '../services/googleDriveService';
 import { fetchGoogleSheetData } from '../services/googleSheetService';
@@ -30,6 +31,8 @@ interface Props {
   setProducts: (products: Product[]) => void;
   customPackages?: CustomTripPackage[];
   setCustomPackages?: (packages: CustomTripPackage[]) => void;
+  masterOptionPool?: MasterOptionPool;
+  setMasterOptionPool?: (pool: MasterOptionPool) => void;
   pageContents: Record<string, PageContent>;
   setPageContents: (contents: Record<string, PageContent>) => void;
   videos: VideoItem[];
@@ -51,6 +54,8 @@ const AdminDashboard: React.FC<Props> = ({
   setProducts,
   customPackages = INITIAL_CUSTOM_PACKAGES,
   setCustomPackages,
+  masterOptionPool = INITIAL_MASTER_OPTION_POOL,
+  setMasterOptionPool,
   pageContents,
   setPageContents,
   videos,
@@ -62,6 +67,30 @@ const AdminDashboard: React.FC<Props> = ({
   setCurrentPage
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'menu' | 'popup'>('users');
+  const [plannerSubTab, setPlannerSubTab] = useState<'packages' | 'masterPool'>('packages');
+  const [poolCategory, setPoolCategory] = useState<'golf' | 'hotel' | 'vehicle' | 'guide' | 'meal'>('golf');
+  
+  // Master Pool item creation modal states
+  const [showAddPoolModal, setShowAddPoolModal] = useState(false);
+  const [newPoolItem, setNewPoolItem] = useState<{
+    category: 'golf' | 'hotel' | 'vehicle' | 'guide' | 'meal';
+    name: string;
+    location: string;
+    holes?: number;
+    type?: 'hotel_5star' | 'hotel_4star' | 'pool_villa' | 'resort';
+    priceDeltaUSD: number;
+    description: string;
+    badge: string;
+  }>({
+    category: 'golf',
+    name: '',
+    location: '호치민',
+    holes: 18,
+    type: 'hotel_5star',
+    priceDeltaUSD: 0,
+    description: '',
+    badge: ''
+  });
   
   const heroFileInputRef = useRef<HTMLInputElement>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -646,6 +675,166 @@ const AdminDashboard: React.FC<Props> = ({
     setEditingPackage(newPkg);
     setPackageModalTab('basic');
     showToast('✨ 새 맞춤 여행 상품이 생성되었습니다.');
+  };
+
+  // Master Pool Handlers
+  const handleUpdateMasterOptionPoolItem = (
+    category: 'golf' | 'hotel' | 'vehicle' | 'guide' | 'meal',
+    id: string,
+    field: string,
+    value: any
+  ) => {
+    if (!setMasterOptionPool) return;
+    const pool = { ...masterOptionPool };
+    if (category === 'golf') {
+      pool.golfCourses = pool.golfCourses.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'hotel') {
+      pool.accommodations = pool.accommodations.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'vehicle') {
+      pool.vehicles = pool.vehicles.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'guide') {
+      pool.guides = pool.guides.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'meal') {
+      pool.meals = pool.meals.map(item => item.id === id ? { ...item, [field]: value } : item);
+    }
+    setMasterOptionPool(pool);
+    try {
+      localStorage.setItem('mango_master_options_pool_db', JSON.stringify(pool));
+    } catch (e) {
+      console.warn("Storage error", e);
+    }
+    showToast('💾 변경사항이 저장되었습니다.');
+  };
+
+  const handleDeleteMasterOptionPoolItem = (
+    category: 'golf' | 'hotel' | 'vehicle' | 'guide' | 'meal',
+    id: string,
+    itemName: string
+  ) => {
+    if (!window.confirm(`[맞춤 풀 항목 삭제]\n\n'${itemName}' 항목을 삭제하시겠습니까?`)) return;
+    if (!setMasterOptionPool) return;
+    const pool = { ...masterOptionPool };
+    if (category === 'golf') {
+      pool.golfCourses = pool.golfCourses.filter(item => item.id !== id);
+    } else if (category === 'hotel') {
+      pool.accommodations = pool.accommodations.filter(item => item.id !== id);
+    } else if (category === 'vehicle') {
+      pool.vehicles = pool.vehicles.filter(item => item.id !== id);
+    } else if (category === 'guide') {
+      pool.guides = pool.guides.filter(item => item.id !== id);
+    } else if (category === 'meal') {
+      pool.meals = pool.meals.filter(item => item.id !== id);
+    }
+    setMasterOptionPool(pool);
+    try {
+      localStorage.setItem('mango_master_options_pool_db', JSON.stringify(pool));
+    } catch (e) {
+      console.warn("Storage error", e);
+    }
+    showToast(`🗑️ '${itemName}' 항목이 삭제되었습니다.`);
+  };
+
+  const handleAddNewPoolItemSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPoolItem.name.trim()) {
+      alert('항목 이름을 입력해주세요.');
+      return;
+    }
+    if (!setMasterOptionPool) return;
+    const pool = { ...masterOptionPool };
+    const newItemId = `pool-${Date.now()}`;
+
+    if (newPoolItem.category === 'golf') {
+      pool.golfCourses = [
+        {
+          id: newItemId,
+          name: newPoolItem.name,
+          location: newPoolItem.location || '호치민',
+          holes: newPoolItem.holes || 18,
+          priceDeltaUSD: Number(newPoolItem.priceDeltaUSD) || 0,
+          description: newPoolItem.description || '',
+          badge: newPoolItem.badge || ''
+        },
+        ...pool.golfCourses
+      ];
+    } else if (newPoolItem.category === 'hotel') {
+      pool.accommodations = [
+        {
+          id: newItemId,
+          name: newPoolItem.name,
+          location: newPoolItem.location || '호치민',
+          type: newPoolItem.type || 'hotel_5star',
+          priceDeltaUSD: Number(newPoolItem.priceDeltaUSD) || 0,
+          description: newPoolItem.description || '',
+          badge: newPoolItem.badge || ''
+        },
+        ...pool.accommodations
+      ];
+    } else if (newPoolItem.category === 'vehicle') {
+      pool.vehicles = [
+        {
+          id: newItemId,
+          name: newPoolItem.name,
+          priceDeltaUSD: Number(newPoolItem.priceDeltaUSD) || 0,
+          description: newPoolItem.description || '',
+          badge: newPoolItem.badge || ''
+        },
+        ...pool.vehicles
+      ];
+    } else if (newPoolItem.category === 'guide') {
+      pool.guides = [
+        {
+          id: newItemId,
+          name: newPoolItem.name,
+          priceDeltaUSD: Number(newPoolItem.priceDeltaUSD) || 0,
+          description: newPoolItem.description || '',
+          badge: newPoolItem.badge || ''
+        },
+        ...pool.guides
+      ];
+    } else if (newPoolItem.category === 'meal') {
+      pool.meals = [
+        {
+          id: newItemId,
+          name: newPoolItem.name,
+          priceDeltaUSD: Number(newPoolItem.priceDeltaUSD) || 0,
+          description: newPoolItem.description || '',
+          badge: newPoolItem.badge || ''
+        },
+        ...pool.meals
+      ];
+    }
+    setMasterOptionPool(pool);
+    try {
+      localStorage.setItem('mango_master_options_pool_db', JSON.stringify(pool));
+    } catch (e) {
+      console.warn("Storage error", e);
+    }
+    setShowAddPoolModal(false);
+    setNewPoolItem({
+      category: 'golf',
+      name: '',
+      location: '호치민',
+      holes: 18,
+      type: 'hotel_5star',
+      priceDeltaUSD: 0,
+      description: '',
+      badge: ''
+    });
+    showToast('✨ 새 맞춤 옵션 항목이 풀(Pool)에 추가되었습니다.');
+  };
+
+  const handleResetMasterOptionPool = () => {
+    if (!window.confirm('맞춤 옵션 풀(Pool) 데이터를 초기 기본값(호치민, 붕따우, 달랏 명문 골프장 및 호텔/풀빌라 전체)으로 복원하시겠습니까?')) return;
+    if (setMasterOptionPool) {
+      setMasterOptionPool(INITIAL_MASTER_OPTION_POOL);
+      try {
+        localStorage.setItem('mango_master_options_pool_db', JSON.stringify(INITIAL_MASTER_OPTION_POOL));
+      } catch (e) {
+        console.warn("Storage error", e);
+      }
+    }
+    showToast('🔄 맞춤 옵션 풀(Pool)이 기본 표준 데이터로 복원되었습니다.');
   };
 
   const showToast = (msg: string) => {
@@ -1660,35 +1849,64 @@ const AdminDashboard: React.FC<Props> = ({
         {/* 맞춤 여행 상품 관리 (Planner Tab) */}
         {activeTab === 'planner' && (
           <div className="animate-fade-in-up space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
-                  <span>⛳</span> 맞춤 여행 / 골프 상품 관리 ({customPackages.length}개)
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  호치민, 붕따우, 달랏 등 다양한 지역의 맞춤 여행 상품을 관리하고, 기간(3박4일, 4박5일 등) 및 고객 선택 옵션(그린피, 호텔, 차량 등), 일차별 일정을 자유롭게 추가/축소할 수 있습니다.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowResetPackageModal(true)}
-                  className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer border border-red-200"
-                >
-                  <span>🔄</span> 기본 상품 초기화
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAddNewCustomPackage}
-                  className="px-5 py-2.5 bg-deepgreen text-white rounded-xl font-bold text-xs hover:bg-gold-600 transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
-                >
-                  <span>➕</span> 상품 등록
-                </button>
-              </div>
+            {/* Top Sub-Nav Tabs for Planner */}
+            <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setPlannerSubTab('packages')}
+                className={`flex-1 py-3 text-xs sm:text-sm font-black rounded-xl transition flex items-center justify-center gap-2 ${
+                  plannerSubTab === 'packages'
+                    ? 'bg-deepgreen text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>📦</span> 4박 5일 패키지 상품 관리 ({customPackages.length}개)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlannerSubTab('masterPool')}
+                className={`flex-1 py-3 text-xs sm:text-sm font-black rounded-xl transition flex items-center justify-center gap-2 ${
+                  plannerSubTab === 'masterPool'
+                    ? 'bg-deepgreen text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>🌐</span> 맞춤 선택 풀(Pool) 관리 (골프장·숙박·차량 등)
+              </button>
             </div>
 
-            {/* Packages Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* SUB-VIEW 1: PACKAGES MANAGEMENT */}
+            {plannerSubTab === 'packages' && (
+              <>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
+                      <span>⛳</span> 4박 5일 맞춤 골프 상품 관리 ({customPackages.length}개)
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      호치민, 붕따우, 달랏 등 각 지역 패키지의 대표 이미지, 기본 금액, 일정표, 그리고 체크리스트 항목을 관리합니다.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowResetPackageModal(true)}
+                      className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer border border-red-200"
+                    >
+                      <span>🔄</span> 기본 상품 초기화
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddNewCustomPackage}
+                      className="px-5 py-2.5 bg-deepgreen text-white rounded-xl font-bold text-xs hover:bg-gold-600 transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                    >
+                      <span>➕</span> 상품 등록
+                    </button>
+                  </div>
+                </div>
+
+                {/* Packages Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {customPackages.map((pkg) => (
                 <div 
                   key={pkg.id} 
@@ -2301,6 +2519,553 @@ const AdminDashboard: React.FC<Props> = ({
                     </div>
                   </div>
 
+                </div>
+              </div>
+            )}
+            </>
+            )}
+
+            {/* SUB-VIEW 2: MASTER OPTIONS POOL MANAGEMENT */}
+            {plannerSubTab === 'masterPool' && (
+              <div className="space-y-6 animate-fade-in">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
+                      <span>🌐</span> 맞춤 선택 풀(Pool) 관리 센터
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1 max-w-2xl leading-relaxed">
+                      고객이 여행 견적을 낼 때 각 일정별로 직접 선택/변경할 수 있는 <strong>골프장 리스트(호치민, 붕따우, 달랏 등)</strong> 및 <strong>숙박(5성급 호텔, 프라이빗 독채 풀빌라 등)</strong>의 마스터 풀입니다. 여기서 추가/수정된 내용은 플래너에 즉시 반영됩니다.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResetMasterOptionPool}
+                      className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer border border-red-200"
+                    >
+                      <span>🔄</span> 기본 풀로 초기화
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewPoolItem({
+                          category: poolCategory,
+                          name: '',
+                          location: '호치민',
+                          holes: 18,
+                          type: 'hotel_5star',
+                          priceDeltaUSD: 0,
+                          description: '',
+                          badge: ''
+                        });
+                        setShowAddPoolModal(true);
+                      }}
+                      className="px-5 py-2.5 bg-deepgreen text-white rounded-xl font-bold text-xs hover:bg-gold-600 transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                    >
+                      <span>➕</span> 새 옵션 항목 추가
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pool Category Selector */}
+                <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                  {[
+                    { id: 'golf' as const, label: '⛳ 골프장 풀', count: masterOptionPool.golfCourses?.length || 0 },
+                    { id: 'hotel' as const, label: '🏨 숙박/풀빌라 풀', count: masterOptionPool.accommodations?.length || 0 },
+                    { id: 'vehicle' as const, label: '🚐 차량 옵션 풀', count: masterOptionPool.vehicles?.length || 0 },
+                    { id: 'guide' as const, label: '👨‍💼 가이드 풀', count: masterOptionPool.guides?.length || 0 },
+                    { id: 'meal' as const, label: '🦞 식사 옵션 풀', count: masterOptionPool.meals?.length || 0 },
+                  ].map(cat => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setPoolCategory(cat.id)}
+                      className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black whitespace-nowrap transition-all flex items-center gap-2 ${
+                        poolCategory === cat.id
+                          ? 'bg-deepgreen text-white shadow-md scale-102'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span>{cat.label}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        poolCategory === cat.id ? 'bg-gold-500 text-white' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {cat.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* CATEGORY 1: GOLF COURSES */}
+                {poolCategory === 'golf' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200">
+                      <div className="text-xs text-emerald-900">
+                        <strong className="font-black">⛳ 등록된 라운딩 골프장: 총 {masterOptionPool.golfCourses?.length || 0}개</strong>
+                        <span className="block text-[11px] text-emerald-700 mt-0.5">
+                          고객이 4박 5일 플래너에서 라운딩 코스 변경 버튼을 눌렀을 때 나타나는 골프장 목록입니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPoolItem({
+                            category: 'golf',
+                            name: '',
+                            location: '호치민',
+                            holes: 18,
+                            type: 'hotel_5star',
+                            priceDeltaUSD: 0,
+                            description: '',
+                            badge: ''
+                          });
+                          setShowAddPoolModal(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
+                      >
+                        + 골프장 추가
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {masterOptionPool.golfCourses?.map((gc) => (
+                        <div key={gc.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2.5 py-0.5 bg-deepgreen text-white text-[10px] font-bold rounded-md">
+                                📍 {gc.location}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                                  {gc.holes}홀
+                                </span>
+                                {gc.badge && (
+                                  <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                                    {gc.badge}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">골프장 명칭</label>
+                              <input
+                                type="text"
+                                value={gc.name}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('golf', gc.id, 'name', e.target.value)}
+                                className="w-full font-bold text-sm text-gray-900 border-b border-gray-200 pb-1 outline-none focus:border-gold-500"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">지역</label>
+                                <select
+                                  value={gc.location}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('golf', gc.id, 'location', e.target.value)}
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-bold outline-none"
+                                >
+                                  <option value="호치민">호치민</option>
+                                  <option value="붕따우">붕따우</option>
+                                  <option value="달랏">달랏</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1인 가격차액 ($ USD)</label>
+                                <input
+                                  type="number"
+                                  value={gc.priceDeltaUSD}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('golf', gc.id, 'priceDeltaUSD', Number(e.target.value) || 0)}
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-black text-deepgreen outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">강조 뱃지 (선택)</label>
+                              <input
+                                type="text"
+                                value={gc.badge || ''}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('golf', gc.id, 'badge', e.target.value)}
+                                placeholder="예: 인기 1위, KLPGA 대회 등"
+                                className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">골프장 설명</label>
+                              <textarea
+                                value={gc.description}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('golf', gc.id, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full p-2 bg-gray-50 border rounded-xl text-xs text-gray-600 outline-none resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMasterOptionPoolItem('golf', gc.id, gc.name)}
+                              className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CATEGORY 2: ACCOMMODATIONS */}
+                {poolCategory === 'hotel' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200">
+                      <div className="text-xs text-blue-900">
+                        <strong className="font-black">🏨 등록된 숙박/풀빌라 옵션: 총 {masterOptionPool.accommodations?.length || 0}개</strong>
+                        <span className="block text-[11px] text-blue-700 mt-0.5">
+                          고객이 숙박 형태를 호텔 또는 단독 독채 풀빌라 등으로 변경할 때 표시되는 옵션 풀입니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPoolItem({
+                            category: 'hotel',
+                            name: '',
+                            location: '호치민',
+                            holes: 18,
+                            type: 'pool_villa',
+                            priceDeltaUSD: 60,
+                            description: '',
+                            badge: '독채 풀빌라'
+                          });
+                          setShowAddPoolModal(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
+                      >
+                        + 숙박/풀빌라 추가
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {masterOptionPool.accommodations?.map((acc) => (
+                        <div key={acc.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2.5 py-0.5 bg-blue-700 text-white text-[10px] font-bold rounded-md">
+                                📍 {acc.location}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
+                                  acc.type === 'pool_villa' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {acc.type === 'pool_villa' ? '독채 풀빌라' : acc.type === 'hotel_5star' ? '5성급 호텔' : acc.type === 'resort' ? '리조트' : '4성급 호텔'}
+                                </span>
+                                {acc.badge && (
+                                  <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                                    {acc.badge}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">숙박 명칭</label>
+                              <input
+                                type="text"
+                                value={acc.name}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('hotel', acc.id, 'name', e.target.value)}
+                                className="w-full font-bold text-sm text-gray-900 border-b border-gray-200 pb-1 outline-none focus:border-gold-500"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">타입</label>
+                                <select
+                                  value={acc.type}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('hotel', acc.id, 'type', e.target.value as any)}
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-bold outline-none"
+                                >
+                                  <option value="hotel_5star">5성급 호텔</option>
+                                  <option value="pool_villa">독채 풀빌라</option>
+                                  <option value="resort">리조트</option>
+                                  <option value="hotel_4star">4성급 호텔</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1인 가격차액 ($ USD)</label>
+                                <input
+                                  type="number"
+                                  value={acc.priceDeltaUSD}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('hotel', acc.id, 'priceDeltaUSD', Number(e.target.value) || 0)}
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-black text-blue-700 outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">숙박 설명</label>
+                              <textarea
+                                value={acc.description}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('hotel', acc.id, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full p-2 bg-gray-50 border rounded-xl text-xs text-gray-600 outline-none resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMasterOptionPoolItem('hotel', acc.id, acc.name)}
+                              className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CATEGORIES 3, 4, 5: VEHICLE, GUIDE, MEAL */}
+                {['vehicle', 'guide', 'meal'].includes(poolCategory) && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+                      <div className="text-xs text-gray-800">
+                        <strong className="font-black">
+                          {poolCategory === 'vehicle' ? '🚐 차량 옵션 풀' : poolCategory === 'guide' ? '👨‍💼 가이드 옵션 풀' : '🦞 식사 옵션 풀'}
+                        </strong>
+                        <span className="block text-[11px] text-gray-500 mt-0.5">
+                          고객이 플래너에서 선택할 수 있는 {poolCategory === 'vehicle' ? '차량' : poolCategory === 'guide' ? '가이드' : '식사'} 목록입니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPoolItem({
+                            category: poolCategory as any,
+                            name: '',
+                            location: '호치민',
+                            holes: 18,
+                            type: 'hotel_5star',
+                            priceDeltaUSD: 0,
+                            description: '',
+                            badge: ''
+                          });
+                          setShowAddPoolModal(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
+                      >
+                        + 새 옵션 추가
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {((poolCategory === 'vehicle' ? masterOptionPool.vehicles : poolCategory === 'guide' ? masterOptionPool.guides : masterOptionPool.meals) || []).map((item) => (
+                        <div key={item.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-bold text-sm text-gray-900">{item.name}</span>
+                              <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                                {item.badge || '옵션'}
+                              </span>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">항목명</label>
+                              <input
+                                type="text"
+                                value={item.name}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem(poolCategory as any, item.id, 'name', e.target.value)}
+                                className="w-full font-bold text-xs text-gray-900 border-b border-gray-200 pb-1 outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1인 가격차액 ($ USD)</label>
+                              <input
+                                type="number"
+                                value={item.priceDeltaUSD}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem(poolCategory as any, item.id, 'priceDeltaUSD', Number(e.target.value) || 0)}
+                                className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-black text-deepgreen outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">설명</label>
+                              <textarea
+                                value={item.description}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem(poolCategory as any, item.id, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full p-2 bg-gray-50 border rounded-xl text-xs text-gray-600 outline-none resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMasterOptionPoolItem(poolCategory as any, item.id, item.name)}
+                              className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Modal: Add New Pool Item */}
+            {showAddPoolModal && (
+              <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                <div className="bg-white max-w-lg w-full rounded-3xl p-6 shadow-2xl border border-gold-400 space-y-4 animate-scale-in">
+                  <div className="flex justify-between items-center border-b pb-3">
+                    <h4 className="text-base font-black text-deepgreen flex items-center gap-2">
+                      <span>➕</span> 새 맞춤 풀(Pool) 옵션 항목 등록
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPoolModal(false)}
+                      className="text-gray-400 hover:text-gray-600 font-bold text-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAddNewPoolItemSubmit} className="space-y-3.5 text-xs">
+                    <div>
+                      <label className="font-bold text-gray-700 block mb-1">옵션 분류</label>
+                      <select
+                        value={newPoolItem.category}
+                        onChange={(e) => setNewPoolItem({ ...newPoolItem, category: e.target.value as any })}
+                        className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
+                      >
+                        <option value="golf">⛳ 골프장 풀</option>
+                        <option value="hotel">🏨 숙박/풀빌라 풀</option>
+                        <option value="vehicle">🚐 차량 풀</option>
+                        <option value="guide">👨‍💼 가이드 풀</option>
+                        <option value="meal">🦞 식사 풀</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-gray-700 block mb-1">항목명 (골프장명 또는 숙박시설명) *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder={newPoolItem.category === 'golf' ? '예: 로얄 아일랜드 CC (18홀)' : newPoolItem.category === 'hotel' ? '예: 단독 럭셔리 프라이빗 풀빌라' : '항목명 입력'}
+                        value={newPoolItem.name}
+                        onChange={(e) => setNewPoolItem({ ...newPoolItem, name: e.target.value })}
+                        className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none focus:ring-2 focus:ring-gold-400"
+                      />
+                    </div>
+
+                    {(newPoolItem.category === 'golf' || newPoolItem.category === 'hotel') && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="font-bold text-gray-700 block mb-1">지역</label>
+                          <select
+                            value={newPoolItem.location}
+                            onChange={(e) => setNewPoolItem({ ...newPoolItem, location: e.target.value })}
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
+                          >
+                            <option value="호치민">호치민</option>
+                            <option value="붕따우">붕따우</option>
+                            <option value="달랏">달랏</option>
+                            <option value="무이네">무이네</option>
+                          </select>
+                        </div>
+                        {newPoolItem.category === 'golf' ? (
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">홀수</label>
+                            <select
+                              value={newPoolItem.holes || 18}
+                              onChange={(e) => setNewPoolItem({ ...newPoolItem, holes: Number(e.target.value) })}
+                              className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
+                            >
+                              <option value={18}>18홀</option>
+                              <option value={27}>27홀</option>
+                              <option value={36}>36홀</option>
+                            </select>
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">숙박 형태</label>
+                            <select
+                              value={newPoolItem.type || 'hotel_5star'}
+                              onChange={(e) => setNewPoolItem({ ...newPoolItem, type: e.target.value as any })}
+                              className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
+                            >
+                              <option value="hotel_5star">5성급 호텔</option>
+                              <option value="pool_villa">독채 풀빌라</option>
+                              <option value="resort">리조트</option>
+                              <option value="hotel_4star">4성급 호텔</option>
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">1인 가격 차액 ($ USD)</label>
+                        <input
+                          type="number"
+                          placeholder="0 (기준가 동일) 또는 +50, -30"
+                          value={newPoolItem.priceDeltaUSD}
+                          onChange={(e) => setNewPoolItem({ ...newPoolItem, priceDeltaUSD: Number(e.target.value) })}
+                          className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-black text-deepgreen outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-gray-700 block mb-1">강조 뱃지 (선택)</label>
+                        <input
+                          type="text"
+                          placeholder="예: 인기 1위, 바베큐 가능"
+                          value={newPoolItem.badge}
+                          onChange={(e) => setNewPoolItem({ ...newPoolItem, badge: e.target.value })}
+                          className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-gray-700 block mb-1">고객 안내용 세부 설명</label>
+                      <textarea
+                        rows={3}
+                        placeholder="골프장 위치, 특장점, 시설 설명 또는 객실/풀빌라 구성 안내"
+                        value={newPoolItem.description}
+                        onChange={(e) => setNewPoolItem({ ...newPoolItem, description: e.target.value })}
+                        className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none resize-none"
+                      />
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddPoolModal(false)}
+                        className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-3 bg-deepgreen hover:bg-gold-600 text-white font-black rounded-xl shadow transition"
+                      >
+                        등록 완료
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}

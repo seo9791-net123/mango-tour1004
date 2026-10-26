@@ -126,14 +126,71 @@ export interface TripPlanResult {
   };
 }
 
+export interface OptionChoiceItem {
+  id: string;
+  name: string;
+  category: 'golf' | 'hotel' | 'vehicle' | 'meal' | 'activity' | 'guide' | 'flight' | 'etc';
+  location?: string; // '호치민', '붕따우', '달랏', '전체'
+  priceDeltaUSD: number; // Delta against base option (can be 0, positive or negative)
+  description?: string;
+  badge?: string; // e.g. "인기 1위", "최고급", "풀빌라 독채"
+}
+
+export interface MasterOptionPool {
+  golfCourses: Array<{
+    id: string;
+    name: string;
+    location: string;
+    holes: number;
+    priceDeltaUSD: number;
+    description: string;
+    badge?: string;
+  }>;
+  accommodations: Array<{
+    id: string;
+    name: string;
+    location: string;
+    type: 'hotel_5star' | 'hotel_4star' | 'pool_villa' | 'resort';
+    priceDeltaUSD: number;
+    description: string;
+    badge?: string;
+  }>;
+  vehicles: Array<{
+    id: string;
+    name: string;
+    priceDeltaUSD: number;
+    description: string;
+    badge?: string;
+  }>;
+  guides: Array<{
+    id: string;
+    name: string;
+    priceDeltaUSD: number;
+    description: string;
+    badge?: string;
+  }>;
+  meals: Array<{
+    id: string;
+    name: string;
+    priceDeltaUSD: number;
+    description: string;
+    badge?: string;
+  }>;
+}
+
 export interface PackageOptionItem {
   id: string;
-  category: 'golf' | 'hotel' | 'vehicle' | 'meal' | 'activity' | 'guide' | 'etc';
+  category: 'golf' | 'hotel' | 'vehicle' | 'meal' | 'activity' | 'guide' | 'flight' | 'etc';
   name: string;
   description?: string;
   priceUSD: number; // Price per person in USD
   isDefaultIncluded: boolean;
   isRequired?: boolean;
+  allowCustomSelection?: boolean; // Can customer directly customize/change the item content?
+  choices?: OptionChoiceItem[]; // Specific selectable choices for this item
+  selectedChoiceId?: string; // Currently chosen choice ID
+  selectedChoiceName?: string; // Or custom text
+  dayScheduleCourses?: string[]; // E.g., for golf, array of course names chosen for each day: ['떤선녓 CC', '롱탄 CC', '트윈도브스 CC']
 }
 
 export interface CustomTripPackage {

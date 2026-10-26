@@ -1,5 +1,5 @@
 
-import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, CustomTripPackage } from './types';
+import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, CustomTripPackage, MasterOptionPool } from './types';
 
 export const LOCATIONS = ['호치민', '붕따우', '무이네', '달랏'];
 export const THEMES = ['골프', '관광', '먹거리', '비지니스'];
@@ -835,3 +835,63 @@ export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
   }
 ];
 
+export const INITIAL_MASTER_OPTION_POOL: MasterOptionPool = {
+  golfCourses: [
+    // Ho Chi Minh
+    { id: 'gc-hcm-1', name: '떤선녓 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: 0, description: '호치민 시내 20분 거리, 최상급 관리와 야간 라운딩 시설을 갖춘 최고 인기 36홀 명문 코스', badge: '인기 1위' },
+    { id: 'gc-hcm-2', name: '롱탄 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: 0, description: '아시아 최고 경관을 자랑하는 36홀 챔피언십 힐 & 레이크 코스, 아름다운 조경과 완벽한 잔디', badge: '베스트 뷰' },
+    { id: 'gc-hcm-3', name: '트윈도브스 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: 15, description: 'KLPGA 정규 투어 개최 멤버십 명문 코스, 까다롭고 도전적인 그린과 최고급 클럽하우스', badge: 'KLPGA 대회 코스' },
+    { id: 'gc-hcm-4', name: '송베 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: -10, description: '베트남 최초 국제 챔피언십 인증 코스, 자연 야자수와 사막/로터스 코스의 환상적 조화', badge: '전통 명문' },
+    { id: 'gc-hcm-5', name: '태광 정산 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: 15, description: '전용 스피드보트로 동나이강을 건너 진입하는 이색 럭셔리 아일랜드 골프 코스', badge: '스피드보트 이색체험' },
+    { id: 'gc-hcm-6', name: '베트남 G.C (18홀)', location: '호치민', holes: 18, priceDeltaUSD: -15, description: '호치민 시내 중심 30분 거리, 동코스 & 서코스 36홀 정통 챔피언십 회원제 코스', badge: '정통 36홀' },
+    { id: 'gc-hcm-7', name: '동나이 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: -20, description: '자연 호수를 끼고 도는 27홀의 시원하고 여유로운 가성비 힐링 코스', badge: '가성비 추천' },
+    { id: 'gc-hcm-8', name: '로얄 아일랜드 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: -10, description: '동나이 강변 쾌적한 18홀 정규 코스, 평탄하고 편안한 페어웨이', badge: '강변 코스' },
+    
+    // Vung Tau
+    { id: 'gc-vt-1', name: '더 블러프 호짬 스트립 CC (18홀)', location: '붕따우', holes: 18, priceDeltaUSD: 50, description: '그렉 노먼 설계 세계 100대 오션뷰 링크스 코스, 남중국해 파도와 해풍을 마주하는 최고 명문', badge: '세계 100대 명문' },
+    { id: 'gc-vt-2', name: '붕따우 파라다이스 CC (18홀)', location: '붕따우', holes: 18, priceDeltaUSD: -30, description: '남중국해 바다와 울창한 해변 소나무 숲이 어우러진 시원한 27홀 씨사이드 코스', badge: '해변 링크스' },
+    { id: 'gc-vt-3', name: '쩌우득 CC (18홀)', location: '붕따우', holes: 18, priceDeltaUSD: -40, description: '넓은 페어웨이와 현대적 시설을 갖춘 붕따우 인근 실속 골프 코스', badge: '신규 코스' },
+
+    // Da Lat
+    { id: 'gc-dl-1', name: '달랏 팔레스 헤리티지 CC (18홀)', location: '달랏', holes: 18, priceDeltaUSD: 10, description: '1922년 개장한 베트남 최고(最古) 황제의 골프장, 고풍스러운 소나무 숲과 쑤언흐엉 호수 전망', badge: '1922년 황제 코스' },
+    { id: 'gc-dl-2', name: 'SAM 투옌람 CC (18홀)', location: '달랏', holes: 18, priceDeltaUSD: 0, description: '투옌람 호수 계곡과 울창한 고원 소나무 숲에 둘러싸인 천혜의 힐링 챔피언십 코스', badge: '호수 전경 힐링' },
+    { id: 'gc-dl-3', name: '더 달랏 1200 CC (18홀)', location: '달랏', holes: 18, priceDeltaUSD: 10, description: '해발 1,200m에 위치하여 한여름에도 시원한 바람이 부는 아시안투어 대회 개최 코스', badge: '해발 1200m 고원' },
+  ],
+
+  accommodations: [
+    // Ho Chi Minh
+    { id: 'acc-hcm-1', name: '호치민 1군 5성급 럭셔리 호텔 (카라벨/르메르디앙 급, 2인1실)', location: '호치민', type: 'hotel_5star', priceDeltaUSD: 0, description: '호치민 중심가 1군 특급 호텔, 조식 뷔페 및 수영장/사우나 무료 이용', badge: '5성급 호텔' },
+    { id: 'acc-hcm-2', name: '단독 럭셔리 프라이빗 풀빌라 (타오디엔/안푸 전용 수영장 4~5베드룸)', location: '호치민', type: 'pool_villa', priceDeltaUSD: 60, description: '개인 전용 수영장, 바베큐 시설, 거실/주방 전체 단독 대여 (팀별 단독 사용)', badge: '독채 풀빌라' },
+    { id: 'acc-hcm-3', name: '호텔 싱글룸 (1인 1실) 단독 객실 업그레이드', location: '호치민', type: 'hotel_5star', priceDeltaUSD: 180, description: '4박 전 일정 혼자 편안하게 객실을 사용하는 1인 독방 업그레이드', badge: '1인 1실' },
+    { id: 'acc-hcm-4', name: '호치민 1군 4성급 중심가 가성비 호텔 (알라곤/리버티 급, 2인1실)', location: '호치민', type: 'hotel_4star', priceDeltaUSD: -50, description: '가성비 뛰어난 1군 중심가 4성급 부티크 호텔, 시내 관광 및 야경 도보 이동', badge: '실속 4성급' },
+
+    // Vung Tau
+    { id: 'acc-vt-1', name: '5성급 더 그랜드 호짬 카지노 & 리조트 (디럭스 오션뷰, 2인1실)', location: '붕따우', type: 'resort', priceDeltaUSD: 0, description: '오션뷰 인피니티 풀 및 카지노 복합 특급 리조트, 전 일정 최고급 조식 뷔페', badge: '5성급 카지노 리조트' },
+    { id: 'acc-vt-2', name: '붕따우 비치 프라이빗 단독 풀빌라 (개인 수영장 독채)', location: '붕따우', type: 'pool_villa', priceDeltaUSD: 50, description: '해변 인접 전용 수영장 단독 풀빌라 & 야외 풀사이드 바베큐 가능', badge: '오션뷰 풀빌라' },
+    { id: 'acc-vt-3', name: '붕따우 4성급 비치 프론트 호텔 (2인1실)', location: '붕따우', type: 'hotel_4star', priceDeltaUSD: -40, description: '해변 도로 위치 가성비 오션뷰 4성 호텔, 야시장 및 해변 도보 5분', badge: '실속 4성급' },
+
+    // Da Lat
+    { id: 'acc-dl-1', name: '달랏 5성급 프랑스풍 헤리티지 리조트 (아나만다라 빌라 급, 2인1실)', location: '달랏', type: 'resort', priceDeltaUSD: 0, description: '소나무 숲속 고풍스러운 프렌치 콜로니얼 빌라 리조트, 최고급 힐링 휴양', badge: '5성급 헤리티지' },
+    { id: 'acc-dl-2', name: '달랏 프라이빗 독채 럭셔리 빌라 (전용 정원 & 벽난로)', location: '달랏', type: 'pool_villa', priceDeltaUSD: 60, description: '가족/팀 전용 프라이빗 정원과 벽난로, 바베큐가 구비된 프랑스풍 독채 빌라', badge: '프라이빗 독채' },
+    { id: 'acc-dl-3', name: '달랏 4성급 중심가 시티 호텔 (호텔 콜린 급, 2인1실)', location: '달랏', type: 'hotel_4star', priceDeltaUSD: -40, description: '달랏 야시장 인접 도보 이동 가능한 최신 중심가 4성급 호텔', badge: '중심가 4성급' },
+  ],
+
+  vehicles: [
+    { id: 'veh-1', name: '전 일정 단독 VIP 9인승 리무진 밴 (리클라이너 전동 시트)', priceDeltaUSD: 0, description: '최고급 가죽 리클라이너 좌석, 무료 Wi-Fi, 전용 냉장고, 전 일정 베테랑 전담 기사 포함', badge: '기본 VIP' },
+    { id: 'veh-2', name: '전 일정 단독 16인승 포드 트랜짓 밴 (대용량 밴)', priceDeltaUSD: -20, description: '여유로운 16인승 밴, 골프백 대량 적재 및 편안한 단체 이동', badge: '실속 밴' },
+    { id: 'veh-3', name: '전 일정 단독 VIP 18~28인승 대형 리무진 버스', priceDeltaUSD: 50, description: '8인 이상 대규모 단체 골퍼를 위한 최고급 대형 리무진 버스 (전담 기사/유류비 일체)', badge: '대형 단체용' },
+    { id: 'veh-4', name: '전 일정 단독 7인승 프리미엄 SUV (카니발/포츄너)', priceDeltaUSD: -30, description: '소수 인원(2~3인)의 빠르고 안락한 이동에 최적화된 프리미엄 SUV', badge: '소수 정예' },
+  ],
+
+  guides: [
+    { id: 'gui-1', name: '베테랑 한국어 가이드 전 일정 풀케어', priceDeltaUSD: 0, description: '골프장 체크인/티타임 조율, 시내 관광 및 맛집/야경 전담 밀착 케어', badge: '추천 가이드' },
+    { id: 'gui-2', name: 'VIP 비즈니스 의전 전문 가이드 (동시통역 가능)', priceDeltaUSD: 30, description: '전문 비즈니스 통역 및 VIP 단독 의전, 만찬 미팅 케어', badge: 'VIP 의전' },
+    { id: 'gui-3', name: '가이드 미포함 (전용 차량 기사만 배정)', priceDeltaUSD: -60, description: '기사만 배정되어 간섭 없이 일행끼리 자유롭게 골프와 일정을 즐기는 코스', badge: '자유 일정' },
+  ],
+
+  meals: [
+    { id: 'meal-1', name: '프리미엄 웰컴 디너 & 씨푸드 바베큐 만찬 (석식 4회)', priceDeltaUSD: 0, description: '베트남 고급 정통 코스, 대형 활어 씨푸드 만찬, 루프탑 스테이크, 숯불 바베큐', badge: '기본 특식' },
+    { id: 'meal-2', name: '로컬 스트리트 & 베트남 미식 탐방 코스 (석식 4회)', priceDeltaUSD: -20, description: '현지인들이 찾는 찐 맛집 분짜, 쌀국수, 반쎄오, 해산물 거리 미식 투어', badge: '로컬 미식' },
+    { id: 'meal-3', name: '자유 식사 (골프장 클럽하우스 및 시내 개별 결제)', priceDeltaUSD: -80, description: '식사 불포함으로 원하는 식당을 직접 방문하여 자유롭게 결제', badge: '자유 식사' },
+  ]
+};
