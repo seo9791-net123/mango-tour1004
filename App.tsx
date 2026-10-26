@@ -490,7 +490,7 @@ const App: React.FC = () => {
 
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs no-print">
          <p>MANGO TOUR TRAVEL AGENCY | <a href="tel:+84377204451" className="hover:text-gold-400 transition ml-1 font-semibold">+84 37 720 4451</a> | 
-           <a href="https://open.kakao.com/o/gSfNsh3h" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
+           <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
              Kakao: <span className="font-bold">MANGO TOUR</span>
            </a>
          </p>

@@ -99,7 +99,7 @@ const SectionDetailModal: React.FC<Props> = ({ section, onClose }) => {
             닫기
           </button>
           <button 
-            onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
+            onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
             className="flex-1 py-3 bg-deepgreen text-white rounded-xl font-bold shadow-md hover:bg-gold-600 active:scale-95 transition flex items-center justify-center gap-1.5 text-xs sm:text-sm"
           >
             <span>💬</span> 카톡으로 문의하기

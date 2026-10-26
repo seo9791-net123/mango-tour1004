@@ -164,7 +164,7 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
               </ul>
               <div className="pt-4">
                  <button 
-                   onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
+                   onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
                    className="px-8 py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-xl hover:bg-opacity-90 transition flex items-center gap-3"
                  >
                     <span className="text-2xl">💬</span>

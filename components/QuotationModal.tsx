@@ -41,7 +41,7 @@ ${inquiryText || '(내용 없음)'}
       alert('견적서와 문의 내용이 복사되었습니다.\n채팅창에 붙여넣기(Paste) 해주세요.');
       
       if (contactType === 'open') {
-        window.open('https://open.kakao.com/o/gSfNsh3h', '_blank');
+        window.open('https://open.kakao.com/o/gprQnKSi', '_blank');
       } else {
         window.open('https://pf.kakao.com/', '_blank');
       }
@@ -218,7 +218,7 @@ ${inquiryText || '(내용 없음)'}
                 
                 <div className="grid grid-cols-2 gap-2.5 mb-3">
                   <div 
-                    onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
+                    onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
                     className="flex flex-col items-center p-3 bg-yellow-50 rounded-xl border border-yellow-200 cursor-pointer hover:bg-yellow-100 active:scale-95 transition text-center"
                   >
                     <div className="bg-yellow-400 px-2 py-0.5 rounded-lg mb-1.5">

@@ -138,7 +138,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, onBack }) => {
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `📞 망고투어 고객센터: +84 37 720 4451\n`;
     text += `📧 이메일 접수처: seo9791@gmail.com\n`;
-    text += `💬 실시간 1:1 카카오톡 상담: https://open.kakao.com/o/gSfNsh3h`;
+    text += `💬 실시간 1:1 카카오톡 상담: https://open.kakao.com/o/gprQnKSi`;
     return text;
   };
 
@@ -740,7 +740,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, onBack }) => {
 
                   {/* Official Inquiry Channels Footer */}
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-2 px-2 text-[11px] text-gray-500 font-medium">
-                    <div>💬 카카오톡 1:1 상담: <strong className="text-deepgreen">open.kakao.com/o/gSfNsh3h</strong></div>
+                    <div>💬 카카오톡 1:1 상담: <strong className="text-deepgreen">open.kakao.com/o/gprQnKSi</strong></div>
                     <div>📧 이메일 문의 접수: <strong className="text-deepgreen">seo9791@gmail.com</strong></div>
                   </div>
                 </div>
@@ -1096,7 +1096,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, onBack }) => {
                   <button
                     type="button"
                     onClick={() => {
-                      window.open('https://open.kakao.com/o/gSfNsh3h', '_blank');
+                      window.open('https://open.kakao.com/o/gprQnKSi', '_blank');
                     }}
                     className="w-full py-3.5 bg-[#FEE500] text-[#191919] font-black rounded-2xl hover:bg-[#FDD835] transition text-xs flex items-center justify-center gap-1.5"
                   >
@@ -1170,7 +1170,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, onBack }) => {
                 <button
                   type="button"
                   onClick={() => {
-                    window.open('https://open.kakao.com/o/gSfNsh3h', '_blank');
+                    window.open('https://open.kakao.com/o/gprQnKSi', '_blank');
                   }}
                   className="w-full py-4 bg-[#FEE500] text-[#191919] font-black rounded-2xl hover:bg-[#FDD835] transition shadow-lg text-sm flex items-center justify-center gap-2 active:scale-95"
                 >

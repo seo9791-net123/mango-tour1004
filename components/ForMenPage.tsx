@@ -40,7 +40,7 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
                  <p className="text-sm xs:text-base md:text-lg leading-relaxed text-gray-300 font-medium whitespace-pre-line">{content.introText}</p>
                  <div className="pt-2">
                     <button 
-                      onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
+                      onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
                       className="w-full xs:w-auto bg-gold-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-gold-500 active:scale-95 transition shadow-lg text-xs xs:text-sm uppercase tracking-wider"
                     >
                       VIP 프라이빗 상담 신청

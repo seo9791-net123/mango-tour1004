@@ -84,7 +84,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
                   <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 단체 행사 및 대회 기획 지원</li>
                </ul>
                <button 
-                 onClick={() => window.open('https://open.kakao.com/o/gSfNsh3h', '_blank')}
+                 onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
                  className="w-full xs:w-auto bg-gold-500 text-white px-6 py-3 rounded-xl font-bold text-xs xs:text-sm shadow-md hover:bg-gold-600 active:scale-95 transition"
                >
                  골프 투어 맞춤 견적 신청
