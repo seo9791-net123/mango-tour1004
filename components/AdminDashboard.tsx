@@ -651,7 +651,7 @@ const AdminDashboard: React.FC<Props> = ({
       location: '호치민',
       duration: '4박 5일',
       golfCourses: ['떤선녓 CC (18홀)', '롱탄 CC (18홀)', '트윈도브스 CC (18홀)'],
-      basePriceUSD: 1100,
+      basePriceUSD: 910,
       image: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200',
       summary: '원하는 골프장과 숙소, 옵션을 내 맘대로 조합하는 맞춤형 패키지',
       highlightBadges: ['54홀 라운딩', '전용 리무진 밴', '5성급 호텔'],
@@ -664,8 +664,6 @@ const AdminDashboard: React.FC<Props> = ({
       ],
       options: [
         { id: `opt-${Date.now()}-1`, category: 'golf', name: '3회 그린피 (54홀)', description: '전 일정 54홀 그린피', priceUSD: 450, isDefaultIncluded: true, isRequired: true },
-        { id: `opt-${Date.now()}-2`, category: 'golf', name: '전동카트 (2인 1카트)', description: '라운딩 전동 카트피', priceUSD: 100, isDefaultIncluded: true, isRequired: false },
-        { id: `opt-${Date.now()}-3`, category: 'golf', name: '1인 1캐디피', description: '전 일정 1인 1전담 캐디', priceUSD: 90, isDefaultIncluded: true, isRequired: false },
         { id: `opt-${Date.now()}-4`, category: 'hotel', name: '5성급 럭셔리 호텔 (4박 2인1실)', description: '시내 중심 5성급 특급 호텔', priceUSD: 320, isDefaultIncluded: true, isRequired: false },
         { id: `opt-${Date.now()}-5`, category: 'vehicle', name: '전용 VIP 리무진 밴 (전 일정)', description: '공항/골프장 전용 기사 포함', priceUSD: 140, isDefaultIncluded: true, isRequired: false },
       ]

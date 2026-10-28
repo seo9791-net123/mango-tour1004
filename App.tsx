@@ -45,10 +45,25 @@ const App: React.FC = () => {
   const [videos, setVideos] = useState<VideoItem[]>(INITIAL_VIDEOS);
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
+  const cleanCustomPackages = (pkgs: CustomTripPackage[]): CustomTripPackage[] => {
+    return pkgs.map(pkg => {
+      const cleanedOptions = pkg.options.filter(
+        opt => !opt.name.includes('전동카트') && !opt.name.includes('캐디 피') && !opt.name.includes('캐디피')
+      );
+      const defaultTotal = cleanedOptions.reduce((sum, opt) => opt.isDefaultIncluded ? sum + (opt.priceUSD || 0) : sum, 0);
+      return {
+        ...pkg,
+        basePriceUSD: defaultTotal > 0 ? defaultTotal : pkg.basePriceUSD,
+        options: cleanedOptions
+      };
+    });
+  };
+
   const [popup, setPopup] = useState<PopupNotification>(INITIAL_POPUP);
   const [customPackages, setCustomPackages] = useState<CustomTripPackage[]>(() => {
     const saved = localStorage.getItem('mango_custom_packages_db');
-    return saved ? JSON.parse(saved) : INITIAL_CUSTOM_PACKAGES;
+    const raw = saved ? JSON.parse(saved) : INITIAL_CUSTOM_PACKAGES;
+    return cleanCustomPackages(raw);
   });
   const [masterOptionPool, setMasterOptionPool] = useState<MasterOptionPool>(() => {
     const saved = localStorage.getItem('mango_master_options_pool_db');
@@ -211,7 +226,7 @@ const App: React.FC = () => {
         setPageContents(data.pageContents);
         setPopup(data.popup);
         if (data.customPackages && data.customPackages.length > 0) {
-          setCustomPackages(data.customPackages);
+          setCustomPackages(cleanCustomPackages(data.customPackages));
         }
         
         // Check if popup should be shown (e.g., once per session or if active)
