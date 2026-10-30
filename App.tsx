@@ -421,7 +421,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-white flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full">
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 no-print" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
           {/* Logo */}
@@ -488,7 +488,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-grow w-full max-w-full min-w-0 overflow-x-hidden">
+      <main className="flex-grow w-full max-w-full min-w-0">
         {currentPage === 'admin' && isAdmin ? (
           <AdminDashboard 
             users={users} 

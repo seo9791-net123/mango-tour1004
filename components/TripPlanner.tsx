@@ -795,7 +795,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 select-text font-sans antialiased text-gray-900 tracking-tight break-keep overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen bg-gray-50 pb-28 select-text font-sans antialiased text-gray-900 tracking-tight break-keep w-full max-w-full">
       {/* Toast Notification */}
       {copyToast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gray-900/95 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md border border-gold-500/30">
@@ -842,7 +842,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       </div>
 
       {/* Main Container - Edge-to-edge on mobile, containerized on desktop */}
-      <div className="max-w-6xl mx-auto px-0 sm:px-4 py-2 sm:py-6 w-full max-w-full overflow-x-hidden">
+      <div className="max-w-6xl mx-auto px-0 sm:px-4 py-2 sm:py-6 w-full max-w-full">
         
         {/* ================= VIEW 1: PACKAGE LIST OR DIY BUILDER ================= */}
         {!activePackage && (
@@ -1457,15 +1457,15 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
         {/* ================= VIEW 2: ACTIVE PACKAGE CUSTOMIZER ================= */}
         {activePackage && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 w-full max-w-full min-w-0 overflow-x-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 w-full max-w-full min-w-0">
             
             {/* Left Column (7 cols): Options & Itinerary (Capturable Quotation Card) */}
-            <div className="lg:col-span-7 space-y-3 sm:space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
+            <div className="lg:col-span-7 space-y-3 sm:space-y-6 w-full max-w-full min-w-0">
               
               {/* Capturable Card Wrapper - Edge-to-edge on mobile with zero side margins */}
               <div 
                 ref={quotationCardRef} 
-                className="bg-white rounded-none sm:rounded-3xl px-0 py-3.5 sm:p-7 border-y sm:border border-gray-200/90 shadow-sm sm:shadow-md space-y-3.5 sm:space-y-5 relative w-full max-w-full overflow-x-hidden"
+                className="bg-white rounded-none sm:rounded-3xl px-0 py-3.5 sm:p-7 border-y sm:border border-gray-200/90 shadow-sm sm:shadow-md space-y-3.5 sm:space-y-5 relative w-full max-w-full"
               >
                 {/* Brand Watermark on Image */}
                 <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-gray-100 px-3.5 sm:px-0">
@@ -1944,10 +1944,10 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
 
             {/* Right Column (5 cols): Real-Time Price Calculator & Inquiry Action Panel */}
-            <div className="lg:col-span-5 space-y-4 sm:space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
+            <div className="lg:col-span-5 space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
               
               {/* Sticky Calculator Box - Edge-to-edge on mobile */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-3.5 sm:p-6 border-y sm:border-2 border-gold-400/50 shadow-sm sm:shadow-xl space-y-4 sm:space-y-5 sm:sticky sm:top-20 w-full max-w-full overflow-hidden">
+              <div className="bg-white rounded-none sm:rounded-3xl p-3.5 sm:p-6 border-y sm:border-2 border-gold-400/50 shadow-sm sm:shadow-xl space-y-4 sm:space-y-5 sm:sticky sm:top-20 w-full max-w-full">
                 
                 <div className="bg-gradient-to-r from-deepgreen to-[#004d40] text-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl text-center shadow-xs">
                   <div className="text-[10px] sm:text-[11px] text-gold-300 font-bold uppercase tracking-wider">실시간 맞춤 견적 계산기</div>
