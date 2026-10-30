@@ -69,6 +69,7 @@ const uploadToServer = (
 
 /**
  * Cloudinary Direct Upload
+ * Uses /video/upload for videos and /image/upload for images to prevent preset/CORS errors
  */
 const uploadToCloudinary = (
   uploadData: Blob | File,
@@ -79,11 +80,15 @@ const uploadToCloudinary = (
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`);
+    const isVideo = (uploadData as File).type?.startsWith('video/') ||
+      Boolean((uploadData as File).name && /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test((uploadData as File).name));
+    const endpoint = isVideo ? 'video' : 'image';
+
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/${endpoint}/upload`);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
-        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        const percentComplete = Math.min(99, Math.round((event.loaded / event.total) * 100));
         onProgress(percentComplete);
       }
     };
@@ -93,6 +98,7 @@ const uploadToCloudinary = (
         try {
           const response = JSON.parse(xhr.responseText);
           console.log("Cloudinary upload success:", response.secure_url);
+          if (onProgress) onProgress(100);
           resolve(response.secure_url);
         } catch (e) {
           reject(new Error("Cloudinary JSON parse error"));
@@ -156,7 +162,7 @@ const uploadToFirebaseStorage = (
 };
 
 /**
- * Fallback to Base64 Data URL (ensures client NEVER crashes on upload)
+ * Fallback to Base64 Data URL (images only)
  */
 const fileToDataUrl = (file: Blob | File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -168,23 +174,20 @@ const fileToDataUrl = (file: Blob | File): Promise<string> => {
 };
 
 /**
- * 파일을 업로드하며 진행률을 추적합니다.
- * 1순위: 동일 오리진 서버 업로드 (/api/upload - CORS 이슈 원천 방지)
- * 2순위: Cloudinary (설정되어 있고 서버 업로드 불가 시)
+ * 파일 업로드 함수:
+ * 1순위: Cloudinary (설정 시 - 글로벌 CDN 스트리밍 및 모바일 호환성 최적)
+ * 2순위: 동일 오리진 서버 업로드 (/api/upload - CORS 완전 면제)
  * 3순위: Firebase Storage
- * 4순위: Data URL (오프라인/긴급 대비)
- *
- * @param file 업로드할 파일 객체
- * @param folder 저장할 폴더 경로
- * @param onProgress 진행률 콜백 (0-100)
- * @returns 업로드된 파일의 다운로드 URL
+ * 4순위: 이미지만 Base64 폴백 (비디오는 로컬 blob/Base64 저장 금지)
  */
 export const uploadFile = async (
   file: File, 
   folder: string = "uploads", 
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  // 이미지 파일인 경우 최적화 압축 시도
+  const isVideo = file.type?.startsWith('video/') || /\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(file.name);
+
+  // 이미지 파일인 경우 브라우저 내 경량화 압축 시도
   let uploadData: Blob | File = file;
   if (file.type.startsWith('image/')) {
     try {
@@ -195,16 +198,7 @@ export const uploadFile = async (
     }
   }
 
-  // 1. Same-Origin Server Upload (Best & most reliable, no CORS or third-party limits)
-  try {
-    console.log(`Uploading ${file.name} to same-origin server (/api/upload)...`);
-    const serverUrl = await uploadToServer(uploadData, file.name, onProgress);
-    if (serverUrl) return serverUrl;
-  } catch (serverErr) {
-    console.warn("Server upload (/api/upload) not available, checking other providers:", serverErr);
-  }
-
-  // 2. Cloudinary Upload (If configured and not failing)
+  // 1. Cloudinary Upload (글로벌 CDN, 모바일 부분 스트리밍 및 썸네일 지원)
   const { cloudName, uploadPreset } = getCloudinaryConfig();
   const isCloudinaryConfigured = cloudName && 
                                 uploadPreset && 
@@ -214,12 +208,21 @@ export const uploadFile = async (
 
   if (isCloudinaryConfigured) {
     try {
-      console.log(`Attempting Cloudinary upload to ${cloudName}...`);
+      console.log(`Uploading ${file.name} to Cloudinary (${cloudName})...`);
       const cUrl = await uploadToCloudinary(uploadData, cloudName, uploadPreset, folder, onProgress);
       if (cUrl) return cUrl;
     } catch (cloudinaryErr) {
-      console.warn("Cloudinary upload failed (CORS/Preset issue), falling back to Firebase Storage:", cloudinaryErr);
+      console.warn("Cloudinary upload failed, attempting same-origin server upload:", cloudinaryErr);
     }
+  }
+
+  // 2. Same-Origin Server Upload (/api/upload)
+  try {
+    console.log(`Uploading ${file.name} to same-origin server (/api/upload)...`);
+    const serverUrl = await uploadToServer(uploadData, file.name, onProgress);
+    if (serverUrl) return serverUrl;
+  } catch (serverErr) {
+    console.warn("Server upload (/api/upload) not available, checking other providers:", serverErr);
   }
 
   // 3. Firebase Storage Upload
@@ -231,11 +234,15 @@ export const uploadFile = async (
     console.warn("Firebase storage upload failed:", fbErr);
   }
 
-  // 4. Ultimate Local Fallback (Use Blob URL instead of heavy Base64 to prevent memory crashes)
-  console.log("Using local URL fallback for uploaded file...");
-  if (onProgress) onProgress(100);
-  if (typeof window !== 'undefined' && window.URL && window.URL.createObjectURL) {
-    return window.URL.createObjectURL(uploadData);
+  // 4. Fallback: 비디오 파일은 절대로 blob: 이나 거대 Base64로 저장하지 않음 (모바일 재생 불가 및 메모리 충돌 방지)
+  if (isVideo) {
+    throw new Error(
+      "동영상 업로드에 실패했습니다. 파일 용량(100MB 이하 권장)과 네트워크 상태를 확인하신 후 MP4(H.264) 형식으로 다시 시도해주세요."
+    );
   }
+
+  // 이미지만 비상용 Base64 폴백
+  console.log("Using Base64 fallback for image...");
+  if (onProgress) onProgress(100);
   return await fileToDataUrl(uploadData);
 };

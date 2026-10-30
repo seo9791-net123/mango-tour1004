@@ -43,8 +43,17 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
   });
   const [videos, setVideos] = useState<VideoItem[]>(() => {
-    const saved = localStorage.getItem('mango_videos_db');
-    return saved ? JSON.parse(saved) : INITIAL_VIDEOS;
+    try {
+      const saved = localStorage.getItem('mango_videos_db');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const cleaned = Array.isArray(parsed) ? parsed.filter((v: any) => v?.url && !v.url.startsWith('blob:')) : [];
+        if (cleaned.length > 0) return cleaned;
+      }
+    } catch {
+      // ignore
+    }
+    return INITIAL_VIDEOS;
   });
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
@@ -231,9 +240,10 @@ const App: React.FC = () => {
 
         setHeroImages(data.heroImages);
         setMenuItems(data.menuItems);
-        setProducts(data.products);
-        setVideos(data.videos);
-        setPosts(data.posts);
+        if (Array.isArray(data.videos)) {
+          const validVideos = data.videos.filter((v: VideoItem) => v?.url && !v.url.startsWith('blob:'));
+          setVideos(validVideos.length > 0 ? validVideos : INITIAL_VIDEOS);
+        }
         setPageContents(data.pageContents);
         setPopup(data.popup);
         if (data.customPackages && data.customPackages.length > 0) {

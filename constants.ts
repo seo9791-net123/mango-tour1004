@@ -196,7 +196,13 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const INITIAL_VIDEOS: VideoItem[] = [
-  { id: 'v1', title: '롱탄 골프 클럽 드론 뷰', url: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+  { 
+    id: 'v1', 
+    title: '베트남 호치민 골프 탄손넛CC 소개영상', 
+    url: 'https://res.cloudinary.com/ducor31pp/video/upload/v1793346063/videos/xkuicmmjpql8zm55msrw.mp4',
+    category: '골프',
+    thumbnail: 'https://res.cloudinary.com/ducor31pp/video/upload/v1793346063/videos/xkuicmmjpql8zm55msrw.jpg'
+  },
 ];
 
 export const INITIAL_POSTS: CommunityPost[] = [

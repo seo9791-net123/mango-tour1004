@@ -30,6 +30,7 @@ export interface VideoItem {
   title: string;
   url: string; // URL or Embed source
   category?: '골프' | '여행' | '먹거리' | '기타';
+  thumbnail?: string; // Optional custom or extracted poster thumbnail
 }
 
 export interface Comment {
