@@ -795,7 +795,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 select-text font-sans antialiased text-gray-900 tracking-tight break-keep">
+    <div className="min-h-screen bg-gray-50 pb-28 select-text font-sans antialiased text-gray-900 tracking-tight break-keep overflow-x-hidden w-full max-w-full">
       {/* Toast Notification */}
       {copyToast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gray-900/95 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md border border-gold-500/30">
@@ -805,9 +805,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       )}
 
       {/* Hero Header */}
-      <div className="bg-gradient-to-br from-deepgreen via-[#00382e] to-emerald-950 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-br from-deepgreen via-[#00382e] to-emerald-950 text-white relative overflow-hidden w-full max-w-full">
         <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_30%,#c5a028_0%,transparent_70%)] pointer-events-none"></div>
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 relative z-10">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 relative z-10 w-full max-w-full">
           <div className="mb-3 sm:mb-4">
             <BackButton 
               onClick={activePackage ? () => setActivePackage(null) : onBack}
@@ -842,7 +842,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       </div>
 
       {/* Main Container - Edge-to-edge on mobile, containerized on desktop */}
-      <div className="max-w-6xl mx-auto px-0 sm:px-4 py-2 sm:py-6">
+      <div className="max-w-6xl mx-auto px-0 sm:px-4 py-2 sm:py-6 w-full max-w-full overflow-x-hidden">
         
         {/* ================= VIEW 1: PACKAGE LIST OR DIY BUILDER ================= */}
         {!activePackage && (
@@ -1457,15 +1457,15 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
         {/* ================= VIEW 2: ACTIVE PACKAGE CUSTOMIZER ================= */}
         {activePackage && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 w-full max-w-full min-w-0 overflow-x-hidden">
             
             {/* Left Column (7 cols): Options & Itinerary (Capturable Quotation Card) */}
-            <div className="lg:col-span-7 space-y-3 sm:space-y-6">
+            <div className="lg:col-span-7 space-y-3 sm:space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
               
               {/* Capturable Card Wrapper - Edge-to-edge on mobile with zero side margins */}
               <div 
                 ref={quotationCardRef} 
-                className="bg-white rounded-none sm:rounded-3xl px-0 py-3.5 sm:p-7 border-y sm:border border-gray-200/90 shadow-sm sm:shadow-md space-y-3.5 sm:space-y-5 relative"
+                className="bg-white rounded-none sm:rounded-3xl px-0 py-3.5 sm:p-7 border-y sm:border border-gray-200/90 shadow-sm sm:shadow-md space-y-3.5 sm:space-y-5 relative w-full max-w-full overflow-x-hidden"
               >
                 {/* Brand Watermark on Image */}
                 <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-gray-100 px-3.5 sm:px-0">
@@ -1624,9 +1624,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                           >
                             <div 
                               onClick={() => handleToggleOption(option)}
-                              className="px-3.5 py-3 sm:p-4 cursor-pointer flex items-start justify-between gap-2.5 sm:gap-3"
+                              className="px-3.5 py-3 sm:p-4 cursor-pointer flex items-start justify-between gap-2.5 sm:gap-3 w-full min-w-0"
                             >
-                              <div className="flex items-start gap-2.5 sm:gap-3 flex-1">
+                              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
@@ -1634,7 +1634,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                                   onChange={() => {}}
                                   className="mt-0.5 sm:mt-1 w-4 h-4 sm:w-5 sm:h-5 rounded-md text-deepgreen accent-deepgreen cursor-pointer shrink-0"
                                 />
-                                <div className="flex-1">
+                                <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                     <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] font-semibold border ${badge.bg}`}>
                                       {badge.label}
@@ -1668,9 +1668,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                             </div>
 
                             {/* Customization Action Buttons & Quick Selector */}
-                            <div className="px-3.5 sm:px-4 pb-2.5 sm:pb-3 pt-0 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-t border-gray-100/60 mt-1">
+                            <div className="px-3.5 sm:px-4 pb-2.5 sm:pb-3 pt-0 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-t border-gray-100/60 mt-1 min-w-0 w-full">
                               {/* Left: Button to change content directly */}
-                              <div className="flex items-center gap-1.5 sm:gap-2">
+                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
                                 {option.category === 'golf' ? (
                                   <button
                                     type="button"
@@ -1730,7 +1730,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                               </div>
 
                               {/* Right: Quick indicator */}
-                              <div className="text-[10px] text-gray-400 font-medium">
+                              <div className="text-[10px] text-gray-400 font-medium truncate max-w-full">
                                 {option.category === 'golf' && `현재: ${customGolfCourses.map(c => c.split(' ')[0]).join(' · ')}`}
                                 {option.category === 'hotel' && `현재: ${customOptionSelections[option.id]?.name || '기본 5성급 호텔'}`}
                               </div>
@@ -1932,9 +1932,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                   </div>
 
                   {/* Official Inquiry Channels Footer */}
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 px-1 sm:px-2 text-[10px] sm:text-[11px] text-gray-500 font-normal">
-                    <div>💬 카카오톡 1:1 상담: <strong className="text-deepgreen font-semibold">open.kakao.com/o/gprQnKSi</strong></div>
-                    <div>📧 이메일 문의 접수: <strong className="text-deepgreen font-semibold">seo9791@gmail.com</strong></div>
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 px-1 sm:px-2 text-[10px] sm:text-[11px] text-gray-500 font-normal w-full overflow-hidden">
+                    <div className="truncate max-w-full">💬 카카오톡 1:1 상담: <strong className="text-deepgreen font-semibold break-all">open.kakao.com/o/gprQnKSi</strong></div>
+                    <div className="truncate max-w-full">📧 이메일 문의 접수: <strong className="text-deepgreen font-semibold break-all">seo9791@gmail.com</strong></div>
                   </div>
                 </div>
 
@@ -1944,10 +1944,10 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
 
             {/* Right Column (5 cols): Real-Time Price Calculator & Inquiry Action Panel */}
-            <div className="lg:col-span-5 space-y-4 sm:space-y-6">
+            <div className="lg:col-span-5 space-y-4 sm:space-y-6 w-full max-w-full min-w-0 overflow-x-hidden">
               
               {/* Sticky Calculator Box - Edge-to-edge on mobile */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-3.5 sm:p-6 border-y sm:border-2 border-gold-400/50 shadow-sm sm:shadow-xl space-y-4 sm:space-y-5 sticky top-20">
+              <div className="bg-white rounded-none sm:rounded-3xl p-3.5 sm:p-6 border-y sm:border-2 border-gold-400/50 shadow-sm sm:shadow-xl space-y-4 sm:space-y-5 sm:sticky sm:top-20 w-full max-w-full overflow-hidden">
                 
                 <div className="bg-gradient-to-r from-deepgreen to-[#004d40] text-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl text-center shadow-xs">
                   <div className="text-[10px] sm:text-[11px] text-gold-300 font-bold uppercase tracking-wider">실시간 맞춤 견적 계산기</div>
@@ -2190,7 +2190,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       {/* ================= MODAL 1: 1:1 ONLINE INQUIRY MODAL (EMAIL TO seo9791@gmail.com) ================= */}
       {showInquiryModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-4 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
             <button
               onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
               className="absolute top-3.5 right-3.5 text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
@@ -2371,7 +2371,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       {/* ================= MODAL 2: KAKAOTALK CONSULTATION & SCREENSHOT SHARING MODAL ================= */}
       {showKakaoModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-4 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
             <button
               onClick={() => setShowKakaoModal(false)}
               className="absolute top-3.5 right-3.5 text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
@@ -2470,7 +2470,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       {/* ================= MODAL 3: IMAGE PREVIEW & DIRECT SAVE MODAL ================= */}
       {showImagePreviewModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-xl w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-4 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-xl w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
             <button
               onClick={() => setShowImagePreviewModal(false)}
               className="absolute top-3.5 right-3.5 text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
@@ -2520,11 +2520,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 4: INTERACTIVE DAY-BY-DAY GOLF COURSE PICKER MODAL ================= */}
       {showGolfModal && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-3xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col">
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-3xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
             
-            {/* Modal Header */}
-            <div className="flex items-start justify-between pb-3 sm:pb-4 border-b border-gray-100">
+            {/* Modal Header - Edge-to-edge pinned on mobile */}
+            <div className="flex items-start justify-between px-3.5 py-3 sm:px-0 sm:py-0 sm:pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
                   <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">나만의 일정 설계</span>
@@ -2545,8 +2545,8 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
               </button>
             </div>
 
-            {/* Scrollable Content Body */}
-            <div className="overflow-y-auto flex-1 pr-1 space-y-4 py-4">
+            {/* Scrollable Content Body - Edge-to-edge padding on mobile */}
+            <div className="overflow-y-auto flex-1 px-3 sm:px-0 space-y-4 py-3 sm:py-4">
 
               {/* Step 1: Select Round / Day to Modify */}
               <div>
@@ -2742,8 +2742,8 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
             </div>
 
-            {/* Modal Footer */}
-            <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+            {/* Modal Footer - Edge-to-edge pinned on mobile */}
+            <div className="px-3.5 py-3 sm:px-0 sm:py-0 sm:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-md sm:shadow-none">
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <div>
                   <span className="text-[10px] text-gray-400 block">골프장 총 변경 차액 (1인 기준)</span>
@@ -2791,11 +2791,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 5: DEDICATED CUSTOM OPTION POPUP MODAL (HOTEL, VEHICLE, GUIDE, MEAL, ETC.) ================= */}
       {customizingOption && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-3xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col">
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-3xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
             
-            {/* Modal Header */}
-            <div className="flex items-start justify-between pb-3 sm:pb-4 border-b border-gray-100">
+            {/* Modal Header - Edge-to-edge pinned on mobile */}
+            <div className="flex items-start justify-between px-3.5 py-3 sm:px-0 sm:py-0 sm:pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
                   <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">나만의 일정 설계</span>
@@ -2832,8 +2832,8 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
               </button>
             </div>
 
-            {/* Scrollable Content Body */}
-            <div className="overflow-y-auto flex-1 pr-1 space-y-4 py-4">
+            {/* Scrollable Content Body - Edge-to-edge padding on mobile */}
+            <div className="overflow-y-auto flex-1 px-3 sm:px-0 space-y-4 py-3 sm:py-4">
 
               {/* Step 1: Current Selection Status Card */}
               <div>
@@ -3083,8 +3083,8 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
             </div>
 
-            {/* Modal Footer */}
-            <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+            {/* Modal Footer - Edge-to-edge pinned on mobile */}
+            <div className="px-3.5 py-3 sm:px-0 sm:py-0 sm:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-md sm:shadow-none">
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <div>
                   <span className="text-[10px] text-gray-400 block">선택 옵션 변경 차액 (1인 기준)</span>
@@ -3140,9 +3140,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 6: DIY COURSE SELECTOR MODAL ================= */}
       {diyChangingRoundIndex !== null && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-2xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-4 sm:p-6 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-2xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-6 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-3.5 py-3 sm:px-0 sm:py-0 sm:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">
                   {diyChangingRoundIndex + 1}회차 ({diyChangingRoundIndex + 2}일차) 코스 지정
@@ -3160,7 +3160,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 py-3 space-y-2 max-h-[65vh]">
+            <div className="overflow-y-auto flex-1 px-3 sm:px-0 py-3 space-y-2 max-h-[65vh]">
               {pool.golfCourses.map((course) => {
                 const isSelected = diyGolfCourses[diyChangingRoundIndex] === course.name;
                 return (
@@ -3214,7 +3214,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
               })}
             </div>
 
-            <div className="pt-3 border-t border-gray-100 text-right">
+            <div className="px-3.5 py-3 sm:px-0 sm:py-0 sm:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 text-right">
               <button
                 type="button"
                 onClick={() => setDiyChangingRoundIndex(null)}

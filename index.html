@@ -48,6 +48,13 @@
       * {
         box-sizing: border-box;
       }
+      html, body, #root {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+        width: 100% !important;
+        touch-action: pan-y pinch-zoom;
+        overscroll-behavior-x: none !important;
+      }
       body {
         font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
         letter-spacing: -0.025em;
