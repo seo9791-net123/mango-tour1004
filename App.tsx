@@ -42,7 +42,10 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('mango_products_db');
     return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
   });
-  const [videos, setVideos] = useState<VideoItem[]>(INITIAL_VIDEOS);
+  const [videos, setVideos] = useState<VideoItem[]>(() => {
+    const saved = localStorage.getItem('mango_videos_db');
+    return saved ? JSON.parse(saved) : INITIAL_VIDEOS;
+  });
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const cleanCustomPackages = (pkgs: CustomTripPackage[]): CustomTripPackage[] => {
@@ -127,6 +130,14 @@ const App: React.FC = () => {
       console.warn("Failed to persist master options pool:", e);
     }
   }, [masterOptionPool]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mango_videos_db', JSON.stringify(videos));
+    } catch (e) {
+      console.warn("Failed to persist videos:", e);
+    }
+  }, [videos]);
 
   // --- Firestore Integration Handlers ---
 
@@ -272,6 +283,16 @@ const App: React.FC = () => {
 
   const handleUpdateVideos = async (newVideos: VideoItem[]) => {
     setVideos(newVideos);
+    try {
+      // Prevent QuotaExceededError or memory exhaustion by filtering out huge data URIs from localStorage
+      const safeVideos = newVideos.map(v => ({
+        ...v,
+        url: v.url.startsWith('data:video') ? '' : v.url
+      }));
+      localStorage.setItem('mango_videos_db', JSON.stringify(safeVideos));
+    } catch (e) {
+      console.warn("Failed to write videos to localStorage:", e);
+    }
     debouncedSyncVideos(newVideos);
   };
 

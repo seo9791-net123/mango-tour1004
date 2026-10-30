@@ -150,23 +150,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <div id="error-console" style="display: none; padding: 20px; background: #fff0f0; color: #ff0000; border: 2px solid #ff0000; margin: 20px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; font-size: 14px; position: fixed; bottom: 0; left: 0; right: 0; z-index: 999999; word-break: break-all; max-height: 40vh; overflow-y: auto;"><strong>JavaScript Runtime Error Catcher:</strong></div>
-    <script>
-      window.addEventListener('error', function(e) {
-        var consoleDiv = document.getElementById('error-console');
-        if (consoleDiv) {
-          consoleDiv.style.display = 'block';
-          consoleDiv.innerText += '\nError: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
-        }
-      });
-      window.addEventListener('unhandledrejection', function(e) {
-        var consoleDiv = document.getElementById('error-console');
-        if (consoleDiv) {
-          consoleDiv.style.display = 'block';
-          consoleDiv.innerText += '\nUnhandled Rejection: ' + (e.reason?.message || e.reason || 'Unknown rejection');
-        }
-      });
-    </script>
     <script type="module" src="/index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {

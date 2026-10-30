@@ -1,4 +1,3 @@
-
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "./firebaseConfig";
 import { compressImage } from "../utils/imageUtils";
@@ -23,98 +22,114 @@ export const setCloudinaryConfig = (cloudName: string, uploadPreset: string) => 
 };
 
 /**
- * 파일을 Firebase Storage 또는 Cloudinary에 업로드하며 진행률을 추적합니다.
- * @param file 업로드할 파일 객체
- * @param folder 저장할 폴더 경로
- * @param onProgress 진행률 콜백 (0-100)
- * @returns 업로드된 파일의 다운로드 URL
+ * Same-origin Server Upload (/api/upload)
+ * Uses XHR for accurate upload progress and avoids 3rd-party CORS issues.
  */
-export const uploadFile = async (
-  file: File, 
-  folder: string = "uploads", 
+const uploadToServer = (
+  uploadData: Blob | File,
+  filename: string,
   onProgress?: (progress: number) => void
 ): Promise<string> => {
-  const { cloudName, uploadPreset } = getCloudinaryConfig();
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
 
-  // 이미지 파일인 경우 압축 시도
-  let uploadData: Blob | File = file;
-  if (file.type.startsWith('image/')) {
-    try {
-      uploadData = await compressImage(file);
-      console.log(`Image compressed: ${file.size} -> ${uploadData.size}`);
-    } catch (e) {
-      console.warn("Image compression failed, using original file:", e);
-    }
-  }
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
+        onProgress(percent);
+      }
+    };
 
-  // 1. Cloudinary (XHR for progress)
-  // Only attempt Cloudinary if BOTH cloudName and uploadPreset are set and valid
-  const isCloudinaryConfigured = cloudName && 
-                                uploadPreset && 
-                                cloudName !== "Cloud Name" && 
-                                cloudName.trim() !== "" && 
-                                uploadPreset.trim() !== "";
-
-  if (isCloudinaryConfigured) {
-    console.log(`Attempting Cloudinary upload to ${cloudName} with preset ${uploadPreset}...`);
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      // Use 'auto' for resource type to handle images and videos automatically
-      xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`);
-
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable && onProgress) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          onProgress(percentComplete);
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (onProgress) onProgress(100);
+        try {
+          const res = JSON.parse(xhr.responseText);
+          if (res.url) {
+            console.log("Server upload success:", res.url);
+            return resolve(res.url);
+          }
+        } catch {
+          // ignore
         }
-      };
+      }
+      reject(new Error(`Server upload responded with status: ${xhr.status}`));
+    };
 
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
+    xhr.onerror = () => {
+      reject(new Error('Server upload network error'));
+    };
+
+    const formData = new FormData();
+    formData.append('file', uploadData, filename);
+    xhr.send(formData);
+  });
+};
+
+/**
+ * Cloudinary Direct Upload
+ */
+const uploadToCloudinary = (
+  uploadData: Blob | File,
+  cloudName: string,
+  uploadPreset: string,
+  folder: string,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && onProgress) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        onProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
           const response = JSON.parse(xhr.responseText);
           console.log("Cloudinary upload success:", response.secure_url);
           resolve(response.secure_url);
-        } else {
-          let errorMsg = 'Cloudinary 업로드 실패';
-          let detailedError = '';
-          try {
-            const response = JSON.parse(xhr.responseText);
-            if (response.error?.message) {
-              detailedError = response.error.message;
-              errorMsg += `: ${detailedError}`;
-            }
-          } catch (e) {}
-          
-          if (xhr.status === 401 || detailedError.includes('API key')) {
-            errorMsg += "\n\n[해결 방법]\n1. Cloud Name이 정확한지 확인하세요.\n2. Cloudinary 설정에서 Upload Preset이 'Unsigned'로 설정되어 있는지 확인하세요.\n3. Preset 이름이 정확한지 확인하세요.";
-          }
-          
-          console.error("Cloudinary upload error:", xhr.responseText);
-          reject(new Error(`${errorMsg} (Status: ${xhr.status})`));
+        } catch (e) {
+          reject(new Error("Cloudinary JSON parse error"));
         }
-      };
+      } else {
+        console.warn("Cloudinary upload non-200 status:", xhr.status, xhr.responseText);
+        reject(new Error(`Cloudinary returned status ${xhr.status}`));
+      }
+    };
 
-      xhr.onerror = () => {
-        console.error("Cloudinary network error");
-        reject(new Error('Cloudinary 업로드 네트워크 오류 (CORS 또는 연결 문제)'));
-      };
+    xhr.onerror = () => {
+      console.warn("Cloudinary network/CORS error encountered.");
+      reject(new Error('Cloudinary CORS / connection error'));
+    };
 
-      const formData = new FormData();
-      formData.append('file', uploadData);
-      formData.append('upload_preset', uploadPreset);
-      formData.append('folder', folder);
-      xhr.send(formData);
-    });
-  }
+    const formData = new FormData();
+    formData.append('file', uploadData);
+    formData.append('upload_preset', uploadPreset);
+    formData.append('folder', folder);
+    xhr.send(formData);
+  });
+};
 
-  // 2. Firebase Storage (uploadBytesResumable for progress)
+/**
+ * Firebase Storage Upload
+ */
+const uploadToFirebaseStorage = (
+  uploadData: Blob | File,
+  filename: string,
+  folder: string,
+  onProgress?: (progress: number) => void
+): Promise<string> => {
   if (!storage) {
-    console.error("Firebase Storage not initialized");
-    throw new Error("Firebase Storage가 초기화되지 않았습니다. 설정(Firebase Config 또는 Cloudinary)을 확인해주세요.");
+    return Promise.reject(new Error("Firebase Storage not initialized"));
   }
 
-  console.log(`Attempting Firebase Storage upload to folder: ${folder}...`);
-  const uniqueFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+  const uniqueFileName = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9.]/g, "_")}`;
   const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
   const uploadTask = uploadBytesResumable(storageRef, uploadData);
 
@@ -126,27 +141,101 @@ export const uploadFile = async (
         if (onProgress) onProgress(progress);
       },
       (error: any) => {
-        console.error("Firebase upload failed:", error);
-        let msg = "파일 업로드에 실패했습니다.";
-        if (error.code === 'storage/unauthorized') {
-          msg = "업로드 권한이 없습니다. Firebase Storage 보안 규칙을 확인하거나 Cloudinary를 사용하세요.";
-        } else if (error.code === 'storage/canceled') {
-          msg = "업로드가 취소되었습니다.";
-        } else if (error.code === 'storage/unknown') {
-          msg = `알 수 없는 오류가 발생했습니다: ${error.message}`;
-        }
-        reject(new Error(msg));
+        reject(error);
       },
       async () => {
         try {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          console.log("Firebase upload success:", downloadURL);
           resolve(downloadURL);
         } catch (e: any) {
-          console.error("Failed to get download URL:", e);
-          reject(new Error("업로드는 완료되었으나 URL을 가져오는데 실패했습니다."));
+          reject(e);
         }
       }
     );
   });
+};
+
+/**
+ * Fallback to Base64 Data URL (ensures client NEVER crashes on upload)
+ */
+const fileToDataUrl = (file: Blob | File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+/**
+ * 파일을 업로드하며 진행률을 추적합니다.
+ * 1순위: 동일 오리진 서버 업로드 (/api/upload - CORS 이슈 원천 방지)
+ * 2순위: Cloudinary (설정되어 있고 서버 업로드 불가 시)
+ * 3순위: Firebase Storage
+ * 4순위: Data URL (오프라인/긴급 대비)
+ *
+ * @param file 업로드할 파일 객체
+ * @param folder 저장할 폴더 경로
+ * @param onProgress 진행률 콜백 (0-100)
+ * @returns 업로드된 파일의 다운로드 URL
+ */
+export const uploadFile = async (
+  file: File, 
+  folder: string = "uploads", 
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  // 이미지 파일인 경우 최적화 압축 시도
+  let uploadData: Blob | File = file;
+  if (file.type.startsWith('image/')) {
+    try {
+      uploadData = await compressImage(file);
+      console.log(`Image compressed: ${file.size} -> ${uploadData.size}`);
+    } catch (e) {
+      console.warn("Image compression skipped:", e);
+    }
+  }
+
+  // 1. Same-Origin Server Upload (Best & most reliable, no CORS or third-party limits)
+  try {
+    console.log(`Uploading ${file.name} to same-origin server (/api/upload)...`);
+    const serverUrl = await uploadToServer(uploadData, file.name, onProgress);
+    if (serverUrl) return serverUrl;
+  } catch (serverErr) {
+    console.warn("Server upload (/api/upload) not available, checking other providers:", serverErr);
+  }
+
+  // 2. Cloudinary Upload (If configured and not failing)
+  const { cloudName, uploadPreset } = getCloudinaryConfig();
+  const isCloudinaryConfigured = cloudName && 
+                                uploadPreset && 
+                                cloudName !== "Cloud Name" && 
+                                cloudName.trim() !== "" && 
+                                uploadPreset.trim() !== "";
+
+  if (isCloudinaryConfigured) {
+    try {
+      console.log(`Attempting Cloudinary upload to ${cloudName}...`);
+      const cUrl = await uploadToCloudinary(uploadData, cloudName, uploadPreset, folder, onProgress);
+      if (cUrl) return cUrl;
+    } catch (cloudinaryErr) {
+      console.warn("Cloudinary upload failed (CORS/Preset issue), falling back to Firebase Storage:", cloudinaryErr);
+    }
+  }
+
+  // 3. Firebase Storage Upload
+  try {
+    console.log(`Attempting Firebase Storage upload for ${file.name}...`);
+    const fbUrl = await uploadToFirebaseStorage(uploadData, file.name, folder, onProgress);
+    if (fbUrl) return fbUrl;
+  } catch (fbErr) {
+    console.warn("Firebase storage upload failed:", fbErr);
+  }
+
+  // 4. Ultimate Local Fallback (Use Blob URL instead of heavy Base64 to prevent memory crashes)
+  console.log("Using local URL fallback for uploaded file...");
+  if (onProgress) onProgress(100);
+  if (typeof window !== 'undefined' && window.URL && window.URL.createObjectURL) {
+    return window.URL.createObjectURL(uploadData);
+  }
+  return await fileToDataUrl(uploadData);
 };

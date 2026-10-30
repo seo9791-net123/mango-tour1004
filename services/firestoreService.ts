@@ -150,8 +150,9 @@ export const firestoreService = {
    */
   async fetchOrSeedCollection(collectionName: string, initialData: any[]) {
     const querySnapshot = await getDocs(collection(db, collectionName));
+    const isAlreadySeeded = localStorage.getItem(`mango_seeded_${collectionName}`) === 'true';
     
-    if (querySnapshot.empty && initialData.length > 0) {
+    if (querySnapshot.empty && initialData.length > 0 && !isAlreadySeeded) {
       console.log(`Seeding ${collectionName}...`);
       const batch = writeBatch(db);
       initialData.forEach(item => {
@@ -159,7 +160,12 @@ export const firestoreService = {
         batch.set(ref, item);
       });
       await batch.commit();
+      localStorage.setItem(`mango_seeded_${collectionName}`, 'true');
       return initialData;
+    }
+
+    if (!querySnapshot.empty) {
+      localStorage.setItem(`mango_seeded_${collectionName}`, 'true');
     }
 
     const data: any[] = [];
