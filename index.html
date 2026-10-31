@@ -11,6 +11,91 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8212/8212613.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>MANGO TOUR - 베트남 골프 투어 전문</title>
+    <!-- 이미지 캐시 방지(Cache-Buster): 접속 시마다 타임스탬프(?t=현재시간)를 이미지 URL에 자동 부여 -->
+    <script>
+      (function() {
+        // 사용자가 홈페이지에 접속한 시점의 고유 타임스탬프
+        var pageLoadTimestamp = Date.now();
+        window.__PAGE_LOAD_TIMESTAMP__ = pageLoadTimestamp;
+
+        // 이미지 URL 뒤에 ?t=현재시간 (또는 &t=현재시간)을 안전하게 붙여주는 함수
+        function attachTimestamp(url) {
+          if (!url || typeof url !== 'string') return url;
+          var trimmed = url.trim();
+          
+          // data URI, blob URL, SVG 인라인, 앵커 링크 등은 캐시 방지 불필요 및 손상 방지
+          if (
+            trimmed.startsWith('data:') ||
+            trimmed.startsWith('blob:') ||
+            trimmed.startsWith('javascript:') ||
+            trimmed.startsWith('#')
+          ) {
+            return url;
+          }
+
+          // 이미 ?t= 또는 &t= 타임스탬프가 붙어 있는 경우 중복 부여 방지
+          if (/[?&]t=\d+/.test(trimmed)) {
+            return url;
+          }
+
+          // 기존 쿼리스트링(?) 존재 여부에 따라 ?t= 또는 &t= 연결
+          var separator = trimmed.indexOf('?') !== -1 ? '&' : '?';
+          return trimmed + separator + 't=' + pageLoadTimestamp;
+        }
+
+        // 전역에서 어디서나 호출할 수 있도록 공개
+        window.getFreshImageUrl = attachTimestamp;
+
+        // 1. HTMLImageElement.src Setter 후킹 (React 컴포넌트 및 일반 JS 동적 렌더링 시 자동 적용)
+        try {
+          var originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+          if (originalSrcDescriptor && originalSrcDescriptor.set) {
+            Object.defineProperty(HTMLImageElement.prototype, 'src', {
+              get: function() {
+                return originalSrcDescriptor.get.call(this);
+              },
+              set: function(value) {
+                originalSrcDescriptor.set.call(this, attachTimestamp(value));
+              },
+              configurable: true,
+              enumerable: true
+            });
+          }
+
+          // 2. setAttribute('src', ...) 가로채기
+          var originalSetAttribute = Element.prototype.setAttribute;
+          Element.prototype.setAttribute = function(name, value) {
+            if (this instanceof HTMLImageElement && String(name).toLowerCase() === 'src') {
+              return originalSetAttribute.call(this, name, attachTimestamp(value));
+            }
+            return originalSetAttribute.apply(this, arguments);
+          };
+        } catch (err) {
+          console.warn('[CacheBuster] Interceptor hook warning:', err);
+        }
+
+        // 3. 페이지 로드 시 DOM에 존재하는 정적 <img> 태그 처리
+        function updateStaticImages() {
+          var images = document.querySelectorAll('img');
+          for (var i = 0; i < images.length; i++) {
+            var img = images[i];
+            var currentSrc = img.getAttribute('src');
+            if (currentSrc) {
+              var newSrc = attachTimestamp(currentSrc);
+              if (newSrc !== currentSrc) {
+                img.setAttribute('src', newSrc);
+              }
+            }
+          }
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', updateStaticImages);
+        } else {
+          updateStaticImages();
+        }
+      })();
+    </script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>

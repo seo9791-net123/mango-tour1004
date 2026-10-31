@@ -62,3 +62,40 @@ export const compressImage = (
     reader.onerror = (e) => reject(e);
   });
 };
+
+// 페이지 접속 시점의 고유 타임스탬프 (밀리초)
+export const PAGE_LOAD_TIMESTAMP = typeof window !== 'undefined' && (window as any).__PAGE_LOAD_TIMESTAMP__ 
+  ? (window as any).__PAGE_LOAD_TIMESTAMP__ 
+  : Date.now();
+
+/**
+ * 이미지 URL 뒤에 캐시 방지용 타임스탬프(?t=현재시간)를 자동으로 덧붙여 항상 최신 이미지를 불러오도록 합니다.
+ * data:, blob: URL 및 이미 타임스탬프가 붙은 URL은 보존합니다.
+ * @param url 원본 이미지 URL
+ * @param timestamp 부여할 타임스탬프 (기본값: 페이지 접속 시각)
+ */
+export const getFreshImageUrl = (
+  url: string | undefined | null, 
+  timestamp: number = PAGE_LOAD_TIMESTAMP
+): string => {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+
+  // base64 data URI, blob URL, SVG 인라인, 앵커 링크 등은 캐시 방지 불필요 및 제외
+  if (
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('javascript:') ||
+    trimmed.startsWith('#')
+  ) {
+    return trimmed;
+  }
+
+  // 이미 ?t= 또는 &t= 타임스탬프가 있다면 유지 (중복 방지)
+  if (/[?&]t=\d+/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const separator = trimmed.includes('?') ? '&' : '?';
+  return `${trimmed}${separator}t=${timestamp}`;
+};
