@@ -1639,7 +1639,7 @@ const AdminDashboard: React.FC<Props> = ({
         {/* Hero Slide */}
         {activeTab === 'hero' && (
            <div className="animate-fade-in-up">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">메인 슬라이드 이미지 (총 {heroImages.length}개)</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">메인 슬라이드 이미지 (총 {heroImages.length}개)</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
               {heroImages.map((img, idx) => (
                 <div key={idx} className="relative group rounded-2xl overflow-hidden aspect-video shadow-md border bg-gray-50">
@@ -1669,7 +1669,7 @@ const AdminDashboard: React.FC<Props> = ({
         {activeTab === 'products' && (
           <div className="animate-fade-in-up">
             <div className="flex justify-between items-center mb-8 border-b pb-4">
-              <h3 className="text-2xl font-bold text-gray-800 font-serif">상품 카탈로그 관리</h3>
+              <h3 className="text-2xl font-bold text-gray-800">상품 카탈로그 관리</h3>
               <div className="flex gap-2">
                 <button 
                   onClick={handleConvertVndToUsd}
@@ -1878,7 +1878,7 @@ const AdminDashboard: React.FC<Props> = ({
               <>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
+                    <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                       <span>⛳</span> 4박 5일 맞춤 골프 상품 관리 ({customPackages.length}개)
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">
@@ -2529,7 +2529,7 @@ const AdminDashboard: React.FC<Props> = ({
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
+                    <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                       <span>🌐</span> 맞춤 선택 풀(Pool) 관리 센터
                     </h3>
                     <p className="text-xs text-gray-500 mt-1 max-w-2xl leading-relaxed">
@@ -3074,7 +3074,7 @@ const AdminDashboard: React.FC<Props> = ({
         {activeTab === 'pages' && (
           <div className="animate-fade-in-up">
             <div className="flex justify-between items-center mb-8 border-b pb-6">
-               <h3 className="text-2xl font-bold text-gray-800 font-serif">서브 페이지 통합 편집기</h3>
+               <h3 className="text-2xl font-bold text-gray-800">서브 페이지 통합 편집기</h3>
                <select 
                 className="p-3 bg-white border-2 border-deepgreen rounded-2xl font-bold text-deepgreen shadow-md outline-none"
                 value={selectedPageId}
@@ -3314,7 +3314,7 @@ const AdminDashboard: React.FC<Props> = ({
         {/* Menu Icon Management */}
         {activeTab === 'menu' && (
            <div className="animate-fade-in-up">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">메인 아이콘 메뉴 관리</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">메인 아이콘 메뉴 관리</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
               {menuItems.map((item, idx) => (
                 <div key={idx} className="border-2 border-gray-50 p-4 rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
@@ -3381,7 +3381,7 @@ const AdminDashboard: React.FC<Props> = ({
         {/* Popup Management */}
         {activeTab === 'popup' && (
           <div className="animate-fade-in-up max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">공지사항 팝업 관리</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">공지사항 팝업 관리</h3>
             <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl overflow-hidden">
               <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between bg-gray-50 p-4 rounded-3xl">
@@ -3468,7 +3468,7 @@ const AdminDashboard: React.FC<Props> = ({
         {/* User Admin */}
         {activeTab === 'users' && (
           <div className="animate-fade-in-up">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6 font-serif">Member Management</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Member Management</h3>
             <div className="overflow-x-auto rounded-2xl border border-gray-100">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b">

@@ -117,8 +117,8 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   const [uploadProgress, setUploadProgress] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<VideoItem>({ id: '', title: '', url: '', category: '기타' });
-  const [uploadCategory, setUploadCategory] = useState<'골프' | '여행' | '먹거리' | '기타'>('기타');
-  const [filterCategory, setFilterCategory] = useState<string>('전체');
+  const [uploadCategory, setUploadCategory] = useState<'골프' | '여행' | '먹거리' | '기타'>('골프');
+  const [filterCategory, setFilterCategory] = useState<string>('골프');
 
   // Video playback error tracking per video ID
   const [failedVideos, setFailedVideos] = useState<Record<string, string>>({});
@@ -456,7 +456,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
         {/* Category Filter */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
-          {['전체', '골프', '여행', '먹거리', '기타'].map((cat) => (
+          {(['골프', '여행', '먹거리', '기타'] as const).map((cat) => (
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
@@ -473,15 +473,15 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
         {/* Video Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {videos.filter(v => filterCategory === '전체' || v.category === filterCategory).length === 0 ? (
+          {videos.filter(v => (v.category || '기타') === filterCategory).length === 0 ? (
             <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-700 rounded-2xl text-gray-500">
                <span className="text-4xl block mb-4">📹</span>
-               <p>{filterCategory === '전체' ? '등록된 현장 영상이 없습니다.' : `${filterCategory} 카테고리에 영상이 없습니다.`}</p>
+               <p>{filterCategory} 카테고리에 영상이 없습니다.</p>
                <p className="text-xs mt-1">첫 번째 영상을 업로드해보세요!</p>
             </div>
           ) : (
             videos
-              .filter(v => filterCategory === '전체' || v.category === filterCategory)
+              .filter(v => (v.category || '기타') === filterCategory)
               .map((video) => {
                 const currentUrl = editingId === video.id ? editForm.url : video.url;
                 const ytId = extractYouTubeId(currentUrl);

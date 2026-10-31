@@ -29,7 +29,7 @@ const FeaturedSections: React.FC<Props> = ({ pageContents }) => {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-black text-deepgreen tracking-tight font-serif">추천 정보 & 서비스</h2>
+            <h2 className="text-2xl font-black text-deepgreen tracking-tight">추천 정보 & 서비스</h2>
             <p className="text-gray-500 text-sm mt-1">망고투어에서 제공하는 특별한 서비스를 확인해보세요.</p>
           </div>
         </div>

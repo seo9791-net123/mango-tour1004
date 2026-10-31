@@ -423,7 +423,7 @@ const App: React.FC = () => {
         
         <div className="relative z-10">
           <div className="w-20 h-20 border-4 border-gold-400 border-t-transparent rounded-full animate-spin mb-8 mx-auto shadow-[0_0_30px_rgba(197,160,40,0.3)]"></div>
-          <h2 className="text-3xl font-black mb-3 tracking-tight animate-pulse" style={{ fontFamily: 'serif' }}>설레는 여행 준비 중!</h2>
+          <h2 className="text-3xl font-black mb-3 tracking-tight animate-pulse">설레는 여행 준비 중!</h2>
           <p className="text-sm opacity-70 font-medium tracking-widest uppercase">MANGO TOUR IS PREPARING YOUR TRIP</p>
         </div>
       </div>

@@ -369,39 +369,126 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
           </div>
         )}
 
-        {/* Post Grid Card Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {posts.map((post) => (
-                <div 
-                    key={post.id} 
-                    onClick={() => handlePostClick(post)}
-                    className="bg-white rounded-lg shadow-sm hover:shadow-xl transition duration-300 cursor-pointer border border-gray-100 overflow-hidden flex flex-col h-full group p-4"
-                >
-                    {/* Content Section */}
-                    <div className="flex-1 flex flex-col">
-                        <div className="flex justify-between items-start mb-2">
-                            <span className="text-[10px] font-bold text-gold-600 bg-gold-50 px-2 py-0.5 rounded-full">
-                                {post.author}
-                            </span>
-                            <span className="text-[10px] text-gray-400">{post.date}</span>
+        {/* Post List Row Layout (줄 형태 게시판) */}
+        <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden">
+          {posts.length === 0 ? (
+            <div className="py-20 text-center text-gray-400">
+              <span className="text-4xl block mb-3">💬</span>
+              <p className="text-base font-bold text-gray-700">등록된 게시글이 없습니다.</p>
+              <p className="text-xs text-gray-400 mt-1">첫 번째 여행 이야기나 후기를 남겨보세요!</p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop Table Header */}
+              <div className="hidden md:grid grid-cols-12 px-6 py-3.5 bg-gray-50/90 text-xs font-bold text-gray-500 border-b border-gray-200/90 select-none">
+                <div className="col-span-1 text-center">번호</div>
+                <div className="col-span-7">제목</div>
+                <div className="col-span-2 text-center">작성자</div>
+                <div className="col-span-1 text-center">작성일</div>
+                <div className="col-span-1 text-center">조회</div>
+              </div>
+
+              {/* Rows List */}
+              <div className="divide-y divide-gray-100">
+                {posts.map((post, idx) => {
+                  const postNumber = posts.length - idx;
+                  const hasComments = post.comments && post.comments.length > 0;
+
+                  return (
+                    <div
+                      key={post.id}
+                      onClick={() => handlePostClick(post)}
+                      className="group transition-colors duration-150 cursor-pointer hover:bg-amber-50/40 active:bg-gray-50"
+                    >
+                      {/* Desktop Row */}
+                      <div className="hidden md:grid grid-cols-12 items-center px-6 py-4">
+                        <div className="col-span-1 text-center text-xs text-gray-400 font-medium">
+                          {postNumber}
                         </div>
-                        <h3 className="font-black text-xl text-gray-800 mb-2 line-clamp-1 group-hover:text-deepgreen transition flex items-center gap-1">
-                            {post.isPrivate && <span className="text-base">🔒</span>}
-                            {post.title}
-                        </h3>
-                        <p className="text-gray-600 text-base font-bold line-clamp-2 mb-4 flex-1 leading-relaxed">
+                        <div className="col-span-7 min-w-0 pr-4">
+                          <div className="flex items-center gap-1.5">
+                            {post.isPrivate && (
+                              <span className="text-xs text-amber-600 shrink-0" title="비공개 글">🔒</span>
+                            )}
+                            {post.image && (
+                              <span className="text-xs shrink-0" title="사진 포함">📷</span>
+                            )}
+                            <h3 className="font-bold text-sm text-gray-900 group-hover:text-deepgreen transition-colors truncate">
+                              {post.title}
+                            </h3>
+                            {hasComments && (
+                              <span className="text-[11px] font-bold text-gold-600 shrink-0 ml-1">
+                                [{post.comments.length}]
+                              </span>
+                            )}
+                          </div>
+                          {post.content && (
+                            <p className="text-xs text-gray-500 truncate mt-1 leading-normal font-normal">
+                              {post.content}
+                            </p>
+                          )}
+                        </div>
+                        <div className="col-span-2 text-center text-xs font-medium text-gray-700 truncate px-2">
+                          <span className="bg-gray-100/80 group-hover:bg-white text-gray-700 px-2.5 py-0.5 rounded-full inline-block truncate max-w-full">
+                            {post.author}
+                          </span>
+                        </div>
+                        <div className="col-span-1 text-center text-xs text-gray-400 whitespace-nowrap">
+                          {post.date}
+                        </div>
+                        <div className="col-span-1 text-center text-xs text-gray-500 font-medium">
+                          {post.views}
+                        </div>
+                      </div>
+
+                      {/* Mobile Row */}
+                      <div className="md:hidden px-4 py-3.5 flex flex-col gap-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            {post.isPrivate && (
+                              <span className="text-xs text-amber-600 shrink-0">🔒</span>
+                            )}
+                            {post.image && (
+                              <span className="text-xs shrink-0">📷</span>
+                            )}
+                            <h3 className="font-bold text-sm text-gray-900 group-hover:text-deepgreen transition-colors truncate">
+                              {post.title}
+                            </h3>
+                            {hasComments && (
+                              <span className="text-[11px] font-bold text-gold-600 shrink-0">
+                                [{post.comments.length}]
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap mt-0.5">
+                            {post.date}
+                          </span>
+                        </div>
+
+                        {post.content && (
+                          <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed font-normal">
                             {post.content}
-                        </p>
-                        <div className="flex justify-between items-center text-[10px] text-gray-400 border-t pt-3">
-                            <div className="flex gap-3">
-                                <span className="flex items-center gap-1">👀 {post.views}</span>
-                                <span className="flex items-center gap-1">💬 {post.comments.length}</span>
-                                {post.image && <span className="text-gold-600 font-bold">🖼️ 사진포함</span>}
-                            </div>
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2 text-[11px] text-gray-400 pt-0.5">
+                          <span className="font-medium text-gray-600">{post.author}</span>
+                          <span>·</span>
+                          <span>조회 {post.views}</span>
+                          {hasComments && (
+                            <>
+                              <span>·</span>
+                              <span>댓글 {post.comments.length}</span>
+                            </>
+                          )}
                         </div>
+                      </div>
                     </div>
-                </div>
-            ))}
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </section>
@@ -459,18 +546,18 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                        />
                      ) : (
                        <div>
-                          <h2 className="text-3xl font-black text-gray-900 mb-2">{viewingPost.title}</h2>
-                          <div className="flex items-center gap-3 text-sm text-gray-500">
-                              <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-xs">
+                          <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 leading-snug break-keep">{viewingPost.title}</h2>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-500">
+                              <div className="flex items-center gap-1.5">
+                                  <div className="w-5 h-5 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-[10px]">
                                       {viewingPost.author.slice(0,1)}
                                   </div>
-                                  <span className="font-bold text-gray-700">{viewingPost.author}</span>
+                                  <span className="font-semibold text-gray-700">{viewingPost.author}</span>
                               </div>
                               <span>•</span>
-                              <span className="font-medium">{viewingPost.date}</span>
+                              <span className="font-normal text-gray-400">{viewingPost.date}</span>
                               <span>•</span>
-                              <span className="font-medium">조회 {viewingPost.views}</span>
+                              <span className="font-normal text-gray-400">조회 {viewingPost.views}</span>
                           </div>
                        </div>
                      )}
@@ -536,7 +623,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                       placeholder="내용을 입력하세요"
                    />
                 ) : (
-                   <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed text-lg font-bold">
+                   <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm font-normal break-keep">
                        {viewingPost.content}
                    </div>
                 )}

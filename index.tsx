@@ -28,7 +28,7 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '40px', fontFamily: 'sans-serif', textAlign: 'center', backgroundColor: '#f8fafc', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ padding: '40px', fontFamily: "'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif", textAlign: 'center', backgroundColor: '#f8fafc', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
           <div style={{ backgroundColor: '#ffffff', padding: '32px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', maxWidth: '500px' }}>
             <h2 style={{ color: '#004d40', marginBottom: '12px', fontSize: '24px', fontWeight: 'bold' }}>MANGO TOUR 시스템 안내</h2>
             <p style={{ color: '#475569', marginBottom: '20px', fontSize: '15px', lineHeight: '1.6' }}>
