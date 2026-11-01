@@ -664,7 +664,7 @@ const AdminDashboard: React.FC<Props> = ({
       ],
       options: [
         { id: `opt-${Date.now()}-1`, category: 'golf', name: '3회 그린피 (54홀)', description: '전 일정 54홀 그린피', priceUSD: 450, isDefaultIncluded: true, isRequired: true },
-        { id: `opt-${Date.now()}-4`, category: 'hotel', name: '5성급 럭셔리 호텔 (4박 2인1실)', description: '시내 중심 5성급 특급 호텔', priceUSD: 320, isDefaultIncluded: true, isRequired: false },
+        { id: `opt-${Date.now()}-4`, category: 'hotel', name: '5성급 럭셔리 호텔 (4박 1인 객실 기준)', description: '시내 중심 5성급 특급 호텔 (1인 1실 단독 객실)', priceUSD: 320, isDefaultIncluded: true, isRequired: false },
         { id: `opt-${Date.now()}-5`, category: 'vehicle', name: '전용 VIP 리무진 밴 (전 일정)', description: '공항/골프장 전용 기사 포함', priceUSD: 140, isDefaultIncluded: true, isRequired: false },
       ]
     };

@@ -147,6 +147,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
   const [diyHotelType, setDiyHotelType] = useState<'hotel_5star' | 'pool_villa' | 'hotel_4star' | 'resort'>('hotel_5star');
   const [diyVehicleType, setDiyVehicleType] = useState<'vip_limousine' | 'transit_van' | 'suv'>('vip_limousine');
   const [diyIncludeGuide, setDiyIncludeGuide] = useState<boolean>(true);
+  const [diyIncludeFastTrack, setDiyIncludeFastTrack] = useState<boolean>(false);
   const [diyMealPlan, setDiyMealPlan] = useState<'special' | 'local' | 'free'>('special');
   const [diyIncludeSpa, setDiyIncludeSpa] = useState<boolean>(true);
   const [diyChangingRoundIndex, setDiyChangingRoundIndex] = useState<number | null>(null);
@@ -239,14 +240,17 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       diyVehicleType === 'transit_van' ? 18 : 16;
     const vehicleTotal = (diyNights + 1) * dayVehRate;
 
-    const guideTotal = diyIncludeGuide ? (diyNights + 1) * 14 : 0;
+    // 가이드 비용: 1일 기준 $120 (4인 기준 1인당 1일 $30 환산)
+    const guideTotal = diyIncludeGuide ? (diyNights + 1) * 30 : 0;
     const mealTotal = 
       diyMealPlan === 'special' ? diyNights * 22 :
       diyMealPlan === 'local' ? diyNights * 14 : 0;
     const spaTotal = diyIncludeSpa ? 50 : 0;
+    // 패스트 트랙: 1인당 $60
+    const fastTrackTotal = diyIncludeFastTrack ? 60 : 0;
     const insuranceTotal = 15;
 
-    return golfTotal + hotelTotal + vehicleTotal + guideTotal + mealTotal + spaTotal + insuranceTotal;
+    return golfTotal + hotelTotal + vehicleTotal + guideTotal + mealTotal + spaTotal + fastTrackTotal + insuranceTotal;
   };
 
   // Build DIY package dynamically & open into customizer
@@ -256,10 +260,10 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     const courses = diyGolfCourses.slice(0, diyRounds);
 
     const hotelName = 
-      diyHotelType === 'hotel_5star' ? `${diyLocation} 1군 5성급 럭셔리 호텔 (${diyNights}박/2인1실)` :
-      diyHotelType === 'pool_villa' ? `${diyLocation} 최고급 독채 프라이빗 풀빌라 (${diyNights}박)` :
-      diyHotelType === 'hotel_4star' ? `${diyLocation} 중심가 4성급 실속 호텔 (${diyNights}박/2인1실)` :
-      `${diyLocation} 프리미엄 골프 & 비치 리조트 (${diyNights}박/2인1실)`;
+      diyHotelType === 'hotel_5star' ? `${diyLocation} 1군 5성급 럭셔리 호텔 (${diyNights}박/1인 객실 기준)` :
+      diyHotelType === 'pool_villa' ? `${diyLocation} 최고급 독채 프라이빗 풀빌라 (${diyNights}박/1인 1실 배정)` :
+      diyHotelType === 'hotel_4star' ? `${diyLocation} 중심가 4성급 실속 호텔 (${diyNights}박/1인 객실 기준)` :
+      `${diyLocation} 프리미엄 골프 & 비치 리조트 (${diyNights}박/1인 객실 기준)`;
 
     const vehicleName = 
       diyVehicleType === 'vip_limousine' ? `전 일정 단독 VIP 전용 리무진 밴 (${days}일간 기사/유류비 포함)` :
@@ -328,7 +332,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
         id: `diy-opt-hotel`,
         category: 'hotel',
         name: hotelName,
-        description: diyHotelType === 'pool_villa' ? '전용 개인 수영장, 넓은 거실, 바베큐 시설 완비 독채 전체 단독 사용' : '시내 중심가 위치, 럭셔리 시설과 조식 뷔페 포함',
+        description: diyHotelType === 'pool_villa' ? '전용 개인 수영장, 넓은 거실, 바베큐 완비 1인 1실 배정 독채 전체 단독 사용' : '시내 중심가 위치, 1인 1실 단독 객실 & 럭셔리 시설과 조식 뷔페 포함',
         priceUSD: diyNights * (diyHotelType === 'pool_villa' ? 110 : diyHotelType === 'hotel_4star' ? 60 : diyHotelType === 'resort' ? 100 : 90),
         isDefaultIncluded: true,
         isRequired: false,
@@ -347,12 +351,22 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       {
         id: `diy-opt-guide`,
         category: 'guide',
-        name: `한국어 전문 가이드 전 일정 동행 (${days}일간)`,
-        description: '골프 체크인/아웃 지원, 식당 예약, 통역 및 전 일정 올케어',
-        priceUSD: days * 14,
+        name: `한국어 전문 가이드 전 일정 동행 (${days}일간 / 1일 기준 $120)`,
+        description: '골프 체크인/아웃 지원, 식당 예약, 통역 및 전 일정 올케어 (1일 $120 기준)',
+        priceUSD: days * 30,
         isDefaultIncluded: diyIncludeGuide,
         isRequired: false,
         allowCustomSelection: true
+      },
+      {
+        id: `diy-opt-fasttrack`,
+        category: 'etc',
+        name: '공항 VIP 패스트 트랙 (Fast Track / 1인당 $60)',
+        description: '공항 도착 시 VIP 전담팀 입국 심사 대기 없는 초고속 통과 및 수하물 수취 케어',
+        priceUSD: 60,
+        isDefaultIncluded: diyIncludeFastTrack,
+        isRequired: false,
+        allowCustomSelection: false
       },
       {
         id: `diy-opt-meal`,
@@ -612,7 +626,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     if (hotelOpt && customOptionSelections[hotelOpt.id]) {
       return customOptionSelections[hotelOpt.id].name;
     }
-    return hotelOpt?.name || '호치민 1군 5성급 호텔 (4박)';
+    return hotelOpt?.name || '호치민 1군 5성급 호텔 (4박/1인 객실 기준)';
   };
 
   // Calculate prices
@@ -854,15 +868,18 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     });
   };
 
-  const getCategoryBadge = (category: PackageOptionItem['category']) => {
+  const getCategoryBadge = (category: PackageOptionItem['category'], name?: string) => {
+    if (name?.includes('패스트 트랙') || name?.includes('Fast Track')) {
+      return { label: '🛫 패스트트랙 ($60)', bg: 'bg-amber-100 text-amber-900 border-amber-300' };
+    }
     switch (category) {
       case 'golf': return { label: '⛳ 골프', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
-      case 'hotel': return { label: '🏨 숙박', bg: 'bg-blue-100 text-blue-800 border-blue-200' };
+      case 'hotel': return { label: '🏨 숙박 (1인실)', bg: 'bg-blue-100 text-blue-800 border-blue-200' };
       case 'vehicle': return { label: '🚐 차량', bg: 'bg-amber-100 text-amber-800 border-amber-200' };
       case 'meal': return { label: '🦞 식사', bg: 'bg-red-100 text-red-800 border-red-200' };
       case 'activity': return { label: '💆 스파/투어', bg: 'bg-purple-100 text-purple-800 border-purple-200' };
-      case 'guide': return { label: '👨‍💼 가이드', bg: 'bg-indigo-100 text-indigo-800 border-indigo-200' };
-      default: return { label: '✨ 기타', bg: 'bg-gray-100 text-gray-800 border-gray-200' };
+      case 'guide': return { label: '👨‍💼 가이드 (1일 $120)', bg: 'bg-indigo-100 text-indigo-800 border-indigo-200' };
+      default: return { label: '✨ 옵션/기타', bg: 'bg-gray-100 text-gray-800 border-gray-200' };
     }
   };
 
@@ -1060,6 +1077,25 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                                   <span>{course}</span>
                                 </div>
                               ))}
+                            </div>
+                          </div>
+
+                          {/* 4박 5일 추천 패키지 핵심 기준 배너 (1인 객실 기준, 패스트트랙 60$ 선택, 가이드 1일 120$) */}
+                          <div className="mt-3 bg-gradient-to-r from-emerald-50/90 to-teal-50/70 rounded-2xl p-2.5 sm:p-3 border border-emerald-200/90 space-y-1.5 text-[11px] sm:text-xs">
+                            <div className="flex items-center gap-1.5 text-blue-900 font-bold">
+                              <span className="shrink-0 text-blue-600">🏨</span>
+                              <span className="text-gray-900 font-extrabold shrink-0">숙박:</span>
+                              <span className="truncate">1인 객실 기준 (전 일정 1인 1실 단독 투숙)</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-amber-900 font-bold">
+                              <span className="shrink-0 text-amber-600">🛫</span>
+                              <span className="text-gray-900 font-extrabold shrink-0">패스트트랙:</span>
+                              <span className="truncate">공항 VIP 패스트 트랙 (1인당 $60) 선택 가능</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
+                              <span className="shrink-0 text-emerald-700">👨‍💼</span>
+                              <span className="text-gray-900 font-extrabold shrink-0">가이드:</span>
+                              <span className="truncate">한국어 전문 가이드 (1일 기준 $120)</span>
                             </div>
                           </div>
                         </div>
@@ -1396,8 +1432,8 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                     </div>
                   </div>
 
-                  {/* 4-3: Guide, Meals, Spa Checklist */}
-                  <div className="pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* 4-3: Guide, Meals, Spa & Fast Track Checklist */}
+                  <div className="pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                     {/* Guide */}
                     <div 
                       onClick={() => setDiyIncludeGuide(!diyIncludeGuide)}
@@ -1413,12 +1449,42 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                           className="w-4 h-4 md:w-5 md:h-5 rounded text-deepgreen accent-deepgreen cursor-pointer"
                         />
                         <div>
-                          <div className="font-extrabold text-xs md:text-sm text-gray-900">한국어 가이드 동행</div>
+                          <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1">
+                            <span>한국어 가이드</span>
+                            <span className="text-[10px] md:text-xs text-indigo-700 bg-indigo-100 px-1.5 py-0.2 rounded font-bold">1일 $120</span>
+                          </div>
                           <div className="text-[10px] md:text-xs text-gray-500">전 일정 올케어 통역/체크인</div>
                         </div>
                       </div>
                       <span className="text-xs md:text-sm font-bold text-deepgreen">
                         {diyIncludeGuide ? '포함' : '미포함'}
+                      </span>
+                    </div>
+
+                    {/* Fast Track */}
+                    <div 
+                      onClick={() => setDiyIncludeFastTrack(!diyIncludeFastTrack)}
+                      className={`p-3 md:p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${
+                        diyIncludeFastTrack ? 'bg-amber-50/70 border-amber-400' : 'bg-gray-50 border-gray-200 opacity-70'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={diyIncludeFastTrack}
+                          onChange={() => {}}
+                          className="w-4 h-4 md:w-5 md:h-5 rounded text-amber-600 accent-amber-600 cursor-pointer"
+                        />
+                        <div>
+                          <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1">
+                            <span>🛫 패스트 트랙</span>
+                            <span className="text-[10px] md:text-xs text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded font-bold">1인 $60</span>
+                          </div>
+                          <div className="text-[10px] md:text-xs text-gray-500">초고속 VIP 입국 심사</div>
+                        </div>
+                      </div>
+                      <span className="text-xs md:text-sm font-bold text-amber-800">
+                        {diyIncludeFastTrack ? '포함 ($60)' : '미포함'}
                       </span>
                     </div>
 
@@ -1554,12 +1620,21 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                 <div className="px-3.5 sm:px-0">
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between pb-2.5 sm:pb-3">
                     <div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5">
+                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 flex-wrap">
                         <span className="px-2 py-0.5 rounded-full bg-deepgreen text-white text-[10px] sm:text-[11px] md:text-xs font-semibold">
                           📍 {activePackage.location}
                         </span>
                         <span className="px-2 py-0.5 rounded-full bg-gold-500 text-white text-[10px] sm:text-[11px] md:text-xs font-semibold shadow-sm">
                           ⏱️ {activePackage.duration}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[10px] sm:text-[11px] md:text-xs font-bold border border-blue-200">
+                          🏨 1인 객실 기준 (1인 1실)
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 text-[10px] sm:text-[11px] md:text-xs font-bold border border-amber-300">
+                          🛫 VIP 패스트트랙 ($60) 선택
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-900 text-[10px] sm:text-[11px] md:text-xs font-bold border border-indigo-200">
+                          👨‍💼 가이드 (1일 $120)
                         </span>
                       </div>
                       <h2 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-gray-900 leading-snug tracking-tight">{activePackage.title}</h2>
@@ -1667,9 +1742,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                     <div className="space-y-2 sm:space-y-3">
                       {activePackage.options.map(option => {
                         const isSelected = selectedOptionIds.has(option.id);
-                        const badge = getCategoryBadge(option.category);
-                        const effectivePrice = getOptionPrice(option);
                         const displayName = getOptionDisplayName(option);
+                        const badge = getCategoryBadge(option.category, displayName);
+                        const effectivePrice = getOptionPrice(option);
                         const displayDescription = getOptionDisplayDescription(option);
                         const isCustomized = !!customOptionSelections[option.id] || (option.category === 'golf' && isGolfCoursesModified);
                         const isExpanded = expandedOptionId === option.id;
@@ -1685,12 +1760,18 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                           ? pool.meals 
                           : [];
 
+                        const isFastTrack = option.name.includes('패스트 트랙') || option.id.includes('fasttrack');
+
                         return (
                           <div
                             key={option.id}
                             className={`rounded-none sm:rounded-2xl border-x-0 border-y sm:border transition-all ${
                               isSelected
-                                ? 'bg-emerald-50/40 border-emerald-300 shadow-xs'
+                                ? isFastTrack 
+                                  ? 'bg-amber-50/70 border-amber-400 shadow-xs'
+                                  : 'bg-emerald-50/40 border-emerald-300 shadow-xs'
+                                : isFastTrack
+                                ? 'bg-amber-50/20 border-amber-200/60 opacity-80 hover:opacity-100'
                                 : 'bg-gray-50/60 border-gray-200/80 opacity-60 hover:opacity-100'
                             }`}
                           >
@@ -1716,6 +1797,21 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                                     </span>
                                     {option.isRequired && (
                                       <span className="text-[10px] md:text-xs text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded">필수</span>
+                                    )}
+                                    {isFastTrack && (
+                                      <span className="text-[10px] md:text-xs text-amber-900 font-extrabold bg-amber-200/80 border border-amber-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <span>⚡</span> 1인당 $60 선택 추가
+                                      </span>
+                                    )}
+                                    {option.category === 'hotel' && (
+                                      <span className="text-[10px] md:text-xs text-blue-900 font-bold bg-blue-100/80 border border-blue-300 px-1.5 py-0.5 rounded">
+                                        1인 1실 단독 투숙
+                                      </span>
+                                    )}
+                                    {option.category === 'guide' && (
+                                      <span className="text-[10px] md:text-xs text-indigo-900 font-bold bg-indigo-100/80 border border-indigo-300 px-1.5 py-0.5 rounded">
+                                        1일 기준 $120
+                                      </span>
                                     )}
                                     {isCustomized && (
                                       <span className="text-[10px] md:text-xs text-gold-800 font-semibold bg-gold-100 border border-gold-300 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
@@ -2592,7 +2688,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                         <div key={opt.id} className="flex justify-between items-center text-xs md:text-sm py-1 border-b border-gray-100 last:border-none">
                           <div className="flex items-center gap-1.5 text-gray-800 font-medium truncate mr-2 min-w-0">
                             <span className="text-[9px] md:text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0 font-bold">
-                              {opt.category === 'hotel' ? '숙박' : opt.category === 'vehicle' ? '차량' : opt.category === 'guide' ? '가이드' : opt.category === 'meal' ? '식사' : opt.category === 'golf' ? '골프' : '옵션'}
+                              {opt.name.includes('패스트 트랙') ? '패스트트랙' : opt.category === 'hotel' ? '숙박(1인실)' : opt.category === 'vehicle' ? '차량' : opt.category === 'guide' ? '가이드' : opt.category === 'meal' ? '식사' : opt.category === 'golf' ? '골프' : '옵션'}
                             </span>
                             <span className="truncate">{getOptionDisplayName(opt)}</span>
                           </div>
@@ -2605,8 +2701,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                       <div className="text-xs md:text-sm text-gray-600 space-y-1">
                         <div>• 전 일정 단독 전용 차량 및 공항 픽업 포함</div>
                         <div>• {diyRounds}회 18홀 명문 골프장 그린피 포함</div>
-                        <div>• {getChosenAccommodationName()} 숙박 포함</div>
-                        <div>• {diyIncludeGuide ? '한국어 전문 전담 가이드 포함' : '자유 일정 (기사 온리)'}</div>
+                        <div>• {getChosenAccommodationName()} (1인 1실) 숙박 포함</div>
+                        <div>• {diyIncludeGuide ? '한국어 전문 가이드 포함 (1일 기준 $120)' : '자유 일정 (기사 온리)'}</div>
+                        <div>• {diyIncludeFastTrack ? '공항 VIP 패스트 트랙 포함 (1인당 $60)' : '패스트 트랙 미포함'}</div>
                         <div>• {diyIncludeSpa ? 'VIP 전신 마사지 (90분) 포함' : '마사지 미포함'}</div>
                       </div>
                     )}

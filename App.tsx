@@ -66,16 +66,125 @@ const App: React.FC = () => {
   const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
   const cleanCustomPackages = (pkgs: CustomTripPackage[]): CustomTripPackage[] => {
     return pkgs.map(pkg => {
-      const cleanedOptions = pkg.options.filter(
+      // Find matching template in INITIAL_CUSTOM_PACKAGES if it's one of preset packages (pkg-1 ~ pkg-10)
+      const template = INITIAL_CUSTOM_PACKAGES.find(t => t.id === pkg.id);
+      
+      let baseOptions = template && (!pkg.options || pkg.options.length < 5) 
+        ? [...template.options] 
+        : [...(pkg.options || [])];
+
+      // Filter out caddy/cart if any
+      baseOptions = baseOptions.filter(
         opt => !opt.name.includes('전동카트') && !opt.name.includes('캐디 피') && !opt.name.includes('캐디피')
       );
-      const defaultTotal = cleanedOptions.reduce((sum, opt) => opt.isDefaultIncluded ? sum + (opt.priceUSD || 0) : sum, 0);
+
+      // 1. Ensure Fast Track option exists ($60/person)
+      const hasFastTrack = baseOptions.some(opt => 
+        opt.name.includes('패스트 트랙') || opt.name.includes('Fast Track') || opt.id.includes('fasttrack')
+      );
+      if (!hasFastTrack) {
+        baseOptions.push({
+          id: `opt-${pkg.id}-fasttrack`,
+          category: 'etc',
+          name: '공항 VIP 패스트 트랙 (Fast Track / 1인당 $60)',
+          description: '공항 도착 시 VIP 전용 패스트트랙 라인으로 대기 없이 초고속 입국 심사 및 수하물 수취 케어',
+          priceUSD: 60,
+          isDefaultIncluded: false
+        });
+      } else {
+        baseOptions = baseOptions.map(opt => {
+          if (opt.name.includes('패스트 트랙') || opt.name.includes('Fast Track') || opt.id.includes('fasttrack')) {
+            return {
+              ...opt,
+              name: '공항 VIP 패스트 트랙 (Fast Track / 1인당 $60)',
+              description: '공항 도착 시 VIP 전용 패스트트랙 라인으로 대기 없이 초고속 입국 심사 및 수하물 수취 케어',
+              priceUSD: 60,
+              isDefaultIncluded: false
+            };
+          }
+          return opt;
+        });
+      }
+
+      // 2. Ensure Guide option is 1일 기준 $120
+      baseOptions = baseOptions.map(opt => {
+        if (opt.category === 'guide' || opt.name.includes('가이드')) {
+          let updatedName = opt.name;
+          if (!updatedName.includes('120$')) {
+            updatedName = updatedName.replace(/\(1일.*?기준.*?\)/g, '').replace(/\$\d+/g, '').trim() + ' (1일 기준 $120)';
+          }
+          let updatedDesc = opt.description || '';
+          if (!updatedDesc.includes('120')) {
+            updatedDesc = updatedDesc ? `${updatedDesc} (1일 $120 기준)` : '골프 체크인 및 전 일정 의전 케어 (1일 $120 기준)';
+          }
+          return {
+            ...opt,
+            name: updatedName,
+            description: updatedDesc,
+            priceUSD: 120
+          };
+        }
+        return opt;
+      });
+
+      // 3. Ensure Lodging option is 1인 객실 기준 (1인 1실)
+      baseOptions = baseOptions.map(opt => {
+        if (opt.category === 'hotel') {
+          let updatedName = opt.name
+            .replace(/2인\s*1실/g, '1인 객실 기준')
+            .replace(/2인1실/g, '1인 객실 기준');
+          if (!updatedName.includes('1인')) {
+            updatedName = `${updatedName} (1인 객실 기준)`;
+          }
+          let updatedDesc = opt.description || '';
+          if (!updatedDesc.includes('1인 1실') && !updatedDesc.includes('1인실')) {
+            updatedDesc = updatedDesc ? `${updatedDesc} (전 일정 1인 1실 단독 객실)` : '전 일정 1인 1실 단독 객실 사용 & 조식 포함';
+          }
+          return {
+            ...opt,
+            name: updatedName,
+            description: updatedDesc
+          };
+        }
+        return opt;
+      });
+
+      // Highlight Badges
+      let badges = pkg.highlightBadges ? [...pkg.highlightBadges] : ['4박 5일'];
+      if (!badges.includes('1인 1실 숙박')) {
+        badges.splice(1, 0, '1인 1실 숙박');
+      }
+
+      const defaultTotal = baseOptions.reduce((sum, opt) => opt.isDefaultIncluded ? sum + (opt.priceUSD || 0) : sum, 0);
+
       return {
         ...pkg,
-        basePriceUSD: defaultTotal > 0 ? defaultTotal : pkg.basePriceUSD,
-        options: cleanedOptions
+        basePriceUSD: defaultTotal > 0 ? defaultTotal : (template?.basePriceUSD || pkg.basePriceUSD),
+        highlightBadges: badges,
+        options: baseOptions
       };
     });
+  };
+
+  const cleanMasterOptionPool = (pool: MasterOptionPool): MasterOptionPool => {
+    return {
+      ...pool,
+      accommodations: (pool.accommodations || []).map(acc => ({
+        ...acc,
+        name: acc.name.replace(/2인\s*1실/g, '1인 객실 기준').replace(/2인1실/g, '1인 객실 기준'),
+        description: acc.description.replace(/2인\s*1실/g, '1인 1실').replace(/2인1실/g, '1인 1실')
+      })),
+      guides: (pool.guides || []).map(gui => {
+        if (gui.id === 'gui-1' || gui.name.includes('가이드')) {
+          return {
+            ...gui,
+            name: gui.name.includes('120') ? gui.name : `${gui.name} (1일 기준 $120)`,
+            description: gui.description.includes('120') ? gui.description : `${gui.description} (1일 기준 $120)`
+          };
+        }
+        return gui;
+      })
+    };
   };
 
   const [popup, setPopup] = useState<PopupNotification>(INITIAL_POPUP);
@@ -86,7 +195,8 @@ const App: React.FC = () => {
   });
   const [masterOptionPool, setMasterOptionPool] = useState<MasterOptionPool>(() => {
     const saved = localStorage.getItem('mango_master_options_pool_db');
-    return saved ? JSON.parse(saved) : INITIAL_MASTER_OPTION_POOL;
+    const raw = saved ? JSON.parse(saved) : INITIAL_MASTER_OPTION_POOL;
+    return cleanMasterOptionPool(raw);
   });
   const [showPopup, setShowPopup] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
