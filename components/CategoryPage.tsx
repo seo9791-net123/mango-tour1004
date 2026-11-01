@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product, PageSection } from '../types';
 import SectionDetailModal from './SectionDetailModal';
 import BackButton from './BackButton';
@@ -15,6 +15,22 @@ interface Props {
 
 const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onBack, isLoggedIn, onReqLogin }) => {
   const [selectedDetail, setSelectedDetail] = useState<PageSection | null>(null);
+
+  // Listen for mobile bottom nav "뒤로가기" event
+  useEffect(() => {
+    const handleSubViewBack = (e: any) => {
+      if (selectedDetail) {
+        setSelectedDetail(null);
+        e?.detail?.handled?.();
+        return;
+      }
+    };
+
+    window.addEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    return () => {
+      window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    };
+  }, [selectedDetail]);
 
   const handlePreviewClick = (product: Product) => {
     if (!isLoggedIn) {
@@ -38,7 +54,7 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
       <div className="max-w-7xl mx-auto px-3 xs:px-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
-          <BackButton onClick={onBack} variant="light" label="메인으로" />
+          <BackButton onClick={selectedDetail ? () => setSelectedDetail(null) : onBack} variant="light" label={selectedDetail ? '목록으로' : '뒤로가기'} />
           <h2 className="text-lg xs:text-xl font-bold text-deepgreen">
             {category}
             <span className="text-xs font-normal text-gray-500 ml-1.5 xs:ml-2">

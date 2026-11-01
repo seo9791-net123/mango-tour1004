@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
 import { INITIAL_MASTER_OPTION_POOL } from '../constants';
@@ -61,6 +61,76 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
   const [viewTab, setViewTab] = useState<'options' | 'itinerary'>('options');
 
   const quotationCardRef = useRef<HTMLDivElement>(null);
+
+  // Handle internal step-by-step back (closing modals or returning from package customization)
+  const handleTopBack = () => {
+    if (showImagePreviewModal) {
+      setShowImagePreviewModal(false);
+      return;
+    }
+    if (showGolfModal) {
+      setShowGolfModal(false);
+      return;
+    }
+    if (customizingOption) {
+      setCustomizingOption(null);
+      return;
+    }
+    if (showKakaoModal) {
+      setShowKakaoModal(false);
+      return;
+    }
+    if (showInquiryModal) {
+      setShowInquiryModal(false);
+      return;
+    }
+    if (activePackage) {
+      setActivePackage(null);
+      return;
+    }
+    onBack();
+  };
+
+  // Listen for mobile bottom nav "뒤로가기" event
+  useEffect(() => {
+    const handleSubViewBack = (e: any) => {
+      if (showImagePreviewModal) {
+        setShowImagePreviewModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (showGolfModal) {
+        setShowGolfModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (customizingOption) {
+        setCustomizingOption(null);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (showKakaoModal) {
+        setShowKakaoModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (showInquiryModal) {
+        setShowInquiryModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (activePackage) {
+        setActivePackage(null);
+        e?.detail?.handled?.();
+        return;
+      }
+    };
+
+    window.addEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    return () => {
+      window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    };
+  }, [showImagePreviewModal, showGolfModal, customizingOption, showKakaoModal, showInquiryModal, activePackage]);
 
   // Planner View Mode: Presets (10 packages) vs DIY (Customer builds from scratch)
   const [plannerMode, setPlannerMode] = useState<'presets' | 'diy'>('presets');
@@ -812,9 +882,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 relative z-10 w-full max-w-full">
           <div className="mb-3 sm:mb-4">
             <BackButton 
-              onClick={activePackage ? () => setActivePackage(null) : onBack}
+              onClick={handleTopBack}
               variant="hero"
-              label={activePackage ? '목록으로 돌아가기' : '메인으로 돌아가기'}
+              label={activePackage ? '목록으로 돌아가기' : '뒤로가기'}
             />
           </div>
           

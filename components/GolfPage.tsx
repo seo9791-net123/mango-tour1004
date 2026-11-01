@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageContent } from '../types';
 import SliderPopup from './SliderPopup';
 import PageSectionList from './PageSectionList';
@@ -13,6 +13,18 @@ interface Props {
 const GolfPage: React.FC<Props> = ({ content, onBack }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
 
+  useEffect(() => {
+    const handleSubViewBack = (e: any) => {
+      if (isSliderOpen) {
+        setIsSliderOpen(false);
+        e?.detail?.handled?.();
+        return;
+      }
+    };
+    window.addEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    return () => window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
+  }, [isSliderOpen]);
+
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in pb-safe md:pb-0">
       {/* Compact Hero */}
@@ -23,7 +35,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
         
         <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-          <BackButton onClick={onBack} variant="hero" label="메인으로" />
+          <BackButton onClick={isSliderOpen ? () => setIsSliderOpen(false) : onBack} variant="hero" label={isSliderOpen ? '닫기' : '뒤로가기'} />
         </div>
 
         <div className="relative z-10 text-center px-4">

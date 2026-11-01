@@ -32,8 +32,15 @@ const App: React.FC = () => {
   const [nickname, setNickname] = useState('');
   
   // Routing State
+  interface HistoryEntry {
+    page: 'home' | 'admin' | 'category';
+    category: string | null;
+  }
   const [currentPage, setCurrentPage] = useState<'home' | 'admin' | 'category'>('home');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [navHistory, setNavHistory] = useState<HistoryEntry[]>([
+    { page: 'home', category: null }
+  ]);
 
   // Data State
   const [heroImages, setHeroImages] = useState<string[]>(HERO_IMAGES);
@@ -386,19 +393,102 @@ const App: React.FC = () => {
   };
 
   const resetAuthFields = () => { setUsername(''); setPassword(''); setNickname(''); };
+
+  const navigateTo = (page: 'home' | 'admin' | 'category', category: string | null = null, pushHistory: boolean = true) => {
+    if (page === currentPage && category === selectedCategory) {
+      return;
+    }
+
+    if (pushHistory) {
+      setNavHistory(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.page === page && last.category === category) {
+          return prev;
+        }
+        return [...prev, { page, category }];
+      });
+    }
+
+    setCurrentPage(page);
+    setSelectedCategory(category);
+    setIsChatOpen(false);
+    setSelectedProduct(undefined);
+    setShowAuthModal(false);
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  };
+
+  const handleBackOneStep = () => {
+    // 1. App-level modal & drawer overlays
+    if (showAuthModal) {
+      setShowAuthModal(false);
+      return;
+    }
+    if (isChatOpen) {
+      setIsChatOpen(false);
+      return;
+    }
+    if (showPopup) {
+      setShowPopup(false);
+      return;
+    }
+    if (selectedProduct) {
+      setSelectedProduct(undefined);
+      return;
+    }
+
+    // 2. Dispatch custom event to active subview (e.g. package detail, post detail, modals)
+    let isHandledBySubview = false;
+    const backEvent = new CustomEvent('mango_subview_back', {
+      detail: {
+        handled: () => {
+          isHandledBySubview = true;
+        }
+      },
+      cancelable: true
+    });
+    window.dispatchEvent(backEvent);
+    if (isHandledBySubview) {
+      return;
+    }
+
+    // 3. Step back in navigation history stack
+    if (navHistory.length > 1) {
+      const nextHistory = [...navHistory];
+      nextHistory.pop(); // remove current entry
+      const prevEntry = nextHistory[nextHistory.length - 1];
+      setNavHistory(nextHistory);
+      setCurrentPage(prevEntry.page);
+      setSelectedCategory(prevEntry.category);
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      return;
+    }
+
+    // 4. Fallback: if not on home, return to home
+    if (currentPage !== 'home') {
+      setCurrentPage('home');
+      setSelectedCategory(null);
+      setNavHistory([{ page: 'home', category: null }]);
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      return;
+    }
+
+    // 5. Already at home root: defer to browser history
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      window.history.back();
+    }
+  };
+
   const handleLogout = () => { 
     setUser(null); 
     localStorage.removeItem('mango_user');
-    setCurrentPage('home'); 
+    navigateTo('home', null); 
   };
   const handleProductClick = (id: string) => {
     const product = products.find(p => p.id === id);
     if (product) setSelectedProduct(product);
   };
   const handleMenuClick = (label: string) => {
-    setSelectedCategory(label);
-    setCurrentPage('category');
-    window.scrollTo(0, 0);
+    navigateTo('category', label);
   };
 
   const getFilteredProducts = () => {
@@ -435,7 +525,7 @@ const App: React.FC = () => {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 no-print" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
           {/* Logo */}
-          <button onClick={() => window.location.href = '/'} className="flex items-center gap-2 active:scale-95 transition-transform shrink-0">
+          <button onClick={() => navigateTo('home', null)} className="flex items-center gap-2 active:scale-95 transition-transform shrink-0">
              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gold-500 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-sm">M</div>
              <h1 className="text-base sm:text-lg font-black text-deepgreen tracking-tight uppercase whitespace-nowrap">MANGO TOUR</h1>
           </button>
@@ -444,7 +534,7 @@ const App: React.FC = () => {
           <nav className="flex items-center gap-1.5 sm:gap-2">
             {isAdmin && (
               <button 
-                onClick={() => setCurrentPage(currentPage === 'home' ? 'admin' : 'home')}
+                onClick={() => navigateTo(currentPage === 'home' ? 'admin' : 'home', null)}
                 className={`px-2.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 shrink-0 shadow-sm ${
                   currentPage === 'admin' ? 'bg-deepgreen text-white' : 'bg-gray-100 text-deepgreen hover:bg-gray-200'
                 }`}
@@ -527,29 +617,29 @@ const App: React.FC = () => {
 
             {currentPage === 'category' && selectedCategory ? (
               selectedCategory === '동영상' ? (
-                <VideoGallery videos={videos} user={user} onUpdateVideos={handleUpdateVideos} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
+                <VideoGallery videos={videos} user={user} onUpdateVideos={handleUpdateVideos} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={handleBackOneStep} />
               ) : selectedCategory === '커뮤니티' ? (
-                <CommunityBoard posts={posts} user={user} onUpdatePosts={handleUpdatePosts} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={() => setCurrentPage('home')} />
+                <CommunityBoard posts={posts} user={user} onUpdatePosts={handleUpdatePosts} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={handleBackOneStep} />
               ) : selectedCategory === '비지니스' ? (
-                <BusinessPage content={pageContents['business']} onBack={() => setCurrentPage('home')} />
+                <BusinessPage content={pageContents['business']} onBack={handleBackOneStep} />
               ) : selectedCategory === '여행 만들기' ? (
-                <TripPlanner packages={customPackages} masterOptionPool={masterOptionPool} onBack={() => setCurrentPage('home')} />
+                <TripPlanner packages={customPackages} masterOptionPool={masterOptionPool} onBack={handleBackOneStep} />
               ) : selectedCategory === '호텔&빌라' ? (
-                <HotelVillaPage content={pageContents['hotel']} onBack={() => setCurrentPage('home')} />
+                <HotelVillaPage content={pageContents['hotel']} onBack={handleBackOneStep} />
               ) : selectedCategory === '골프' ? (
-                <GolfPage content={pageContents['golf']} onBack={() => setCurrentPage('home')} />
+                <GolfPage content={pageContents['golf']} onBack={handleBackOneStep} />
               ) : selectedCategory === '먹거리' ? (
-                <FoodPage content={pageContents['food']} onBack={() => setCurrentPage('home')} />
+                <FoodPage content={pageContents['food']} onBack={handleBackOneStep} />
               ) : selectedCategory === '베트남 문화' ? (
-                <CulturePage content={pageContents['culture']} onBack={() => setCurrentPage('home')} />
+                <CulturePage content={pageContents['culture']} onBack={handleBackOneStep} />
               ) : selectedCategory === 'FOR MEN' ? (
-                <ForMenPage content={pageContents['men']} onBack={() => setCurrentPage('home')} />
+                <ForMenPage content={pageContents['men']} onBack={handleBackOneStep} />
               ) : selectedCategory === '관광' ? (
-                <TourPage content={pageContents['tour']} onBack={() => setCurrentPage('home')} />
+                <TourPage content={pageContents['tour']} onBack={handleBackOneStep} />
               ) : selectedCategory === '이벤트' ? (
-                <EventPage content={pageContents['event']} onBack={() => setCurrentPage('home')} />
+                <EventPage content={pageContents['event']} onBack={handleBackOneStep} />
               ) : (
-                <CategoryPage category={selectedCategory} products={getFilteredProducts()} onProductClick={handleProductClick} onBack={() => setCurrentPage('home')} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
+                <CategoryPage category={selectedCategory} products={getFilteredProducts()} onProductClick={handleProductClick} onBack={handleBackOneStep} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
               )
             ) : null}
           </>
@@ -602,30 +692,10 @@ const App: React.FC = () => {
       <BottomNav 
         currentPage={currentPage} 
         selectedCategory={selectedCategory}
-        onNavigate={(page, cat) => {
-          setCurrentPage(page as any);
-          if (cat) setSelectedCategory(cat);
-        }}
+        onNavigate={(page, cat) => navigateTo(page as any, cat || null)}
         isChatOpen={isChatOpen} 
         setIsChatOpen={setIsChatOpen} 
-        onBack={() => {
-          if (isChatOpen) {
-            setIsChatOpen(false);
-            return;
-          }
-          if (selectedProduct) {
-            setSelectedProduct(undefined);
-            return;
-          }
-          if (currentPage !== 'home') {
-            setCurrentPage('home');
-            setSelectedCategory(null);
-            return;
-          }
-          if (typeof window !== 'undefined' && window.history.length > 1) {
-            window.history.back();
-          }
-        }}
+        onBack={handleBackOneStep}
       />
 
       {/* Popup Notification */}

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { VideoItem, User } from '../types';
 import { uploadFile } from '../services/uploadService';
 import { classifyVideoCategory } from '../services/geminiService';
@@ -138,6 +138,47 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  const handleInternalBack = () => {
+    if (showUrlModal) {
+      setShowUrlModal(false);
+      return;
+    }
+    if (videoToDelete) {
+      setVideoToDelete(null);
+      return;
+    }
+    if (editingId) {
+      setEditingId(null);
+      return;
+    }
+    onBack?.();
+  };
+
+  useEffect(() => {
+    const handleSubViewBack = (e: any) => {
+      if (showUrlModal) {
+        setShowUrlModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (videoToDelete) {
+        setVideoToDelete(null);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (editingId) {
+        setEditingId(null);
+        e?.detail?.handled?.();
+        return;
+      }
+    };
+
+    window.addEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    return () => {
+      window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    };
+  }, [showUrlModal, videoToDelete, editingId]);
 
   const handleVideoError = (id: string, url: string) => {
     let reason = "비디오 코덱(아이폰 HEVC 등)이 지원되지 않거나 파일 형식이 올바르지 않습니다.";
@@ -368,7 +409,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div className="flex items-center gap-3">
             {onBack && (
-              <BackButton onClick={onBack} variant="dark" label="메인으로" />
+              <BackButton onClick={handleInternalBack} variant="dark" label={showUrlModal || videoToDelete || editingId ? '목록으로' : '뒤로가기'} />
             )}
             <div>
               <h2 className="text-xl font-bold text-gold-400">동영상</h2>

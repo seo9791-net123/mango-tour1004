@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CommunityPost, User, Comment } from '../types';
 import { uploadFile } from '../services/uploadService';
 import BackButton from './BackButton';
@@ -36,6 +36,58 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   const [passwordInput, setPasswordInput] = useState('');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState<string | null>(null);
   const [adminReplyInput, setAdminReplyInput] = useState('');
+
+  // Handle internal step-by-step back
+  const handleTopBack = () => {
+    if (isEditing) {
+      setIsEditing(false);
+      return;
+    }
+    if (viewingPost) {
+      setViewingPost(null);
+      return;
+    }
+    if (isAdding) {
+      setIsAdding(false);
+      return;
+    }
+    if (showPasswordPrompt) {
+      setShowPasswordPrompt(null);
+      return;
+    }
+    onBack?.();
+  };
+
+  // Listen for mobile bottom nav "뒤로가기" event
+  useEffect(() => {
+    const handleSubViewBack = (e: any) => {
+      if (isEditing) {
+        setIsEditing(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (viewingPost) {
+        setViewingPost(null);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (isAdding) {
+        setIsAdding(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (showPasswordPrompt) {
+        setShowPasswordPrompt(null);
+        e?.detail?.handled?.();
+        return;
+      }
+    };
+
+    window.addEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    return () => {
+      window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    };
+  }, [isEditing, viewingPost, isAdding, showPasswordPrompt]);
 
   // Handle Image Upload for New Post (Firebase Storage)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,7 +294,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
           </div>
           
           <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-            <BackButton onClick={onBack} variant="hero" label="메인으로" />
+            <BackButton onClick={handleTopBack} variant="hero" label={viewingPost || isAdding ? '목록으로' : '뒤로가기'} />
           </div>
 
           <div className="relative z-10 text-center px-4">

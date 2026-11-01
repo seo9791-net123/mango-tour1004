@@ -19,7 +19,7 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
         
         <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-          <BackButton onClick={onBack} variant="hero" label="메인으로" />
+          <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
         </div>
 
         <div className="relative z-10 text-center px-4">

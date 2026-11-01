@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageSection } from '../types';
 import SectionDetailModal from './SectionDetailModal';
 
@@ -9,6 +9,22 @@ interface Props {
 
 const PageSectionList: React.FC<Props> = ({ sections }) => {
   const [selectedSection, setSelectedSection] = useState<PageSection | null>(null);
+
+  // Listen for mobile bottom nav "뒤로가기" event
+  useEffect(() => {
+    const handleSubViewBack = (e: any) => {
+      if (selectedSection) {
+        setSelectedSection(null);
+        e?.detail?.handled?.();
+        return;
+      }
+    };
+
+    window.addEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    return () => {
+      window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
+    };
+  }, [selectedSection]);
 
   if (!sections || sections.length === 0) return null;
 
