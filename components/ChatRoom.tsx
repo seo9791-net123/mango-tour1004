@@ -159,48 +159,66 @@ const ChatRoom: React.FC<Props> = ({ user, onReqLogin, isOpen, onClose }) => {
   }
 
   return (
-    <div 
-      className="fixed inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-[400px] md:h-[620px] md:max-h-[85vh] bg-[#f2f6f6] z-[10000] flex flex-col overflow-hidden md:rounded-3xl md:shadow-2xl md:border md:border-gray-200/90 animate-fade-in no-print"
-      style={{ WebkitOverflowScrolling: 'touch' }}
-    >
-      {/* Header */}
-      <div className="bg-deepgreen text-white px-4 py-3.5 flex justify-between items-center shadow-md flex-shrink-0 z-10">
-        <div className="flex items-center gap-3">
-          {/* Mobile Back Button */}
+    <>
+      {/* Desktop: Floating Back button positioned directly beside the chat window */}
+      <div className="hidden md:block fixed bottom-6 right-[420px] z-[10001] animate-fade-in no-print">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-3 bg-white text-gray-800 hover:text-deepgreen rounded-2xl shadow-2xl border border-gray-200 font-bold text-xs transition-all duration-200 active:scale-95 hover:shadow-xl hover:-translate-x-1 group cursor-pointer"
+          title="채팅창 닫고 뒤로 가기"
+        >
+          <div className="w-6 h-6 rounded-lg bg-gray-100 group-hover:bg-deepgreen group-hover:text-white flex items-center justify-center transition">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </div>
+          <span className="font-bold">뒤로 가기</span>
+        </button>
+      </div>
+
+      <div 
+        className="fixed inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-[400px] md:h-[620px] md:max-h-[85vh] bg-[#f2f6f6] z-[10000] flex flex-col overflow-hidden md:rounded-3xl md:shadow-2xl md:border md:border-gray-200/90 animate-fade-in no-print"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {/* Header */}
+        <div className="bg-deepgreen text-white px-3.5 sm:px-4 py-3 sm:py-3.5 flex justify-between items-center shadow-md flex-shrink-0 z-10">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Prominent Back Button (Always visible on all screens) */}
+            <button 
+              type="button"
+              onClick={onClose} 
+              className="flex items-center gap-1.5 px-3 py-1.5 -ml-1 text-white hover:bg-white/20 active:scale-95 transition rounded-xl bg-white/15 text-xs font-bold border border-white/20 shadow-xs cursor-pointer"
+              aria-label="뒤로 가기"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>뒤로 가기</span>
+            </button>
+            
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-base sm:text-lg">🌏</span>
+                <h3 className="font-bold text-xs sm:text-sm tracking-tight">실시간 채팅</h3>
+                <span className="flex items-center gap-1 text-[9px] sm:text-[10px] bg-emerald-400/20 text-emerald-300 px-1.5 py-0.5 rounded-full font-bold border border-emerald-400/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  LIVE
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop / Global Close Button */}
           <button 
             type="button"
             onClick={onClose} 
-            className="md:hidden p-1.5 -ml-1 text-white/80 hover:text-white active:scale-95 transition rounded-full hover:bg-white/10"
-            aria-label="뒤로가기"
+            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full hover:bg-white/15 active:scale-90 text-white/80 hover:text-white transition font-bold text-lg sm:text-xl cursor-pointer"
+            aria-label="채팅방 닫기"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-            </svg>
+            ✕
           </button>
-          
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🌏</span>
-              <h3 className="font-bold text-base md:text-sm tracking-tight">MANGO TOUR 실시간 채팅</h3>
-              <span className="flex items-center gap-1 text-[10px] bg-emerald-400/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-400/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                LIVE
-              </span>
-            </div>
-            <p className="text-[11px] text-emerald-100/70 font-light mt-0.5">베트남 여행자들과 자유롭게 소통하세요</p>
-          </div>
         </div>
-
-        {/* Desktop / Global Close Button */}
-        <button 
-          type="button"
-          onClick={onClose} 
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-90 text-white/80 hover:text-white transition font-bold text-xl"
-          aria-label="채팅방 닫기"
-        >
-          ✕
-        </button>
-      </div>
 
       {/* Message Area */}
       <div 
@@ -313,7 +331,8 @@ const ChatRoom: React.FC<Props> = ({ user, onReqLogin, isOpen, onClose }) => {
           </form>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

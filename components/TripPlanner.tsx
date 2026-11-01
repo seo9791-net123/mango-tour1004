@@ -658,21 +658,23 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
   // KakaoTalk Consultation handler with image capture & text copy
   const handleKakaoInquiry = async () => {
+    // 1. 카카오톡 견적 문의 모달을 즉시 열어 상품 목록을 딜레이 없이 표시
+    setShowKakaoModal(true);
+
     const text = generateQuotationText();
     try {
       await navigator.clipboard.writeText(text);
+      showToast('📋 견적서 내용이 클립보드에 복사되었습니다.');
     } catch (e) {
       console.warn('Text clipboard write error:', e);
     }
     
-    showToast('📸 견적서 이미지 및 텍스트를 준비하고 있습니다...');
-    const imgUrl = await captureQuotationImage();
-    
-    if (imgUrl) {
-      handleDownloadImage(imgUrl);
-    }
-
-    setShowKakaoModal(true);
+    // 2. 백그라운드에서 견적서 고해상도 이미지 캡처 및 자동 다운로드 진행
+    captureQuotationImage().then((imgUrl) => {
+      if (imgUrl) {
+        handleDownloadImage(imgUrl);
+      }
+    });
   };
 
   // Open Direct Image Preview & Download Modal
@@ -2189,47 +2191,78 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 1: 1:1 ONLINE INQUIRY MODAL (EMAIL TO seo9791@gmail.com) ================= */}
       {showInquiryModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
-            <button
-              onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
-              className="absolute top-3.5 right-3.5 text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
-            >
-              ✕
-            </button>
+        <div 
+          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
+          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+        >
+          <div 
+            className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full max-w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] relative shadow-2xl animate-scale-in flex flex-col overflow-hidden box-border"
+            style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+          >
+            {/* Modal Header with Back Button (Edge-to-edge pinned on top) */}
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-gray-100 bg-white sticky top-0 z-30 shrink-0">
+              <button
+                type="button"
+                onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer"
+                aria-label="뒤로 가기"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>뒤로 가기</span>
+              </button>
+              
+              <div className="text-center">
+                <span className="font-extrabold text-sm sm:text-base text-deepgreen">1:1 온라인 맞춤 견적 신청</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition cursor-pointer"
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
 
             {!inquirySuccess ? (
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-md">이메일 접수</span>
-                  <span className="text-xs text-gray-400">seo9791@gmail.com</span>
-                </div>
-                <h3 className="text-xl font-black text-deepgreen">1:1 맞춤 골프 견적 신청서</h3>
-                <p className="text-xs text-gray-500 mb-4">선택하신 {selectedOptionIds.size}개 맞춤 견적서가 담당자 이메일로 즉시 전송됩니다.</p>
-
-                {/* Captured Screenshot Preview Thumbnail */}
-                {capturedImageUrl && (
-                  <div className="mb-4 p-3 bg-gray-50 rounded-2xl border border-gray-200">
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
-                        <span>📸</span> 자동 캡처된 견적서 이미지 미리보기
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadImage(capturedImageUrl)}
-                        className="text-[10px] text-deepgreen font-bold hover:underline"
-                      >
-                        📥 이미지 다운로드
-                      </button>
-                    </div>
-                    <div className="max-h-36 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner">
-                      <img src={capturedImageUrl} alt="Quotation Preview" className="w-full object-top" />
-                    </div>
+              <form onSubmit={handleSubmitOnlineInquiry} className="flex-1 flex flex-col overflow-hidden">
+                {/* Scrollable Form Body */}
+                <div 
+                  className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 space-y-3.5 text-xs w-full max-w-full box-border"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-md shrink-0">이메일 공식 접수</span>
+                    <span className="text-xs text-gray-400 break-all font-semibold">seo9791@gmail.com</span>
                   </div>
-                )}
+                  <h3 className="text-lg sm:text-xl font-black text-deepgreen">골프 투어 견적서 이메일 발송</h3>
+                  <p className="text-xs text-gray-500 break-keep">작성하신 예약 정보와 맞춤 견적서가 담당 매니저 이메일로 즉시 발송됩니다.</p>
 
-                <form onSubmit={handleSubmitOnlineInquiry} className="space-y-3.5 text-xs">
-                  <div>
+                  {/* Captured Screenshot Preview Thumbnail */}
+                  {capturedImageUrl && (
+                    <div className="p-3 bg-gray-50 rounded-2xl border border-gray-200 w-full max-w-full overflow-hidden box-border">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
+                          <span>📸</span> 자동 캡처된 견적서 이미지 미리보기
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadImage(capturedImageUrl)}
+                          className="text-[10px] text-deepgreen font-bold hover:underline cursor-pointer"
+                        >
+                          📥 이미지 다운로드
+                        </button>
+                      </div>
+                      <div className="max-h-36 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner">
+                        <img src={capturedImageUrl} alt="Quotation Preview" className="w-full object-top" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="w-full max-w-full">
                     <label className="font-bold text-gray-700 block mb-1">예약자 성함 / 대표자명 *</label>
                     <input
                       type="text"
@@ -2237,11 +2270,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="홍길동"
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white"
+                      className="w-full max-w-full box-border p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm"
                     />
                   </div>
 
-                  <div>
+                  <div className="w-full max-w-full">
                     <label className="font-bold text-gray-700 block mb-1">연락처 또는 카카오톡 ID *</label>
                     <input
                       type="text"
@@ -2249,77 +2282,88 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                       value={customerContact}
                       onChange={(e) => setCustomerContact(e.target.value)}
                       placeholder="010-1234-5678 또는 카카오톡ID"
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white"
+                      className="w-full max-w-full box-border p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
+                  <div className="grid grid-cols-2 gap-3 w-full max-w-full box-border">
+                    <div className="min-w-0">
                       <label className="font-bold text-gray-700 block mb-1">인원 수</label>
                       <input
                         type="number"
                         min="1"
                         value={personCount}
                         onChange={(e) => setPersonCount(parseInt(e.target.value) || 1)}
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white"
+                        className="w-full max-w-full box-border p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm"
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="font-bold text-gray-700 block mb-1">출발 희망일</label>
                       <input
                         type="date"
                         value={departureDate}
                         onChange={(e) => setDepartureDate(e.target.value)}
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white"
+                        className="w-full max-w-full box-border p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm"
                       />
                     </div>
                   </div>
 
-                  <div>
+                  <div className="w-full max-w-full">
                     <label className="font-bold text-gray-700 block mb-1">추가 요청사항 (선택)</label>
                     <textarea
                       rows={2}
                       value={customerNotes}
                       onChange={(e) => setCustomerNotes(e.target.value)}
                       placeholder="티타임 시간대, 선호 호텔 유형, 클럽 렌탈 여부 등"
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white resize-none"
+                      className="w-full max-w-full box-border p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white resize-none text-sm"
                     />
                   </div>
 
-                  <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center">
-                    <div>
-                      <span className="text-[10px] text-emerald-700 block">총 {personCount}인 예상 견적</span>
-                      <span className="font-black text-emerald-900 text-sm">
+                  <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center w-full max-w-full box-border">
+                    <div className="min-w-0 mr-2">
+                      <span className="text-[10px] text-emerald-700 block font-semibold">총 {personCount}인 예상 견적</span>
+                      <span className="font-black text-emerald-900 text-sm sm:text-base break-all">
                         ${currentTotalGroup.toLocaleString()} (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
                       </span>
                     </div>
-                    <div className="text-[10px] text-emerald-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
+                    <div className="text-[10px] text-emerald-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
                       선택 {selectedOptionIds.size}개
                     </div>
                   </div>
+                </div>
 
+                {/* Sticky Pinned Bottom Action Bar - Email Submit Button ALWAYS VISIBLE */}
+                <div 
+                  className="bg-white/95 backdrop-blur-md px-4 py-3 sm:px-6 sm:py-3.5 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] shrink-0 z-30"
+                  style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+                >
                   <button
                     type="submit"
                     disabled={isSubmittingEmail}
-                    className="w-full py-4 bg-deepgreen text-white font-black rounded-2xl hover:bg-[#00382e] transition shadow-lg text-sm active:scale-95 disabled:opacity-75 flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-deepgreen hover:bg-[#00382e] text-white font-black rounded-2xl shadow-xl text-sm sm:text-base active:scale-95 disabled:opacity-75 flex items-center justify-center gap-2 cursor-pointer transition"
                   >
                     <span>{isSubmittingEmail ? '⏳' : '🚀'}</span>
-                    <span>{isSubmittingEmail ? '이메일(seo9791@gmail.com) 전송 중...' : '1:1 온라인 견적 신청서 발송하기'}</span>
+                    <span className="font-extrabold tracking-tight">
+                      {isSubmittingEmail ? '이메일(seo9791@gmail.com) 전송 중...' : '1:1 온라인 견적 신청서 발송하기 (이메일 전송)'}
+                    </span>
                   </button>
-                </form>
-              </div>
+                  <p className="text-[10px] text-gray-400 text-center mt-1.5">
+                    버튼을 누르시면 담당 매니저(seo9791@gmail.com)에게 실시간으로 견적서가 발송됩니다.
+                  </p>
+                </div>
+              </form>
             ) : (
-              <div className="text-center py-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 text-center space-y-4 w-full max-w-full">
                 <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto">
                   ✓
                 </div>
-                <h3 className="text-2xl font-black text-deepgreen">신청서가 성공적으로 전송되었습니다!</h3>
-                <p className="text-xs text-gray-600 leading-relaxed max-w-sm mx-auto">
+                <h3 className="text-xl sm:text-2xl font-black text-deepgreen">신청서가 성공적으로 전송되었습니다!</h3>
+                <p className="text-xs text-gray-600 leading-relaxed max-w-sm mx-auto break-words break-all">
                   <strong>{customerName}</strong>님, 접수해주신 견적서가 담당자 이메일(<strong>seo9791@gmail.com</strong>)로 정상 전달되었습니다. 담당 매니저가 확인 후 연락처(<strong>{customerContact}</strong>)로 빠른 상담을 진행해 드립니다.
                 </p>
 
                 {capturedImageUrl && (
-                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-left">
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-left w-full max-w-full overflow-hidden box-border">
                     <div className="text-[11px] font-bold text-gray-700 mb-1">📸 생성된 견적서 이미지:</div>
                     <div className="max-h-28 overflow-y-auto rounded-lg border border-gray-200 bg-white">
                       <img src={capturedImageUrl} alt="Quotation" className="w-full" />
@@ -2327,11 +2371,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                   </div>
                 )}
 
-                <div className="pt-2 flex flex-col gap-2">
+                <div className="pt-2 flex flex-col gap-2 w-full max-w-full">
                   <button
                     type="button"
                     onClick={handleSendMailto}
-                    className="w-full py-3 bg-blue-50 text-blue-800 border border-blue-200 font-bold rounded-2xl hover:bg-blue-100 transition text-xs flex items-center justify-center gap-1.5"
+                    className="w-full py-3 bg-blue-50 text-blue-800 border border-blue-200 font-bold rounded-2xl hover:bg-blue-100 transition text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>📧</span>
                     <span>내 메일 앱(Gmail/기본메일)으로도 확인 발송</span>
@@ -2339,7 +2383,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                   <button
                     type="button"
                     onClick={() => handleDownloadImage(capturedImageUrl)}
-                    className="w-full py-3 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs flex items-center justify-center gap-1.5"
+                    className="w-full py-3 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>📥</span>
                     <span>견적서 이미지(PNG) 다운로드</span>
@@ -2349,7 +2393,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                     onClick={() => {
                       window.open('https://open.kakao.com/o/gprQnKSi', '_blank');
                     }}
-                    className="w-full py-3.5 bg-[#FEE500] text-[#191919] font-black rounded-2xl hover:bg-[#FDD835] transition text-xs flex items-center justify-center gap-1.5"
+                    className="w-full py-3.5 bg-[#FEE500] text-[#191919] font-black rounded-2xl hover:bg-[#FDD835] transition text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>💬</span>
                     <span>카카오톡 실시간 상담 바로 연결</span>
@@ -2357,7 +2401,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                   <button
                     type="button"
                     onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
-                    className="w-full py-3 text-gray-400 font-bold hover:text-gray-600 transition text-xs"
+                    className="w-full py-3 text-gray-400 font-bold hover:text-gray-600 transition text-xs cursor-pointer"
                   >
                     닫기
                   </button>
@@ -2370,70 +2414,195 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 2: KAKAOTALK CONSULTATION & SCREENSHOT SHARING MODAL ================= */}
       {showKakaoModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
-            <button
-              onClick={() => setShowKakaoModal(false)}
-              className="absolute top-3.5 right-3.5 text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
-            >
-              ✕
-            </button>
+        <div 
+          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-x-hidden overflow-y-auto overscroll-x-none font-sans break-keep"
+          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none', WebkitOverflowScrolling: 'touch' }}
+        >
+          <div 
+            className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-xl w-full max-w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-x-hidden overflow-y-auto box-border"
+            style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none', WebkitOverflowScrolling: 'touch' }}
+          >
+            {/* Modal Header with Back Button */}
+            <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100">
+              <button
+                type="button"
+                onClick={() => setShowKakaoModal(false)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer"
+                aria-label="뒤로 가기"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>뒤로 가기</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowKakaoModal(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition cursor-pointer"
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
 
-            <div className="text-center space-y-4">
-              <div className="w-14 h-14 bg-[#FEE500] text-[#191919] rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-md">
+            <div className="text-center space-y-3.5 w-full max-w-full overflow-x-hidden">
+              <div className="w-12 h-12 bg-[#FEE500] text-[#191919] rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-md">
                 💬
               </div>
 
               <div>
-                <h3 className="text-xl font-black text-gray-900">카카오톡 견적 문의 준비 완료</h3>
+                <h3 className="text-lg sm:text-xl font-black text-gray-900">카카오톡 맞춤 견적 문의</h3>
                 <p className="text-xs text-gray-500 mt-1">
-                  견적 텍스트가 복사되었으며, 견적서 이미지가 기기에 다운로드되었습니다.
+                  견적 내용이 자동으로 복사되었습니다. 카카오톡 상담창에 붙여넣기만 하시면 됩니다.
                 </p>
               </div>
 
-              {/* Image Preview */}
+              {/* ================= NEW: FULL PRODUCT & QUOTE ITEMS LIST (상품 목록 및 견적 상세 구성) ================= */}
+              <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/50 rounded-2xl p-3.5 sm:p-4 border border-emerald-200/90 text-left space-y-3 shadow-xs w-full max-w-full box-border">
+                <div className="flex items-start justify-between gap-2 border-b border-emerald-200/70 pb-2.5">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <span className="px-2 py-0.5 bg-deepgreen text-white text-[10px] font-black rounded-md">
+                        {activePackage?.location || diyLocation}
+                      </span>
+                      <span className="text-[11px] text-emerald-800 font-bold">
+                        {activePackage?.duration || `${diyNights}박 ${diyDays}일`}
+                      </span>
+                    </div>
+                    <h4 className="font-black text-sm sm:text-base text-gray-900 leading-tight">
+                      {activePackage?.title || `[고객 맞춤 DIY] ${diyLocation} 명문 골프 투어`}
+                    </h4>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-gray-500 block">인원 / 출발일</span>
+                    <span className="text-xs font-black text-deepgreen">
+                      {personCount}인 · {departureDate || '미정'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 1. Golf Courses List */}
+                <div className="text-xs space-y-1">
+                  <span className="font-bold text-gray-800 flex items-center gap-1 text-[11px]">
+                    <span>⛳</span> 선택 라운딩 골프장 목록:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 pl-0.5">
+                    {(customGolfCourses.length > 0 ? customGolfCourses : diyGolfCourses.slice(0, diyRounds)).map((course, idx) => (
+                      <span key={idx} className="bg-white px-2 py-1 rounded-lg border border-emerald-200 text-[10px] sm:text-[11px] font-bold text-emerald-900 shadow-2xs">
+                        {idx + 1}R: {course}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Accommodation & Vehicle */}
+                <div className="text-xs space-y-1">
+                  <span className="font-bold text-gray-800 flex items-center gap-1 text-[11px]">
+                    <span>🏨</span> 선택 숙소:
+                  </span>
+                  <div className="pl-0.5 text-gray-700 text-xs font-semibold">
+                    {getChosenAccommodationName()}
+                  </div>
+                </div>
+
+                {/* 3. Included Options List */}
+                <div className="pt-2 border-t border-emerald-200/70">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="font-bold text-gray-800 text-xs flex items-center gap-1">
+                      <span>📋</span> 포함 상품 및 세부 옵션 목록:
+                    </span>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-white px-2 py-0.5 rounded border border-emerald-200">
+                      총 {activePackage ? activePackage.options.filter(o => selectedOptionIds.has(o.id)).length : 5}개 포함
+                    </span>
+                  </div>
+
+                  <div className="max-h-40 overflow-y-auto space-y-1 pr-1 bg-white/90 p-2.5 rounded-xl border border-emerald-100 shadow-inner">
+                    {activePackage ? (
+                      activePackage.options.filter(o => selectedOptionIds.has(o.id)).map((opt) => (
+                        <div key={opt.id} className="flex justify-between items-center text-xs py-1 border-b border-gray-100 last:border-none">
+                          <div className="flex items-center gap-1.5 text-gray-800 font-medium truncate mr-2 min-w-0">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0 font-bold">
+                              {opt.category === 'hotel' ? '숙박' : opt.category === 'vehicle' ? '차량' : opt.category === 'guide' ? '가이드' : opt.category === 'meal' ? '식사' : opt.category === 'golf' ? '골프' : '옵션'}
+                            </span>
+                            <span className="truncate">{getOptionDisplayName(opt)}</span>
+                          </div>
+                          <span className="font-bold text-deepgreen text-xs shrink-0">
+                            ${getOptionPrice(opt)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-gray-600 space-y-1">
+                        <div>• 전 일정 단독 전용 차량 및 공항 픽업 포함</div>
+                        <div>• {diyRounds}회 18홀 명문 골프장 그린피 포함</div>
+                        <div>• {getChosenAccommodationName()} 숙박 포함</div>
+                        <div>• {diyIncludeGuide ? '한국어 전문 전담 가이드 포함' : '자유 일정 (기사 온리)'}</div>
+                        <div>• {diyIncludeSpa ? 'VIP 전신 마사지 (90분) 포함' : '마사지 미포함'}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. Total Price Breakdown */}
+                <div className="pt-2 border-t border-emerald-200/70 flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] text-gray-500 block">총 견적 금액 ({personCount}인 기준)</span>
+                    <span className="text-base sm:text-lg font-black text-deepgreen">
+                      ${currentTotalGroup.toLocaleString()} USD
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-gray-500 block">1인 예상가</span>
+                    <span className="text-xs sm:text-sm font-black text-gold-600">
+                      ${currentTotalPerPerson.toLocaleString()} (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Image Preview (if captured) */}
               {capturedImageUrl && (
-                <div className="p-3 bg-gray-50 rounded-2xl border border-gray-200 text-left">
+                <div className="p-3 bg-gray-50 rounded-2xl border border-gray-200 text-left w-full max-w-full overflow-hidden box-border">
                   <div className="flex justify-between items-center mb-1.5">
                     <span className="text-[11px] font-bold text-gray-700">📸 캡처된 견적서 이미지 미리보기</span>
                     <span className="text-[10px] text-emerald-600 font-bold">✓ 다운로드 완료</span>
                   </div>
-                  <div className="max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner">
+                  <div className="max-h-36 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner">
                     <img src={capturedImageUrl} alt="Quotation Capture" className="w-full object-top" />
                   </div>
                 </div>
               )}
 
               {/* Instructions Steps */}
-              <div className="bg-amber-50 rounded-2xl p-3.5 border border-amber-200/80 text-left text-xs space-y-1.5 text-amber-900">
+              <div className="bg-amber-50 rounded-2xl p-3 border border-amber-200/80 text-left text-xs space-y-1.5 text-amber-900 w-full max-w-full box-border">
                 <div className="font-bold flex items-center gap-1">
                   <span>💡</span> 카카오톡 상담창에서 보내는 방법:
                 </div>
-                <div className="text-[11px] text-amber-800 leading-relaxed pl-4 space-y-1 list-decimal">
-                  <div>1. 아래 <strong>[카카오톡 오픈채팅방 열기]</strong>를 누릅니다.</div>
-                  <div>2. 상담창에 <strong>붙여넣기 (Ctrl+V 또는 길게 눌러 붙여넣기)</strong>를 하시면 견적 텍스트가 전송됩니다.</div>
-                  <div>3. 다운로드된 <strong>견적서 이미지(PNG)</strong>를 첨부해 주시면 더욱 빠르고 정확한 맞춤 상담이 가능합니다!</div>
+                <div className="text-[11px] text-amber-800 leading-relaxed pl-3.5 space-y-1 list-decimal">
+                  <div>1. 아래 <strong>[카카오톡 오픈채팅방 바로가기]</strong>를 누릅니다.</div>
+                  <div>2. 상담창에 <strong>붙여넣기 (길게 눌러 붙여넣기 또는 Ctrl+V)</strong>를 하시면 복사된 견적 텍스트가 전송됩니다.</div>
+                  <div>3. 갤러리에 저장된 <strong>견적서 이미지(PNG)</strong>를 함께 전송해 주시면 더욱 빠른 상담이 가능합니다!</div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2 pt-1 w-full max-w-full box-border">
                 <button
                   type="button"
                   onClick={() => {
                     window.open('https://open.kakao.com/o/gprQnKSi', '_blank');
                   }}
-                  className="w-full py-4 bg-[#FEE500] text-[#191919] font-black rounded-2xl hover:bg-[#FDD835] transition shadow-lg text-sm flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full py-4 bg-[#FEE500] text-[#191919] font-black rounded-2xl hover:bg-[#FDD835] transition shadow-lg text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-95 cursor-pointer box-border"
                 >
                   <span>💬</span>
                   <span>카카오톡 오픈채팅방 바로가기</span>
                 </button>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 w-full max-w-full box-border">
                   <button
                     type="button"
                     onClick={() => handleDownloadImage(capturedImageUrl)}
-                    className="py-3 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs flex items-center justify-center gap-1 active:scale-95"
+                    className="py-3 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
                   >
                     <span>📥</span>
                     <span>이미지 다시 다운로드</span>
@@ -2446,7 +2615,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                         showToast('📋 견적 텍스트가 다시 복사되었습니다.');
                       });
                     }}
-                    className="py-3 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs flex items-center justify-center gap-1 active:scale-95"
+                    className="py-3 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
                   >
                     <span>📋</span>
                     <span>텍스트 다시 복사</span>
@@ -2456,7 +2625,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                 <button
                   type="button"
                   onClick={() => setShowKakaoModal(false)}
-                  className="w-full py-2.5 text-gray-400 font-bold hover:text-gray-600 transition text-xs"
+                  className="w-full py-2.5 text-gray-400 font-bold hover:text-gray-600 transition text-xs cursor-pointer"
                 >
                   닫기
                 </button>
@@ -2469,7 +2638,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 3: IMAGE PREVIEW & DIRECT SAVE MODAL ================= */}
       {showImagePreviewModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
           <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-xl w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
             <button
               onClick={() => setShowImagePreviewModal(false)}
@@ -2520,7 +2689,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 4: INTERACTIVE DAY-BY-DAY GOLF COURSE PICKER MODAL ================= */}
       {showGolfModal && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
           <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-3xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
             
             {/* Modal Header - Edge-to-edge pinned on mobile */}
@@ -2791,7 +2960,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 5: DEDICATED CUSTOM OPTION POPUP MODAL (HOTEL, VEHICLE, GUIDE, MEAL, ETC.) ================= */}
       {customizingOption && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
           <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-3xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
             
             {/* Modal Header - Edge-to-edge pinned on mobile */}
@@ -3140,7 +3309,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
       {/* ================= MODAL 6: DIY COURSE SELECTOR MODAL ================= */}
       {diyChangingRoundIndex !== null && (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
           <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-2xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-6 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-3.5 py-3 sm:px-0 sm:py-0 sm:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>

@@ -572,6 +572,33 @@ const App: React.FC = () => {
         onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} 
       />
 
+      {/* Desktop Floating Chat Trigger & Back Button */}
+      <div className="hidden md:flex fixed bottom-6 right-6 z-[9990] items-center gap-2 no-print">
+        {isChatOpen && (
+          <button
+            type="button"
+            onClick={() => setIsChatOpen(false)}
+            className="flex items-center gap-1.5 px-4 py-3 bg-white text-gray-700 hover:text-deepgreen rounded-full shadow-2xl border border-gray-200 font-bold text-xs transition-all duration-200 active:scale-95 hover:shadow-lg cursor-pointer"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>뒤로 가기</span>
+          </button>
+        )}
+        {!isChatOpen && (
+          <button
+            type="button"
+            onClick={() => setIsChatOpen(true)}
+            className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white rounded-full shadow-2xl font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-105 group cursor-pointer"
+          >
+            <span className="text-base group-hover:scale-110 transition-transform">💬</span>
+            <span>실시간 채팅</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </button>
+        )}
+      </div>
+
       <BottomNav 
         currentPage={currentPage} 
         selectedCategory={selectedCategory}
@@ -581,6 +608,24 @@ const App: React.FC = () => {
         }}
         isChatOpen={isChatOpen} 
         setIsChatOpen={setIsChatOpen} 
+        onBack={() => {
+          if (isChatOpen) {
+            setIsChatOpen(false);
+            return;
+          }
+          if (selectedProduct) {
+            setSelectedProduct(undefined);
+            return;
+          }
+          if (currentPage !== 'home') {
+            setCurrentPage('home');
+            setSelectedCategory(null);
+            return;
+          }
+          if (typeof window !== 'undefined' && window.history.length > 1) {
+            window.history.back();
+          }
+        }}
       />
 
       {/* Popup Notification */}

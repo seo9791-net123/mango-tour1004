@@ -11,19 +11,19 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8212/8212613.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>MANGO TOUR - 베트남 골프 투어 전문</title>
-    <!-- 이미지 캐시 방지(Cache-Buster): 접속 시마다 타임스탬프(?t=현재시간)를 이미지 URL에 자동 부여 -->
+    <!-- 모바일 및 웹 공통 이미지 캐시 방지(Cache-Buster): 접속 및 복귀 시마다 타임스탬프(?t=현재시간)를 이미지 URL에 자동 부여 -->
     <script>
       (function() {
         // 사용자가 홈페이지에 접속한 시점의 고유 타임스탬프
         var pageLoadTimestamp = Date.now();
         window.__PAGE_LOAD_TIMESTAMP__ = pageLoadTimestamp;
 
-        // 이미지 URL 뒤에 ?t=현재시간 (또는 &t=현재시간)을 안전하게 붙여주는 함수
-        function attachTimestamp(url) {
+        // 이미지 단일 URL 뒤에 ?t=현재시간 (또는 &t=현재시간)을 안전하게 붙여주는 함수
+        function attachTimestamp(url, customTs) {
           if (!url || typeof url !== 'string') return url;
           var trimmed = url.trim();
           
-          // data URI, blob URL, SVG 인라인, 앵커 링크 등은 캐시 방지 불필요 및 손상 방지
+          // data URI, blob URL, SVG 인라인, 앵커 링크 등은 캐시 방지 제외 및 데이터 손상 방지
           if (
             trimmed.startsWith('data:') ||
             trimmed.startsWith('blob:') ||
@@ -33,20 +33,35 @@
             return url;
           }
 
-          // 이미 ?t= 또는 &t= 타임스탬프가 붙어 있는 경우 중복 부여 방지
+          var ts = customTs || pageLoadTimestamp;
+
+          // 이미 ?t= 또는 &t= 타임스탬프가 붙어 있는 경우 최신 타임스탬프로 교체
           if (/[?&]t=\d+/.test(trimmed)) {
-            return url;
+            return trimmed.replace(/([?&]t=)\d+/, '$1' + ts);
           }
 
           // 기존 쿼리스트링(?) 존재 여부에 따라 ?t= 또는 &t= 연결
           var separator = trimmed.indexOf('?') !== -1 ? '&' : '?';
-          return trimmed + separator + 't=' + pageLoadTimestamp;
+          return trimmed + separator + 't=' + ts;
         }
 
-        // 전역에서 어디서나 호출할 수 있도록 공개
-        window.getFreshImageUrl = attachTimestamp;
+        // 반응형 이미지 srcset (url 1x, url 2x ...) 처리 함수
+        function attachTimestampToSrcset(srcsetStr, customTs) {
+          if (!srcsetStr || typeof srcsetStr !== 'string') return srcsetStr;
+          return srcsetStr.split(',').map(function(item) {
+            var parts = item.trim().split(/\s+/);
+            if (parts.length > 0 && parts[0]) {
+              parts[0] = attachTimestamp(parts[0], customTs);
+            }
+            return parts.join(' ');
+          }).join(', ');
+        }
 
-        // 1. HTMLImageElement.src Setter 후킹 (React 컴포넌트 및 일반 JS 동적 렌더링 시 자동 적용)
+        // 전역에서 어디서나 호출할 수 있도록 함수 공개
+        window.getFreshImageUrl = attachTimestamp;
+        window.getFreshImageSrcset = attachTimestampToSrcset;
+
+        // 1. HTMLImageElement.src 및 srcset 프로퍼티 Setter 가로채기 (React 및 JS 동적 렌더링에 자동 적용)
         try {
           var originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
           if (originalSrcDescriptor && originalSrcDescriptor.set) {
@@ -62,11 +77,31 @@
             });
           }
 
-          // 2. setAttribute('src', ...) 가로채기
+          var originalSrcsetDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'srcset');
+          if (originalSrcsetDescriptor && originalSrcsetDescriptor.set) {
+            Object.defineProperty(HTMLImageElement.prototype, 'srcset', {
+              get: function() {
+                return originalSrcsetDescriptor.get.call(this);
+              },
+              set: function(value) {
+                originalSrcsetDescriptor.set.call(this, attachTimestampToSrcset(value));
+              },
+              configurable: true,
+              enumerable: true
+            });
+          }
+
+          // 2. setAttribute('src', ...) 및 setAttribute('srcset', ...) 가로채기
           var originalSetAttribute = Element.prototype.setAttribute;
           Element.prototype.setAttribute = function(name, value) {
-            if (this instanceof HTMLImageElement && String(name).toLowerCase() === 'src') {
-              return originalSetAttribute.call(this, name, attachTimestamp(value));
+            if (this instanceof HTMLImageElement) {
+              var attrName = String(name).toLowerCase();
+              if (attrName === 'src') {
+                return originalSetAttribute.call(this, name, attachTimestamp(value));
+              }
+              if (attrName === 'srcset') {
+                return originalSetAttribute.call(this, name, attachTimestampToSrcset(value));
+              }
             }
             return originalSetAttribute.apply(this, arguments);
           };
@@ -74,25 +109,103 @@
           console.warn('[CacheBuster] Interceptor hook warning:', err);
         }
 
-        // 3. 페이지 로드 시 DOM에 존재하는 정적 <img> 태그 처리
-        function updateStaticImages() {
+        // 3. 페이지 내 모든 <img> 태그 최신화 함수
+        function updateAllImages(customTs) {
+          var ts = customTs || pageLoadTimestamp;
           var images = document.querySelectorAll('img');
           for (var i = 0; i < images.length; i++) {
             var img = images[i];
             var currentSrc = img.getAttribute('src');
             if (currentSrc) {
-              var newSrc = attachTimestamp(currentSrc);
+              var newSrc = attachTimestamp(currentSrc, ts);
               if (newSrc !== currentSrc) {
                 img.setAttribute('src', newSrc);
+              }
+            }
+            var currentSrcset = img.getAttribute('srcset');
+            if (currentSrcset) {
+              var newSrcset = attachTimestampToSrcset(currentSrcset, ts);
+              if (newSrcset !== currentSrcset) {
+                img.setAttribute('srcset', newSrcset);
               }
             }
           }
         }
 
+        // 4. 모바일 환경 특화: bfcache (뒤로가기/앞으로가기 캐시) 대응 및 탭 전환 대응
+        window.addEventListener('pageshow', function(event) {
+          // 모바일 사파리/크롬 등에서 bfcache로 복원된 경우 타임스탬프를 갱신하여 최신 이미지 재요청
+          if (event.persisted) {
+            pageLoadTimestamp = Date.now();
+            window.__PAGE_LOAD_TIMESTAMP__ = pageLoadTimestamp;
+            updateAllImages(pageLoadTimestamp);
+          }
+        });
+
+        // 5. 모바일 브라우저 백그라운드 복귀 시 타임스탬프 갱신
+        document.addEventListener('visibilitychange', function() {
+          if (!document.hidden) {
+            var now = Date.now();
+            // 마지막 접속 후 5분 이상 경과한 경우 갱신
+            if (now - pageLoadTimestamp > 300000) {
+              pageLoadTimestamp = now;
+              window.__PAGE_LOAD_TIMESTAMP__ = pageLoadTimestamp;
+              updateAllImages(pageLoadTimestamp);
+            }
+          }
+        });
+
+        // 6. DOM 생성 완료 및 동적 노드 감지 (MutationObserver)
         if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', updateStaticImages);
+          document.addEventListener('DOMContentLoaded', function() {
+            updateAllImages();
+            observeDomMutations();
+          });
         } else {
-          updateStaticImages();
+          updateAllImages();
+          observeDomMutations();
+        }
+
+        function observeDomMutations() {
+          if (!window.MutationObserver) return;
+          var observer = new MutationObserver(function(mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+              var mutation = mutations[i];
+              if (mutation.type === 'childList') {
+                for (var j = 0; j < mutation.addedNodes.length; j++) {
+                  var node = mutation.addedNodes[j];
+                  if (node.nodeType === 1) {
+                    if (node.tagName === 'IMG') {
+                      var s = node.getAttribute('src');
+                      if (s) {
+                        var fresh = attachTimestamp(s);
+                        if (fresh !== s) node.setAttribute('src', fresh);
+                      }
+                    } else if (node.querySelectorAll) {
+                      var subImgs = node.querySelectorAll('img');
+                      for (var k = 0; k < subImgs.length; k++) {
+                        var sub = subImgs[k];
+                        var subSrc = sub.getAttribute('src');
+                        if (subSrc) {
+                          var freshSub = attachTimestamp(subSrc);
+                          if (freshSub !== subSrc) sub.setAttribute('src', freshSub);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          try {
+            observer.observe(document.body || document.documentElement, {
+              childList: true,
+              subtree: true
+            });
+          } catch (e) {
+            // ignore
+          }
         }
       })();
     </script>
