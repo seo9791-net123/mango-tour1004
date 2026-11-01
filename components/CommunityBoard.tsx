@@ -318,7 +318,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 <span>💬</span>
                 <span>생생한 여행 이야기</span>
               </h2>
-              <p className="text-[11px] sm:text-xs text-gray-500 font-medium mt-0.5 break-keep">
+              <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 font-medium mt-0.5 break-keep">
                 회원님들의 실제 여행 사진과 꿀팁을 확인하고 자유롭게 소통해보세요.
               </p>
             </div>
@@ -331,7 +331,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                   setIsAdding(true);
                 }
               }}
-              className="bg-gold-500 hover:bg-gold-600 text-white px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 text-xs sm:text-sm shrink-0 active:scale-95 whitespace-nowrap"
+              className="bg-gold-500 hover:bg-gold-600 text-white px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 text-xs sm:text-sm md:text-sm shrink-0 active:scale-95 whitespace-nowrap"
             >
               <span>✏️</span>
               <span>글쓰기</span>
@@ -340,11 +340,11 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
 
         {/* Write Post Form */}
         {isAdding && (
-          <div className="bg-white p-4 rounded-xl shadow-lg mb-8 border border-gold-200 animate-fade-in-up">
-            <h3 className="font-bold text-sm mb-3 text-deepgreen">새 글 작성</h3>
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg mb-8 border border-gold-200 animate-fade-in-up">
+            <h3 className="font-bold text-sm md:text-base mb-3 text-deepgreen">새 글 작성</h3>
             <div className="space-y-3">
                 <input
-                  className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none text-xs"
+                  className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none text-xs md:text-sm"
                   placeholder="제목을 입력하세요"
                   value={newPostTitle}
                   onChange={e => setNewPostTitle(e.target.value)}
@@ -380,13 +380,13 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 </div>
 
                 <textarea
-                  className="w-full border border-gray-300 p-2 rounded-lg h-32 focus:ring-2 focus:ring-gold-500 outline-none resize-none text-xs"
+                  className="w-full border border-gray-300 p-2.5 rounded-lg h-32 focus:ring-2 focus:ring-gold-500 outline-none resize-none text-xs md:text-sm"
                   placeholder="내용을 입력하세요. (여행 후기, 질문, 자유로운 이야기)"
                   value={newPostContent}
                   onChange={e => setNewPostContent(e.target.value)}
                 />
 
-                <div className="flex items-center gap-4 p-2 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-4 p-2.5 bg-gray-50 rounded-lg">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="checkbox" 
@@ -394,7 +394,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                       onChange={(e) => setIsPrivate(e.target.checked)}
                       className="w-4 h-4 accent-gold-500"
                     />
-                    <span className="text-xs font-bold text-gray-600">비공개 설정</span>
+                    <span className="text-xs md:text-sm font-bold text-gray-600">비공개 설정</span>
                   </label>
                   {isPrivate && (
                     <input 
@@ -402,17 +402,17 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                       placeholder="비밀번호 입력"
                       value={postPassword}
                       onChange={(e) => setPostPassword(e.target.value)}
-                      className="flex-1 border border-gray-300 p-1.5 rounded-md text-xs outline-none focus:ring-1 focus:ring-gold-500"
+                      className="flex-1 border border-gray-300 p-2 rounded-md text-xs md:text-sm outline-none focus:ring-1 focus:ring-gold-500"
                     />
                   )}
                 </div>
                 
                 <div className="flex justify-end gap-2 pt-1">
-                  <button onClick={() => setIsAdding(false)} className="px-3 py-1.5 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition text-xs">취소</button>
+                  <button onClick={() => setIsAdding(false)} className="px-3.5 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition text-xs md:text-sm">취소</button>
                   <button 
                     onClick={handleAddPost} 
                     disabled={isUploading}
-                    className="px-4 py-1.5 bg-deepgreen text-white rounded-lg font-bold shadow hover:bg-opacity-90 transition text-xs disabled:opacity-50"
+                    className="px-4.5 py-2 bg-deepgreen text-white rounded-lg font-bold shadow hover:bg-opacity-90 transition text-xs md:text-sm disabled:opacity-50"
                   >
                     {isUploading ? '업로드 대기 중' : '등록하기'}
                   </button>
@@ -432,7 +432,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
           ) : (
             <>
               {/* Desktop Table Header */}
-              <div className="hidden md:grid grid-cols-12 px-6 py-3.5 bg-gray-50/90 text-xs font-bold text-gray-500 border-b border-gray-200/90 select-none">
+              <div className="hidden md:grid grid-cols-12 px-6 py-4 bg-gray-50/90 text-xs md:text-sm font-bold text-gray-600 border-b border-gray-200/90 select-none">
                 <div className="col-span-1 text-center">번호</div>
                 <div className="col-span-7">제목</div>
                 <div className="col-span-2 text-center">작성자</div>
@@ -454,41 +454,41 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                     >
                       {/* Desktop Row */}
                       <div className="hidden md:grid grid-cols-12 items-center px-6 py-4">
-                        <div className="col-span-1 text-center text-xs text-gray-400 font-medium">
+                        <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 font-medium">
                           {postNumber}
                         </div>
                         <div className="col-span-7 min-w-0 pr-4">
                           <div className="flex items-center gap-1.5">
                             {post.isPrivate && (
-                              <span className="text-xs text-amber-600 shrink-0" title="비공개 글">🔒</span>
+                              <span className="text-xs md:text-sm text-amber-600 shrink-0" title="비공개 글">🔒</span>
                             )}
                             {post.image && (
-                              <span className="text-xs shrink-0" title="사진 포함">📷</span>
+                              <span className="text-xs md:text-sm shrink-0" title="사진 포함">📷</span>
                             )}
-                            <h3 className="font-bold text-sm text-gray-900 group-hover:text-deepgreen transition-colors truncate">
+                            <h3 className="font-bold text-sm md:text-base text-gray-900 group-hover:text-deepgreen transition-colors truncate">
                               {post.title}
                             </h3>
                             {hasComments && (
-                              <span className="text-[11px] font-bold text-gold-600 shrink-0 ml-1">
+                              <span className="text-[11px] md:text-xs font-bold text-gold-600 shrink-0 ml-1.5">
                                 [{post.comments.length}]
                               </span>
                             )}
                           </div>
                           {post.content && (
-                            <p className="text-xs text-gray-500 truncate mt-1 leading-normal font-normal">
+                            <p className="text-xs md:text-sm text-gray-500 truncate mt-1 leading-normal font-normal">
                               {post.content}
                             </p>
                           )}
                         </div>
-                        <div className="col-span-2 text-center text-xs font-medium text-gray-700 truncate px-2">
-                          <span className="bg-gray-100/80 group-hover:bg-white text-gray-700 px-2.5 py-0.5 rounded-full inline-block truncate max-w-full">
+                        <div className="col-span-2 text-center text-xs md:text-sm font-medium text-gray-700 truncate px-2">
+                          <span className="bg-gray-100/80 group-hover:bg-white text-gray-700 px-2.5 md:px-3 py-0.5 md:py-1 rounded-full inline-block truncate max-w-full text-xs md:text-sm">
                             {post.author}
                           </span>
                         </div>
-                        <div className="col-span-1 text-center text-xs text-gray-400 whitespace-nowrap">
+                        <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 whitespace-nowrap">
                           {post.date}
                         </div>
-                        <div className="col-span-1 text-center text-xs text-gray-500 font-medium">
+                        <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 font-medium">
                           {post.views}
                         </div>
                       </div>
@@ -598,10 +598,10 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                        />
                      ) : (
                        <div>
-                          <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 leading-snug break-keep">{viewingPost.title}</h2>
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-500">
+                          <h2 className="text-base sm:text-xl md:text-2xl font-extrabold text-gray-900 mb-2 leading-snug break-keep">{viewingPost.title}</h2>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs md:text-sm text-gray-500">
                               <div className="flex items-center gap-1.5">
-                                  <div className="w-5 h-5 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-[10px]">
+                                  <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-[10px] md:text-xs">
                                       {viewingPost.author.slice(0,1)}
                                   </div>
                                   <span className="font-semibold text-gray-700">{viewingPost.author}</span>
@@ -669,13 +669,13 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 {/* Content Section */}
                 {isEditing && editForm ? (
                    <textarea
-                      className="w-full h-60 p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 resize-none text-xs leading-relaxed"
+                      className="w-full h-60 p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 resize-none text-xs md:text-sm leading-relaxed"
                       value={editForm.content}
                       onChange={(e) => setEditForm({...editForm, content: e.target.value})}
                       placeholder="내용을 입력하세요"
                    />
                 ) : (
-                   <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm font-normal break-keep">
+                   <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm md:text-base font-normal break-keep">
                        {viewingPost.content}
                    </div>
                 )}
@@ -684,18 +684,18 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 {viewingPost.adminReply && !isEditing && (
                   <div className="mt-8 bg-deepgreen/5 border-l-4 border-deepgreen p-4 rounded-r-xl">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-deepgreen font-bold text-xs">👑 관리자 답변</span>
+                      <span className="text-deepgreen font-bold text-xs md:text-sm">👑 관리자 답변</span>
                     </div>
-                    <p className="text-xs text-gray-700 whitespace-pre-wrap">{viewingPost.adminReply}</p>
+                    <p className="text-xs md:text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{viewingPost.adminReply}</p>
                   </div>
                 )}
 
                 {/* Admin Reply Input (Only for Admins) */}
                 {isAdmin && !isEditing && (
                   <div className="mt-8 pt-6 border-t">
-                    <label className="block text-xs font-bold text-gray-600 mb-2">답변 작성 (관리자 전용)</label>
+                    <label className="block text-xs md:text-sm font-bold text-gray-600 mb-2">답변 작성 (관리자 전용)</label>
                     <textarea 
-                      className="w-full p-3 border border-gray-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-deepgreen h-24 resize-none bg-gray-50"
+                      className="w-full p-3 border border-gray-200 rounded-xl text-xs md:text-sm outline-none focus:ring-2 focus:ring-deepgreen h-24 resize-none bg-gray-50"
                       placeholder="답변 내용을 입력하세요..."
                       value={adminReplyInput}
                       onChange={(e) => setAdminReplyInput(e.target.value)}
@@ -703,7 +703,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                     <div className="flex justify-end mt-2">
                       <button 
                         onClick={handleSaveAdminReply}
-                        className="bg-deepgreen text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-opacity-90 transition"
+                        className="bg-deepgreen text-white px-4 md:px-5 py-2 rounded-lg text-[10px] md:text-xs font-bold hover:bg-opacity-90 transition"
                       >
                         답변 저장하기
                       </button>
@@ -717,14 +717,14 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                       <>
                         <button 
                           onClick={cancelEdit}
-                          className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px] hover:bg-gray-300"
+                          className="px-3.5 md:px-4 py-1.5 md:py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px] md:text-xs hover:bg-gray-300"
                         >
                           취소
                         </button>
                         <button 
                           onClick={saveEdit}
                           disabled={isUploading}
-                          className="px-4 py-1.5 bg-gold-500 text-white rounded-lg font-bold text-[10px] hover:bg-gold-600 shadow-md disabled:opacity-50"
+                          className="px-4 md:px-5 py-1.5 md:py-2 bg-gold-500 text-white rounded-lg font-bold text-[10px] md:text-xs hover:bg-gold-600 shadow-md disabled:opacity-50"
                         >
                           {isUploading ? '저장 중...' : '저장 완료'}
                         </button>
@@ -734,13 +734,13 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                           <>
                              <button 
                                 onClick={startEdit}
-                                className="text-blue-600 hover:text-blue-800 font-bold text-[10px] bg-blue-50 px-3 py-1.5 rounded transition"
+                                className="text-blue-600 hover:text-blue-800 font-bold text-[10px] md:text-xs bg-blue-50 px-3 md:px-3.5 py-1.5 md:py-2 rounded transition"
                              >
                                  ✏️ 수정하기
                              </button>
                              <button 
                                 onClick={() => handleDelete(viewingPost.id)}
-                                className="text-red-500 hover:text-red-700 font-bold text-[10px] bg-red-50 px-3 py-1.5 rounded transition"
+                                className="text-red-500 hover:text-red-700 font-bold text-[10px] md:text-xs bg-red-50 px-3 md:px-3.5 py-1.5 md:py-2 rounded transition"
                              >
                                  🗑 삭제하기
                              </button>
@@ -754,27 +754,27 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
             {!isEditing && (
                 <div className="w-full md:w-80 bg-gray-50 border-l border-gray-200 flex flex-col h-[40vh] md:h-full">
                     <div className="p-3 border-b border-gray-200 bg-white flex justify-between items-center">
-                        <h3 className="font-bold text-gray-800 text-sm">댓글 ({viewingPost.comments.length})</h3>
+                        <h3 className="font-bold text-gray-800 text-sm md:text-base">댓글 ({viewingPost.comments.length})</h3>
                         <button onClick={() => setViewingPost(null)} className="hidden md:block text-gray-400 hover:text-gray-600 text-lg">✕</button>
                     </div>
                     
                     {/* Comment List */}
                     <div className="flex-1 overflow-y-auto p-3 space-y-3">
                         {viewingPost.comments.length === 0 ? (
-                            <div className="text-center text-gray-400 py-8 text-xs">
+                            <div className="text-center text-gray-400 py-8 text-xs md:text-sm">
                                 첫 번째 댓글을 남겨보세요!
                             </div>
                         ) : (
                             viewingPost.comments.map(comment => (
                                 <div key={comment.id} className={`p-2.5 rounded-lg shadow-sm border ${comment.isAdmin ? 'bg-deepgreen/5 border-deepgreen/20' : 'bg-white border-gray-100'}`}>
                                     <div className="flex justify-between items-center mb-0.5">
-                                        <span className={`font-bold text-[11px] ${comment.isAdmin ? 'text-deepgreen' : 'text-gray-600'}`}>
+                                        <span className={`font-bold text-[11px] md:text-xs ${comment.isAdmin ? 'text-deepgreen' : 'text-gray-600'}`}>
                                           {comment.isAdmin && '👑 '}
                                           {comment.author}
                                         </span>
-                                        <span className="text-[10px] text-gray-400">{comment.date}</span>
+                                        <span className="text-[10px] md:text-xs text-gray-400">{comment.date}</span>
                                     </div>
-                                    <p className="text-[11px] text-gray-700">{comment.content}</p>
+                                    <p className="text-[11px] md:text-sm text-gray-700 leading-relaxed">{comment.content}</p>
                                 </div>
                             ))
                         )}
@@ -784,7 +784,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                     <div className="p-3 bg-white border-t border-gray-200">
                         <div className="relative">
                             <input
-                                className="w-full bg-gray-100 border-0 rounded-full py-2 pl-3 pr-9 focus:ring-2 focus:ring-gold-500 outline-none text-xs"
+                                className="w-full bg-gray-100 border-0 rounded-full py-2 md:py-2.5 pl-3.5 pr-9 focus:ring-2 focus:ring-gold-500 outline-none text-xs md:text-sm"
                                 placeholder="댓글을 입력하세요..."
                                 value={commentInput}
                                 onChange={e => setCommentInput(e.target.value)}
