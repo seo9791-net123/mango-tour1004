@@ -817,7 +817,8 @@ const App: React.FC = () => {
                 popup.imageHeight === 'compact' ? 'h-48' :
                 popup.imageHeight === 'large' ? 'h-80' :
                 popup.imageHeight === 'auto' ? 'min-h-[200px] max-h-[380px] h-auto' :
-                'h-64'
+                popup.imageHeight === 'medium' ? 'h-64' :
+                'aspect-video w-full'
               }`}>
                 {/* Ambient Blurred Backdrop */}
                 <img

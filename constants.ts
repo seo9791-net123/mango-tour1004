@@ -500,7 +500,9 @@ export const INITIAL_POPUP: PopupNotification = {
   title: 'MANGO TOUR 공지사항',
   content: '베트남 남부 명문 골프 투어 및 VIP 의전 서비스 전문 MANGO TOUR에 오신 것을 환영합니다.',
   isActive: false,
-  image: 'https://images.unsplash.com/photo-1628753232870-6da09a967c9c?q=80&w=800'
+  image: 'https://images.unsplash.com/photo-1628753232870-6da09a967c9c?q=80&w=800',
+  imageFit: 'contain',
+  imageHeight: '16:9'
 };
 
 export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [

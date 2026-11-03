@@ -102,7 +102,7 @@ export interface PopupNotification {
   isActive: boolean;
   link?: string;
   imageFit?: 'contain' | 'cover';
-  imageHeight?: 'auto' | 'compact' | 'medium' | 'large';
+  imageHeight?: 'auto' | 'compact' | 'medium' | 'large' | '16:9';
 }
 
 // AI Trip Planner Types

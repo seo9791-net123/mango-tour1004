@@ -3488,18 +3488,23 @@ const AdminDashboard: React.FC<Props> = ({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1.5">
-                        <span>🖼️</span> 팝업 이미지 & 능동 조작 캔버스
+                        <span>🖼️</span> 팝업 이미지 & 능동 조작 캔버스 (16:9 와이드)
                       </label>
-                      {popup.image && (
-                        <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                          이미지 등록됨
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black bg-gold-100 text-deepgreen px-2 py-0.5 rounded-md border border-gold-300">
+                          16:9 와이드 비율
                         </span>
-                      )}
+                        {popup.image && (
+                          <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            이미지 등록됨
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Active Interactive Image Canvas */}
+                    {/* Active Interactive Image Canvas (16:9 Aspect Ratio) */}
                     <div 
-                      className={`h-80 sm:h-96 w-full rounded-3xl bg-gray-950 relative overflow-hidden flex items-center justify-center border border-gray-800 shadow-inner group select-none ${
+                      className={`aspect-video w-full rounded-3xl bg-gray-950 relative overflow-hidden flex items-center justify-center border border-gray-800 shadow-inner group select-none ${
                         popupZoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''
                       }`}
                       onMouseDown={handlePopupMouseDown}
@@ -3539,7 +3544,9 @@ const AdminDashboard: React.FC<Props> = ({
                           <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none gap-2">
                             {/* Status Pills */}
                             <div className="pointer-events-auto flex items-center gap-1.5 bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full text-[11px] font-bold shadow-md border border-white/10">
-                              <span className="text-gold-300">{popup.imageFit === 'cover' ? '🔲 채우기' : '🖼️ 원본비율'}</span>
+                              <span className="text-gold-300 font-black">16:9</span>
+                              <span className="text-white/40">|</span>
+                              <span className="text-gold-200">{popup.imageFit === 'cover' ? '🔲 채우기' : '🖼️ 원본비율'}</span>
                               <span className="text-white/40">|</span>
                               <span className="text-white">{Math.round(popupZoom * 100)}%</span>
                               {popupZoom > 1 && (
@@ -3688,35 +3695,37 @@ const AdminDashboard: React.FC<Props> = ({
                       <div className="pt-2 border-t border-gray-200/60">
                         <div className="flex items-center justify-between mb-1.5">
                           <label className="text-[11px] font-bold text-gray-600">
-                            2. 팝업 이미지 높이 규격 (Height)
+                            2. 팝업 이미지 비율 및 높이 규격 (Aspect / Height)
                           </label>
-                          <span className="text-[10px] text-gray-400">
-                            {popup.imageHeight === 'compact' ? '슬림 190px' :
+                          <span className="text-[10px] text-gray-400 font-bold text-deepgreen">
+                            {popup.imageHeight === '16:9' || !popup.imageHeight ? '⭐ 16:9 와이드 (표준)' :
+                             popup.imageHeight === 'compact' ? '슬림 190px' :
                              popup.imageHeight === 'large' ? '확장 340px' :
                              popup.imageHeight === 'auto' ? '자동 높이' : '표준 260px'}
                           </span>
                         </div>
-                        <div className="grid grid-cols-4 gap-1.5">
+                        <div className="grid grid-cols-5 gap-1.5">
                           {[
-                            { key: 'compact', label: '슬림', sub: '190px' },
-                            { key: 'medium', label: '표준', sub: '260px' },
-                            { key: 'large', label: '확장', sub: '340px' },
-                            { key: 'auto', label: '자동', sub: 'Auto' },
+                            { key: '16:9', label: '16:9 와이드', sub: '표준 와이드' },
+                            { key: 'medium', label: '표준 높이', sub: '260px' },
+                            { key: 'compact', label: '슬림 높이', sub: '190px' },
+                            { key: 'large', label: '확장 높이', sub: '340px' },
+                            { key: 'auto', label: '자동 비율', sub: 'Auto' },
                           ].map((item) => {
-                            const isSelected = (popup.imageHeight || 'medium') === item.key;
+                            const isSelected = (popup.imageHeight || '16:9') === item.key;
                             return (
                               <button
                                 key={item.key}
                                 type="button"
                                 onClick={() => handlePopupChange('imageHeight', item.key)}
-                                className={`py-1.5 px-2 rounded-xl text-center transition cursor-pointer ${
+                                className={`py-1.5 px-1.5 rounded-xl text-center transition cursor-pointer ${
                                   isSelected
                                     ? 'bg-deepgreen text-white shadow-xs'
                                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
                                 }`}
                               >
-                                <div className="text-[11px] font-bold">{item.label}</div>
-                                <div className="text-[9px] opacity-75">{item.sub}</div>
+                                <div className="text-[10px] xs:text-[11px] font-bold leading-tight">{item.label}</div>
+                                <div className="text-[9px] opacity-75 mt-0.5">{item.sub}</div>
                               </button>
                             );
                           })}
@@ -4112,7 +4121,8 @@ const AdminDashboard: React.FC<Props> = ({
                 popup.imageHeight === 'compact' ? 'h-48' :
                 popup.imageHeight === 'large' ? 'h-80' :
                 popup.imageHeight === 'auto' ? 'min-h-[200px] max-h-[380px] h-auto' :
-                'h-64'
+                popup.imageHeight === 'medium' ? 'h-64' :
+                'aspect-video w-full'
               }`}>
                 {/* Ambient Blurred Backdrop */}
                 <img
