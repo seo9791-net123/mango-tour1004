@@ -103,6 +103,16 @@ const AdminDashboard: React.FC<Props> = ({
   const [selectedPageId, setSelectedPageId] = useState<string>('business');
   const [pageForm, setPageForm] = useState<PageContent>(pageContents['business'] || INITIAL_PAGE_CONTENTS['business']);
 
+  // Popup Image Dynamic Manipulation States
+  const [popupZoom, setPopupZoom] = useState<number>(1);
+  const [popupPan, setPopupPan] = useState({ x: 0, y: 0 });
+  const [isPopupDragging, setIsPopupDragging] = useState(false);
+  const popupDragStartRef = useRef({ x: 0, y: 0 });
+  const [showPopupFullscreen, setShowPopupFullscreen] = useState(false);
+  const [showPopupLivePreview, setShowPopupLivePreview] = useState(false);
+  const [showPopupUrlModal, setShowPopupUrlModal] = useState(false);
+  const [popupUrlInput, setPopupUrlInput] = useState('');
+
   // Google Drive Config
   const [showDriveConfig, setShowDriveConfig] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem('google_api_key') || '');
@@ -987,6 +997,53 @@ const AdminDashboard: React.FC<Props> = ({
 
   const handlePopupChange = (field: keyof PopupNotification, value: any) => {
     setPopup({ ...popup, [field]: value });
+  };
+
+  const handlePopupZoomIn = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setPopupZoom(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const handlePopupZoomOut = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setPopupZoom(prev => {
+      const next = Math.max(prev - 0.25, 1);
+      if (next === 1) setPopupPan({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  const handlePopupResetZoom = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setPopupZoom(1);
+    setPopupPan({ x: 0, y: 0 });
+  };
+
+  const handlePopupMouseDown = (e: React.MouseEvent) => {
+    if (popupZoom <= 1) return;
+    setIsPopupDragging(true);
+    popupDragStartRef.current = { x: e.clientX - popupPan.x, y: e.clientY - popupPan.y };
+  };
+
+  const handlePopupMouseMove = (e: React.MouseEvent) => {
+    if (!isPopupDragging || popupZoom <= 1) return;
+    setPopupPan({
+      x: e.clientX - popupDragStartRef.current.x,
+      y: e.clientY - popupDragStartRef.current.y
+    });
+  };
+
+  const handlePopupMouseUp = () => setIsPopupDragging(false);
+
+  const handlePopupApplyUrl = () => {
+    if (!popupUrlInput.trim()) {
+      alert('이미지 URL을 입력해주세요.');
+      return;
+    }
+    handlePopupChange('image', popupUrlInput.trim());
+    setShowPopupUrlModal(false);
+    setPopupUrlInput('');
+    showToast('✨ 팝업 이미지가 적용되었습니다.');
   };
 
   const handleSaveFirebaseConfig = () => {
@@ -3429,31 +3486,252 @@ const AdminDashboard: React.FC<Props> = ({
                   </div>
 
                   <div className="space-y-4">
-                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">팝업 이미지</label>
-                    <div className="aspect-square bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 overflow-hidden relative group">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1.5">
+                        <span>🖼️</span> 팝업 이미지 & 능동 조작 캔버스
+                      </label>
+                      {popup.image && (
+                        <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          이미지 등록됨
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Active Interactive Image Canvas */}
+                    <div 
+                      className={`h-80 sm:h-96 w-full rounded-3xl bg-gray-950 relative overflow-hidden flex items-center justify-center border border-gray-800 shadow-inner group select-none ${
+                        popupZoom > 1 ? 'cursor-grab active:cursor-grabbing' : ''
+                      }`}
+                      onMouseDown={handlePopupMouseDown}
+                      onMouseMove={handlePopupMouseMove}
+                      onMouseUp={handlePopupMouseUp}
+                      onMouseLeave={handlePopupMouseUp}
+                    >
                       {popup.image ? (
                         <>
-                          <img src={popup.image} className="w-full h-full object-cover" alt="Popup Preview" />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-4">
-                            <label className="bg-white text-deepgreen px-4 py-2 rounded-xl font-bold text-xs cursor-pointer hover:bg-gray-100">
-                              이미지 교체
+                          {/* Ambient Blurred Backdrop */}
+                          <img
+                            src={popup.image}
+                            alt=""
+                            aria-hidden="true"
+                            className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-40 scale-125 pointer-events-none transition-all duration-300"
+                          />
+
+                          {/* Interactive Foreground Image */}
+                          <img 
+                            src={popup.image} 
+                            alt="Popup Preview" 
+                            style={{
+                              transform: `scale(${popupZoom}) translate(${popupPan.x / popupZoom}px, ${popupPan.y / popupZoom}px)`,
+                              transition: isPopupDragging ? 'none' : 'transform 0.2s ease-out',
+                            }}
+                            className={`relative z-10 max-h-full max-w-full duration-300 ${
+                              popup.imageFit === 'cover' ? 'w-full h-full object-cover' : 'object-contain'
+                            }`}
+                            onDoubleClick={() => {
+                              if (popupZoom === 1) setPopupZoom(1.5);
+                              else handlePopupResetZoom();
+                            }}
+                            title="더블클릭: 확대/축소 토글"
+                          />
+
+                          {/* Top Floating Quick Control Bar */}
+                          <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none gap-2">
+                            {/* Status Pills */}
+                            <div className="pointer-events-auto flex items-center gap-1.5 bg-black/70 backdrop-blur-md text-white px-3 py-1 rounded-full text-[11px] font-bold shadow-md border border-white/10">
+                              <span className="text-gold-300">{popup.imageFit === 'cover' ? '🔲 채우기' : '🖼️ 원본비율'}</span>
+                              <span className="text-white/40">|</span>
+                              <span className="text-white">{Math.round(popupZoom * 100)}%</span>
+                              {popupZoom > 1 && (
+                                <span className="text-emerald-400 font-extrabold text-[10px] bg-emerald-950/60 px-1.5 py-0.5 rounded">
+                                  ✋ 드래그 이동
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Zoom & Fullscreen Controls */}
+                            <div className="pointer-events-auto flex items-center gap-1 bg-black/70 backdrop-blur-md p-1 rounded-full shadow-md border border-white/10">
+                              <button
+                                type="button"
+                                onClick={handlePopupZoomOut}
+                                disabled={popupZoom <= 1}
+                                className="w-6 h-6 flex items-center justify-center text-white hover:text-gold-300 font-black rounded-full hover:bg-white/10 transition disabled:opacity-30 cursor-pointer text-xs"
+                                title="축소"
+                              >
+                                －
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handlePopupResetZoom}
+                                className="px-1.5 py-0.5 text-white hover:text-gold-300 text-[10px] font-bold rounded hover:bg-white/10 transition cursor-pointer"
+                                title="100% 리셋"
+                              >
+                                100%
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handlePopupZoomIn}
+                                disabled={popupZoom >= 3}
+                                className="w-6 h-6 flex items-center justify-center text-white hover:text-gold-300 font-black rounded-full hover:bg-white/10 transition disabled:opacity-30 cursor-pointer text-xs"
+                                title="확대"
+                              >
+                                ＋
+                              </button>
+                              <div className="w-[1px] h-3 bg-white/20 mx-0.5" />
+                              <button
+                                type="button"
+                                onClick={() => setShowPopupFullscreen(true)}
+                                className="px-2 py-0.5 text-white hover:text-gold-300 text-[11px] font-bold rounded-full hover:bg-white/10 transition cursor-pointer flex items-center gap-1"
+                                title="전체화면으로 크게보기"
+                              >
+                                <span>🔍</span> 크게보기
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Bottom Action Bar */}
+                          <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-center gap-2">
+                            <label className="bg-white/90 hover:bg-white text-gray-800 px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer shadow-lg hover:shadow-xl transition flex items-center gap-1 active:scale-95">
+                              <span>📁</span> 이미지 교체
                               <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePopupChange('image', url))} />
                             </label>
-                            <button 
-                              onClick={() => handlePopupChange('image', undefined)}
-                              className="bg-red-500 text-white px-4 py-2 rounded-xl font-bold text-xs hover:bg-red-600"
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPopupUrlInput(popup.image || '');
+                                setShowPopupUrlModal(true);
+                              }}
+                              className="bg-white/90 hover:bg-white text-gray-800 px-3 py-1.5 rounded-xl font-bold text-xs shadow-lg hover:shadow-xl transition flex items-center gap-1 active:scale-95 cursor-pointer"
                             >
-                              삭제
+                              <span>🔗</span> URL 입력
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                if (confirm('팝업 이미지를 삭제하시겠습니까?')) {
+                                  handlePopupChange('image', undefined);
+                                }
+                              }}
+                              className="bg-red-500/90 hover:bg-red-600 text-white px-3 py-1.5 rounded-xl font-bold text-xs shadow-lg hover:shadow-xl transition flex items-center gap-1 active:scale-95 cursor-pointer"
+                            >
+                              <span>🗑️</span> 삭제
                             </button>
                           </div>
                         </>
                       ) : (
-                        <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition">
-                          <span className="text-4xl mb-2">🖼️</span>
-                          <span className="text-xs font-bold text-gray-400">이미지 업로드</span>
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePopupChange('image', url))} />
-                        </label>
+                        <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+                          <span className="text-5xl animate-bounce">🖼️</span>
+                          <div>
+                            <p className="text-sm font-bold text-white">등록된 팝업 이미지가 없습니다</p>
+                            <p className="text-xs text-gray-400 mt-1">이벤트 포스터나 안내 이미지를 업로드하세요</p>
+                          </div>
+                          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                            <label className="bg-deepgreen text-white px-4 py-2 rounded-xl font-bold text-xs cursor-pointer hover:bg-gold-600 transition shadow-md flex items-center gap-1.5">
+                              <span>📁</span> 내 PC에서 파일 선택
+                              <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePopupChange('image', url))} />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPopupUrlInput('');
+                                setShowPopupUrlModal(true);
+                              }}
+                              className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl font-bold text-xs transition border border-white/20 flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <span>🔗</span> 웹 URL 입력
+                            </button>
+                          </div>
+                        </div>
                       )}
+                    </div>
+
+                    {/* Display Control Options: Fit Mode & Height */}
+                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-[11px] font-bold text-gray-600">
+                            1. 팝업 이미지 맞춤 방식 (Fit Mode)
+                          </label>
+                          <span className="text-[10px] text-gray-400">
+                            {popup.imageFit === 'cover' ? '영역 꽉 채우기' : '원본 비율 유지 (권장)'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handlePopupChange('imageFit', 'contain')}
+                            className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                              popup.imageFit !== 'cover'
+                                ? 'bg-deepgreen text-white shadow-md'
+                                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                            }`}
+                          >
+                            <span>🖼️</span> 원본 비율 (Contain)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handlePopupChange('imageFit', 'cover')}
+                            className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                              popup.imageFit === 'cover'
+                                ? 'bg-deepgreen text-white shadow-md'
+                                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                            }`}
+                          >
+                            <span>🔲</span> 채우기 (Cover)
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-1 pl-1">
+                          ※ 원본 비율 선택 시 세로형 포스터나 텍스트가 잘리지 않으며, 주변에 고급스러운 앰비언트 블러 배경이 채워집니다.
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-gray-200/60">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-[11px] font-bold text-gray-600">
+                            2. 팝업 이미지 높이 규격 (Height)
+                          </label>
+                          <span className="text-[10px] text-gray-400">
+                            {popup.imageHeight === 'compact' ? '슬림 190px' :
+                             popup.imageHeight === 'large' ? '확장 340px' :
+                             popup.imageHeight === 'auto' ? '자동 높이' : '표준 260px'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { key: 'compact', label: '슬림', sub: '190px' },
+                            { key: 'medium', label: '표준', sub: '260px' },
+                            { key: 'large', label: '확장', sub: '340px' },
+                            { key: 'auto', label: '자동', sub: 'Auto' },
+                          ].map((item) => {
+                            const isSelected = (popup.imageHeight || 'medium') === item.key;
+                            return (
+                              <button
+                                key={item.key}
+                                type="button"
+                                onClick={() => handlePopupChange('imageHeight', item.key)}
+                                className={`py-1.5 px-2 rounded-xl text-center transition cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-deepgreen text-white shadow-xs'
+                                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                                }`}
+                              >
+                                <div className="text-[11px] font-bold">{item.label}</div>
+                                <div className="text-[9px] opacity-75">{item.sub}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => setShowPopupLivePreview(true)}
+                          className="w-full py-2.5 bg-gold-500 hover:bg-gold-600 text-deepgreen rounded-xl font-black text-xs transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                        >
+                          <span>👁️</span> 방문자 실제 팝업 실시간 미리보기
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3630,7 +3908,272 @@ const AdminDashboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 3. Floating Toast Notification */}
+      {/* 3. Popup Image URL Input Modal */}
+      {showPopupUrlModal && (
+        <div className="fixed inset-0 z-[10005] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between">
+              <h4 className="text-base font-black text-gray-900 flex items-center gap-2">
+                <span>🔗</span> 팝업 이미지 웹 URL 입력
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowPopupUrlModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500">
+              인터넷에 올라와 있는 이미지나 포스터 링크(URL)를 직접 붙여넣어 팝업으로 등록할 수 있습니다.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-gray-400 uppercase">이미지 주소 (URL)</label>
+              <input
+                type="url"
+                value={popupUrlInput}
+                onChange={(e) => setPopupUrlInput(e.target.value)}
+                placeholder="https://images.unsplash.com/... 또는 https://example.com/poster.jpg"
+                className="w-full p-3.5 bg-gray-50 rounded-2xl border border-gray-200 focus:bg-white focus:border-deepgreen outline-none text-xs"
+                autoFocus
+              />
+            </div>
+
+            {popupUrlInput.trim() && (
+              <div className="rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 h-36 flex items-center justify-center">
+                <img
+                  src={popupUrlInput.trim()}
+                  alt="URL Preview"
+                  className="max-h-full max-w-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowPopupUrlModal(false)}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handlePopupApplyUrl}
+                className="flex-1 py-3 bg-deepgreen hover:bg-gold-600 text-white font-bold text-xs rounded-xl transition shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>✓</span> 이미지 적용
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Fullscreen Lightbox Modal for Notice Image */}
+      {showPopupFullscreen && popup.image && (
+        <div 
+          className="fixed inset-0 z-[10010] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in select-none"
+          onClick={() => setShowPopupFullscreen(false)}
+        >
+          {/* Top Control Bar */}
+          <div 
+            className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-white/10 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 border border-white/20">
+              <span className="text-gold-300">📢 팝업 공지 이미지 원본 보기</span>
+              <span className="opacity-40">|</span>
+              <span>{Math.round(popupZoom * 100)}%</span>
+              {popupZoom > 1 && (
+                <span className="text-emerald-400 text-[10px] bg-emerald-950/60 px-2 py-0.5 rounded font-extrabold">
+                  드래그하여 이동
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Zoom Controls */}
+              <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md p-1 rounded-full border border-white/20 text-white">
+                <button
+                  type="button"
+                  onClick={handlePopupZoomOut}
+                  disabled={popupZoom <= 1}
+                  className="w-7 h-7 flex items-center justify-center hover:text-gold-300 font-black rounded-full hover:bg-white/10 transition disabled:opacity-30 cursor-pointer text-sm"
+                  title="축소"
+                >
+                  －
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePopupResetZoom}
+                  className="px-2 py-1 hover:text-gold-300 text-xs font-bold rounded hover:bg-white/10 transition cursor-pointer"
+                  title="100% 리셋"
+                >
+                  100%
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePopupZoomIn}
+                  disabled={popupZoom >= 3}
+                  className="w-7 h-7 flex items-center justify-center hover:text-gold-300 font-black rounded-full hover:bg-white/10 transition disabled:opacity-30 cursor-pointer text-sm"
+                  title="확대"
+                >
+                  ＋
+                </button>
+              </div>
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowPopupFullscreen(false)}
+                className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center font-black text-base transition border border-white/30 cursor-pointer"
+                title="닫기 (ESC)"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Canvas */}
+          <div 
+            className="w-full h-full max-w-5xl max-h-[85vh] relative flex items-center justify-center overflow-hidden rounded-3xl"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={handlePopupMouseDown}
+            onMouseMove={handlePopupMouseMove}
+            onMouseUp={handlePopupMouseUp}
+            onMouseLeave={handlePopupMouseUp}
+          >
+            {/* Ambient Blurred Backdrop */}
+            <img
+              src={popup.image}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 w-full h-full object-cover filter blur-3xl opacity-30 scale-125 pointer-events-none"
+            />
+            {/* Foreground Main Poster */}
+            <img
+              src={popup.image}
+              alt="Popup Fullscreen"
+              style={{
+                transform: `scale(${popupZoom}) translate(${popupPan.x / popupZoom}px, ${popupPan.y / popupZoom}px)`,
+                transition: isPopupDragging ? 'none' : 'transform 0.2s ease-out',
+              }}
+              className="relative z-10 max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing"
+              onDoubleClick={() => {
+                if (popupZoom === 1) setPopupZoom(2);
+                else handlePopupResetZoom();
+              }}
+            />
+          </div>
+
+          <div className="absolute bottom-4 text-center text-white/50 text-xs pointer-events-none">
+            더블클릭으로 200% 확대 / 확대 후 마우스 드래그로 이동 / 바깥 영역 클릭 시 닫힙니다.
+          </div>
+        </div>
+      )}
+
+      {/* 5. Live Visitor Popup Preview Modal */}
+      {showPopupLivePreview && (
+        <div 
+          className="fixed inset-0 z-[10008] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in"
+          onClick={() => setShowPopupLivePreview(false)}
+        >
+          {/* Header Banner */}
+          <div 
+            className="mb-4 bg-gold-400 text-deepgreen px-5 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-xl border border-gold-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span>📱</span> [실제 방문자 화면 미리보기] 모드
+            <span className="opacity-50">|</span>
+            <span className="text-[11px] font-bold">배경 클릭 시 닫힙니다</span>
+          </div>
+
+          {/* Exact Visitor Popup Simulation */}
+          <div 
+            className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-sm w-full animate-scale-in border border-white/30 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close X */}
+            <button
+              type="button"
+              onClick={() => setShowPopupLivePreview(false)}
+              className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center font-bold text-sm transition"
+            >
+              ✕
+            </button>
+
+            {popup.image ? (
+              <div className={`relative overflow-hidden bg-gray-950 flex items-center justify-center ${
+                popup.imageHeight === 'compact' ? 'h-48' :
+                popup.imageHeight === 'large' ? 'h-80' :
+                popup.imageHeight === 'auto' ? 'min-h-[200px] max-h-[380px] h-auto' :
+                'h-64'
+              }`}>
+                {/* Ambient Blurred Backdrop */}
+                <img
+                  src={popup.image}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-45 scale-125 pointer-events-none"
+                />
+                {/* Foreground Notice Image */}
+                <img
+                  src={popup.image}
+                  className={`relative z-10 max-h-full max-w-full duration-300 ${
+                    popup.imageFit === 'cover' ? 'w-full h-full object-cover' : 'object-contain'
+                  }`}
+                  alt={popup.title || 'Notification'}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none z-10"></div>
+                <div className="absolute bottom-4 left-6 right-6 z-20">
+                  <h3 className="text-white font-bold text-lg md:text-xl drop-shadow-lg leading-tight">
+                    {popup.title || '공지사항 제목'}
+                  </h3>
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 bg-deepgreen text-white">
+                <h3 className="font-bold text-xl">{popup.title || '공지사항 제목'}</h3>
+              </div>
+            )}
+
+            <div className="p-6 sm:p-8 space-y-4">
+              {!popup.image && <h3 className="text-deepgreen font-bold text-xl">{popup.title || '공지사항'}</h3>}
+              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                {popup.content || '공지사항 내용이 여기에 표시됩니다.'}
+              </p>
+              
+              <div className="pt-2 flex flex-col gap-2">
+                {popup.link && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      alert(`[링크 이동 테스트]\n${popup.link} 로 이동합니다.`);
+                    }}
+                    className="w-full py-3.5 bg-deepgreen text-white rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition transform active:scale-95 text-sm"
+                  >
+                    자세히 보기
+                  </button>
+                )}
+                <button 
+                  type="button"
+                  onClick={() => setShowPopupLivePreview(false)}
+                  className="w-full py-3.5 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm cursor-pointer"
+                >
+                  미리보기 닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Floating Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-[10001] bg-gray-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3 animate-fade-in-up">
           <span className="text-sm font-black">{toastMessage}</span>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
+import AdaptiveImageViewer from './AdaptiveImageViewer';
 
 interface Props {
   product: Product;
@@ -20,7 +21,7 @@ const ProductDetailModal: React.FC<Props> = ({ product, onClose }) => {
           <h2 className="text-base sm:text-xl font-bold text-deepgreen line-clamp-1">{product.title}</h2>
           <button 
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 active:scale-95 transition font-bold text-sm shrink-0 ml-2"
+            className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 active:scale-95 transition font-bold text-sm shrink-0 ml-2 cursor-pointer"
           >
             ✕
           </button>
@@ -28,47 +29,15 @@ const ProductDetailModal: React.FC<Props> = ({ product, onClose }) => {
 
         {/* Content */}
         <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
-          {/* Image Slider / Gallery */}
-          <div className="space-y-3">
-            <div className="aspect-[16/10] sm:aspect-video rounded-2xl overflow-hidden bg-gray-100 shadow-inner relative">
-              <img 
-                src={images[activeImageIdx]} 
-                alt={`Detail ${activeImageIdx}`} 
-                className="w-full h-full object-cover animate-fade-in"
-              />
-              {images.length > 1 && (
-                <div className="absolute inset-0 flex items-center justify-between px-3">
-                  <button 
-                    onClick={() => setActiveImageIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                    className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 active:scale-95 transition text-sm"
-                  >
-                    ←
-                  </button>
-                  <button 
-                    onClick={() => setActiveImageIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                    className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 active:scale-95 transition text-sm"
-                  >
-                    →
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            {/* Thumbnails */}
-            {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {images.map((img, idx) => (
-                  <button 
-                    key={idx}
-                    onClick={() => setActiveImageIdx(idx)}
-                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition ${activeImageIdx === idx ? 'border-gold-500 scale-105 shadow-sm' : 'border-transparent opacity-60'}`}
-                  >
-                    <img src={img} className="w-full h-full object-cover" alt={`Thumb ${idx}`} />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Image Slider / Gallery with Adaptive Sizing */}
+          {images.length > 0 && (
+            <AdaptiveImageViewer
+              images={images}
+              activeIdx={activeImageIdx}
+              onIdxChange={setActiveImageIdx}
+              altPrefix={product.title}
+            />
+          )}
 
           {/* Text Content */}
           <div className="space-y-3">

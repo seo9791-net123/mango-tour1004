@@ -53,6 +53,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   showControls = true,
 }) => {
   const documentRef = useRef<HTMLDivElement>(null);
+  const exactA4Ref = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -96,18 +97,20 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     window.print();
   };
 
-  // Export PDF using jsPDF + html2canvas
+  // Export PDF using jsPDF + html2canvas (Targets the exact A4 layout matching user PDF sample)
   const handleExportPDF = async () => {
-    if (!documentRef.current || isExporting) return;
+    const targetElement = exactA4Ref.current || documentRef.current;
+    if (!targetElement || isExporting) return;
     setIsExporting(true);
-    showToast('📄 A4 규격 PDF를 생성 중입니다...');
+    showToast('📄 정식 A4 규격 PDF를 생성 중입니다...');
     try {
       await new Promise((r) => setTimeout(r, 150));
-      const canvas = await html2canvas(documentRef.current, {
+      const canvas = await html2canvas(targetElement, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        windowWidth: 794,
       });
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -133,9 +136,9 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
         heightLeft -= pageHeight;
       }
 
-      const fileName = `망고투어_여행견적서_${customerName}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const fileName = `망고투어_정식견적서_${customerName}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
-      showToast('📥 A4 PDF 파일 다운로드가 완료되었습니다.');
+      showToast('📥 정식 A4 PDF 다운로드가 완료되었습니다.');
     } catch (err) {
       console.error('PDF export error:', err);
       showToast('⚠️ PDF 생성 중 오류가 발생했습니다. A4 인쇄 기능을 이용해주세요.');
@@ -144,27 +147,29 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     }
   };
 
-  // Download high-resolution PNG
+  // Download high-resolution PNG (Targets exact A4 layout)
   const handleDownloadPNG = async () => {
-    if (!documentRef.current || isExporting) return;
+    const targetElement = exactA4Ref.current || documentRef.current;
+    if (!targetElement || isExporting) return;
     setIsExporting(true);
-    showToast('📸 견적서 고해상도 이미지를 생성 중입니다...');
+    showToast('📸 정식 견적서 고해상도 이미지를 생성 중입니다...');
     try {
       await new Promise((r) => setTimeout(r, 150));
-      const canvas = await html2canvas(documentRef.current, {
+      const canvas = await html2canvas(targetElement, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        windowWidth: 794,
       });
       const dataUrl = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       a.href = dataUrl;
-      a.download = `망고투어_견적서_${customerName}_${new Date().toISOString().split('T')[0]}.png`;
+      a.download = `망고투어_정식견적서_${customerName}_${new Date().toISOString().split('T')[0]}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      showToast('📥 견적서 이미지가 다운로드되었습니다.');
+      showToast('📥 정식 견적서 이미지가 저장되었습니다.');
     } catch (err) {
       console.error('PNG download error:', err);
       showToast('⚠️ 이미지 생성에 실패했습니다.');
@@ -315,11 +320,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
         </div>
       )}
 
-      {/* ================= EXACT A4 DOCUMENT CANVAS ================= */}
+      {/* ================= ON-SCREEN INTERACTIVE VIEW (Maintains responsive card/table layout) ================= */}
       <div
         ref={documentRef}
-        id="a4-quotation-sheet"
-        className="a4-print-container bg-white w-full max-w-[794px] min-h-0 sm:min-h-[1050px] print:min-h-[1050px] p-3.5 xs:p-5 sm:p-10 md:p-12 border border-gray-200 shadow-xl rounded-2xl sm:rounded-2xl text-gray-900 text-xs sm:text-sm leading-normal box-border relative mx-auto"
+        id="a4-screen-view"
+        className="a4-print-container bg-white w-full max-w-[794px] min-h-0 sm:min-h-[1050px] print:hidden p-3.5 xs:p-5 sm:p-10 md:p-12 border border-gray-200 shadow-xl rounded-2xl sm:rounded-2xl text-gray-900 text-xs sm:text-sm leading-normal box-border relative mx-auto"
         style={{
           boxSizing: 'border-box',
         }}
@@ -581,6 +586,188 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
         </div>
       </div>
 
+      {/* ================= EXACT A4 SHEET FOR PRINT & PDF EXPORT (Identical to User Sample PDF) ================= */}
+      <div
+        ref={exactA4Ref}
+        id="a4-exact-print-sheet"
+        className="fixed top-0 -left-[9999px] w-[794px] bg-white text-gray-900 pointer-events-none z-[-100] print:static print:left-0 print:w-full print:block print:z-auto print:pointer-events-auto print:shadow-none print:border-none"
+        style={{
+          width: '794px',
+          boxSizing: 'border-box',
+          padding: '36px 44px',
+          backgroundColor: '#ffffff',
+          color: '#111827',
+          fontFamily: 'sans-serif',
+        }}
+      >
+        {/* Top Header: Brand + Title */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: '32px', fontWeight: 900, color: '#F5A623', letterSpacing: '-0.5px' }}>MangoTour</span>
+          </div>
+          <h1 style={{ fontSize: '26px', fontWeight: 900, color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>
+            여행 견적 및 일정 안내서
+          </h1>
+        </div>
+        {/* Solid Orange Accent Line under Header */}
+        <div style={{ height: '3px', backgroundColor: '#F5A623', marginBottom: '18px' }} />
+
+        {/* 2x2 Meta Information Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d1d5db', marginBottom: '18px', fontSize: '13px' }}>
+          <tbody>
+            <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <th style={{ backgroundColor: '#f9fafb', width: '90px', padding: '9px 14px', borderRight: '1px solid #e5e7eb', textAlign: 'left', fontWeight: 700, color: '#374151' }}>
+                고객명
+              </th>
+              <td style={{ padding: '9px 14px', borderRight: '1px solid #e5e7eb', fontWeight: 600, color: '#111827' }}>
+                {customerName} 고객님 {personCount > 1 ? `(외 ${personCount - 1}인)` : ''}
+              </td>
+              <th style={{ backgroundColor: '#f9fafb', width: '90px', padding: '9px 14px', borderRight: '1px solid #e5e7eb', textAlign: 'left', fontWeight: 700, color: '#374151' }}>
+                담당자
+              </th>
+              <td style={{ padding: '9px 14px', color: '#374151', fontWeight: 500 }}>
+                {managerName} ({managerContact})
+              </td>
+            </tr>
+            <tr>
+              <th style={{ backgroundColor: '#f9fafb', padding: '9px 14px', borderRight: '1px solid #e5e7eb', textAlign: 'left', fontWeight: 700, color: '#374151' }}>
+                여행지
+              </th>
+              <td style={{ padding: '9px 14px', borderRight: '1px solid #e5e7eb', fontWeight: 600, color: '#111827' }}>
+                베트남 {location}
+              </td>
+              <th style={{ backgroundColor: '#f9fafb', padding: '9px 14px', borderRight: '1px solid #e5e7eb', textAlign: 'left', fontWeight: 700, color: '#374151' }}>
+                여행기간
+              </th>
+              <td style={{ padding: '9px 14px', color: '#374151', fontWeight: 500 }}>
+                {formattedDateRange} ({duration})
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Golden Banner for Total Price */}
+        <div style={{ backgroundColor: '#F5A623', borderRadius: '6px', padding: '12px 20px', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <span style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '0.2px' }}>
+            선택 결제 금액 (Total Price)
+          </span>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '-0.5px' }}>
+              ${(finalTotalUSD || Math.round(finalTotalKRW / 1360)).toLocaleString()} USD ({personCount}인 기준)
+            </div>
+            <div style={{ fontSize: '12px', color: '#fef3c7', marginTop: '2px', fontWeight: 500 }}>
+              (약 ₩ {finalTotalKRW.toLocaleString()}원 / 1인 약 ${Math.round((finalTotalUSD || Math.round(finalTotalKRW / 1360)) / personCount).toLocaleString()})
+            </div>
+          </div>
+        </div>
+
+        {/* Section 1: ■ 여행 경비 내역 (Estimated Cost) */}
+        <div style={{ marginBottom: '22px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: '#F5A623', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: '#F5A623', fontSize: '12px' }}>■</span>
+            <span style={{ color: '#F5A623' }}>여행 경비 내역 (Estimated Cost)</span>
+          </div>
+          <div style={{ height: '2px', backgroundColor: '#F5A623', marginBottom: '12px' }} />
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e5e7eb', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #d1d5db', color: '#374151', fontWeight: 700 }}>
+                <th style={{ padding: '9px 12px', textAlign: 'center', width: '110px', borderRight: '1px solid #e5e7eb' }}>구분</th>
+                <th style={{ padding: '9px 12px', textAlign: 'left', borderRight: '1px solid #e5e7eb' }}>세부 내역</th>
+                <th style={{ padding: '9px 12px', textAlign: 'center', width: '80px', borderRight: '1px solid #e5e7eb' }}>수량</th>
+                <th style={{ padding: '9px 14px', textAlign: 'right', width: '140px' }}>금액</th>
+              </tr>
+            </thead>
+            <tbody>
+              {costItems.map((item, idx) => {
+                const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
+                return (
+                  <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#374151', borderRight: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
+                      {item.category}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 500, color: '#111827', borderRight: '1px solid #e5e7eb', lineHeight: 1.5 }}>
+                      {item.detail}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'center', color: '#4b5563', borderRight: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}>
+                      {item.quantity}
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 900, color: '#111827' }}>
+                        ${itemUSD.toLocaleString()} USD
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 400 }}>
+                        (약 ₩ {item.amountKRW.toLocaleString()}원)
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Section 2: ■ 여행 추천 일정 (Itinerary) */}
+        <div style={{ marginBottom: '22px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: '#F5A623', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ color: '#F5A623', fontSize: '12px' }}>■</span>
+            <span style={{ color: '#F5A623' }}>여행 추천 일정 (Itinerary)</span>
+          </div>
+          <div style={{ height: '2px', backgroundColor: '#F5A623', marginBottom: '14px' }} />
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {itinerary && itinerary.length > 0 ? (
+              itinerary.map((day) => {
+                const dayDate = day.dateStr || getDayDateStr(day.day);
+                const activities = normalizeActivities(day.activities);
+
+                return (
+                  <div key={day.day} style={{ pageBreakInside: 'avoid' }}>
+                    {/* Day Title with Orange Bar */}
+                    <div style={{ backgroundColor: '#f9fafb', borderLeft: '4px solid #F5A623', padding: '6px 14px', fontSize: '13px', fontWeight: 800, color: '#111827', marginBottom: '8px' }}>
+                      {day.day}일차 ({dayDate}) - {day.title}
+                    </div>
+
+                    {/* Day Activity Rows */}
+                    <div style={{ paddingLeft: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {activities.map((act, actIdx) => (
+                        <div key={actIdx} style={{ display: 'flex', fontSize: '12.5px', color: '#374151', lineHeight: 1.6 }}>
+                          <span style={{ width: '130px', fontWeight: 600, color: '#6b7280', flexShrink: 0 }}>
+                            {act.time && act.time !== '일정' ? act.time : '•'}
+                          </span>
+                          <span style={{ flex: 1, color: '#1f2937' }}>
+                            {act.desc}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            ) : null}
+          </div>
+        </div>
+
+        {/* Section 3: [망고투어 예약 안내 사항] */}
+        <div style={{ border: '1px solid #F5A623', borderRadius: '8px', padding: '14px 18px', backgroundColor: '#ffffff', fontSize: '11px', color: '#4b5563', lineHeight: 1.6, pageBreakInside: 'avoid' }}>
+          <div style={{ fontWeight: 800, color: '#111827', fontSize: '12px', marginBottom: '6px' }}>
+            [망고투어 예약 안내 사항]
+          </div>
+          <div>• 본 견적은 실시간 골프장 및 호텔 현황에 기반하여 작성되었으며, 예약 시점에 따라 금액 변동이 있을 수 있습니다.</div>
+          <div>• <strong>포함 사항:</strong> 선택 골프장 그린피, 전 일정 1인 객실 기준 숙박(1인 1실 단독 객실 & 조식 포함), 전 일정 단독 전용 리무진 밴, 선택 옵션(한국어 전문 가이드, 공항 VIP 패스트트랙 등)</div>
+          <div>• <strong>불포함 사항:</strong> 왕복 항공권(별도 발권 또는 요청 시 대행), 운전기사 팁, 개인 매너팁 및 포함 외 식사/음료 비용, 여행자 보험</div>
+          {notes && (
+            <div style={{ color: '#004d40', fontWeight: 600, marginTop: '2px' }}>
+              • <strong>고객 요청사항:</strong> {notes}
+            </div>
+          )}
+          <div style={{ borderTop: '1px solid #fde68a', marginTop: '10px', paddingTop: '8px', fontSize: '10px', color: '#6b7280', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>MANGO TOUR : 59 LE VAN THIEM PMH Q7, HOCHIMINH, VIETNAM</span>
+            <span>고객센터: +84 37 720 4451 | 카카오톡: open.kakao.com/o/gprQnKSi</span>
+          </div>
+        </div>
+      </div>
+
       {/* Print Stylesheet for Pure A4 Portrait output */}
       <style>{`
         @media print {
@@ -597,14 +784,21 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           .no-print {
             display: none !important;
           }
-          .a4-print-container {
+          #a4-screen-view {
+            display: none !important;
+          }
+          #a4-exact-print-sheet {
+            display: block !important;
+            position: static !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
-            min-height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
+            visibility: visible !important;
           }
           .page-break-avoid {
             break-inside: avoid !important;

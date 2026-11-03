@@ -813,11 +813,30 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-sm w-full animate-scale-in border border-white/20">
             {popup.image && (
-              <div className="h-64 relative">
-                <img src={popup.image} className="w-full h-full object-cover" alt="Notification" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-6 left-6 right-6">
-                  <h3 className="text-white font-bold text-xl drop-shadow-lg">{popup.title}</h3>
+              <div className={`relative overflow-hidden bg-gray-950 flex items-center justify-center ${
+                popup.imageHeight === 'compact' ? 'h-48' :
+                popup.imageHeight === 'large' ? 'h-80' :
+                popup.imageHeight === 'auto' ? 'min-h-[200px] max-h-[380px] h-auto' :
+                'h-64'
+              }`}>
+                {/* Ambient Blurred Backdrop */}
+                <img
+                  src={popup.image}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-45 scale-125 pointer-events-none"
+                />
+                {/* Foreground Notice Image */}
+                <img
+                  src={popup.image}
+                  className={`relative z-10 max-h-full max-w-full duration-300 ${
+                    popup.imageFit === 'cover' ? 'w-full h-full object-cover' : 'object-contain'
+                  }`}
+                  alt={popup.title || 'Notification'}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none z-10"></div>
+                <div className="absolute bottom-4 left-6 right-6 z-20">
+                  <h3 className="text-white font-bold text-lg md:text-xl drop-shadow-lg leading-tight">{popup.title}</h3>
                 </div>
               </div>
             )}
