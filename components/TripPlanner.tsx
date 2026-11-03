@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
 import { INITIAL_MASTER_OPTION_POOL } from '../constants';
 import BackButton from './BackButton';
 import { db } from '../services/firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
+import { A4QuotationDocument, CostItem, ItineraryDay } from './A4QuotationDocument';
 
 interface Props {
   packages: CustomTripPackage[];
@@ -61,6 +63,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
   const [viewTab, setViewTab] = useState<'options' | 'itinerary'>('options');
 
   const quotationCardRef = useRef<HTMLDivElement>(null);
+  const a4QuotationPrintRef = useRef<HTMLDivElement>(null);
 
   // Handle internal step-by-step back (closing modals or returning from package customization)
   const handleTopBack = () => {
@@ -686,13 +689,102 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     return text;
   };
 
-  // Image Capture via html2canvas
+  // Helper to construct A4 quotation cost items
+  const getA4CostItems = (): CostItem[] => {
+    if (!activePackage) return [];
+    const items: CostItem[] = [];
+
+    activePackage.options.forEach(opt => {
+      if (!selectedOptionIds.has(opt.id)) return;
+      const unitUSD = getOptionPrice(opt);
+      const name = getOptionDisplayName(opt);
+      const desc = getOptionDisplayDescription(opt);
+
+      let catName = '기타 경비';
+      let qty = `${personCount}인`;
+
+      if (opt.category === 'flight') {
+        catName = '항공권 (국제선 왕복)';
+        qty = `${personCount}인 왕복`;
+      } else if (opt.category === 'hotel') {
+        catName = '숙박 (1인 객실 기준)';
+        qty = `${personCount}실 (${activePackage.duration || '4박'})`;
+      } else if (opt.category === 'golf') {
+        catName = '골프 라운딩 (18홀)';
+        qty = `${customGolfCourses.length}회 라운딩 × ${personCount}인`;
+      } else if (opt.category === 'vehicle') {
+        catName = '전용 차량 & 기사';
+        qty = `전 일정 (${personCount}인 전용)`;
+      } else if (opt.category === 'guide') {
+        catName = '한국어 전담 가이드';
+        qty = `전 일정 (1일 $120 기준)`;
+      } else if (opt.name.includes('패스트 트랙') || opt.name.includes('패스트트랙') || opt.id.includes('fasttrack')) {
+        catName = '공항 VIP 의전';
+        qty = `${personCount}인 (1인 $60)`;
+      } else if (opt.category === 'meal') {
+        catName = '식사 및 만찬';
+        qty = `전 일정 (${personCount}인)`;
+      } else if (opt.category === 'activity') {
+        catName = '스파 & 힐링 케어';
+        qty = `${personCount}인`;
+      } else if (opt.category === 'etc') {
+        catName = '여행자 안심 보험';
+        qty = `${personCount}인`;
+      }
+
+      const totalItemUSD = unitUSD * personCount;
+      items.push({
+        category: catName,
+        detail: `${name}${desc && desc !== name ? ` (${desc})` : ''}`,
+        quantity: qty,
+        amountUSD: totalItemUSD,
+        amountKRW: totalItemUSD * USD_TO_KRW,
+      });
+    });
+
+    return items;
+  };
+
+  // Helper to construct A4 itinerary days
+  const getA4ItineraryDays = (): ItineraryDay[] => {
+    if (!activePackage || !activePackage.itinerary) return [];
+    return activePackage.itinerary.map((item) => {
+      let dayTitle = item.title;
+      const roundIdx = item.day >= 2 ? item.day - 2 : 0;
+      if (customGolfCourses[roundIdx] && (item.title.includes('CC') || item.title.includes('골프') || item.title.includes('라운딩'))) {
+        dayTitle = `Day ${item.day}: ${customGolfCourses[roundIdx]} 18홀 명문 라운딩`;
+      }
+
+      const activities = item.activities.map((act, actIdx) => {
+        let actText = act;
+        if (customGolfCourses[roundIdx] && act.includes('CC') && (act.includes('라운딩') || act.includes('이동'))) {
+          actText = act.replace(/[가-힣a-zA-Z0-9\s]+CC/g, customGolfCourses[roundIdx].split(' ')[0] + ' CC');
+        }
+
+        const times = ['08:00', '10:30', '13:00', '17:30', '19:30', '21:00'];
+        const time = times[actIdx % times.length];
+        return {
+          time,
+          desc: actText
+        };
+      });
+
+      return {
+        day: item.day,
+        title: dayTitle,
+        activities
+      };
+    });
+  };
+
+  // Image Capture via html2canvas (Captures the pristine A4 PDF Quotation Sheet)
   const captureQuotationImage = async (): Promise<string | null> => {
-    if (!quotationCardRef.current) return null;
+    const targetElement = a4QuotationPrintRef.current || quotationCardRef.current;
+    if (!targetElement) return null;
     setIsCapturing(true);
     try {
       await new Promise(r => setTimeout(r, 120));
-      const canvas = await html2canvas(quotationCardRef.current, {
+      const canvas = await html2canvas(targetElement, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
@@ -727,17 +819,69 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     }
   };
 
+  // Direct PNG Download of A4 Quotation Sheet
   const handleDownloadImage = (imgUrl?: string | null) => {
     const targetUrl = imgUrl || capturedImageUrl;
     if (!targetUrl) return;
     const a = document.createElement('a');
     a.href = targetUrl;
     const sanitizedTitle = (activePackage?.title || '맞춤골프견적').replace(/[^a-zA-Z0-9가-힣]/g, '_');
-    a.download = `망고투어_${sanitizedTitle}_견적서_${new Date().toISOString().split('T')[0]}.png`;
+    a.download = `망고투어_정식A4견적서_${sanitizedTitle}_${customerName || '고객'}_${new Date().toISOString().split('T')[0]}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    showToast('📥 견적서 이미지가 기기에 다운로드되었습니다.');
+    showToast('📥 A4 정식 견적서 이미지가 기기에 다운로드되었습니다.');
+  };
+
+  // Direct PDF Download of A4 Quotation Sheet using jsPDF
+  const handleDownloadPDF = async (imgUrl?: string | null) => {
+    let dataUrl = imgUrl || capturedImageUrl;
+    if (!dataUrl) {
+      dataUrl = await captureQuotationImage();
+    }
+    if (!dataUrl) {
+      showToast('⚠️ PDF 생성에 실패했습니다.');
+      return;
+    }
+
+    try {
+      showToast('📄 A4 규격 PDF 문서를 생성 중입니다...');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const imgHeight = (img.height * imgWidth) / img.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= pageHeight;
+      }
+
+      const sanitizedTitle = (activePackage?.title || '맞춤골프견적').replace(/[^a-zA-Z0-9가-힣]/g, '_');
+      const fileName = `망고투어_정식A4견적서_${sanitizedTitle}_${customerName || '고객'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      showToast('📥 A4 PDF 견적서 다운로드가 완료되었습니다.');
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showToast('⚠️ PDF 생성에 실패했습니다. 이미지 저장을 이용해주세요.');
+    }
   };
 
   // KakaoTalk Consultation handler with image capture & text copy
@@ -753,7 +897,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       console.warn('Text clipboard write error:', e);
     }
     
-    // 2. 백그라운드에서 견적서 고해상도 이미지 캡처 및 자동 다운로드 진행
+    // 2. 백그라운드에서 A4 PDF 양식 고해상도 이미지 캡처 및 자동 다운로드 진행
     captureQuotationImage().then((imgUrl) => {
       if (imgUrl) {
         handleDownloadImage(imgUrl);
@@ -761,15 +905,13 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     });
   };
 
-  // Open Direct Image Preview & Download Modal
+  // Open Direct Image Preview & Download Modal (A4 PDF Form - Same structure as 1:1 Online Inquiry)
   const handleSaveQuoteImage = async () => {
-    showToast('📸 견적서 이미지를 캡처 중입니다...');
+    setShowImagePreviewModal(true);
+    showToast('📸 A4 정식 견적서(PDF 양식)를 캡처 중입니다...');
     const imgUrl = await captureQuotationImage();
     if (imgUrl) {
       handleDownloadImage(imgUrl);
-      setShowImagePreviewModal(true);
-    } else {
-      showToast('⚠️ 이미지 캡처에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -2076,18 +2218,21 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1">
                       <div>
                         <span className="text-[10px] sm:text-[11px] md:text-xs text-gray-300 block">1인 기준 예상 견적</span>
-                        <span className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight">
-                          ${currentTotalPerPerson.toLocaleString()} <span className="text-xs md:text-sm font-normal text-gold-300">(약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)</span>
-                        </span>
+                        <div className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight">
+                          ${currentTotalPerPerson.toLocaleString()} <span className="text-xs md:text-sm font-semibold">USD</span>
+                        </div>
+                        <div className="text-[10px] sm:text-[11px] md:text-xs text-gold-300 font-normal">
+                          (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)
+                        </div>
                       </div>
                       <div className="text-left sm:text-right">
                         <span className="text-[10px] sm:text-[11px] md:text-xs text-gold-300 block font-semibold">총 {personCount}인 예상 견적 합계</span>
-                        <span className="text-lg sm:text-2xl md:text-3xl font-extrabold text-gold-400 tracking-tight">
-                          ${currentTotalGroup.toLocaleString()}
-                        </span>
-                        <span className="block text-[10px] sm:text-[11px] md:text-xs text-gray-300 font-normal">
+                        <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-gold-400 tracking-tight">
+                          ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-bold">USD</span>
+                        </div>
+                        <div className="text-[10px] sm:text-[11px] md:text-xs text-gray-300 font-normal">
                           (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
-                        </span>
+                        </div>
                       </div>
                     </div>
 
@@ -2278,12 +2423,12 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                     <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
                       <span className="font-black text-gray-900 md:text-base">총 그룹 예상 견적 ({personCount}인)</span>
                       <div className="text-right">
-                        <span className="text-lg md:text-2xl font-black text-deepgreen">
-                          ${currentTotalGroup.toLocaleString()}
-                        </span>
-                        <span className="block text-[10px] md:text-xs text-gray-500 font-medium">
+                        <div className="text-lg md:text-2xl font-black text-deepgreen tracking-tight">
+                          ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-bold">USD</span>
+                        </div>
+                        <div className="text-[10px] md:text-xs text-gray-500 font-medium">
                           (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
-                        </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2343,7 +2488,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                 </div>
 
                 <div className="p-2.5 md:p-3 bg-amber-50 rounded-xl border border-amber-200 text-[10px] md:text-xs text-amber-800 leading-relaxed font-normal">
-                  💡 <strong>안내:</strong> 문의 시 현재 설정하신 맞춤 항목 견적서가 <strong>그림 이미지로 자동 캡처</strong>되어 카카오톡 또는 이메일(<strong>seo9791@gmail.com</strong>)로 전송할 수 있습니다.
+                  💡 <strong>안내:</strong> 견적서 캡처 저장 또는 1:1 온라인 신청 시 현재 맞춤 구성이 <strong>정식 A4 견적서(PDF 양식)</strong>로 자동 생성되어 다운로드 및 이메일(<strong>seo9791@gmail.com</strong>)로 전송됩니다.
                 </div>
 
               </div>
@@ -2407,23 +2552,32 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                   <h3 className="text-lg sm:text-xl md:text-2xl font-black text-deepgreen">골프 투어 견적서 이메일 발송</h3>
                   <p className="text-xs md:text-sm text-gray-500 break-keep">작성하신 예약 정보와 맞춤 견적서가 담당 매니저 이메일로 즉시 발송됩니다.</p>
 
-                  {/* Captured Screenshot Preview Thumbnail */}
+                  {/* Captured Screenshot Preview Thumbnail (A4 PDF Form) */}
                   {capturedImageUrl && (
                     <div className="p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-200 w-full max-w-full overflow-hidden box-border">
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[11px] md:text-xs font-bold text-gray-700 flex items-center gap-1">
-                          <span>📸</span> 자동 캡처된 견적서 이미지 미리보기
+                      <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1">
+                        <span className="text-[11px] md:text-xs font-bold text-gray-800 flex items-center gap-1">
+                          <span>📄</span> 첨부되는 정식 A4 견적서 (PDF 양식) 미리보기
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadImage(capturedImageUrl)}
-                          className="text-[10px] md:text-xs text-deepgreen font-bold hover:underline cursor-pointer"
-                        >
-                          📥 이미지 다운로드
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadPDF(capturedImageUrl)}
+                            className="text-[10px] md:text-xs text-gold-700 font-bold hover:underline cursor-pointer"
+                          >
+                            📄 PDF 다운로드
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadImage(capturedImageUrl)}
+                            className="text-[10px] md:text-xs text-deepgreen font-bold hover:underline cursor-pointer"
+                          >
+                            📥 이미지 저장
+                          </button>
+                        </div>
                       </div>
-                      <div className="max-h-36 md:max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner">
-                        <img src={capturedImageUrl} alt="Quotation Preview" className="w-full object-top" />
+                      <div className="max-h-48 md:max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner p-1">
+                        <img src={capturedImageUrl} alt="A4 Quotation Preview" className="w-full object-top" />
                       </div>
                     </div>
                   )}
@@ -2488,9 +2642,12 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                   <div className="p-3.5 md:p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center w-full max-w-full box-border">
                     <div className="min-w-0 mr-2">
                       <span className="text-[10px] md:text-xs text-emerald-700 block font-semibold">총 {personCount}인 예상 견적</span>
-                      <span className="font-black text-emerald-900 text-sm sm:text-base md:text-lg break-all">
-                        ${currentTotalGroup.toLocaleString()} (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
-                      </span>
+                      <div className="font-black text-emerald-900 text-base sm:text-lg md:text-xl tracking-tight">
+                        ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-semibold">USD</span>
+                      </div>
+                      <div className="text-[11px] md:text-xs text-emerald-700 font-medium">
+                        (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
+                      </div>
                     </div>
                     <div className="text-[10px] md:text-xs text-emerald-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
                       선택 {selectedOptionIds.size}개
@@ -2530,8 +2687,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
                 {capturedImageUrl && (
                   <div className="p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-200 text-left w-full max-w-full overflow-hidden box-border">
-                    <div className="text-[11px] md:text-xs font-bold text-gray-700 mb-1">📸 생성된 견적서 이미지:</div>
-                    <div className="max-h-28 md:max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[11px] md:text-xs font-bold text-gray-700">📄 전송된 정식 A4 견적서 (PDF 양식):</span>
+                      <span className="text-[10px] md:text-xs text-emerald-600 font-bold">✓ 접수 완료</span>
+                    </div>
+                    <div className="max-h-36 md:max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1">
                       <img src={capturedImageUrl} alt="Quotation" className="w-full" />
                     </div>
                   </div>
@@ -2540,11 +2700,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                 <div className="pt-2 flex flex-col gap-2 w-full max-w-full">
                   <button
                     type="button"
-                    onClick={handleSendMailto}
-                    className="w-full py-3 md:py-3.5 bg-blue-50 text-blue-800 border border-blue-200 font-bold rounded-2xl hover:bg-blue-100 transition text-xs md:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                    onClick={() => handleDownloadPDF(capturedImageUrl)}
+                    className="w-full py-3.5 md:py-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white font-extrabold rounded-2xl transition text-xs md:text-sm flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
                   >
-                    <span>📧</span>
-                    <span>내 메일 앱(Gmail/기본메일)으로도 확인 발송</span>
+                    <span>📄</span>
+                    <span>정식 A4 견적서 (PDF) 파일 다운로드</span>
                   </button>
                   <button
                     type="button"
@@ -2552,7 +2712,15 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                     className="w-full py-3 md:py-3.5 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs md:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>📥</span>
-                    <span>견적서 이미지(PNG) 다운로드</span>
+                    <span>견적서 고해상도 이미지(PNG) 다운로드</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendMailto}
+                    className="w-full py-3 md:py-3.5 bg-blue-50 text-blue-800 border border-blue-200 font-bold rounded-2xl hover:bg-blue-100 transition text-xs md:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>📧</span>
+                    <span>내 메일 앱(Gmail/기본메일)으로도 확인 발송</span>
                   </button>
                   <button
                     type="button"
@@ -2803,50 +2971,203 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
         </div>
       )}
 
-      {/* ================= MODAL 3: IMAGE PREVIEW & DIRECT SAVE MODAL ================= */}
+      {/* ================= MODAL 3: QUOTATION CAPTURE & SAVE MODAL (SAME FORM AS 1:1 ONLINE INQUIRY) ================= */}
       {showImagePreviewModal && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-y-auto font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-xl w-full h-full sm:h-auto max-h-none sm:max-h-[90vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-y-auto">
-            <button
-              onClick={() => setShowImagePreviewModal(false)}
-              className="absolute top-3.5 right-3.5 text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
-            >
-              ✕
-            </button>
-
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-xl md:text-2xl font-black text-gray-900 flex items-center gap-2">
-                  <span>📸</span> 견적서 이미지 캡처 완료
-                </h3>
-                <p className="text-xs md:text-sm text-gray-500 mt-1">고해상도 견적서 이미지가 생성되었습니다. 파일로 저장하거나 공유할 수 있습니다.</p>
+        <div 
+          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
+          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+        >
+          <div 
+            className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full max-w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] relative shadow-2xl animate-scale-in flex flex-col overflow-hidden box-border"
+            style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+          >
+            {/* Modal Header with Back Button (Edge-to-edge pinned on top) */}
+            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-gray-100 bg-white sticky top-0 z-30 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowImagePreviewModal(false)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer"
+                aria-label="뒤로 가기"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>뒤로 가기</span>
+              </button>
+              
+              <div className="text-center">
+                <span className="font-extrabold text-sm sm:text-base md:text-lg text-deepgreen">정식 견적서 캡처 및 저장</span>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setShowImagePreviewModal(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition cursor-pointer"
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <div 
+              className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2.5 py-0.5 bg-gold-100 text-gold-900 text-[10px] md:text-xs font-black rounded-md shrink-0">공식 견적서 발행</span>
+                <span className="text-xs md:text-sm text-gray-400 font-semibold">망고투어 정식 A4 규격 (PDF 양식)</span>
+              </div>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-black text-deepgreen">골프 투어 정식 견적서 저장</h3>
+              <p className="text-xs md:text-sm text-gray-500 break-keep">설정하신 예약 정보와 맞춤 일정이 반영된 정식 규격 견적서입니다.</p>
+
+              {/* Captured Screenshot Preview Thumbnail (A4 PDF Form) */}
               {capturedImageUrl && (
-                <div className="max-h-96 overflow-y-auto rounded-2xl border-2 border-gray-200 bg-white p-2 shadow-inner">
-                  <img src={capturedImageUrl} alt="Quotation Capture Full" className="w-full rounded-xl" />
+                <div className="p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-200 w-full max-w-full overflow-hidden box-border">
+                  <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1">
+                    <span className="text-[11px] md:text-xs font-bold text-gray-800 flex items-center gap-1">
+                      <span>📄</span> 캡처된 정식 A4 견적서 (PDF 양식) 미리보기
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadPDF(capturedImageUrl)}
+                        className="text-[10px] md:text-xs text-gold-700 font-bold hover:underline cursor-pointer"
+                      >
+                        📄 PDF 다운로드
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadImage(capturedImageUrl)}
+                        className="text-[10px] md:text-xs text-deepgreen font-bold hover:underline cursor-pointer"
+                      >
+                        📥 이미지 저장
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-48 md:max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner p-1">
+                    <img src={capturedImageUrl} alt="A4 Quotation Preview" className="w-full object-top" />
+                  </div>
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <div className="w-full max-w-full">
+                <label className="font-bold text-gray-700 block mb-1 md:text-sm">예약자 성함 / 대표자명</label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="홍길동"
+                  className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
+                />
+              </div>
+
+              <div className="w-full max-w-full">
+                <label className="font-bold text-gray-700 block mb-1 md:text-sm">연락처 또는 카카오톡 ID</label>
+                <input
+                  type="text"
+                  value={customerContact}
+                  onChange={(e) => setCustomerContact(e.target.value)}
+                  placeholder="010-1234-5678 또는 카카오톡ID"
+                  className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 w-full max-w-full box-border">
+                <div className="min-w-0">
+                  <label className="font-bold text-gray-700 block mb-1 md:text-sm">인원 수</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={personCount}
+                    onChange={(e) => setPersonCount(parseInt(e.target.value) || 1)}
+                    className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className="font-bold text-gray-700 block mb-1 md:text-sm">출발 희망일</label>
+                  <input
+                    type="date"
+                    value={departureDate}
+                    onChange={(e) => setDepartureDate(e.target.value)}
+                    className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
+                  />
+                </div>
+              </div>
+
+              <div className="w-full max-w-full">
+                <label className="font-bold text-gray-700 block mb-1 md:text-sm">추가 요청사항 (선택)</label>
+                <textarea
+                  rows={2}
+                  value={customerNotes}
+                  onChange={(e) => setCustomerNotes(e.target.value)}
+                  placeholder="티타임 시간대, 선호 호텔 유형, 클럽 렌탈 여부 등"
+                  className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white resize-none text-sm md:text-base"
+                />
+              </div>
+
+              <div className="p-3.5 md:p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center w-full max-w-full box-border">
+                <div className="min-w-0 mr-2">
+                  <span className="text-[10px] md:text-xs text-emerald-700 block font-semibold">총 {personCount}인 예상 견적</span>
+                  <div className="font-black text-emerald-900 text-base sm:text-lg md:text-xl tracking-tight">
+                    ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-semibold">USD</span>
+                  </div>
+                  <div className="text-[11px] md:text-xs text-emerald-700 font-medium">
+                    (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
+                  </div>
+                </div>
+                <div className="text-[10px] md:text-xs text-emerald-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+                  선택 {selectedOptionIds.size}개
+                </div>
+              </div>
+            </div>
+
+            {/* Sticky Pinned Bottom Action Bar */}
+            <div 
+              className="bg-white/95 backdrop-blur-md px-4 py-3 sm:px-6 sm:py-3.5 md:px-7 md:py-4 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] shrink-0 z-30 space-y-2"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadPDF(capturedImageUrl)}
+                  className="w-full py-3.5 md:py-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white font-extrabold rounded-2xl shadow-md text-xs sm:text-sm md:text-base active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition"
+                >
+                  <span>📄</span>
+                  <span>A4 PDF 다운로드</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => handleDownloadImage(capturedImageUrl)}
-                  className="flex-1 py-3.5 bg-deepgreen text-white font-black rounded-2xl hover:bg-[#00382e] transition shadow-md text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95"
+                  className="w-full py-3.5 md:py-4 bg-deepgreen hover:bg-[#00382e] text-white font-black rounded-2xl shadow-md text-xs sm:text-sm md:text-base active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition"
                 >
                   <span>📥</span>
-                  <span>이미지 다운로드 (PNG)</span>
+                  <span>이미지(PNG) 저장</span>
                 </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowImagePreviewModal(false);
                     setShowKakaoModal(true);
                   }}
-                  className="flex-1 py-3.5 bg-[#FEE500] text-[#191919] font-black rounded-2xl hover:bg-[#FDD835] transition shadow-md text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95"
+                  className="w-full py-3 md:py-3.5 bg-[#FEE500] hover:bg-[#FDD835] text-[#191919] font-black rounded-xl text-xs sm:text-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition shadow-xs"
                 >
                   <span>💬</span>
-                  <span>카카오톡으로 문의하기</span>
+                  <span>카카오톡 문의</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImagePreviewModal(false);
+                    setShowInquiryModal(true);
+                  }}
+                  className="w-full py-3 md:py-3.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold rounded-xl text-xs sm:text-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition"
+                >
+                  <span>📧</span>
+                  <span>1:1 이메일 신청</span>
                 </button>
               </div>
             </div>
@@ -3560,6 +3881,39 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ================= HIDDEN A4 PDF FORM CANVAS (For High-Res html2canvas Capture) ================= */}
+      {activePackage && (
+        <div
+          ref={a4QuotationPrintRef}
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: '-9999px',
+            top: 0,
+            width: '794px',
+            backgroundColor: '#ffffff',
+            zIndex: -9999,
+            pointerEvents: 'none',
+          }}
+        >
+          <A4QuotationDocument
+            customerName={customerName || '고객'}
+            personCount={personCount}
+            managerName="망고투어 전문 상담팀"
+            managerContact="+84 37 720 4451 (카카오: vnseen1)"
+            location={activePackage.location}
+            duration={activePackage.duration}
+            departureDate={departureDate}
+            totalPriceUSD={currentTotalGroup}
+            totalPriceKRW={currentTotalGroup * USD_TO_KRW}
+            costItems={getA4CostItems()}
+            itinerary={getA4ItineraryDays()}
+            notes={customerNotes}
+            showControls={false}
+          />
         </div>
       )}
 

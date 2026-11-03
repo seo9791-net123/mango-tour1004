@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
-import ProductDetailModal from './ProductDetailModal';
+import A4QuotationDocument, { CostItem, ItineraryDay } from './A4QuotationDocument';
 
 interface Props {
   product: Product;
@@ -8,293 +8,254 @@ interface Props {
 }
 
 const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
-  const [showInquiry, setShowInquiry] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [inquiryText, setInquiryText] = useState('');
+  const [customerName, setCustomerName] = useState('고객');
+  const [personCount, setPersonCount] = useState(2);
+  const [departureDate, setDepartureDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().split('T')[0];
+  });
+  const [includeFastTrack, setIncludeFastTrack] = useState(false);
+  const [includeGuide, setIncludeGuide] = useState(true);
 
   if (!product) return null;
 
-  const title = product.title;
-  const price = `${product.price.toLocaleString()} USD`;
-  const itinerary = product.itinerary;
-  const location = product.location;
-  const duration = product.duration;
+  const USD_TO_KRW = 1360;
 
-  const handleCopyText = async (contactType: 'open' | 'id') => {
-     const textToCopy = `[MANGO TOUR 여행 견적 문의]
-📅 문의 일자: ${new Date().toLocaleDateString()}
+  // Base product cost
+  const basePriceUSD = product.price || 970;
+  let singleTotalUSD = basePriceUSD;
+  if (includeFastTrack) singleTotalUSD += 60;
+  if (!includeGuide) singleTotalUSD = Math.max(0, singleTotalUSD - 120);
 
-📌 상품명: ${product.title}
-📍 지역: ${product.location}
-⏰ 일정: ${product.duration}
-💰 견적가: ${product.price.toLocaleString()} USD
-📝 포함사항: ${product.description}
+  const groupTotalUSD = singleTotalUSD * personCount;
+  const groupTotalKRW = groupTotalUSD * USD_TO_KRW;
 
---------------------------------
-[🗣️ 추가 문의 내용]
-${inquiryText || '(내용 없음)'}
---------------------------------
-위 내용으로 상담을 신청합니다.`;
+  // Construct detailed cost items matching user's PDF sample
+  const costItems: CostItem[] = [
+    {
+      category: '항공권',
+      detail: '국제선 왕복 항공권 (개별 발권 또는 망고투어 실시간 발권 대행)',
+      quantity: `${personCount}인`,
+      amountKRW: 0,
+      amountUSD: 0,
+    },
+    {
+      category: product.type === 'golf' ? '골프(그린피)' : '투어/관광',
+      detail: product.type === 'golf'
+        ? `${product.title} - 정규 18홀 라운딩 그린피 일체`
+        : `${product.title} - 전 일정 주요 명소 단독 투어 및 입장료`,
+      quantity: `${personCount}인`,
+      amountKRW: Math.round(singleTotalUSD * 0.45 * personCount * USD_TO_KRW),
+      amountUSD: Math.round(singleTotalUSD * 0.45 * personCount),
+    },
+    {
+      category: '숙박(호텔)',
+      detail: `${product.location} 5성급 럭셔리 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)`,
+      quantity: `${personCount}실 (1인실)`,
+      amountKRW: Math.round(singleTotalUSD * 0.35 * personCount * USD_TO_KRW),
+      amountUSD: Math.round(singleTotalUSD * 0.35 * personCount),
+    },
+    {
+      category: '투어/차량',
+      detail: '전 일정 단독 VIP 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
+      quantity: '1대 (전일정)',
+      amountKRW: Math.round(singleTotalUSD * 0.10 * personCount * USD_TO_KRW),
+      amountUSD: Math.round(singleTotalUSD * 0.10 * personCount),
+    },
+  ];
 
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      alert('견적서와 문의 내용이 복사되었습니다.\n채팅창에 붙여넣기(Paste) 해주세요.');
-      
-      if (contactType === 'open') {
-        window.open('https://open.kakao.com/o/gprQnKSi', '_blank');
+  if (includeGuide) {
+    costItems.push({
+      category: '가이드',
+      detail: '한국어 전문 가이드 전 일정 단독 동행 케어 (1일 $120 기준)',
+      quantity: '1식',
+      amountKRW: 120 * personCount * USD_TO_KRW,
+      amountUSD: 120 * personCount,
+    });
+  }
+
+  if (includeFastTrack) {
+    costItems.push({
+      category: 'VIP패스트트랙',
+      detail: '공항 도착 시 VIP 전용 패스트트랙 라인 초고속 입국 심사 (대기 없음)',
+      quantity: `${personCount}인`,
+      amountKRW: 60 * personCount * USD_TO_KRW,
+      amountUSD: 60 * personCount,
+    });
+  }
+
+  // Format Itinerary
+  const itineraryDays: ItineraryDay[] = (product.itinerary || []).map((item) => ({
+    day: item.day,
+    title: item.activities[0] ? item.activities[0].replace(/.*?(도착|체크인|라운딩|투어|휴식|귀국).*/, '$1 및 자유 일정') : `${product.location} 일정`,
+    activities: item.activities.map((act, i) => {
+      let time = '09:00 - 12:00';
+      if (item.day === 1) {
+        time = i === 0 ? '10:00 - 13:30' : i === 1 ? '15:00 ~' : '18:00 ~';
+      } else if (item.day === (product.itinerary?.length || 4)) {
+        time = i === 0 ? '09:00 - 12:00' : '14:00 - 22:00';
       } else {
-        window.open('https://pf.kakao.com/', '_blank');
+        time = i === 0 ? '08:00 - 13:00' : i === 1 ? '13:30 - 17:00' : '18:00 - 20:30';
       }
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-      alert('복사에 실패했습니다. 수동으로 복사해주세요.');
-    }
-  };
-
-  const getTimeLabel = (index: number, total: number) => {
-    if (total === 3) {
-      if (index === 0) return { text: '오전', color: 'bg-yellow-100 text-yellow-800' };
-      if (index === 1) return { text: '오후', color: 'bg-orange-100 text-orange-800' };
-      if (index === 2) return { text: '저녁', color: 'bg-indigo-100 text-indigo-800' };
-    }
-    return { text: '일정', color: 'bg-gray-100 text-gray-600' };
-  };
+      return { time, desc: act };
+    }),
+  }));
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-[10000] p-0 sm:p-4 backdrop-blur-sm print:p-0 print:block print:bg-white print:static pt-safe">
-      <div className="printable-area bg-white w-full max-w-4xl h-[92vh] sm:h-[90vh] rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl relative flex flex-col print:h-auto print:shadow-none print:w-full print:max-w-none">
+    <div className="fixed inset-0 bg-black/75 z-[10000] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe">
+      <div className="bg-gray-100 w-full max-w-4xl h-full sm:h-auto sm:max-h-[96vh] sm:rounded-3xl shadow-2xl relative flex flex-col overflow-hidden my-auto print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none">
         
-        {/* Paper Header */}
-        <div className="bg-deepgreen text-white px-4 py-3.5 sm:p-6 sticky top-0 z-10 shadow-sm print:static print:shadow-none print:bg-deepgreen print:text-white flex justify-between items-center shrink-0">
-          <div>
-            <h2 className="text-base sm:text-2xl font-black tracking-wide">견적서 (QUOTATION)</h2>
-            <p className="text-[10px] sm:text-xs opacity-80 font-light">MANGO TOUR VIP CONCIERGE</p>
-          </div>
-          <button 
-            onClick={onClose} 
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold active:scale-95 transition no-print"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Paper Body */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-3 sm:p-6 print:p-0 print:overflow-visible print:bg-white">
-          <div className="bg-white shadow-sm rounded-2xl border border-gray-200 p-4 sm:p-8 min-h-full relative print:shadow-none print:border-none print:p-0">
-            
-            {/* Header Info */}
-            <div className="flex justify-between items-start mb-6 border-b border-gray-200 pb-4">
-              <div className="text-xs sm:text-sm text-gray-600 space-y-1">
-                <p><strong className="text-gray-900">수신:</strong> 고객님 귀하</p>
-                <p><strong className="text-gray-900">날짜:</strong> {new Date().toLocaleDateString()}</p>
-                <p><strong className="text-gray-900">발행:</strong> MANGO TOUR</p>
-              </div>
-              <div className="text-right">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gold-500 rounded-2xl flex items-center justify-center text-white font-black text-xl ml-auto mb-1 shadow-sm print:bg-gold-500 print:text-white">M</div>
-                <span className="text-[10px] font-bold text-gray-400">OFFICIAL</span>
-              </div>
-            </div>
-
-            {/* Title Section */}
-            <div className="mb-6 avoid-break">
-               <h3 className="text-sm sm:text-base font-bold mb-3 border-l-4 border-gold-500 pl-2.5 text-deepgreen">
-                 상품 상세 정보
-               </h3>
-               
-               {/* Basic Info Table */}
-               <table className="w-full mb-4 text-xs sm:text-sm table-fixed border border-gray-100 rounded-xl overflow-hidden">
-                  <tbody>
-                     <tr className="border-b border-gray-100">
-                       <td className="py-2.5 font-bold w-20 sm:w-24 text-gray-600 bg-gray-50 pl-3">상품명</td>
-                       <td className="py-2.5 pl-3 font-semibold text-gray-900">{title}</td>
-                     </tr>
-                     <tr className="border-b border-gray-100">
-                       <td className="py-2.5 font-bold text-gray-600 bg-gray-50 pl-3">지역/일정</td>
-                       <td className="py-2.5 pl-3 text-gray-800">{location} / {duration}</td>
-                     </tr>
-                     <tr className="border-b border-gray-100">
-                       <td className="py-2.5 font-bold text-gray-600 bg-gray-50 pl-3">포함사항</td>
-                       <td className="py-2.5 pl-3 text-gray-700 leading-relaxed">{product.description}</td>
-                     </tr>
-                     <tr className="bg-yellow-50/70 print:bg-gray-100">
-                       <td className="py-3 font-bold text-red-600 pl-3">
-                         견적 금액
-                       </td>
-                       <td className="py-3 pl-3">
-                         <span className="font-black text-base sm:text-lg text-red-600">{price}</span>
-                         <span className="text-[10px] sm:text-xs font-medium text-gray-500 ml-1.5">
-                           (1인 기준 / 항공권 별도)
-                         </span>
-                       </td>
-                     </tr>
-                  </tbody>
-               </table>
-            </div>
-
-            {/* Detailed Itinerary Timeline */}
-            <div className="mb-6">
-              <p className="font-bold mb-3 text-deepgreen text-sm sm:text-base border-b pb-2">상세 일정표</p>
-              {itinerary ? (
-                <div className="space-y-4">
-                  {itinerary.map((day) => (
-                    <div key={day.day} className="flex gap-3 group break-inside-avoid">
-                      <div className="flex flex-col items-center">
-                         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-sm z-10 shrink-0 print:bg-deepgreen print:text-white">
-                           D{day.day}
-                         </div>
-                         <div className="w-0.5 bg-gray-200 h-full group-last:hidden -mt-1"></div>
-                      </div>
-                      <div className="flex-1 bg-white border border-gray-100 p-3 sm:p-4 rounded-xl shadow-sm">
-                        <div className="space-y-2">
-                           {day.activities.map((act, i) => {
-                             const labelInfo = getTimeLabel(i, day.activities.length);
-                             return (
-                               <div key={i} className="flex items-start text-xs sm:text-sm text-gray-700 gap-2">
-                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 w-10 text-center ${labelInfo.color}`}>
-                                    {labelInfo.text}
-                                 </span>
-                                 <span className="flex-1 pt-0.5 leading-snug">{act}</span>
-                                </div>
-                             );
-                           })}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 bg-gray-50 rounded-xl text-center text-xs text-gray-500">
-                  상세 일정이 제공되지 않는 상품입니다. 상담원을 통해 문의해주세요.
-                </div>
-              )}
-            </div>
-
-            {/* Footer Terms */}
-            <div className="mt-4 pt-3 border-t border-gray-100 text-[10px] sm:text-xs text-gray-500 text-center leading-relaxed">
-              <p>※ MANGO TOUR : 59 LE VAN THIEM PMH Q7. HOCHIMINH</p>
-              <p>Contact: <a href="tel:+84377204451" className="hover:text-deepgreen underline font-semibold">+84 37 720 4451</a></p>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions Footer */}
-        <div className="no-print bg-white p-3 border-t border-gray-200 flex justify-between gap-2 sticky bottom-0 z-20 pb-safe">
-          <button 
-            onClick={onClose} 
-            className="flex-1 px-3 py-3 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 active:scale-95 transition text-xs sm:text-sm"
-          >
-            닫기
-          </button>
-          {product && (
-            <button 
-              onClick={() => setShowPreview(true)} 
-              className="flex-1 px-3 py-3 rounded-xl bg-deepgreen text-white font-bold hover:bg-opacity-90 active:scale-95 transition text-xs sm:text-sm flex items-center justify-center gap-1 shadow-sm"
+        {/* Top Control Bar inside Modal (no-print) */}
+        <div className="no-print bg-white px-3 sm:px-6 py-2.5 sm:py-3 border-b border-gray-200 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex sm:hidden items-center justify-center w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 active:scale-95 transition shrink-0 cursor-pointer"
+              aria-label="뒤로가기"
             >
-               <span>미리보기</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
-          )}
-          <button 
-            onClick={() => setShowInquiry(true)} 
-            className="flex-[1.5] px-3 py-3 rounded-xl bg-gold-500 text-white font-bold hover:bg-gold-600 active:scale-95 transition text-xs sm:text-sm flex items-center justify-center gap-1 shadow-md"
-          >
-             <span>💬 상담 및 문의</span>
-          </button>
-        </div>
-
-        {/* Inquiry Overlay */}
-        {showInquiry && (
-          <div className="no-print absolute inset-0 bg-black/70 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in pb-safe">
-            <div className="bg-white w-full sm:w-[450px] rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-              <div className="bg-deepgreen p-4 text-white flex justify-between items-center shrink-0">
-                <h3 className="font-bold text-base sm:text-lg">상담 및 문의하기</h3>
-                <button onClick={() => setShowInquiry(false)} className="text-white hover:text-gray-300 font-bold text-lg w-7 h-7 flex items-center justify-center rounded-full bg-white/10">✕</button>
-              </div>
-              
-              <div className="p-4 sm:p-6 overflow-y-auto">
-                <p className="text-xs sm:text-sm text-gray-600 text-center mb-4 leading-relaxed">
-                  <strong className="text-deepgreen">견적서 내용과 문의사항</strong>이<br/>
-                  자동으로 복사되어 상담이 수월해집니다.
-                </p>
-                
-                <div className="grid grid-cols-2 gap-2.5 mb-3">
-                  <div 
-                    onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
-                    className="flex flex-col items-center p-3 bg-yellow-50 rounded-xl border border-yellow-200 cursor-pointer hover:bg-yellow-100 active:scale-95 transition text-center"
-                  >
-                    <div className="bg-yellow-400 px-2 py-0.5 rounded-lg mb-1.5">
-                      <span className="text-xs font-black text-black">Talk</span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 font-bold">오픈채팅</p>
-                    <p className="text-xs font-bold text-gray-900">MANGO TOUR</p>
-                  </div>
-
-                  <div 
-                    onClick={() => {
-                      navigator.clipboard.writeText('vnseen1');
-                      alert('카카오톡 ID (vnseen1)가 복사되었습니다.\n카카오톡에서 ID로 친구 추가해주세요.');
-                    }}
-                    className="flex flex-col items-center p-3 bg-blue-50 rounded-xl border border-blue-200 cursor-pointer hover:bg-blue-100 active:scale-95 transition text-center"
-                  >
-                    <div className="bg-blue-500 px-2 py-0.5 rounded-lg mb-1.5">
-                      <span className="text-xs font-black text-white">ID</span>
-                    </div>
-                    <p className="text-[10px] text-gray-500 font-bold">카카오톡 ID</p>
-                    <p className="text-xs font-bold text-gray-900">vnseen1</p>
-                  </div>
-                </div>
-
-                {/* Direct Phone Call Button */}
-                <div className="mb-4">
-                  <a 
-                    href="tel:+84377204451"
-                    className="flex items-center justify-between p-2.5 px-3.5 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition text-emerald-900 group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">📞</span>
-                      <div className="text-left">
-                        <p className="text-[10px] font-bold text-emerald-700">전화 직접 상담</p>
-                        <p className="text-xs font-black text-emerald-950">+84 37 720 4451</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-lg group-hover:bg-emerald-700 transition">
-                      전화걸기
-                    </span>
-                  </a>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">✍️ 추가 문의사항 (선택)</label>
-                  <textarea 
-                    className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gold-500 outline-none resize-none h-20 bg-gray-50"
-                    placeholder="인원, 희망 날짜, 특별 요청사항 등을 입력해주세요."
-                    value={inquiryText}
-                    onChange={(e) => setInquiryText(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                   <button 
-                    onClick={() => handleCopyText('open')}
-                    className="w-full py-3 px-4 bg-yellow-400 text-black font-bold rounded-xl hover:bg-yellow-500 shadow-sm active:scale-95 transition flex items-center justify-center gap-2 text-xs xs:text-sm"
-                  >
-                    <span>💬</span> 복사 후 오픈채팅 상담
-                  </button>
-                  
-                  <button 
-                    onClick={() => handleCopyText('id')}
-                    className="w-full py-3 px-4 bg-gold-500 text-white font-bold rounded-xl hover:bg-gold-600 shadow-sm active:scale-95 transition flex items-center justify-center gap-2 text-xs xs:text-sm"
-                  >
-                    <span>📋</span> 복사 후 ID 상담 (vnseen1)
-                  </button>
-                </div>
-              </div>
+            <span className="text-lg sm:text-xl shrink-0">📄</span>
+            <div className="min-w-0">
+              <span className="font-extrabold text-xs sm:text-base text-gray-900 block truncate">
+                {product.title}
+              </span>
+              <span className="text-[10px] text-gold-600 font-bold block sm:hidden">
+                여행 견적 및 일정 안내서
+              </span>
             </div>
           </div>
-        )}
 
-        {showPreview && product && (
-          <ProductDetailModal product={product} onClose={() => setShowPreview(false)} />
-        )}
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
+            {/* Desktop Quick Controls */}
+            <div className="hidden sm:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
+              <span className="text-gray-500 font-bold">고객명:</span>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="고객 성함"
+                className="w-16 bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs font-bold outline-none"
+              />
+            </div>
+
+            <div className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
+              <span className="text-gray-500 font-bold">출발일:</span>
+              <input
+                type="date"
+                value={departureDate}
+                onChange={(e) => setDepartureDate(e.target.value)}
+                className="bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs font-bold outline-none"
+              />
+            </div>
+
+            <label className="hidden sm:flex items-center gap-1 text-xs cursor-pointer font-bold text-gray-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+              <input
+                type="checkbox"
+                checked={includeFastTrack}
+                onChange={(e) => setIncludeFastTrack(e.target.checked)}
+                className="rounded text-gold-500"
+              />
+              <span>패스트트랙 (+$60)</span>
+            </label>
+
+            <label className="hidden sm:flex items-center gap-1 text-xs cursor-pointer font-bold text-gray-700 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200">
+              <input
+                type="checkbox"
+                checked={includeGuide}
+                onChange={(e) => setIncludeGuide(e.target.checked)}
+                className="rounded text-gold-500"
+              />
+              <span>가이드 ($120)</span>
+            </label>
+
+            <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 sm:px-2.5 py-1">
+              <span className="text-gray-500 font-bold text-[11px] sm:text-xs">인원:</span>
+              <select
+                value={personCount}
+                onChange={(e) => setPersonCount(Number(e.target.value))}
+                className="bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs font-bold outline-none cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 12, 16].map((n) => (
+                  <option key={n} value={n}>{n}인</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-sm transition cursor-pointer"
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Quick Option Strip (scrollable horizontally) */}
+        <div className="sm:hidden no-print bg-gray-50/95 border-b border-gray-200 px-3 py-1.5 flex items-center gap-2 overflow-x-auto scrollbar-hide text-xs shrink-0">
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0">
+            <span className="text-[10px] text-gray-500 font-bold">고객명:</span>
+            <input
+              type="text"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="w-14 text-xs font-bold outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0">
+            <span className="text-[10px] text-gray-500 font-bold">출발일:</span>
+            <input
+              type="date"
+              value={departureDate}
+              onChange={(e) => setDepartureDate(e.target.value)}
+              className="text-xs font-bold outline-none"
+            />
+          </div>
+          <label className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 font-bold text-[11px] text-amber-900 shrink-0 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeFastTrack}
+              onChange={(e) => setIncludeFastTrack(e.target.checked)}
+              className="rounded text-gold-500"
+            />
+            <span>패스트트랙 (+$60)</span>
+          </label>
+          <label className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 font-bold text-[11px] text-indigo-900 shrink-0 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeGuide}
+              onChange={(e) => setIncludeGuide(e.target.checked)}
+              className="rounded text-indigo-600"
+            />
+            <span>가이드 ($120)</span>
+          </label>
+        </div>
+
+        {/* Scrollable Document Area */}
+        <div className="flex-1 overflow-y-auto p-1.5 xs:p-2 sm:p-6 print:p-0 print:overflow-visible">
+          <A4QuotationDocument
+            customerName={customerName}
+            personCount={personCount}
+            managerName="망고투어 전문 상담팀"
+            managerContact="+84 37 720 4451"
+            location={product.location}
+            duration={product.duration}
+            departureDate={departureDate}
+            totalPriceKRW={groupTotalKRW}
+            totalPriceUSD={groupTotalUSD}
+            costItems={costItems}
+            itinerary={itineraryDays}
+            notes={`숙박: 1인 객실 기준 (1인 1실 단독 투숙) | 패스트트랙: ${includeFastTrack ? '포함 ($60)' : '선택 가능 ($60)'} | 가이드: ${includeGuide ? '1일 $120 포함' : '제외'}`}
+            onClose={onClose}
+            showControls={true}
+          />
+        </div>
       </div>
     </div>
   );
