@@ -4139,12 +4139,6 @@ const AdminDashboard: React.FC<Props> = ({
                   }`}
                   alt={popup.title || 'Notification'}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none z-10"></div>
-                <div className="absolute bottom-4 left-6 right-6 z-20">
-                  <h3 className="text-white font-bold text-lg md:text-xl drop-shadow-lg leading-tight">
-                    {popup.title || '공지사항 제목'}
-                  </h3>
-                </div>
               </div>
             ) : (
               <div className="p-6 bg-deepgreen text-white">
