@@ -1080,31 +1080,44 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
           <div className="px-0 sm:px-0">
             {/* Mode Switcher Tabs */}
             <div className="px-3.5 sm:px-0 mb-4 sm:mb-6">
-              <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-gray-200/90 flex gap-1.5">
+              <div className="bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setPlannerMode('presets')}
-                  className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base font-extrabold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                  className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
                     plannerMode === 'presets'
-                      ? 'bg-deepgreen text-white shadow-md'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-deepgreen text-white shadow-md border border-deepgreen font-black scale-[1.01]'
+                      : 'bg-white text-gray-700 hover:text-deepgreen hover:bg-emerald-50/60 border border-gray-200/90 shadow-xs font-bold hover:border-emerald-300'
                   }`}
                 >
-                  <span>⭐</span>
-                  <span className="truncate">추천 4박 5일 패키지 ({packages.length}선)</span>
+                  <span className="text-sm sm:text-base">⭐</span>
+                  <span className="truncate">추천 4박 5일 패키지</span>
+                  <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
+                    plannerMode === 'presets'
+                      ? 'bg-white/20 text-white font-black'
+                      : 'bg-emerald-100 text-deepgreen border border-emerald-200 font-bold'
+                  }`}>
+                    {packages.length}선
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setPlannerMode('diy')}
-                  className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base font-extrabold transition-all flex items-center justify-center gap-1.5 sm:gap-2 relative cursor-pointer ${
+                  className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
                     plannerMode === 'diy'
-                      ? 'bg-gradient-to-r from-gold-500 to-amber-600 text-white shadow-md'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'bg-gradient-to-r from-gold-500 via-amber-500 to-amber-600 text-white shadow-md border border-amber-500 font-black scale-[1.01]'
+                      : 'bg-white text-gray-700 hover:text-amber-800 hover:bg-amber-50/70 border border-gray-200/90 shadow-xs font-bold hover:border-amber-300'
                   }`}
                 >
-                  <span className="text-sm md:text-base">✨</span>
+                  <span className="text-sm sm:text-base">✨</span>
                   <span className="truncate">내 맘대로 DIY 여행 만들기</span>
-                  <span className="hidden md:inline-block px-2.5 py-0.5 bg-white/20 text-[10px] md:text-xs font-bold rounded-full">일정·지역 자유 설계</span>
+                  <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
+                    plannerMode === 'diy'
+                      ? 'bg-white/20 text-white font-black'
+                      : 'bg-amber-100 text-amber-800 border border-amber-200 font-bold'
+                  }`}>
+                    자유설계
+                  </span>
                 </button>
               </div>
             </div>
@@ -1826,24 +1839,44 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
 
                 {/* Tabs: Options Customizer vs Itinerary */}
                 <div className="px-3.5 sm:px-0">
-                  <div className="flex rounded-xl sm:rounded-2xl bg-gray-100/90 p-1 md:p-1.5">
+                  <div className="bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setViewTab('options')}
-                      className={`flex-1 py-2 sm:py-2.5 md:py-3 text-[11px] sm:text-xs md:text-sm font-bold rounded-lg sm:rounded-xl transition tracking-tight ${
-                        viewTab === 'options' ? 'bg-white text-deepgreen shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                      className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                        viewTab === 'options'
+                          ? 'bg-deepgreen text-white shadow-md border border-deepgreen font-black scale-[1.01]'
+                          : 'bg-white text-gray-700 hover:text-deepgreen hover:bg-emerald-50/60 border border-gray-200/90 shadow-xs font-bold hover:border-emerald-300'
                       }`}
                     >
-                      ✓ 맞춤 항목 선택 ({selectedOptionIds.size}/{activePackage.options.length}개)
+                      <span className="text-sm sm:text-base">✓</span>
+                      <span className="truncate">맞춤 항목 선택</span>
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
+                        viewTab === 'options'
+                          ? 'bg-white/20 text-white font-black'
+                          : 'bg-emerald-100 text-deepgreen border border-emerald-200 font-bold'
+                      }`}>
+                        {selectedOptionIds.size}/{activePackage.options.length}개
+                      </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setViewTab('itinerary')}
-                      className={`flex-1 py-2 sm:py-2.5 md:py-3 text-[11px] sm:text-xs md:text-sm font-bold rounded-lg sm:rounded-xl transition tracking-tight ${
-                        viewTab === 'itinerary' ? 'bg-white text-deepgreen shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                      className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                        viewTab === 'itinerary'
+                          ? 'bg-deepgreen text-white shadow-md border border-deepgreen font-black scale-[1.01]'
+                          : 'bg-white text-gray-700 hover:text-deepgreen hover:bg-emerald-50/60 border border-gray-200/90 shadow-xs font-bold hover:border-emerald-300'
                       }`}
                     >
-                      📅 {activePackage.duration || '4박 5일'} 정규 일정표
+                      <span className="text-sm sm:text-base">📅</span>
+                      <span className="truncate">{activePackage.duration || '4박 5일'} 정규 일정표</span>
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
+                        viewTab === 'itinerary'
+                          ? 'bg-white/20 text-white font-black'
+                          : 'bg-emerald-100 text-deepgreen border border-emerald-200 font-bold'
+                      }`}>
+                        상세일정
+                      </span>
                     </button>
                   </div>
                 </div>
