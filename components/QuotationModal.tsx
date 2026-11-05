@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Product } from '../types';
 import A4QuotationDocument, { CostItem, ItineraryDay } from './A4QuotationDocument';
 
+import { getTravelDays, calculateCostItemTotal } from '../utils/costBreakdownUtils';
+
 interface Props {
   product: Product;
   onClose: () => void;
@@ -21,69 +23,124 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
   if (!product) return null;
 
   const USD_TO_KRW = 1360;
+  const travelDays = getTravelDays(product.duration, product.itinerary);
 
-  // Base product cost
-  const basePriceUSD = product.price || 970;
-  let singleTotalUSD = basePriceUSD;
-  if (includeFastTrack) singleTotalUSD += 60;
-  if (!includeGuide) singleTotalUSD = Math.max(0, singleTotalUSD - 120);
+  // Construct detailed cost items matching user's PDF sample or admin-configured items
+  let costItems: CostItem[] = [];
 
-  const groupTotalUSD = singleTotalUSD * personCount;
+  if (product.costItems && product.costItems.length > 0) {
+    product.costItems.forEach((item) => {
+      // If item is guide and guide is deselected in quotation controls, skip
+      if (item.category.includes('가이드') && !includeGuide) return;
+      // If item is fasttrack and fasttrack is deselected, skip
+      if ((item.category.includes('패스트트랙') || item.category.includes('의전')) && !includeFastTrack) return;
+
+      const calc = calculateCostItemTotal(item, personCount, travelDays);
+
+      costItems.push({
+        category: item.category,
+        detail: item.detail,
+        quantity: calc.quantity,
+        amountUSD: calc.amountUSD,
+        amountKRW: calc.amountUSD * USD_TO_KRW,
+      });
+    });
+
+    // If includeFastTrack is checked but not present in product.costItems, add it
+    if (includeFastTrack && !costItems.some(i => i.category.includes('패스트트랙') || i.category.includes('의전'))) {
+      const fastTrackUSD = 60 * personCount;
+      costItems.push({
+        category: 'VIP패스트트랙',
+        detail: '공항 도착 시 VIP 전용 패스트트랙 라인 초고속 입국 심사 (대기 없음)',
+        quantity: `${personCount}인`,
+        amountUSD: fastTrackUSD,
+        amountKRW: fastTrackUSD * USD_TO_KRW,
+      });
+    }
+
+    // If includeGuide is checked but not in product.costItems, add it
+    if (includeGuide && !costItems.some(i => i.category.includes('가이드'))) {
+      const guideCount = Math.max(1, Math.ceil(personCount / 16));
+      const guideTotalUSD = 120 * travelDays * guideCount;
+      costItems.push({
+        category: '가이드',
+        detail: '한국어 전문 가이드 전 일정 단독 동행 케어 (1일 $120 기준)',
+        quantity: `${guideCount}명 (${travelDays}일간)`,
+        amountUSD: guideTotalUSD,
+        amountKRW: guideTotalUSD * USD_TO_KRW,
+      });
+    }
+  } else {
+    // Base product fallback
+    const basePriceUSD = product.price || 970;
+    // 4인당 리무진 밴 1대 기준
+    const vehicleCount = Math.max(1, Math.ceil(personCount / 4));
+    // 16인당 가이드 1명 기준
+    const guideCount = Math.max(1, Math.ceil(personCount / 16));
+
+    const golfUSD = Math.round(basePriceUSD * 0.45 * personCount);
+    const hotelUSD = Math.round(basePriceUSD * 0.35 * personCount);
+    // 차량: 4인당 리무진 밴 1대 전 일정 기준 (~$194/대)
+    const vehicleUSD = Math.round(194 * vehicleCount);
+    // 가이드: 16인당 가이드 1명 기준 (1일 $120 * 여행일수)
+    const guideUSD = 120 * travelDays * guideCount;
+
+    costItems = [
+      {
+        category: '항공권',
+        detail: '국제선 왕복 항공권 (개별 발권 또는 망고투어 실시간 발권 대행)',
+        quantity: `${personCount}인`,
+        amountKRW: 0,
+        amountUSD: 0,
+      },
+      {
+        category: product.type === 'golf' ? '골프(그린피)' : '투어/관광',
+        detail: product.type === 'golf'
+          ? `${product.title} - 정규 18홀 라운딩 그린피 일체`
+          : `${product.title} - 전 일정 주요 명소 단독 투어 및 입장료`,
+        quantity: `${personCount}인`,
+        amountKRW: golfUSD * USD_TO_KRW,
+        amountUSD: golfUSD,
+      },
+      {
+        category: '숙박(호텔)',
+        detail: `${product.location} 5성급 럭셔리 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)`,
+        quantity: `${personCount}실 (1인실)`,
+        amountKRW: hotelUSD * USD_TO_KRW,
+        amountUSD: hotelUSD,
+      },
+      {
+        category: '투어/차량',
+        detail: '전 일정 단독 VIP 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
+        quantity: `${vehicleCount}대 (전일정 ${travelDays}일)`,
+        amountKRW: vehicleUSD * USD_TO_KRW,
+        amountUSD: vehicleUSD,
+      },
+    ];
+
+    if (includeGuide) {
+      costItems.push({
+        category: '가이드',
+        detail: '한국어 전문 가이드 전 일정 단독 동행 케어 (1일 $120 기준)',
+        quantity: `${guideCount}명 (${travelDays}일간)`,
+        amountKRW: guideUSD * USD_TO_KRW,
+        amountUSD: guideUSD,
+      });
+    }
+
+    if (includeFastTrack) {
+      costItems.push({
+        category: 'VIP패스트트랙',
+        detail: '공항 도착 시 VIP 전용 패스트트랙 라인 초고속 입국 심사 (대기 없음)',
+        quantity: `${personCount}인`,
+        amountKRW: 60 * personCount * USD_TO_KRW,
+        amountUSD: 60 * personCount,
+      });
+    }
+  }
+
+  const groupTotalUSD = costItems.reduce((acc, it) => acc + (it.amountUSD !== undefined ? it.amountUSD : Math.round(it.amountKRW / USD_TO_KRW)), 0);
   const groupTotalKRW = groupTotalUSD * USD_TO_KRW;
-
-  // Construct detailed cost items matching user's PDF sample
-  const costItems: CostItem[] = [
-    {
-      category: '항공권',
-      detail: '국제선 왕복 항공권 (개별 발권 또는 망고투어 실시간 발권 대행)',
-      quantity: `${personCount}인`,
-      amountKRW: 0,
-      amountUSD: 0,
-    },
-    {
-      category: product.type === 'golf' ? '골프(그린피)' : '투어/관광',
-      detail: product.type === 'golf'
-        ? `${product.title} - 정규 18홀 라운딩 그린피 일체`
-        : `${product.title} - 전 일정 주요 명소 단독 투어 및 입장료`,
-      quantity: `${personCount}인`,
-      amountKRW: Math.round(singleTotalUSD * 0.45 * personCount * USD_TO_KRW),
-      amountUSD: Math.round(singleTotalUSD * 0.45 * personCount),
-    },
-    {
-      category: '숙박(호텔)',
-      detail: `${product.location} 5성급 럭셔리 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)`,
-      quantity: `${personCount}실 (1인실)`,
-      amountKRW: Math.round(singleTotalUSD * 0.35 * personCount * USD_TO_KRW),
-      amountUSD: Math.round(singleTotalUSD * 0.35 * personCount),
-    },
-    {
-      category: '투어/차량',
-      detail: '전 일정 단독 VIP 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
-      quantity: '1대 (전일정)',
-      amountKRW: Math.round(singleTotalUSD * 0.10 * personCount * USD_TO_KRW),
-      amountUSD: Math.round(singleTotalUSD * 0.10 * personCount),
-    },
-  ];
-
-  if (includeGuide) {
-    costItems.push({
-      category: '가이드',
-      detail: '한국어 전문 가이드 전 일정 단독 동행 케어 (1일 $120 기준)',
-      quantity: '1식',
-      amountKRW: 120 * personCount * USD_TO_KRW,
-      amountUSD: 120 * personCount,
-    });
-  }
-
-  if (includeFastTrack) {
-    costItems.push({
-      category: 'VIP패스트트랙',
-      detail: '공항 도착 시 VIP 전용 패스트트랙 라인 초고속 입국 심사 (대기 없음)',
-      quantity: `${personCount}인`,
-      amountKRW: 60 * personCount * USD_TO_KRW,
-      amountUSD: 60 * personCount,
-    });
-  }
 
   // Format Itinerary
   const itineraryDays: ItineraryDay[] = (product.itinerary || []).map((item) => ({

@@ -11,6 +11,17 @@ export interface MenuItem {
   icon: string;
 }
 
+export interface ProductCostBreakdownItem {
+  id?: string;
+  category: string;
+  detail: string;
+  quantity?: string;
+  amountUSD: number; // 금액 (단가)
+  pricingType?: 'person' | 'vehicle' | 'guide'; // 'person': 1인당 | 'vehicle': 차량(4인당 1대) | 'guide': 가이드(16인당 1명)
+  perDay?: boolean; // true면 1일 기준 금액 × 여행일수, false면 여행 전 일정 단가
+  days?: number; // 직접 지정 일수 (미입력 시 여행 기간 일수 자동 적용)
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -23,6 +34,7 @@ export interface Product {
   itinerary?: Array<{ day: number; activities: string[] }>;
   detailImages?: string[];
   detailContent?: string;
+  costItems?: ProductCostBreakdownItem[]; // 여행 경비 내역 (Estimated Cost) 항목 및 금액
 }
 
 export interface VideoItem {

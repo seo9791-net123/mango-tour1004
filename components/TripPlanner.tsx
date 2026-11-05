@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
+import { CustomTripPackage, PackageOptionItem, MasterOptionPool, Product } from '../types';
 import { INITIAL_MASTER_OPTION_POOL } from '../constants';
 import BackButton from './BackButton';
 import { db } from '../services/firebaseConfig';
@@ -11,10 +11,11 @@ import { A4QuotationDocument, CostItem, ItineraryDay } from './A4QuotationDocume
 interface Props {
   packages: CustomTripPackage[];
   masterOptionPool?: MasterOptionPool;
+  products?: Product[];
   onBack: () => void;
 }
 
-export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBack }) => {
+export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, products = [], onBack }) => {
   const pool = masterOptionPool || INITIAL_MASTER_OPTION_POOL;
   const [selectedLocation, setSelectedLocation] = useState<string>('전체');
   const [activePackage, setActivePackage] = useState<CustomTripPackage | null>(null);
@@ -223,13 +224,28 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     return 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=1200';
   };
 
-  // Real-time DIY Estimated Price Calculator (Per person USD)
+  // Real-time DIY Estimated Price Calculator (Per person USD with Date-Matched Green Fees)
   const calculateDIYEstimatedPrice = () => {
     let golfTotal = 0;
-    diyGolfCourses.slice(0, diyRounds).forEach(cName => {
-      const match = pool.golfCourses.find(g => cName.includes(g.name.split(' ')[0]) || g.name.includes(cName.split(' ')[0]));
-      const baseFee = 150;
-      golfTotal += baseFee + (match?.priceDeltaUSD || 0);
+    const courses = diyGolfCourses.slice(0, diyRounds);
+    courses.forEach((cName, idx) => {
+      const [y, m, d] = departureDate.split('-').map(Number);
+      const targetDate = new Date(y, m - 1, d + idx + 1);
+      const isWeekend = targetDate.getDay() === 0 || targetDate.getDay() === 6;
+
+      const clean = cName.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+      const productMatch = products.find(p => {
+        const pClean = p.title.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+        return pClean.includes(clean) || clean.includes(pClean);
+      });
+      const poolMatch = pool.golfCourses.find(g => {
+        const gClean = g.name.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+        return gClean.includes(clean) || clean.includes(gClean);
+      });
+
+      const weekdayUSD = productMatch?.price || (poolMatch as any)?.weekdayPriceUSD || (poolMatch as any)?.priceDeltaUSD || 100;
+      const weekendUSD = (productMatch as any)?.weekendPrice || (poolMatch as any)?.weekendPriceUSD || Math.round(weekdayUSD * 1.35);
+      golfTotal += isWeekend ? weekendUSD : weekdayUSD;
     });
 
     const nightRate = 
@@ -496,18 +512,96 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     return pool.accommodations.filter(a => a.location === loc || loc.includes(a.location));
   };
 
+  // Helper to determine exact date, day of week, and weekend status for a round
+  const getRoundDateInfo = (roundIndex: number) => {
+    try {
+      const [y, m, d] = departureDate.split('-').map(Number);
+      // Day 1 is departure/arrival; Round 1 is on Day 2 (+1 day), Round 2 is Day 3 (+2 days), etc.
+      const roundDate = new Date(y, m - 1, d + roundIndex + 1);
+      const dayOfWeek = roundDate.getDay(); // 0 = Sun, 6 = Sat
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+      const dateStr = `${String(roundDate.getMonth() + 1).padStart(2, '0')}/${String(roundDate.getDate()).padStart(2, '0')}(${dayNames[dayOfWeek]})`;
+      const fullDateStr = `${roundDate.getFullYear()}-${String(roundDate.getMonth() + 1).padStart(2, '0')}-${String(roundDate.getDate()).padStart(2, '0')}`;
+      return { roundDate, dayOfWeek, isWeekend, dateStr, fullDateStr, dayName: dayNames[dayOfWeek] };
+    } catch {
+      return { 
+        roundDate: new Date(), 
+        dayOfWeek: 1, 
+        isWeekend: false, 
+        dateStr: `Day ${roundIndex + 2}`, 
+        fullDateStr: departureDate, 
+        dayName: '평일' 
+      };
+    }
+  };
+
+  // Helper to retrieve live weekday/weekend price and notes for any course name
+  const getCourseMatchedRates = (courseName: string) => {
+    const clean = courseName.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+
+    // 1. Search in products (syncs directly from Google Sheets)
+    const productMatch = products.find(p => {
+      const pClean = p.title.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+      return pClean.includes(clean) || clean.includes(pClean);
+    });
+
+    // 2. Search in pool.golfCourses
+    const poolMatch = pool.golfCourses.find(g => {
+      const gClean = g.name.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+      return gClean.includes(clean) || clean.includes(gClean);
+    });
+
+    const weekdayUSD = productMatch?.price || (poolMatch as any)?.weekdayPriceUSD || 100;
+    const weekendUSD = (productMatch as any)?.weekendPrice || (poolMatch as any)?.weekendPriceUSD || Math.round(weekdayUSD * 1.35);
+    const weekdayVND = (productMatch as any)?.priceVND || weekdayUSD * 25000;
+    const weekendVND = (productMatch as any)?.weekendPriceVND || weekendUSD * 25000;
+    const notes = (productMatch as any)?.notes || poolMatch?.description || '카트비/캐디피 포함, 캐디 팁 별도';
+    const deltaUSD = poolMatch?.priceDeltaUSD || 0;
+
+    return {
+      weekdayUSD,
+      weekendUSD,
+      weekdayVND,
+      weekendVND,
+      notes,
+      deltaUSD,
+      title: productMatch?.title || poolMatch?.name || courseName
+    };
+  };
+
+  // Compute all rounds breakdown with dates & weekday/weekend rates
+  const getDateMatchedGolfBreakdown = () => {
+    const rounds = customGolfCourses.map((cName, idx) => {
+      const dateInfo = getRoundDateInfo(idx);
+      const rates = getCourseMatchedRates(cName);
+      const appliedUSD = dateInfo.isWeekend ? rates.weekendUSD : rates.weekdayUSD;
+      const appliedVND = dateInfo.isWeekend ? rates.weekendVND : rates.weekdayVND;
+      return {
+        roundIndex: idx,
+        dayNumber: idx + 2,
+        courseName: cName,
+        ...dateInfo,
+        ...rates,
+        appliedUSD,
+        appliedVND
+      };
+    });
+
+    const totalGolfUSD = rounds.reduce((sum, r) => sum + r.appliedUSD, 0);
+    const weekendCount = rounds.filter(r => r.isWeekend).length;
+    const weekdayCount = rounds.length - weekendCount;
+
+    return { rounds, totalGolfUSD, weekendCount, weekdayCount };
+  };
+
   // Calculate price delta for selected golf courses
   const getGolfDeltaTotal = () => {
-    let delta = 0;
-    customGolfCourses.forEach(courseName => {
-      const found = pool.golfCourses.find(c => 
-        courseName.includes(c.name.split(' ')[0]) || c.name.includes(courseName.split(' ')[0])
-      );
-      if (found) {
-        delta += (found.priceDeltaUSD || 0);
-      }
-    });
-    return delta;
+    const { totalGolfUSD } = getDateMatchedGolfBreakdown();
+    const defaultRoundsCount = activePackage?.golfCourses?.length || customGolfCourses.length;
+    // Standard baseline price in package for weekday rounds (~$110/round average)
+    const baseIncludedRate = defaultRoundsCount * 110;
+    return totalGolfUSD - baseIncludedRate;
   };
 
   // Retrieve choices for the active custom option modal
@@ -589,15 +683,16 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
     ];
   };
 
-  // Calculate dynamic price for each option item
+  // Calculate dynamic price for each option item with date-matched golf fees
   const getOptionPrice = (opt: PackageOptionItem) => {
-    let price = opt.priceUSD || 0;
     if (customOptionSelections[opt.id]) {
-      price += customOptionSelections[opt.id].priceDelta;
-    } else if (opt.category === 'golf' && (opt.name.includes('그린피') || opt.name.includes('코스'))) {
-      price += getGolfDeltaTotal();
+      return Math.max(0, (opt.priceUSD || 0) + customOptionSelections[opt.id].priceDelta);
     }
-    return Math.max(0, price);
+    if (opt.category === 'golf' && (opt.name.includes('그린피') || opt.name.includes('코스'))) {
+      const { totalGolfUSD } = getDateMatchedGolfBreakdown();
+      return Math.max(0, totalGolfUSD);
+    }
+    return Math.max(0, opt.priceUSD || 0);
   };
 
   // Get dynamic display name for each option item
@@ -606,8 +701,10 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       return customOptionSelections[opt.id].name;
     }
     if (opt.category === 'golf' && (opt.name.includes('그린피') || opt.name.includes('코스'))) {
+      const { weekendCount, weekdayCount } = getDateMatchedGolfBreakdown();
       const shortNames = customGolfCourses.map(c => c.split(' ')[0]);
-      return `${shortNames.length}대 명문 코스 그린피 (${shortNames.join(' + ')})`;
+      const weekendLabel = weekendCount > 0 ? ` [주말 ${weekendCount}회·주중 ${weekdayCount}회]` : ' [전일정 주중]';
+      return `${shortNames.length}대 명문 코스 그린피${weekendLabel} (${shortNames.join(' + ')})`;
     }
     return opt.name;
   };
@@ -618,7 +715,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
       return customOptionSelections[opt.id].description;
     }
     if (opt.category === 'golf' && (opt.name.includes('그린피') || opt.name.includes('코스'))) {
-      return `[고객 맞춤 선택 라운딩 코스]: ${customGolfCourses.join(' · ')}`;
+      const { rounds } = getDateMatchedGolfBreakdown();
+      const breakdownStr = rounds.map(r => 
+        `Day ${r.dayNumber} ${r.dateStr}: ${r.courseName.split(' ')[0]}[${r.isWeekend ? '주말' : '주중'} $${r.appliedUSD}]`
+      ).join(' · ');
+      return `[날짜별 자동 합산]: ${breakdownStr} (카트비/캐디피 포함, 운전기사 팁 별도)`;
     }
     return opt.description;
   };
@@ -713,11 +814,14 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
         catName = '골프 라운딩 (18홀)';
         qty = `${customGolfCourses.length}회 라운딩 × ${personCount}인`;
       } else if (opt.category === 'vehicle') {
+        const vehicleCount = Math.max(1, Math.ceil(personCount / 4));
         catName = '전용 차량 & 기사';
-        qty = `전 일정 (${personCount}인 전용)`;
+        qty = `${vehicleCount}대 (4인당 1대 기준)`;
       } else if (opt.category === 'guide') {
+        const guideCount = Math.max(1, Math.ceil(personCount / 16));
+        const travelDays = activePackage.itinerary?.length || 4;
         catName = '한국어 전담 가이드';
-        qty = `전 일정 (1일 $120 기준)`;
+        qty = `${guideCount}명 (전 일정 ${travelDays}일)`;
       } else if (opt.name.includes('패스트 트랙') || opt.name.includes('패스트트랙') || opt.id.includes('fasttrack')) {
         catName = '공항 VIP 의전';
         qty = `${personCount}인 (1인 $60)`;
@@ -732,7 +836,15 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
         qty = `${personCount}인`;
       }
 
-      const totalItemUSD = unitUSD * personCount;
+      let totalItemUSD = unitUSD * personCount;
+      if (opt.category === 'vehicle') {
+        const vehicleCount = Math.max(1, Math.ceil(personCount / 4));
+        totalItemUSD = unitUSD * vehicleCount;
+      } else if (opt.category === 'guide') {
+        const guideCount = Math.max(1, Math.ceil(personCount / 16));
+        totalItemUSD = unitUSD * guideCount;
+      }
+
       items.push({
         category: catName,
         detail: `${name}${desc && desc !== name ? ` (${desc})` : ''}`,
@@ -2416,17 +2528,31 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                         </button>
                       </div>
                     </div>
-                    <div className="text-[11px] md:text-xs text-gray-700 space-y-1.5">
+                    <div className="text-[11px] md:text-xs text-gray-700 space-y-2">
                       <div className="flex items-start gap-1.5">
-                        <span className="font-bold text-gray-900 shrink-0 md:text-xs">⛳ 골프:</span>
-                        <div className="text-gray-700 font-medium">
-                          {customGolfCourses.map((c, i) => (
-                            <span key={i} className="inline-block mr-1">
-                              <span className="text-[10px] md:text-xs bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-bold text-emerald-800">
-                                {i + 1}회: {c.split(' ')[0]}
+                        <span className="font-bold text-gray-900 shrink-0 md:text-xs mt-0.5">⛳ 골프:</span>
+                        <div className="flex-1 flex flex-wrap gap-1.5">
+                          {(() => {
+                            const { rounds } = getDateMatchedGolfBreakdown();
+                            return rounds.map((r, i) => (
+                              <span
+                                key={i}
+                                className={`text-[10px] md:text-xs px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 shadow-2xs ${
+                                  r.isWeekend 
+                                    ? 'bg-amber-50 text-amber-950 border-amber-300' 
+                                    : 'bg-emerald-50 text-emerald-950 border-emerald-300'
+                                }`}
+                              >
+                                <span>{r.dateStr}</span>
+                                <span className="font-extrabold">{r.courseName.split(' ')[0]}</span>
+                                <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
+                                  r.isWeekend ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900'
+                                }`}>
+                                  ${r.appliedUSD}
+                                </span>
                               </span>
-                            </span>
-                          ))}
+                            ));
+                          })()}
                         </div>
                       </div>
                       <div className="flex items-start gap-1.5">
@@ -2435,11 +2561,6 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, onBac
                           {getChosenAccommodationName()}
                         </span>
                       </div>
-                      {getGolfDeltaTotal() !== 0 && (
-                        <div className="text-[10px] md:text-xs text-emerald-800 font-bold pt-0.5">
-                          골프장 변경 차액: {getGolfDeltaTotal() > 0 ? `+$${getGolfDeltaTotal()}/1인` : `-$${Math.abs(getGolfDeltaTotal())}/1인`}
-                        </div>
-                      )}
                     </div>
                   </div>
 

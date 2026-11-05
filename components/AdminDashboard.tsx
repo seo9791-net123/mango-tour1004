@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
+import { User, Product, ProductCostBreakdownItem, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
 import { 
   INITIAL_PRODUCTS, 
   INITIAL_VIDEOS, 
@@ -20,6 +20,7 @@ import { DEFAULT_FIREBASE_CONFIG, db } from '../services/firebaseConfig';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { compressImage } from '../utils/imageUtils';
 import BackButton from './BackButton';
+import { getTravelDays, getItemPricingType, calculateCostItemTotal } from '../utils/costBreakdownUtils';
 
 interface Props {
   users: User[];
@@ -422,6 +423,87 @@ const AdminDashboard: React.FC<Props> = ({
     if (!product) return;
     const detailImages = (product.detailImages || []).filter((_, i) => i !== imageIdx);
     handleProductFieldChange(productId, 'detailImages', detailImages);
+  };
+
+  // Product Cost Items Management Handlers
+  const handleGenerateDefaultCostItems = (p: Product) => {
+    const singlePrice = p.price || 970;
+    const travelDays = getTravelDays(p.duration, p.itinerary);
+    const defaultItems: ProductCostBreakdownItem[] = [
+      {
+        category: '항공권',
+        detail: '국제선 왕복 항공권 (개별 발권 또는 망고투어 실시간 발권 대행)',
+        quantity: '{personCount}인',
+        amountUSD: 0,
+        pricingType: 'person',
+      },
+      {
+        category: p.type === 'golf' ? '골프(그린피)' : '투어/관광',
+        detail: p.type === 'golf'
+          ? `${p.title} - 정규 18홀 라운딩 그린피 일체`
+          : `${p.title} - 전 일정 주요 명소 단독 투어 및 입장료`,
+        quantity: '{personCount}인',
+        amountUSD: Math.round(singlePrice * 0.45),
+        pricingType: 'person',
+      },
+      {
+        category: '숙박(호텔)',
+        detail: `${p.location} 5성급 럭셔리 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)`,
+        quantity: '{personCount}실 (1인실)',
+        amountUSD: Math.round(singlePrice * 0.35),
+        pricingType: 'person',
+      },
+      {
+        category: '투어/차량',
+        detail: '전 일정 단독 VIP 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
+        quantity: '{vehicleCount}대 (전일정 {days}일)',
+        amountUSD: 194, // 4인까지 리무진 밴 1대 전일정 기준
+        pricingType: 'vehicle',
+        perDay: false,
+        days: travelDays,
+      },
+      {
+        category: '가이드',
+        detail: '한국어 전문 가이드 전 일정 단독 동행 케어 (1일 $120 기준)',
+        quantity: '{guideCount}명 (전일정 {days}일)',
+        amountUSD: 120, // 16인까지 가이드 1명 1일 기준
+        pricingType: 'guide',
+        perDay: true,
+        days: travelDays,
+      },
+    ];
+    handleProductFieldChange(p.id, 'costItems', defaultItems);
+  };
+
+  const handleCostItemChange = (productId: string, itemIdx: number, field: keyof ProductCostBreakdownItem, val: any) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const items = [...(product.costItems || [])];
+    if (!items[itemIdx]) return;
+    items[itemIdx] = { ...items[itemIdx], [field]: val };
+    handleProductFieldChange(productId, 'costItems', items);
+  };
+
+  const handleCostItemAdd = (productId: string, defaultType: 'person' | 'vehicle' | 'guide' = 'person') => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const items = [...(product.costItems || [])];
+    items.push({
+      category: defaultType === 'vehicle' ? '투어/차량' : defaultType === 'guide' ? '가이드' : '기타 항목',
+      detail: defaultType === 'vehicle' ? '전 일정 전용 리무진 밴' : defaultType === 'guide' ? '한국어 전문 가이드' : '세부 내역을 입력하세요',
+      quantity: defaultType === 'vehicle' ? '{vehicleCount}대 (전일정 {days}일)' : defaultType === 'guide' ? '{guideCount}명 (전일정 {days}일)' : '{personCount}인',
+      amountUSD: defaultType === 'guide' ? 120 : 50,
+      pricingType: defaultType,
+      perDay: defaultType === 'guide',
+    });
+    handleProductFieldChange(productId, 'costItems', items);
+  };
+
+  const handleCostItemRemove = (productId: string, itemIdx: number) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+    const items = (product.costItems || []).filter((_, idx) => idx !== itemIdx);
+    handleProductFieldChange(productId, 'costItems', items);
   };
 
   const handleDeleteProduct = (product: Product, e?: React.MouseEvent) => {
@@ -1874,6 +1956,251 @@ const AdminDashboard: React.FC<Props> = ({
                              ))}
                              {(!p.itinerary || p.itinerary.length === 0) && <p className="text-[10px] text-gray-400 italic text-center py-4">등록된 일정이 없습니다.</p>}
                            </div>
+                         </div>
+
+                         {/* 여행 경비 내역 (Estimated Cost) 금액 및 항목 관리 */}
+                         <div className="pt-3 border-t border-gray-100 space-y-2.5">
+                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                             <div>
+                               <label className="text-[11px] font-black text-amber-900 uppercase flex items-center gap-1.5">
+                                 <span>💰</span> 여행 경비 내역 (Estimated Cost) 금액 설정
+                               </label>
+                               <p className="text-[10px] text-gray-500 leading-tight">
+                                 견적서의 '여행 경비 내역' 표에 표시될 구분별 세부내역과 금액(1인 기준 USD)을 직접 수정합니다.
+                               </p>
+                             </div>
+                             <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                               <button
+                                 type="button"
+                                 onClick={() => handleGenerateDefaultCostItems(p)}
+                                 className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+                                 title="현재 상품가 기준으로 기본 5개 항목 자동 생성"
+                                >
+                                 <span>⚡</span> 비율 자동 채우기
+                               </button>
+                               <button
+                                 type="button"
+                                 onClick={() => handleCostItemAdd(p.id)}
+                                 className="px-2 py-1 bg-deepgreen text-white rounded-lg text-[10px] font-bold shadow-xs hover:bg-gold-600 transition flex items-center gap-1 cursor-pointer"
+                                >
+                                 <span>+</span> 항목 추가
+                               </button>
+                             </div>
+                           </div>
+
+                           {/* Cost Items Table / Card Editor */}
+                           {p.costItems && p.costItems.length > 0 ? (
+                             <div className="space-y-2 bg-amber-50/40 p-2.5 rounded-xl border border-amber-200/80">
+                               {(() => {
+                                 const pTravelDays = getTravelDays(p.duration, p.itinerary);
+                                 const total2p = (p.costItems || []).reduce((acc, it) => acc + calculateCostItemTotal(it, 2, pTravelDays).amountUSD, 0);
+                                 const total4p = (p.costItems || []).reduce((acc, it) => acc + calculateCostItemTotal(it, 4, pTravelDays).amountUSD, 0);
+
+                                 return (
+                                   <>
+                                     <div className="flex items-center justify-between text-[10px] text-amber-900 font-bold bg-amber-100/60 px-2 py-1 rounded-lg">
+                                       <span>📅 여행 기간: 총 {pTravelDays}일차 일정 ({p.duration || '3박 5일'})</span>
+                                       <span className="text-gray-600 font-normal">차량: 4인당 1대 / 가이드: 16인당 1명 (일정 반영)</span>
+                                     </div>
+
+                                     <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                                       {p.costItems.map((item, cIdx) => {
+                                         const pType = getItemPricingType(item.category, item.pricingType);
+                                         const isVehicle = pType === 'vehicle';
+                                         const isGuide = pType === 'guide';
+                                         const isPerDay = item.perDay !== undefined ? item.perDay : isGuide;
+                                         const group4Preview = calculateCostItemTotal(item, 4, pTravelDays).amountUSD;
+
+                                         return (
+                                           <div key={cIdx} className="bg-white p-2.5 rounded-xl border border-gray-200 shadow-xs space-y-2">
+                                             <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                                <div className="flex items-center gap-1 flex-1 min-w-0">
+                                                  <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded shrink-0">
+                                                    #{cIdx + 1}
+                                                  </span>
+                                                  <input
+                                                    type="text"
+                                                    className="text-xs font-bold text-gray-900 border-b border-gray-300 focus:border-gold-500 outline-none px-1 py-0.5 w-24 sm:w-28 shrink-0"
+                                                    value={item.category}
+                                                    onChange={(e) => handleCostItemChange(p.id, cIdx, 'category', e.target.value)}
+                                                    placeholder="구분"
+                                                  />
+
+                                                  {/* Pricing Type Selector */}
+                                                  <div className="flex items-center gap-1 shrink-0 ml-1">
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleCostItemChange(p.id, cIdx, 'pricingType', 'person')}
+                                                      className={`px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ${
+                                                        pType === 'person'
+                                                          ? 'bg-blue-600 text-white shadow-2xs'
+                                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                      }`}
+                                                      title="인원수 기준 (1인당 단가 × 인원수)"
+                                                    >
+                                                      👤 1인당
+                                                    </button>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        handleCostItemChange(p.id, cIdx, 'pricingType', 'vehicle');
+                                                        if (item.perDay === undefined) handleCostItemChange(p.id, cIdx, 'perDay', false);
+                                                      }}
+                                                      className={`px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ${
+                                                        isVehicle
+                                                          ? 'bg-amber-600 text-white shadow-2xs'
+                                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                      }`}
+                                                      title="리무진 밴 기준 4인당 1대 (여행 기간 기준)"
+                                                    >
+                                                      🚐 차량(4인/1대)
+                                                    </button>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        handleCostItemChange(p.id, cIdx, 'pricingType', 'guide');
+                                                        if (item.perDay === undefined) handleCostItemChange(p.id, cIdx, 'perDay', true);
+                                                      }}
+                                                      className={`px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ${
+                                                        isGuide
+                                                          ? 'bg-emerald-600 text-white shadow-2xs'
+                                                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                      }`}
+                                                      title="한국어 가이드 16인당 1명 (여행 기간 일수 기준)"
+                                                    >
+                                                      🚩 가이드(16인/1명)
+                                                    </button>
+                                                  </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                  <span className="text-[11px] font-bold text-gray-400">$</span>
+                                                  <input
+                                                    type="number"
+                                                    className="w-16 sm:w-20 text-xs font-black text-red-600 bg-amber-50/50 border border-amber-300 rounded px-1.5 py-0.5 text-right outline-none focus:bg-white"
+                                                    value={item.amountUSD}
+                                                    onChange={(e) => handleCostItemChange(p.id, cIdx, 'amountUSD', parseFloat(e.target.value) || 0)}
+                                                    placeholder="USD"
+                                                  />
+                                                  <span className="text-[10px] font-bold text-gray-500">USD</span>
+
+                                                  {/* Per Day Toggle for Vehicle or Guide */}
+                                                  {(isVehicle || isGuide) && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleCostItemChange(p.id, cIdx, 'perDay', !isPerDay)}
+                                                      className={`px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ml-0.5 ${
+                                                        isPerDay
+                                                          ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                                          : 'bg-slate-100 text-slate-700 border border-slate-300'
+                                                      }`}
+                                                      title={isPerDay ? '1일 기준 요금 (여행 일수 곱함)' : '전 일정 기준 단가'}
+                                                    >
+                                                      {isPerDay ? `1일×${pTravelDays}일` : '전일정'}
+                                                    </button>
+                                                  )}
+
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleCostItemRemove(p.id, cIdx)}
+                                                    className="text-gray-400 hover:text-red-600 font-bold text-xs ml-1 w-5 h-5 flex items-center justify-center rounded hover:bg-red-50 cursor-pointer"
+                                                    title="항목 삭제"
+                                                  >
+                                                    ✕
+                                                  </button>
+                                                </div>
+                                              </div>
+
+                                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                                                <div className="sm:col-span-2">
+                                                  <input
+                                                    type="text"
+                                                    className="w-full text-[11px] text-gray-700 bg-gray-50 border border-gray-200 rounded px-2 py-1 outline-none focus:bg-white focus:border-gold-500"
+                                                    value={item.detail}
+                                                    onChange={(e) => handleCostItemChange(p.id, cIdx, 'detail', e.target.value)}
+                                                    placeholder="세부 내역 설명"
+                                                  />
+                                                </div>
+                                                <div>
+                                                  <input
+                                                    type="text"
+                                                    className="w-full text-[11px] text-gray-600 bg-gray-50 border border-gray-200 rounded px-2 py-1 outline-none focus:bg-white focus:border-gold-500 text-center"
+                                                    value={item.quantity || (isVehicle ? '{vehicleCount}대 (전일정 {days}일)' : isGuide ? '{guideCount}명 (전일정 {days}일)' : '{personCount}인')}
+                                                    onChange={(e) => handleCostItemChange(p.id, cIdx, 'quantity', e.target.value)}
+                                                    placeholder="수량 템플릿"
+                                                  />
+                                                </div>
+                                              </div>
+
+                                              {/* Calculation helper note */}
+                                              <div className="text-[10px] text-gray-500 flex items-center justify-between px-1">
+                                                {isVehicle && (
+                                                  <span className="text-amber-800">
+                                                    💡 4인까지 1대 (${isPerDay ? (item.amountUSD || 0) * pTravelDays : (item.amountUSD || 0)} USD), 5~8인은 2대 적용
+                                                  </span>
+                                                )}
+                                                {isGuide && (
+                                                  <span className="text-emerald-800">
+                                                    💡 16인까지 1명 (${isPerDay ? (item.amountUSD || 0) * pTravelDays : (item.amountUSD || 0)} USD), 17~32인은 2명 적용
+                                                  </span>
+                                                )}
+                                                {!isVehicle && !isGuide && (
+                                                  <span className="text-blue-800">
+                                                    💡 1인당 ${item.amountUSD || 0} USD (인원수 곱하기 적용)
+                                                  </span>
+                                                )}
+                                                <span className="text-gray-400 font-mono">
+                                                  4인 시: ${group4Preview.toLocaleString()} USD
+                                                </span>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+
+                                      {/* Sum & Simulation Bar */}
+                                      <div className="pt-2 border-t border-amber-200 space-y-1.5 text-xs">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 bg-white/80 p-2 rounded-lg border border-amber-200/60">
+                                          <div className="space-y-0.5">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-bold text-gray-700 text-[11px]">👥 2인 기준 견적:</span>
+                                              <span className="font-black text-deepgreen text-xs sm:text-sm">${total2p.toLocaleString()} USD</span>
+                                              <span className="text-[10px] text-gray-500">(1인 약 ${Math.round(total2p / 2).toLocaleString()})</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-bold text-gray-700 text-[11px]">👨‍👩‍👧‍👦 4인 기준 견적:</span>
+                                              <span className="font-black text-indigo-700 text-xs sm:text-sm">${total4p.toLocaleString()} USD</span>
+                                              <span className="text-[10px] text-gray-500 font-medium text-emerald-600">(차량 1대·가이드 1명 공유로 1인 약 ${Math.round(total4p / 4).toLocaleString()}!)</span>
+                                            </div>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleProductFieldChange(p.id, 'price', Math.round(total2p / 2))}
+                                            className="text-[10px] font-bold text-gold-700 bg-white hover:bg-gold-50 border border-gold-300 px-2 py-1 rounded shadow-2xs transition cursor-pointer self-end"
+                                            title="2인 기준 1인당 금액을 상품의 기본 가격(price)에 동기화합니다"
+                                          >
+                                            2인 1인당(${Math.round(total2p / 2)})을 상품가로 적용
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                           ) : (
+                             <div className="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 text-center space-y-1.5">
+                               <p className="text-[11px] text-gray-600 font-medium">
+                                 현재 기본 공식(골프 45%, 숙박 35%, 차량 10%, 가이드 $120)으로 견적서에 자동 계산되고 있습니다.
+                               </p>
+                               <button
+                                 type="button"
+                                 onClick={() => handleGenerateDefaultCostItems(p)}
+                                 className="px-3 py-1.5 bg-gold-500 hover:bg-gold-600 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer inline-flex items-center gap-1"
+                               >
+                                 <span>✏️</span> 이 상품의 여행 경비 항목 및 금액 직접 편집하기
+                               </button>
+                             </div>
+                           )}
                          </div>
                        </div>
                      )}

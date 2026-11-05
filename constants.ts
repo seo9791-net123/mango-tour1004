@@ -47,6 +47,13 @@ export const INITIAL_PRODUCTS: Product[] = [
       { day: 2, activities: ['떤선녓 CC 18홀 라운딩', '오후 시내 관광 (노트르담 성당, 우체국)', '전신 마사지 90분 및 석식'] },
       { day: 3, activities: ['롱탄 CC 18홀 라운딩', '무제한 삼겹살 석식', '루프탑바 관람 및 야경 감상'] },
       { day: 4, activities: ['송베 CC 18홀 라운딩', '벤탄 시장 쇼핑 및 휴식', '공항 샌딩'] }
+    ],
+    costItems: [
+      { category: '항공권', detail: '국제선 왕복 항공권 (개별 발권 또는 망고투어 실시간 발권 대행)', quantity: '{personCount}인', amountUSD: 0, pricingType: 'person' },
+      { category: '골프(그린피)', detail: '호치민 3색 명문 골프 투어 - 정규 18홀 라운딩 그린피 일체', quantity: '{personCount}인', amountUSD: 437.5, pricingType: 'person' },
+      { category: '숙박(호텔)', detail: '호치민 5성급 럭셔리 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)', quantity: '{personCount}실 (1인실)', amountUSD: 340, pricingType: 'person' },
+      { category: '투어/차량', detail: '전 일정 단독 VIP 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)', quantity: '{vehicleCount}대 (전일정 {days}일)', amountUSD: 194, pricingType: 'vehicle', perDay: false },
+      { category: '가이드', detail: '한국어 전문 가이드 전 일정 단독 동행 케어 (1일 $120 기준)', quantity: '{guideCount}명 (전일정 {days}일)', amountUSD: 120, pricingType: 'guide', perDay: true }
     ]
   },
   {

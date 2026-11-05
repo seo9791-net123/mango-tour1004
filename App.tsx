@@ -733,7 +733,7 @@ const App: React.FC = () => {
               ) : selectedCategory === '비지니스' ? (
                 <BusinessPage content={pageContents['business']} onBack={handleBackOneStep} />
               ) : selectedCategory === '여행 만들기' ? (
-                <TripPlanner packages={customPackages} masterOptionPool={masterOptionPool} onBack={handleBackOneStep} />
+                <TripPlanner packages={customPackages} masterOptionPool={masterOptionPool} products={products} onBack={handleBackOneStep} />
               ) : selectedCategory === '호텔&빌라' ? (
                 <HotelVillaPage content={pageContents['hotel']} onBack={handleBackOneStep} />
               ) : selectedCategory === '골프' ? (
