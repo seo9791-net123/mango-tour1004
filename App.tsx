@@ -19,6 +19,7 @@ import TourPage from './components/TourPage';
 import EventPage from './components/EventPage';
 import TripPlanner from './components/TripPlanner';
 import BottomNav from './components/BottomNav';
+import Privacy from './components/Privacy';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
 import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { firestoreService } from './services/firestoreService';
@@ -32,15 +33,38 @@ const App: React.FC = () => {
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
   
-  // Routing State
+  // Routing State & Privacy Policy Route Detection
+  type PageType = 'home' | 'admin' | 'category' | 'privacy';
+
   interface HistoryEntry {
-    page: 'home' | 'admin' | 'category';
+    page: PageType;
     category: string | null;
   }
-  const [currentPage, setCurrentPage] = useState<'home' | 'admin' | 'category'>('home');
+
+  // https://mangotour.co.kr 접속 시 또는 /privacy, /policy 등 접근 시 개인정보처리방침 감지
+  const checkIsPrivacyRoute = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const host = window.location.hostname.toLowerCase();
+    const path = window.location.pathname.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+
+    return (
+      host === 'mangotour.co.kr' ||
+      host === 'www.mangotour.co.kr' ||
+      path.startsWith('/privacy') ||
+      path.startsWith('/policy') ||
+      search.includes('privacy') ||
+      hash.includes('privacy')
+    );
+  };
+
+  const [currentPage, setCurrentPage] = useState<PageType>(() => {
+    return checkIsPrivacyRoute() ? 'privacy' : 'home';
+  });
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [navHistory, setNavHistory] = useState<HistoryEntry[]>([
-    { page: 'home', category: null }
+  const [navHistory, setNavHistory] = useState<HistoryEntry[]>(() => [
+    { page: checkIsPrivacyRoute() ? 'privacy' : 'home', category: null }
   ]);
 
   // Data State
@@ -549,7 +573,7 @@ const App: React.FC = () => {
 
   const resetAuthFields = () => { setUsername(''); setPassword(''); setNickname(''); };
 
-  const navigateTo = (page: 'home' | 'admin' | 'category', category: string | null = null, pushHistory: boolean = true) => {
+  const navigateTo = (page: PageType, category: string | null = null, pushHistory: boolean = true) => {
     if (page === currentPage && category === selectedCategory) {
       return;
     }
@@ -562,6 +586,18 @@ const App: React.FC = () => {
         }
         return [...prev, { page, category }];
       });
+
+      try {
+        if (typeof window !== 'undefined') {
+          if (page === 'privacy') {
+            window.history.pushState({ page: 'privacy' }, '', '/privacy');
+          } else if (page === 'home' && window.location.pathname.startsWith('/privacy')) {
+            window.history.pushState({ page: 'home' }, '', '/');
+          }
+        }
+      } catch {
+        // ignore
+      }
     }
 
     setCurrentPage(page);
@@ -571,6 +607,21 @@ const App: React.FC = () => {
     setShowAuthModal(false);
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (checkIsPrivacyRoute()) {
+        setCurrentPage('privacy');
+      } else {
+        const path = window.location.pathname.toLowerCase();
+        if (path === '/' || path === '') {
+          setCurrentPage('home');
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleBackOneStep = () => {
     // 1. App-level modal & drawer overlays
@@ -656,6 +707,11 @@ const App: React.FC = () => {
   };
 
   const isAdmin = user?.role === 'admin';
+
+  // 개인정보처리방침 전용 뷰 (https://mangotour.co.kr 접속 또는 /privacy 라우트 시 메인 화면 대신 표시)
+  if (currentPage === 'privacy') {
+    return <Privacy onGoHome={() => navigateTo('home', null)} />;
+  }
 
   if (!isDataLoaded) {
     return (
@@ -802,12 +858,25 @@ const App: React.FC = () => {
       </main>
 
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs no-print">
-         <p>MANGO TOUR TRAVEL AGENCY | <a href="tel:+84377204451" className="hover:text-gold-400 transition ml-1 font-semibold">+84 37 720 4451</a> | 
+         <p>MANGO TOUR TRAVEL AGENCY | 대표: 김일선 | <a href="tel:+84377204451" className="hover:text-gold-400 transition ml-1 font-semibold">+84 37 720 4451</a> | 
            <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
              Kakao: <span className="font-bold">MANGO TOUR</span>
            </a>
          </p>
-         <p className="mt-1">© MANGO TOUR. All rights reserved.</p>
+         <div className="mt-2.5 flex items-center justify-center gap-3 text-[11px] text-gray-400">
+           <button 
+             type="button"
+             onClick={() => navigateTo('privacy')} 
+             className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer"
+           >
+             개인정보처리방침
+           </button>
+           <span className="text-gray-600">|</span>
+           <span>이용약관</span>
+           <span className="text-gray-600">|</span>
+           <span>대표자: 김일선</span>
+         </div>
+         <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
       </footer>
 
       {/* Real-time Chat Notification Toast */}
@@ -960,9 +1029,25 @@ const App: React.FC = () => {
                   <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500" placeholder="사용하실 닉네임을 입력하세요" required />
                 </div>
               )}
-              <button type="submit" className="w-full bg-gold-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 hover:bg-gold-600 mt-2">
+              <button type="submit" className="w-full bg-gold-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 hover:bg-gold-600 mt-2 cursor-pointer">
                 {authMode === 'login' ? '로그인' : '가입 완료하기'}
               </button>
+              {authMode === 'signup' && (
+                <p className="text-[11px] text-gray-500 text-center pt-1">
+                  가입 시 망고투어{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAuthModal(false);
+                      navigateTo('privacy');
+                    }}
+                    className="text-gold-600 underline font-bold cursor-pointer"
+                  >
+                    개인정보처리방침
+                  </button>
+                  에 동의하게 됩니다.
+                </p>
+              )}
             </form>
             <div className="mt-8 text-center border-t pt-6">
               {authMode === 'login' ? (
