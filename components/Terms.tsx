@@ -348,7 +348,7 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs border-t border-gray-700 mt-12 no-print">
         <p>MANGO TOUR TRAVEL AGENCY | 호치민 · 붕따우 · 달랏 골프/호텔/풀빌라 단독 투어</p>
         <p className="mt-1">
-          대표이사: 김일선 | 직통 문의: <a href="tel:+84377204451" className="text-gold-400 font-bold hover:underline">+84 37 720 4451</a> | 카카오톡: MANGO TOUR
+          대표이사: 김일선 | 직통 문의: <span className="text-gold-400 font-bold">+84 37 720 4451</span> | 카카오톡: MANGO TOUR
         </p>
         <p className="mt-2 text-gray-500 text-[11px]">© MANGO TOUR. All rights reserved.</p>
       </footer>

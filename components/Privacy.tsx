@@ -293,9 +293,9 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
                 </div>
                 <div>
                   <span className="text-gray-400 block text-xs">직통 전화</span>
-                  <a href="tel:+84377204451" className="text-deepgreen font-bold hover:underline">
+                  <span className="text-deepgreen font-bold">
                     +84 37 720 4451
-                  </a>
+                  </span>
                 </div>
                 <div>
                   <span className="text-gray-400 block text-xs">카카오톡 공식 채널</span>
@@ -364,7 +364,7 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
       {/* Footer */}
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs border-t border-gray-700 mt-12 no-print">
         <p>MANGO TOUR TRAVEL AGENCY | 호치민 · 붕따우 · 달랏 골프/호텔/풀빌라 단독 투어</p>
-        <p className="mt-1">대표이사 / 개인정보보호책임자: 김일선 | 문의: <a href="tel:+84377204451" className="text-gold-400 font-bold">+84 37 720 4451</a></p>
+        <p className="mt-1">대표이사 / 개인정보보호책임자: 김일선 | 문의: <span className="text-gold-400 font-bold">+84 37 720 4451</span></p>
         <p className="mt-2 text-gray-500 text-[11px]">© MANGO TOUR. All rights reserved.</p>
       </footer>
     </div>

@@ -2590,9 +2590,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                   {/* Brand & Phone Footer in Quotation Card */}
                   <div className="pt-2 text-[10px] md:text-xs text-gray-400 border-t border-gray-100 flex items-center justify-between">
                     <span>MANGO TOUR GOLF & TRAVEL</span>
-                    <a href="tel:+84377204451" className="hover:text-deepgreen font-bold text-gray-600">
+                    <span className="font-bold text-gray-600">
                       TEL: +84 37 720 4451
-                    </a>
+                    </span>
                   </div>
                 </div>
 
