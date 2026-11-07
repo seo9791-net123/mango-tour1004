@@ -42,36 +42,45 @@ const App: React.FC = () => {
     category: string | null;
   }
 
-  // https://mangotour.co.kr 접속 시 또는 /privacy, /policy 등 접근 시 개인정보처리방침 감지
+  // 개인정보 주소 (/privacy, /policy 등) 접근 시 개인정보처리방침 감지
   const checkIsPrivacyRoute = (): boolean => {
     if (typeof window === 'undefined') return false;
-    const host = window.location.hostname.toLowerCase();
     const path = window.location.pathname.toLowerCase();
     const search = window.location.search.toLowerCase();
     const hash = window.location.hash.toLowerCase();
 
+    // 기본 루트 ('/' 또는 '') 접속 시에는 메인 화면 표시
+    if (path === '/' || path === '') {
+      if (search.includes('page=privacy') || hash === '#privacy') return true;
+      return false;
+    }
+
     return (
-      host === 'mangotour.co.kr' ||
-      host === 'www.mangotour.co.kr' ||
       path.startsWith('/privacy') ||
       path.startsWith('/policy') ||
-      search.includes('privacy') ||
-      hash.includes('privacy')
+      search.includes('page=privacy') ||
+      hash === '#privacy'
     );
   };
 
-  // /terms, /tos 등 접근 시 이용약관 감지
+  // 이용약관 주소 (/terms, /tos 등) 접근 시 이용약관 감지
   const checkIsTermsRoute = (): boolean => {
     if (typeof window === 'undefined') return false;
     const path = window.location.pathname.toLowerCase();
     const search = window.location.search.toLowerCase();
     const hash = window.location.hash.toLowerCase();
 
+    // 기본 루트 ('/' 또는 '') 접속 시에는 메인 화면 표시
+    if (path === '/' || path === '') {
+      if (search.includes('page=terms') || hash === '#terms') return true;
+      return false;
+    }
+
     return (
       path.startsWith('/terms') ||
       path.startsWith('/tos') ||
-      search.includes('terms') ||
-      hash.includes('terms')
+      search.includes('page=terms') ||
+      hash === '#terms'
     );
   };
 
@@ -637,10 +646,7 @@ const App: React.FC = () => {
       } else if (checkIsTermsRoute()) {
         setCurrentPage('terms');
       } else {
-        const path = window.location.pathname.toLowerCase();
-        if (path === '/' || path === '') {
-          setCurrentPage('home');
-        }
+        setCurrentPage('home');
       }
     };
     window.addEventListener('popstate', handlePopState);
