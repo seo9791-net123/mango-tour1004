@@ -20,6 +20,7 @@ import EventPage from './components/EventPage';
 import TripPlanner from './components/TripPlanner';
 import BottomNav from './components/BottomNav';
 import Privacy from './components/Privacy';
+import Terms from './components/Terms';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
 import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { firestoreService } from './services/firestoreService';
@@ -33,8 +34,8 @@ const App: React.FC = () => {
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
   
-  // Routing State & Privacy Policy Route Detection
-  type PageType = 'home' | 'admin' | 'category' | 'privacy';
+  // Routing State & Privacy / Terms Route Detection
+  type PageType = 'home' | 'admin' | 'category' | 'privacy' | 'terms';
 
   interface HistoryEntry {
     page: PageType;
@@ -59,12 +60,31 @@ const App: React.FC = () => {
     );
   };
 
-  const [currentPage, setCurrentPage] = useState<PageType>(() => {
-    return checkIsPrivacyRoute() ? 'privacy' : 'home';
-  });
+  // /terms, /tos 등 접근 시 이용약관 감지
+  const checkIsTermsRoute = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+
+    return (
+      path.startsWith('/terms') ||
+      path.startsWith('/tos') ||
+      search.includes('terms') ||
+      hash.includes('terms')
+    );
+  };
+
+  const getInitialPage = (): PageType => {
+    if (checkIsPrivacyRoute()) return 'privacy';
+    if (checkIsTermsRoute()) return 'terms';
+    return 'home';
+  };
+
+  const [currentPage, setCurrentPage] = useState<PageType>(() => getInitialPage());
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [navHistory, setNavHistory] = useState<HistoryEntry[]>(() => [
-    { page: checkIsPrivacyRoute() ? 'privacy' : 'home', category: null }
+    { page: getInitialPage(), category: null }
   ]);
 
   // Data State
@@ -591,7 +611,9 @@ const App: React.FC = () => {
         if (typeof window !== 'undefined') {
           if (page === 'privacy') {
             window.history.pushState({ page: 'privacy' }, '', '/privacy');
-          } else if (page === 'home' && window.location.pathname.startsWith('/privacy')) {
+          } else if (page === 'terms') {
+            window.history.pushState({ page: 'terms' }, '', '/terms');
+          } else if (page === 'home' && (window.location.pathname.startsWith('/privacy') || window.location.pathname.startsWith('/terms'))) {
             window.history.pushState({ page: 'home' }, '', '/');
           }
         }
@@ -612,6 +634,8 @@ const App: React.FC = () => {
     const handlePopState = () => {
       if (checkIsPrivacyRoute()) {
         setCurrentPage('privacy');
+      } else if (checkIsTermsRoute()) {
+        setCurrentPage('terms');
       } else {
         const path = window.location.pathname.toLowerCase();
         if (path === '/' || path === '') {
@@ -711,6 +735,11 @@ const App: React.FC = () => {
   // 개인정보처리방침 전용 뷰 (https://mangotour.co.kr 접속 또는 /privacy 라우트 시 메인 화면 대신 표시)
   if (currentPage === 'privacy') {
     return <Privacy onGoHome={() => navigateTo('home', null)} />;
+  }
+
+  // 서비스 이용약관 전용 뷰 (/terms 라우트 시 표시)
+  if (currentPage === 'terms') {
+    return <Terms onGoHome={() => navigateTo('home', null)} />;
   }
 
   if (!isDataLoaded) {
@@ -858,7 +887,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs no-print">
-         <p>MANGO TOUR TRAVEL AGENCY | 대표: 김일선 | <a href="tel:+84377204451" className="hover:text-gold-400 transition ml-1 font-semibold">+84 37 720 4451</a> | 
+         <p>MANGO TOUR TRAVEL AGENCY | <a href="tel:+84377204451" className="hover:text-gold-400 transition ml-1 font-semibold">+84 37 720 4451</a> | 
            <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
              Kakao: <span className="font-bold">MANGO TOUR</span>
            </a>
@@ -872,7 +901,13 @@ const App: React.FC = () => {
              개인정보처리방침
            </button>
            <span className="text-gray-600">|</span>
-           <span>이용약관</span>
+           <button 
+             type="button"
+             onClick={() => navigateTo('terms')} 
+             className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer"
+           >
+             이용약관
+           </button>
            <span className="text-gray-600">|</span>
            <span>대표자: 김일선</span>
          </div>
@@ -1035,6 +1070,17 @@ const App: React.FC = () => {
               {authMode === 'signup' && (
                 <p className="text-[11px] text-gray-500 text-center pt-1">
                   가입 시 망고투어{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAuthModal(false);
+                      navigateTo('terms');
+                    }}
+                    className="text-gold-600 underline font-bold cursor-pointer"
+                  >
+                    이용약관
+                  </button>
+                  {' 및 '}
                   <button
                     type="button"
                     onClick={() => {
