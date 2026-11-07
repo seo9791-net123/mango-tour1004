@@ -814,9 +814,9 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
         catName = '골프 라운딩 (18홀)';
         qty = `${customGolfCourses.length}회 라운딩 × ${personCount}인`;
       } else if (opt.category === 'vehicle') {
-        const vehicleCount = Math.max(1, Math.ceil(personCount / 4));
+        const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
         catName = '전용 차량 & 기사';
-        qty = `${vehicleCount}대 (4인당 1대 기준)`;
+        qty = `${vehicleCount}대 (7인승 리무진 밴 기준)`;
       } else if (opt.category === 'guide') {
         const guideCount = Math.max(1, Math.ceil(personCount / 16));
         const travelDays = activePackage.itinerary?.length || 4;
@@ -838,7 +838,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
 
       let totalItemUSD = unitUSD * personCount;
       if (opt.category === 'vehicle') {
-        const vehicleCount = Math.max(1, Math.ceil(personCount / 4));
+        const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
         totalItemUSD = unitUSD * vehicleCount;
       } else if (opt.category === 'guide') {
         const guideCount = Math.max(1, Math.ceil(personCount / 16));

@@ -8,9 +8,18 @@ interface Props {
   isChatOpen: boolean;
   setIsChatOpen: (open: boolean) => void;
   onBack?: () => void;
+  unreadChatCount?: number;
 }
 
-const BottomNav: React.FC<Props> = ({ currentPage, selectedCategory, onNavigate, isChatOpen, setIsChatOpen, onBack }) => {
+const BottomNav: React.FC<Props> = ({ 
+  currentPage, 
+  selectedCategory, 
+  onNavigate, 
+  isChatOpen, 
+  setIsChatOpen, 
+  onBack,
+  unreadChatCount = 0
+}) => {
   const navItems = [
     { id: 'home', label: '홈', icon: '🏠' },
     { id: 'event', label: '이벤트', icon: '🎁', category: '이벤트' },
@@ -62,8 +71,13 @@ const BottomNav: React.FC<Props> = ({ currentPage, selectedCategory, onNavigate,
               }`}
               aria-label={item.label}
             >
-              <span className={`text-lg xs:text-xl sm:text-2xl transition-transform duration-200 ${isActive ? 'scale-110 -translate-y-0.5' : 'opacity-75'}`}>
+              <span className={`relative text-lg xs:text-xl sm:text-2xl transition-transform duration-200 ${isActive ? 'scale-110 -translate-y-0.5' : 'opacity-75'}`}>
                 {item.icon}
+                {item.id === 'chat' && unreadChatCount > 0 && !isChatOpen && (
+                  <span className="absolute -top-1.5 -right-2.5 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full min-w-4 text-center shadow-md animate-bounce ring-2 ring-white">
+                    {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                  </span>
+                )}
               </span>
               <span className={`text-[10px] xs:text-[11px] font-bold mt-0.5 tracking-tight ${isActive ? 'text-deepgreen font-extrabold' : 'text-gray-500'}`}>
                 {item.label}

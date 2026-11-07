@@ -455,11 +455,11 @@ const AdminDashboard: React.FC<Props> = ({
       },
       {
         category: '투어/차량',
-        detail: '전 일정 단독 VIP 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
+        detail: '전 일정 단독 VIP 7인승 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
         quantity: '{vehicleCount}대 (전일정 {days}일)',
-        amountUSD: 194, // 4인까지 리무진 밴 1대 전일정 기준
+        amountUSD: 100, // 7인승 리무진 밴 1일 $100 기준
         pricingType: 'vehicle',
-        perDay: false,
+        perDay: true,
         days: travelDays,
       },
       {
@@ -490,11 +490,11 @@ const AdminDashboard: React.FC<Props> = ({
     const items = [...(product.costItems || [])];
     items.push({
       category: defaultType === 'vehicle' ? '투어/차량' : defaultType === 'guide' ? '가이드' : '기타 항목',
-      detail: defaultType === 'vehicle' ? '전 일정 전용 리무진 밴' : defaultType === 'guide' ? '한국어 전문 가이드' : '세부 내역을 입력하세요',
+      detail: defaultType === 'vehicle' ? '전 일정 단독 VIP 7인승 전용 리무진 밴' : defaultType === 'guide' ? '한국어 전문 가이드' : '세부 내역을 입력하세요',
       quantity: defaultType === 'vehicle' ? '{vehicleCount}대 (전일정 {days}일)' : defaultType === 'guide' ? '{guideCount}명 (전일정 {days}일)' : '{personCount}인',
-      amountUSD: defaultType === 'guide' ? 120 : 50,
+      amountUSD: defaultType === 'guide' ? 120 : defaultType === 'vehicle' ? 100 : 50,
       pricingType: defaultType,
-      perDay: defaultType === 'guide',
+      perDay: defaultType === 'guide' || defaultType === 'vehicle',
     });
     handleProductFieldChange(productId, 'costItems', items);
   };
@@ -2000,7 +2000,7 @@ const AdminDashboard: React.FC<Props> = ({
                                    <>
                                      <div className="flex items-center justify-between text-[10px] text-amber-900 font-bold bg-amber-100/60 px-2 py-1 rounded-lg">
                                        <span>📅 여행 기간: 총 {pTravelDays}일차 일정 ({p.duration || '3박 5일'})</span>
-                                       <span className="text-gray-600 font-normal">차량: 4인당 1대 / 가이드: 16인당 1명 (일정 반영)</span>
+                                       <span className="text-gray-600 font-normal">차량: 7인승 1대(1일 $100) / 가이드: 16인당 1명 (일정 반영)</span>
                                      </div>
 
                                      <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
@@ -2044,16 +2044,17 @@ const AdminDashboard: React.FC<Props> = ({
                                                       type="button"
                                                       onClick={() => {
                                                         handleCostItemChange(p.id, cIdx, 'pricingType', 'vehicle');
-                                                        if (item.perDay === undefined) handleCostItemChange(p.id, cIdx, 'perDay', false);
+                                                        handleCostItemChange(p.id, cIdx, 'perDay', true);
+                                                        if (!item.amountUSD || item.amountUSD === 194) handleCostItemChange(p.id, cIdx, 'amountUSD', 100);
                                                       }}
                                                       className={`px-1.5 py-0.5 text-[9px] font-bold rounded cursor-pointer transition ${
                                                         isVehicle
                                                           ? 'bg-amber-600 text-white shadow-2xs'
                                                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                       }`}
-                                                      title="리무진 밴 기준 4인당 1대 (여행 기간 기준)"
+                                                      title="7인승 리무진 밴 기준 7인당 1대 (1일 $100, 여행 기간 기준)"
                                                     >
-                                                      🚐 차량(4인/1대)
+                                                      🚐 차량(7인/1대)
                                                     </button>
                                                     <button
                                                       type="button"
@@ -2136,7 +2137,7 @@ const AdminDashboard: React.FC<Props> = ({
                                               <div className="text-[10px] text-gray-500 flex items-center justify-between px-1">
                                                 {isVehicle && (
                                                   <span className="text-amber-800">
-                                                    💡 4인까지 1대 (${isPerDay ? (item.amountUSD || 0) * pTravelDays : (item.amountUSD || 0)} USD), 5~8인은 2대 적용
+                                                    💡 7인승 리무진 밴 기준 7인까지 1대 (1일 $100, ${pTravelDays}일: ${isPerDay ? (item.amountUSD || 100) * pTravelDays : (item.amountUSD || 100)} USD), 8~14인은 2대 적용
                                                   </span>
                                                 )}
                                                 {isGuide && (

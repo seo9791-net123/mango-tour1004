@@ -5,6 +5,7 @@ import IconMenu from './components/IconMenu';
 import VideoGallery from './components/VideoGallery';
 import CommunityBoard from './components/CommunityBoard';
 import ChatRoom from './components/ChatRoom';
+import ChatNotificationToast from './components/ChatNotificationToast';
 import QuotationModal from './components/QuotationModal';
 import AdminDashboard from './components/AdminDashboard';
 import CategoryPage from './components/CategoryPage';
@@ -19,7 +20,7 @@ import EventPage from './components/EventPage';
 import TripPlanner from './components/TripPlanner';
 import BottomNav from './components/BottomNav';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
-import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage, MasterOptionPool } from './types';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { firestoreService } from './services/firestoreService';
 import { debounce } from './utils/debounce';
 
@@ -47,7 +48,36 @@ const App: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(SUB_MENU_ITEMS);
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('mango_products_db');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const updated = parsed.map((p: Product) => {
+            if (p.costItems && p.costItems.length > 0) {
+              const updatedItems = p.costItems.map(item => {
+                if (item.category.includes('차량') && (item.amountUSD === 194 || item.amountUSD === 97 || !item.perDay)) {
+                  return {
+                    ...item,
+                    detail: '전 일정 단독 VIP 7인승 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
+                    quantity: '{vehicleCount}대 (전일정 {days}일)',
+                    amountUSD: 100,
+                    perDay: true,
+                    pricingType: 'vehicle' as const
+                  };
+                }
+                return item;
+              });
+              return { ...p, costItems: updatedItems };
+            }
+            return p;
+          });
+          return updated;
+        }
+      } catch {
+        // fallback
+      }
+    }
+    return INITIAL_PRODUCTS;
   });
   const [videos, setVideos] = useState<VideoItem[]>(() => {
     try {
@@ -200,8 +230,23 @@ const App: React.FC = () => {
   });
   const [showPopup, setShowPopup] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [incomingChatToast, setIncomingChatToast] = useState<ChatMessage | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isLocalMode, setIsLocalMode] = useState(false);
+
+  const handleIncomingChatMessage = (msg: ChatMessage) => {
+    if (!isChatOpen) {
+      setUnreadChatCount(prev => prev + 1);
+      setIncomingChatToast(msg);
+    }
+  };
+
+  const handleOpenChatFromToast = () => {
+    setIsChatOpen(true);
+    setUnreadChatCount(0);
+    setIncomingChatToast(null);
+  };
 
   // --- Session Persistence & URL Sync Handling ---
   useEffect(() => {
@@ -765,11 +810,23 @@ const App: React.FC = () => {
          <p className="mt-1">© MANGO TOUR. All rights reserved.</p>
       </footer>
 
+      {/* Real-time Chat Notification Toast */}
+      {incomingChatToast && !isChatOpen && (
+        <ChatNotificationToast 
+          message={incomingChatToast}
+          unreadCount={unreadChatCount}
+          onOpenChat={handleOpenChatFromToast}
+          onDismiss={() => setIncomingChatToast(null)}
+        />
+      )}
+
       <ChatRoom 
         user={user} 
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
-        onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} 
+        onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }}
+        onNewIncomingMessage={handleIncomingChatMessage}
+        onResetUnread={() => setUnreadChatCount(0)}
       />
 
       {/* Desktop Floating Chat Trigger & Back Button */}
@@ -789,12 +846,22 @@ const App: React.FC = () => {
         {!isChatOpen && (
           <button
             type="button"
-            onClick={() => setIsChatOpen(true)}
-            className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white rounded-full shadow-2xl font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-105 group cursor-pointer"
+            onClick={() => {
+              setIsChatOpen(true);
+              setUnreadChatCount(0);
+              setIncomingChatToast(null);
+            }}
+            className="relative flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white rounded-full shadow-2xl font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-105 group cursor-pointer"
           >
             <span className="text-base group-hover:scale-110 transition-transform">💬</span>
             <span>실시간 채팅</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            {unreadChatCount > 0 ? (
+              <span className="flex items-center gap-1 bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-md animate-bounce ring-2 ring-white">
+                {unreadChatCount > 9 ? '9+' : unreadChatCount}
+              </span>
+            ) : (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            )}
           </button>
         )}
       </div>
@@ -804,8 +871,15 @@ const App: React.FC = () => {
         selectedCategory={selectedCategory}
         onNavigate={(page, cat) => navigateTo(page as any, cat || null)}
         isChatOpen={isChatOpen} 
-        setIsChatOpen={setIsChatOpen} 
+        setIsChatOpen={(open) => {
+          setIsChatOpen(open);
+          if (open) {
+            setUnreadChatCount(0);
+            setIncomingChatToast(null);
+          }
+        }} 
         onBack={handleBackOneStep}
+        unreadChatCount={unreadChatCount}
       />
 
       {/* Popup Notification */}

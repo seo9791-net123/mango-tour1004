@@ -73,15 +73,15 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
   } else {
     // Base product fallback
     const basePriceUSD = product.price || 970;
-    // 4인당 리무진 밴 1대 기준
-    const vehicleCount = Math.max(1, Math.ceil(personCount / 4));
+    // 7인승 리무진 밴 1대 기준 (7인까지 1대, 1일 $100)
+    const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
     // 16인당 가이드 1명 기준
     const guideCount = Math.max(1, Math.ceil(personCount / 16));
 
     const golfUSD = Math.round(basePriceUSD * 0.45 * personCount);
     const hotelUSD = Math.round(basePriceUSD * 0.35 * personCount);
-    // 차량: 4인당 리무진 밴 1대 전 일정 기준 (~$194/대)
-    const vehicleUSD = Math.round(194 * vehicleCount);
+    // 차량: 7인승 리무진 밴 1대 1일 $100 기준
+    const vehicleUSD = 100 * travelDays * vehicleCount;
     // 가이드: 16인당 가이드 1명 기준 (1일 $120 * 여행일수)
     const guideUSD = 120 * travelDays * guideCount;
 
@@ -111,7 +111,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
       },
       {
         category: '투어/차량',
-        detail: '전 일정 단독 VIP 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
+        detail: '전 일정 단독 VIP 7인승 전용 리무진 밴 (공항 픽업/샌딩 + 골프장 + 시내 전용 기사/유류비 포함)',
         quantity: `${vehicleCount}대 (전일정 ${travelDays}일)`,
         amountKRW: vehicleUSD * USD_TO_KRW,
         amountUSD: vehicleUSD,

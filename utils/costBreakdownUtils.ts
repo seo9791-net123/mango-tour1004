@@ -23,7 +23,7 @@ export const getTravelDays = (duration?: string, itinerary?: Array<{ day: number
 
 /**
  * 항목명 기반 요금 산정 방식 자동 분류
- * - vehicle: 차량 (리무진 밴 등 - 4인당 1대 기준)
+ * - vehicle: 차량 (7인승 리무진 밴 등 - 7인당 1대 기준, 1일 $100)
  * - guide: 가이드 (한국어 가이드 등 - 16인당 1명 기준)
  * - person: 개인별 (항공권, 골프, 호텔 등 - 1인당 기준)
  */
@@ -44,7 +44,7 @@ export const getItemPricingType = (
 
 /**
  * 단일 경비 항목에 대한 총 금액 및 수량 계산
- * - 차량: 리무진 밴 기준 4인까지 1대 (5~8인 2대, 9~12인 3대...), 여행 기간(일수) 적용
+ * - 차량: 7인승 리무진 밴 기준 7인까지 1대 (8~14인 2대, 15~21인 3대...), 1일 $100 여행 기간(일수) 적용
  * - 가이드: 16인까지 1명 기준 (17~32인 2명...), 여행 기간(일수) 적용
  * - 개인 항목: 1인당 단가 * 인원수
  */
@@ -58,10 +58,12 @@ export const calculateCostItemTotal = (
   const baseRate = item.amountUSD || 0;
 
   if (pType === 'vehicle') {
-    // 4인당 리무진 밴 1대
-    const vehicleCount = Math.max(1, Math.ceil(personCount / 4));
-    const isPerDay = item.perDay !== undefined ? item.perDay : false;
-    const totalUSD = isPerDay ? Math.round(baseRate * days * vehicleCount) : Math.round(baseRate * vehicleCount);
+    // 7인승 리무진 밴 1대 기준 (1~7인: 1대, 8~14인: 2대, 15~21인: 3대...)
+    const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
+    // 1일 100$ 기준 (perDay가 false로 명시되지 않은 경우 true 기본 적용)
+    const isPerDay = item.perDay !== undefined ? item.perDay : true;
+    const effectiveRate = baseRate > 0 ? baseRate : 100;
+    const totalUSD = isPerDay ? Math.round(effectiveRate * days * vehicleCount) : Math.round(effectiveRate * vehicleCount);
 
     let qty = `${vehicleCount}대 (전일정 ${days}일)`;
     if (item.quantity && !item.quantity.includes('{personCount}')) {

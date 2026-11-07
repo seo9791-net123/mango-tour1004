@@ -1,8 +1,15 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, setLogLevel } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+
+// WebChannel 연결 재시도 등의 무해한 내부 경고 콘솔 노출 방지
+try {
+  setLogLevel('error');
+} catch {
+  // ignore
+}
 
 // URL 파라미터를 통한 다른 컴퓨터/기기 설정 자동 감지 및 저장 (?sync_config=... 또는 ?fb_config=...)
 if (typeof window !== 'undefined' && window.location) {
