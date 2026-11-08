@@ -217,8 +217,8 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
   const getDIYLocationImage = (loc: string) => {
     if (loc === '호치민') return 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200';
     if (loc === '붕따우') return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200';
-    if (loc === '달랏') return 'https://images.unsplash.com/photo-1511497584788-87676104235f?q=80&w=1200';
-    if (loc === '호치민+붕따우') return 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=1200';
+    if (loc === '달랏') return 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=1200';
+    if (loc === '호치민+붕따우') return 'https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=1200';
     if (loc === '호치민+달랏') return 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200';
     if (loc === '다낭/나트랑') return 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1200';
     return 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=1200';
@@ -1310,6 +1310,10 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                         <img
                           src={pkg.image}
                           alt={pkg.title}
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800';
+                          }}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>

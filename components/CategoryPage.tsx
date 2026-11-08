@@ -74,7 +74,15 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
             {products.map(product => (
               <div key={product.id} className="bg-white rounded-2xl shadow-sm overflow-hidden group hover:shadow-md transition duration-300 border border-gray-100 flex flex-col">
                 <div className="relative h-44 xs:h-48 overflow-hidden bg-gray-100">
-                  <img src={product.image} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                  <img 
+                    src={product.image} 
+                    alt={product.title} 
+                    loading="lazy"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800';
+                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                  />
                   <div className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
                     {product.duration}
                   </div>

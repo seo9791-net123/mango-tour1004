@@ -76,7 +76,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     id: 'p3',
     title: '무이네 사막 지프투어 & 골프 패키지',
     description: '사막의 낭만과 해변 골프의 즐거움을 동시에. 씨링크 CC 포함.',
-    image: 'https://images.unsplash.com/photo-1623122046188-4b775494d49e?q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?q=80&w=800',
     price: 840,
     location: '무이네',
     duration: '3박 5일',
@@ -625,9 +625,9 @@ export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
     location: '호치민+붕따우',
     duration: '4박 5일',
     golfCourses: ['더 블러프 호짬 CC (18홀)', '롱탄 CC (18홀)', '떤선녓 CC (18홀)'],
-    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=800',
     detailImages: [
-      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800',
+      'https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=800',
       'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800',
       'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800'
     ],
@@ -692,9 +692,9 @@ export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
     location: '달랏',
     duration: '4박 5일',
     golfCourses: ['달랏 팔레스 헤리티지 CC (36홀)', 'SAM 투옌람 CC (36홀)'],
-    image: 'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1610484826967-09c5720778c7?q=80&w=800',
     detailImages: [
-      'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=800',
+      'https://images.unsplash.com/photo-1610484826967-09c5720778c7?q=80&w=800',
       'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
       'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800'
     ],
@@ -726,9 +726,9 @@ export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
     location: '호치민+달랏',
     duration: '4박 5일',
     golfCourses: ['호치민 롱탄 CC (18홀)', '달랏 팔레스 CC (18홀)', 'SAM 투옌람 CC (18홀)'],
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=800',
     detailImages: [
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800',
+      'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=800',
       'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
       'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800'
     ],
@@ -760,9 +760,9 @@ export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
     location: '호치민',
     duration: '4박 5일',
     golfCourses: ['송베 CC (18홀)', '동나이 CC (18홀)', '떤선녓 CC (18홀)'],
-    image: 'https://images.unsplash.com/photo-1592919505780-30395071b483?q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=800',
     detailImages: [
-      'https://images.unsplash.com/photo-1592919505780-30395071b483?q=80&w=800',
+      'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?q=80&w=800',
       'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800',
       'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=800'
     ],
@@ -827,11 +827,11 @@ export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
     location: '달랏+붕따우',
     duration: '4박 5일',
     golfCourses: ['달랏 팔레스 CC (18홀)', 'SAM 투옌람 CC (18홀)', '더 블러프 호짬 CC (18홀)'],
-    image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=800',
+    image: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?q=80&w=800',
     detailImages: [
-      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=800',
+      'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?q=80&w=800',
       'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=800',
-      'https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800'
+      'https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=800'
     ],
     basePriceUSD: 1255,
     summary: '해발 1,500m 시원한 달랏 고원에서 2일간 상쾌한 힐링 골프를 즐기고, 붕따우 해변으로 내려와 세계 100대 더 블러프 CC에서 남중국해 바다를 가르는 이색 하이브리드 투어입니다.',

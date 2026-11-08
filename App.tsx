@@ -126,9 +126,20 @@ const App: React.FC = () => {
                 }
                 return item;
               });
-              return { ...p, costItems: updatedItems };
+              const initialTemplate = INITIAL_PRODUCTS.find(ip => ip.id === p.id);
+              return { 
+                ...p, 
+                image: initialTemplate?.image || p.image,
+                detailImages: initialTemplate?.detailImages || p.detailImages,
+                costItems: updatedItems 
+              };
             }
-            return p;
+            const initialTemplate = INITIAL_PRODUCTS.find(ip => ip.id === p.id);
+            return {
+              ...p,
+              image: initialTemplate?.image || p.image,
+              detailImages: initialTemplate?.detailImages || p.detailImages
+            };
           });
           return updated;
         }
@@ -331,6 +342,8 @@ const App: React.FC = () => {
 
       return {
         ...pkg,
+        image: template?.image || pkg.image,
+        detailImages: template?.detailImages || pkg.detailImages,
         subtitle: pkg.subtitle ? pkg.subtitle.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급') : pkg.subtitle,
         summary: pkg.summary ? pkg.summary.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급') : pkg.summary,
         basePriceUSD: defaultTotal > 0 ? defaultTotal : (template?.basePriceUSD || pkg.basePriceUSD),
@@ -553,6 +566,17 @@ const App: React.FC = () => {
         }
         setPageContents(data.pageContents);
         setPopup(data.popup);
+        if (data.products && data.products.length > 0) {
+          const syncedProducts = data.products.map((p: Product) => {
+            const template = INITIAL_PRODUCTS.find(ip => ip.id === p.id);
+            return {
+              ...p,
+              image: template?.image || p.image,
+              detailImages: template?.detailImages || p.detailImages
+            };
+          });
+          setProducts(syncedProducts);
+        }
         if (data.customPackages && data.customPackages.length > 0) {
           setCustomPackages(cleanCustomPackages(data.customPackages));
         }
