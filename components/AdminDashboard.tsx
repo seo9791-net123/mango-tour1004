@@ -448,7 +448,7 @@ const AdminDashboard: React.FC<Props> = ({
       },
       {
         category: '숙박(호텔)',
-        detail: `${p.location} 5성급 럭셔리 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)`,
+        detail: `${p.location} 고급 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)`,
         quantity: '{personCount}실 (1인실)',
         amountUSD: Math.round(singlePrice * 0.35),
         pricingType: 'person',
@@ -746,7 +746,7 @@ const AdminDashboard: React.FC<Props> = ({
       basePriceUSD: 910,
       image: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200',
       summary: '원하는 골프장과 숙소, 옵션을 내 맘대로 조합하는 맞춤형 패키지',
-      highlightBadges: ['54홀 라운딩', '전용 리무진 밴', '5성급 호텔'],
+      highlightBadges: ['54홀 라운딩', '전용 리무진 밴', '고급 호텔'],
       itinerary: [
         { day: 1, title: '공항 도착 & 호텔 체크인', activities: ['공항 전용 픽업', '호텔 체크인 및 시내 자유시간'] },
         { day: 2, title: '18홀 라운딩', activities: ['조식 후 골프장 이동', '18홀 라운딩', '석식 및 자유시간'] },
@@ -756,7 +756,7 @@ const AdminDashboard: React.FC<Props> = ({
       ],
       options: [
         { id: `opt-${Date.now()}-1`, category: 'golf', name: '3회 그린피 (54홀)', description: '전 일정 54홀 그린피', priceUSD: 450, isDefaultIncluded: true, isRequired: true },
-        { id: `opt-${Date.now()}-4`, category: 'hotel', name: '5성급 럭셔리 호텔 (4박 1인 객실 기준)', description: '시내 중심 5성급 특급 호텔 (1인 1실 단독 객실)', priceUSD: 320, isDefaultIncluded: true, isRequired: false },
+        { id: `opt-${Date.now()}-4`, category: 'hotel', name: '고급 호텔 (4박 1인 객실 기준)', description: '시내 중심 고급 특급 호텔 (1인 1실 단독 객실)', priceUSD: 320, isDefaultIncluded: true, isRequired: false },
         { id: `opt-${Date.now()}-5`, category: 'vehicle', name: '전용 VIP 리무진 밴 (전 일정)', description: '공항/골프장 전용 기사 포함', priceUSD: 140, isDefaultIncluded: true, isRequired: false },
       ]
     };
@@ -2601,7 +2601,7 @@ const AdminDashboard: React.FC<Props> = ({
                               className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gold-500"
                               value={editingPackage.highlightBadges?.join(', ') || ''}
                               onChange={(e) => handlePackageFieldChange(editingPackage.id, 'highlightBadges', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                              placeholder="예: 54홀 라운딩, 5성급 호텔, 전용 VIP 리무진"
+                              placeholder="예: 54홀 라운딩, 고급 호텔, 전용 VIP 리무진"
                             />
                             <div className="flex flex-wrap gap-1 mt-2">
                               {editingPackage.highlightBadges?.map((hb, hbIdx) => (
@@ -2918,7 +2918,7 @@ const AdminDashboard: React.FC<Props> = ({
                       <span>🌐</span> 맞춤 선택 풀(Pool) 관리 센터
                     </h3>
                     <p className="text-xs text-gray-500 mt-1 max-w-2xl leading-relaxed">
-                      고객이 여행 견적을 낼 때 각 일정별로 직접 선택/변경할 수 있는 <strong>골프장 리스트(호치민, 붕따우, 달랏 등)</strong> 및 <strong>숙박(5성급 호텔, 프라이빗 독채 풀빌라 등)</strong>의 마스터 풀입니다. 여기서 추가/수정된 내용은 플래너에 즉시 반영됩니다.
+                      고객이 여행 견적을 낼 때 각 일정별로 직접 선택/변경할 수 있는 <strong>골프장 리스트(호치민, 붕따우, 달랏 등)</strong> 및 <strong>숙박(고급 호텔, 프라이빗 독채 풀빌라 등)</strong>의 마스터 풀입니다. 여기서 추가/수정된 내용은 플래너에 즉시 반영됩니다.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -3145,7 +3145,7 @@ const AdminDashboard: React.FC<Props> = ({
                                 <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
                                   acc.type === 'pool_villa' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                                 }`}>
-                                  {acc.type === 'pool_villa' ? '독채 풀빌라' : acc.type === 'hotel_5star' ? '5성급 호텔' : acc.type === 'resort' ? '리조트' : '4성급 호텔'}
+                                  {acc.type === 'pool_villa' ? '독채 풀빌라' : acc.type === 'hotel_5star' ? '고급 호텔' : acc.type === 'resort' ? '리조트' : '4성급 호텔'}
                                 </span>
                                 {acc.badge && (
                                   <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
@@ -3173,7 +3173,7 @@ const AdminDashboard: React.FC<Props> = ({
                                   onChange={(e) => handleUpdateMasterOptionPoolItem('hotel', acc.id, 'type', e.target.value as any)}
                                   className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-bold outline-none"
                                 >
-                                  <option value="hotel_5star">5성급 호텔</option>
+                                  <option value="hotel_5star">고급 호텔</option>
                                   <option value="pool_villa">독채 풀빌라</option>
                                   <option value="resort">리조트</option>
                                   <option value="hotel_4star">4성급 호텔</option>
@@ -3389,7 +3389,7 @@ const AdminDashboard: React.FC<Props> = ({
                               onChange={(e) => setNewPoolItem({ ...newPoolItem, type: e.target.value as any })}
                               className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
                             >
-                              <option value="hotel_5star">5성급 호텔</option>
+                              <option value="hotel_5star">고급 호텔</option>
                               <option value="pool_villa">독채 풀빌라</option>
                               <option value="resort">리조트</option>
                               <option value="hotel_4star">4성급 호텔</option>

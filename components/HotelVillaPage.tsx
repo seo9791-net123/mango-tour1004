@@ -80,7 +80,7 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
          <div className="max-w-4xl mx-auto px-4">
             <h2 className="text-lg xs:text-xl font-bold mb-3 xs:mb-4 text-deepgreen">완벽한 휴식을 위한 큐레이션</h2>
             <div className="flex flex-wrap justify-center gap-1.5 xs:gap-2">
-               <span className="bg-white px-3 xs:px-4 py-1 rounded-full border border-gray-200 text-[10px] xs:text-xs font-bold text-gray-700 shadow-sm">#5성급호텔</span>
+               <span className="bg-white px-3 xs:px-4 py-1 rounded-full border border-gray-200 text-[10px] xs:text-xs font-bold text-gray-700 shadow-sm">#고급호텔</span>
                <span className="bg-white px-3 xs:px-4 py-1 rounded-full border border-gray-200 text-[10px] xs:text-xs font-bold text-gray-700 shadow-sm">#독채풀빌라</span>
                <span className="bg-white px-3 xs:px-4 py-1 rounded-full border border-gray-200 text-[10px] xs:text-xs font-bold text-gray-700 shadow-sm">#오션뷰리조트</span>
                <span className="bg-white px-3 xs:px-4 py-1 rounded-full border border-gray-200 text-[10px] xs:text-xs font-bold text-gray-700 shadow-sm">#시내중심</span>

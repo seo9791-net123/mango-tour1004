@@ -104,7 +104,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
       },
       {
         category: '숙박(호텔)',
-        detail: `${product.location} 5성급 럭셔리 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)`,
+        detail: `${product.location} 고급 호텔/리조트 (전 일정 1인 1실 단독 투숙, 조식 뷔페 포함)`,
         quantity: `${personCount}실 (1인실)`,
         amountKRW: hotelUSD * USD_TO_KRW,
         amountUSD: hotelUSD,

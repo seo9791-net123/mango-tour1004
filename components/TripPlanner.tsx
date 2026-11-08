@@ -254,19 +254,23 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
       diyHotelType === 'hotel_4star' ? 60 : 100;
     const hotelTotal = diyNights * nightRate;
 
+    const diyDays = diyNights + 1;
+    // 차량 비용: 7인승 1대 1일 $100 기준 (4인 기준 1인당 1일 $25 환산)
     const dayVehRate = 
-      diyVehicleType === 'vip_limousine' ? 24 :
-      diyVehicleType === 'transit_van' ? 18 : 16;
-    const vehicleTotal = (diyNights + 1) * dayVehRate;
+      diyVehicleType === 'vip_limousine' ? 25 :
+      diyVehicleType === 'transit_van' ? 20 : 18;
+    const vehicleTotal = diyDays * dayVehRate;
 
     // 가이드 비용: 1일 기준 $120 (4인 기준 1인당 1일 $30 환산)
-    const guideTotal = diyIncludeGuide ? (diyNights + 1) * 30 : 0;
-    const mealTotal = 
-      diyMealPlan === 'special' ? diyNights * 22 :
-      diyMealPlan === 'local' ? diyNights * 14 : 0;
-    const spaTotal = diyIncludeSpa ? 50 : 0;
+    const guideTotal = diyIncludeGuide ? diyDays * 30 : 0;
     // 패스트 트랙: 1인당 $60
     const fastTrackTotal = diyIncludeFastTrack ? 60 : 0;
+    // VIP 전신 마사지 (90분): 1인 $50 (기본 선택)
+    const spaTotal = diyIncludeSpa ? 50 : 0;
+    // 식사 플랜: 1인 1일 $50 기준 (특식 만찬 $50/일, 로컬 미식 $25/일, 자유 식사 $0) × diyNights
+    const mealTotal = 
+      diyMealPlan === 'special' ? diyNights * 50 :
+      diyMealPlan === 'local' ? diyNights * 25 : 0;
     const insuranceTotal = 15;
 
     return golfTotal + hotelTotal + vehicleTotal + guideTotal + mealTotal + spaTotal + fastTrackTotal + insuranceTotal;
@@ -279,19 +283,19 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
     const courses = diyGolfCourses.slice(0, diyRounds);
 
     const hotelName = 
-      diyHotelType === 'hotel_5star' ? `${diyLocation} 1군 5성급 럭셔리 호텔 (${diyNights}박/1인 객실 기준)` :
+      diyHotelType === 'hotel_5star' ? `${diyLocation} 1군 고급 호텔 (${diyNights}박/1인 객실 기준)` :
       diyHotelType === 'pool_villa' ? `${diyLocation} 최고급 독채 프라이빗 풀빌라 (${diyNights}박/1인 1실 배정)` :
       diyHotelType === 'hotel_4star' ? `${diyLocation} 중심가 4성급 실속 호텔 (${diyNights}박/1인 객실 기준)` :
       `${diyLocation} 프리미엄 골프 & 비치 리조트 (${diyNights}박/1인 객실 기준)`;
 
     const vehicleName = 
-      diyVehicleType === 'vip_limousine' ? `전 일정 단독 VIP 전용 리무진 밴 (${days}일간 기사/유류비 포함)` :
-      diyVehicleType === 'transit_van' ? `전 일정 단독 16인승 대용량 밴 (${days}일간 기사/유류비 포함)` :
-      `전 일정 단독 7인승 프리미엄 SUV (${days}일간)`;
+      diyVehicleType === 'vip_limousine' ? `전 일정 단독 VIP 전용 리무진 밴 (${days}일간 / 1대 1일 $100 기준)` :
+      diyVehicleType === 'transit_van' ? `전 일정 단독 16인승 대용량 밴 (${days}일간 / 1대 1일 $120 기준)` :
+      `전 일정 단독 7인승 프리미엄 SUV (${days}일간 / 1대 1일 $80 기준)`;
 
     const mealName = 
-      diyMealPlan === 'special' ? `프리미엄 웰컴 & 굿바이 특식 만찬 (석식 ${diyNights}회)` :
-      diyMealPlan === 'local' ? `로컬 대표 미식 탐방 플랜 (석식 ${diyNights}회)` :
+      diyMealPlan === 'special' ? `프리미엄 웰컴 & 굿바이 특식 만찬 (석식 ${diyNights}회 / 1일 $50)` :
+      diyMealPlan === 'local' ? `로컬 대표 미식 탐방 플랜 (석식 ${diyNights}회 / 1일 $25)` :
       `전 일정 자유 식사 (골프 클럽식 및 개별 자유식)`;
 
     // Dynamic Itinerary Generation
@@ -361,8 +365,8 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
         id: `diy-opt-vehicle`,
         category: 'vehicle',
         name: vehicleName,
-        description: '공항 픽업/샌딩 + 골프장 + 시내 투어 기사 포함 전용 차량 (유류비/통행료 일체 포함)',
-        priceUSD: days * (diyVehicleType === 'vip_limousine' ? 24 : diyVehicleType === 'transit_van' ? 18 : 16),
+        description: `공항 픽업/샌딩 + 골프장 + 시내 투어 기사/유류비 포함 전용 차량 (7인승 1대 1일 $100 × ${days}일 = $${days * 100}, 4인 기준 1인 $${days * 25})`,
+        priceUSD: days * (diyVehicleType === 'vip_limousine' ? 25 : diyVehicleType === 'transit_van' ? 20 : 18),
         isDefaultIncluded: true,
         isRequired: false,
         allowCustomSelection: true
@@ -371,7 +375,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
         id: `diy-opt-guide`,
         category: 'guide',
         name: `한국어 전문 가이드 전 일정 동행 (${days}일간 / 1일 기준 $120)`,
-        description: '골프 체크인/아웃 지원, 식당 예약, 통역 및 전 일정 올케어 (1일 $120 기준)',
+        description: `골프 체크인/아웃 지원, 식당 예약, 통역 및 전 일정 올케어 (가이드 1일 $120 × ${days}일 = $${days * 120}, 4인 기준 1인 $${days * 30})`,
         priceUSD: days * 30,
         isDefaultIncluded: diyIncludeGuide,
         isRequired: false,
@@ -388,22 +392,24 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
         allowCustomSelection: false
       },
       {
-        id: `diy-opt-meal`,
-        category: 'meal',
-        name: mealName,
-        description: diyMealPlan === 'free' ? '자유 식사 일정' : '베트남 고급 정통 코스, 대형 활어 씨푸드 만찬 등',
-        priceUSD: diyMealPlan === 'special' ? diyNights * 22 : diyMealPlan === 'local' ? diyNights * 14 : 0,
-        isDefaultIncluded: diyMealPlan !== 'free',
+        id: `diy-opt-spa`,
+        category: 'activity',
+        name: 'VIP 전신 힐링 마사지 (90분)',
+        description: '골프 라운딩 후 피로를 풀어주는 프리미엄 마사지 & 스파 케어 (기본 선택 포함)',
+        priceUSD: 50,
+        isDefaultIncluded: diyIncludeSpa,
         isRequired: false,
         allowCustomSelection: true
       },
       {
-        id: `diy-opt-spa`,
-        category: 'activity',
-        name: 'VIP 전신 힐링 마사지 (90분)',
-        description: '골프 라운딩 후 피로를 풀어주는 프리미엄 마사지 & 스파 케어',
-        priceUSD: 50,
-        isDefaultIncluded: diyIncludeSpa,
+        id: `diy-opt-meal`,
+        category: 'meal',
+        name: mealName,
+        description: diyMealPlan === 'free' 
+          ? '자유 식사 일정 (개별 취향에 따른 자유 식사 / 식사비 미포함)' 
+          : `베트남 대표 미식 석식 ${diyNights}회 (1인 1일 기준 $${diyMealPlan === 'special' ? 50 : 25} × ${diyNights}일 = $${diyMealPlan === 'special' ? diyNights * 50 : diyNights * 25})`,
+        priceUSD: diyMealPlan === 'special' ? diyNights * 50 : diyMealPlan === 'local' ? diyNights * 25 : 0,
+        isDefaultIncluded: diyMealPlan !== 'free',
         isRequired: false,
         allowCustomSelection: true
       },
@@ -730,17 +736,28 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
     if (hotelOpt && customOptionSelections[hotelOpt.id]) {
       return customOptionSelections[hotelOpt.id].name;
     }
-    return hotelOpt?.name || '호치민 1군 5성급 호텔 (4박/1인 객실 기준)';
+    return hotelOpt?.name || '호치민 1군 고급 호텔 (4박/1인 객실 기준)';
   };
 
-  // Calculate prices
-  const currentTotalPerPerson = activePackage
+  // Calculate prices matching QuotationModal standard (vehicle & guide scaled to group & travel schedule)
+  const pkgTravelDays = activePackage?.itinerary?.length || (activePackage?.duration?.includes('4박') ? 5 : 5);
+  const pkgVehicleCount = Math.max(1, Math.ceil(personCount / 7));
+  const pkgGuideCount = Math.max(1, Math.ceil(personCount / 16));
+
+  const currentTotalGroup = activePackage
     ? activePackage.options.reduce((sum, opt) => {
-        return selectedOptionIds.has(opt.id) ? sum + getOptionPrice(opt) : sum;
+        if (!selectedOptionIds.has(opt.id)) return sum;
+        if (opt.category === 'vehicle') {
+          return sum + (100 * pkgTravelDays * pkgVehicleCount);
+        }
+        if (opt.category === 'guide') {
+          return sum + (120 * pkgTravelDays * pkgGuideCount);
+        }
+        return sum + (getOptionPrice(opt) * personCount);
       }, 0)
     : 0;
 
-  const currentTotalGroup = currentTotalPerPerson * personCount;
+  const currentTotalPerPerson = personCount > 0 ? Math.round(currentTotalGroup / personCount) : 0;
   const USD_TO_KRW = 1360;
 
   const showToast = (msg: string) => {
@@ -815,19 +832,21 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
         qty = `${customGolfCourses.length}회 라운딩 × ${personCount}인`;
       } else if (opt.category === 'vehicle') {
         const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
+        const travelDays = activePackage.itinerary?.length || 5;
         catName = '전용 차량 & 기사';
-        qty = `${vehicleCount}대 (7인승 리무진 밴 기준)`;
+        qty = `${vehicleCount}대 (전일정 ${travelDays}일)`;
       } else if (opt.category === 'guide') {
         const guideCount = Math.max(1, Math.ceil(personCount / 16));
-        const travelDays = activePackage.itinerary?.length || 4;
+        const travelDays = activePackage.itinerary?.length || 5;
         catName = '한국어 전담 가이드';
         qty = `${guideCount}명 (전 일정 ${travelDays}일)`;
       } else if (opt.name.includes('패스트 트랙') || opt.name.includes('패스트트랙') || opt.id.includes('fasttrack')) {
         catName = '공항 VIP 의전';
         qty = `${personCount}인 (1인 $60)`;
       } else if (opt.category === 'meal') {
+        const mealNights = activePackage.itinerary?.length ? activePackage.itinerary.length - 1 : 4;
         catName = '식사 및 만찬';
-        qty = `전 일정 (${personCount}인)`;
+        qty = `${personCount}인 (석식 ${mealNights}회 / 1일 $50)`;
       } else if (opt.category === 'activity') {
         catName = '스파 & 힐링 케어';
         qty = `${personCount}인`;
@@ -836,13 +855,14 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
         qty = `${personCount}인`;
       }
 
+      const travelDays = activePackage.itinerary?.length || 5;
       let totalItemUSD = unitUSD * personCount;
       if (opt.category === 'vehicle') {
         const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
-        totalItemUSD = unitUSD * vehicleCount;
+        totalItemUSD = 100 * travelDays * vehicleCount;
       } else if (opt.category === 'guide') {
         const guideCount = Math.max(1, Math.ceil(personCount / 16));
-        totalItemUSD = unitUSD * guideCount;
+        totalItemUSD = 120 * travelDays * guideCount;
       }
 
       items.push({
@@ -1347,10 +1367,20 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                             </div>
                           </div>
 
-                          {/* 4박 5일 추천 패키지 핵심 기준 배너 (1인 객실 기준, 패스트트랙 60$ 선택, 가이드 1일 120$) */}
+                          {/* 4박 5일 추천 패키지 핵심 기준 배너 (차량 1일 $100, 가이드 1일 $120, 1인 객실 기준, 마사지 기본포함, 식사 선택) */}
                           <div className="mt-3 bg-gradient-to-r from-emerald-50/90 to-teal-50/70 rounded-2xl p-2.5 sm:p-3 border border-emerald-200/90 space-y-1.5 text-[11px] sm:text-xs">
                             <div className="flex items-center gap-1.5 text-blue-900 font-bold">
-                              <span className="shrink-0 text-blue-600">🏨</span>
+                              <span className="shrink-0 text-blue-600">🚐</span>
+                              <span className="text-gray-900 font-extrabold shrink-0">차량:</span>
+                              <span className="truncate">전용 리무진 밴 (7인승 1대 1일 $100 × 5일 = $500)</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-indigo-900 font-bold">
+                              <span className="shrink-0 text-indigo-700">👨‍💼</span>
+                              <span className="text-gray-900 font-extrabold shrink-0">가이드:</span>
+                              <span className="truncate">한국어 전문 가이드 (1일 기준 $120 × 5일 = $600)</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
+                              <span className="shrink-0 text-emerald-700">🏨</span>
                               <span className="text-gray-900 font-extrabold shrink-0">숙박:</span>
                               <span className="truncate">1인 객실 기준 (전 일정 1인 1실 단독 투숙)</span>
                             </div>
@@ -1360,9 +1390,14 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                               <span className="truncate">공항 VIP 패스트 트랙 (1인당 $60) 선택 가능</span>
                             </div>
                             <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
-                              <span className="shrink-0 text-emerald-700">👨‍💼</span>
-                              <span className="text-gray-900 font-extrabold shrink-0">가이드:</span>
-                              <span className="truncate">한국어 전문 가이드 (1일 기준 $120)</span>
+                              <span className="shrink-0 text-emerald-700">💆</span>
+                              <span className="text-gray-900 font-extrabold shrink-0">마사지:</span>
+                              <span className="truncate">VIP 전신 힐링 마사지 (90분) 기본 포함</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-orange-950 font-bold">
+                              <span className="shrink-0 text-orange-600">🍽️</span>
+                              <span className="text-gray-900 font-extrabold shrink-0">식사:</span>
+                              <span className="truncate">석식 플랜 (1인 1일 $50 × 4일 = $200) 선택 가능</span>
                             </div>
                           </div>
                         </div>
@@ -1643,7 +1678,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                     <label className="text-xs md:text-sm font-bold text-gray-700 block mb-2">🏨 기본 숙박 형태 ({diyNights}박 기준)</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
-                        { id: 'hotel_5star', name: '5성급 럭셔리 호텔', desc: '시내 중심, 조식 뷔페, 수영장 완비', icon: '⭐' },
+                        { id: 'hotel_5star', name: '고급 호텔', desc: '시내 중심, 조식 뷔페, 수영장 완비', icon: '⭐' },
                         { id: 'pool_villa', name: '독채 프라이빗 풀빌라', desc: '단독 수영장, 바베큐 파티 가능', icon: '🏊' },
                         { id: 'hotel_4star', name: '4성급 실속 호텔', desc: '가성비 뛰어난 중심가 호텔', icon: '🏢' },
                         { id: 'resort', name: '골프&비치 리조트', desc: '해변/골프장 인접 최고급 휴양', icon: '🏖️' },
@@ -1755,32 +1790,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                       </span>
                     </div>
 
-                    {/* Meal Plan */}
-                    <div className="p-3 md:p-3.5 bg-gray-50 rounded-2xl border border-gray-200">
-                      <div className="text-xs md:text-sm font-bold text-gray-900 mb-1.5">석식 플랜 ({diyNights}회)</div>
-                      <div className="flex gap-1">
-                        {[
-                          { id: 'special', label: '특식 만찬' },
-                          { id: 'local', label: '로컬 미식' },
-                          { id: 'free', label: '자유 식사' },
-                        ].map((m) => (
-                          <button
-                            key={m.id}
-                            type="button"
-                            onClick={() => setDiyMealPlan(m.id as any)}
-                            className={`flex-1 py-1 md:py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition cursor-pointer ${
-                              diyMealPlan === m.id
-                                ? 'bg-deepgreen text-white shadow-2xs'
-                                : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                            }`}
-                          >
-                            {m.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Spa & Massage */}
+                    {/* Spa & Massage (마사지 - 기본 선택 포함) */}
                     <div 
                       onClick={() => setDiyIncludeSpa(!diyIncludeSpa)}
                       className={`p-3 md:p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${
@@ -1795,13 +1805,64 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                           className="w-4 h-4 md:w-5 md:h-5 rounded text-deepgreen accent-deepgreen cursor-pointer"
                         />
                         <div>
-                          <div className="font-extrabold text-xs md:text-sm text-gray-900">VIP 전신 마사지 (90분)</div>
-                          <div className="text-[10px] md:text-xs text-gray-500">라운딩 피로 회복 스파 케어</div>
+                          <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1.5">
+                            <span>💆 VIP 전신 마사지 (90분)</span>
+                            <span className="text-[10px] md:text-xs text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded font-bold">1인 $50</span>
+                          </div>
+                          <div className="text-[10px] md:text-xs text-gray-500">라운딩 피로 회복 프리미엄 스파 케어 (기본 선택)</div>
                         </div>
                       </div>
                       <span className="text-xs md:text-sm font-bold text-deepgreen">
-                        {diyIncludeSpa ? '포함' : '미포함'}
+                        {diyIncludeSpa ? '포함 ($50)' : '미포함'}
                       </span>
+                    </div>
+
+                    {/* Meal Plan (식사 - 일자별 1인 1일 $50 기준 적용 및 선택 가능) */}
+                    <div className="p-3 md:p-3.5 bg-gray-50 rounded-2xl border border-gray-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm md:text-base">🍽️</span>
+                          <span className="text-xs md:text-sm font-bold text-gray-900">
+                            석식 플랜 선택 ({diyNights}일 석식)
+                          </span>
+                        </div>
+                        <span className="text-xs md:text-sm font-bold text-amber-800">
+                          {diyMealPlan === 'special' ? `포함 ($${diyNights * 50})` : diyMealPlan === 'local' ? `포함 ($${diyNights * 25})` : '미포함 ($0)'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { id: 'special', label: '특식 만찬', dailyRate: 50, desc: '씨푸드&BBQ' },
+                          { id: 'local', label: '로컬 미식', dailyRate: 25, desc: '대표 현지식' },
+                          { id: 'free', label: '자유 식사', dailyRate: 0, desc: '미포함 ($0)' },
+                        ].map((m) => {
+                          const isSelected = diyMealPlan === m.id;
+                          const total = m.dailyRate * diyNights;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => setDiyMealPlan(m.id as any)}
+                              className={`p-2 rounded-xl text-center transition cursor-pointer flex flex-col justify-between ${
+                                isSelected
+                                  ? 'bg-deepgreen text-white shadow-sm ring-2 ring-deepgreen/20'
+                                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                              }`}
+                            >
+                              <div className="text-xs font-extrabold">{m.label}</div>
+                              <div className={`text-[10px] font-semibold mt-0.5 ${isSelected ? 'text-amber-300' : 'text-gray-500'}`}>
+                                {m.dailyRate > 0 ? `1일 $${m.dailyRate}` : '선택 안함'}
+                              </div>
+                              <div className={`text-[11px] font-black mt-1 ${isSelected ? 'text-white' : 'text-deepgreen'}`}>
+                                {total > 0 ? `${diyNights}일 $${total}` : '$0'}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="text-[10px] text-gray-500 text-center">
+                        * 1인 1일 기준 단가 × {diyNights}일 적용 ({diyMealPlan === 'special' ? `특식 만찬: 1일 $50 × ${diyNights}일 = 총 $${diyNights * 50}` : diyMealPlan === 'local' ? `로컬 미식: 1일 $25 × ${diyNights}일 = 총 $${diyNights * 25}` : '자유 식사 선택 시 식사비 미포함 $0'})
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2090,6 +2151,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                                         <span>⚡</span> 1인당 $60 선택 추가
                                       </span>
                                     )}
+                                    {option.category === 'vehicle' && (
+                                      <span className="text-[10px] md:text-xs text-blue-900 font-bold bg-blue-100/80 border border-blue-300 px-1.5 py-0.5 rounded">
+                                        7인승 1대 1일 $100 기준
+                                      </span>
+                                    )}
                                     {option.category === 'hotel' && (
                                       <span className="text-[10px] md:text-xs text-blue-900 font-bold bg-blue-100/80 border border-blue-300 px-1.5 py-0.5 rounded">
                                         1인 1실 단독 투숙
@@ -2098,6 +2164,16 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                                     {option.category === 'guide' && (
                                       <span className="text-[10px] md:text-xs text-indigo-900 font-bold bg-indigo-100/80 border border-indigo-300 px-1.5 py-0.5 rounded">
                                         1일 기준 $120
+                                      </span>
+                                    )}
+                                    {(option.category === 'activity' && option.name.includes('마사지')) && (
+                                      <span className="text-[10px] md:text-xs text-emerald-950 font-bold bg-emerald-100/80 border border-emerald-300 px-1.5 py-0.5 rounded">
+                                        기본 선택 포함 ($50)
+                                      </span>
+                                    )}
+                                    {option.category === 'meal' && (
+                                      <span className="text-[10px] md:text-xs text-orange-950 font-bold bg-orange-100/80 border border-orange-300 px-1.5 py-0.5 rounded">
+                                        1인 1일 $50 기준 (4일 $200 선택 가능)
                                       </span>
                                     )}
                                     {isCustomized && (
@@ -2187,7 +2263,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                               {/* Right: Quick indicator */}
                               <div className="text-[10px] md:text-xs text-gray-400 font-medium truncate max-w-full">
                                 {option.category === 'golf' && `현재: ${customGolfCourses.map(c => c.split(' ')[0]).join(' · ')}`}
-                                {option.category === 'hotel' && `현재: ${customOptionSelections[option.id]?.name || '기본 5성급 호텔'}`}
+                                {option.category === 'hotel' && `현재: ${customOptionSelections[option.id]?.name || '기본 고급 호텔'}`}
                               </div>
                             </div>
 
@@ -2247,7 +2323,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
 
                                         <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200/60">
                                           <span className="text-[10px] md:text-xs font-bold text-gray-400">
-                                            {choice.type === 'pool_villa' ? '🏊 독채 풀빌라' : choice.type === 'hotel_5star' ? '⭐ 5성급' : '기본 옵션'}
+                                            {choice.type === 'pool_villa' ? '🏊 독채 풀빌라' : choice.type === 'hotel_5star' ? '⭐ 고급 호텔' : '기본 옵션'}
                                           </span>
                                           <span className={`text-[11px] md:text-xs font-black ${
                                             choice.priceDeltaUSD === 0 ? 'text-gray-600' : choice.priceDeltaUSD > 0 ? 'text-emerald-700' : 'text-blue-600'
@@ -3021,12 +3097,13 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                       ))
                     ) : (
                       <div className="text-xs md:text-sm text-gray-600 space-y-1">
-                        <div>• 전 일정 단독 전용 차량 및 공항 픽업 포함</div>
+                        <div>• 전 일정 단독 전용 차량 포함 (7인승 1대 1일 $100 기준)</div>
                         <div>• {diyRounds}회 18홀 명문 골프장 그린피 포함</div>
                         <div>• {getChosenAccommodationName()} (1인 1실) 숙박 포함</div>
                         <div>• {diyIncludeGuide ? '한국어 전문 가이드 포함 (1일 기준 $120)' : '자유 일정 (기사 온리)'}</div>
                         <div>• {diyIncludeFastTrack ? '공항 VIP 패스트 트랙 포함 (1인당 $60)' : '패스트 트랙 미포함'}</div>
                         <div>• {diyIncludeSpa ? 'VIP 전신 마사지 (90분) 포함' : '마사지 미포함'}</div>
+                        <div>• {diyMealPlan === 'special' ? `프리미엄 특식 만찬 포함 (${diyNights}일: $${diyNights * 50})` : diyMealPlan === 'local' ? `로컬 미식 포함 (${diyNights}일: $${diyNights * 25})` : '자유 식사 (식사비 미포함)'}</div>
                       </div>
                     )}
                   </div>
@@ -3628,7 +3705,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                   </span>
                 </h3>
                 <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
-                  {customizingOption.category === 'hotel' ? '고객님의 여행 스타일과 일정에 맞춰 5성급 럭셔리 호텔, 단독 프라이빗 풀빌라, 싱글룸(1인 1실) 등을 자유롭게 선택하세요.' :
+                  {customizingOption.category === 'hotel' ? '고객님의 여행 스타일과 일정에 맞춰 고급 호텔, 단독 프라이빗 풀빌라, 싱글룸(1인 1실) 등을 자유롭게 선택하세요.' :
                    customizingOption.category === 'vehicle' ? '여행 인원수와 탑승 스타일에 최적화된 VIP 리무진 밴, 16인승 밴, 대형 버스 등 최적의 전용 차량을 선택할 수 있습니다.' :
                    customizingOption.category === 'guide' ? '한국어 전문 가이드의 밀착 의전 케어 또는 일정 간섭 없는 드라이버 온리 자유 일정을 선택할 수 있습니다.' :
                    customizingOption.category === 'meal' ? '전 일정 최고급 씨푸드 바베큐 만찬, 로컬 숨은 미식 탐방, 또는 자유 식사 중 원하는 플랜을 선택하세요.' :
@@ -3735,7 +3812,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { id: '전체', label: '전체 형태' },
-                        { id: 'hotel_5star', label: '⭐ 5성급 호텔' },
+                        { id: 'hotel_5star', label: '⭐ 고급 호텔' },
                         { id: 'pool_villa', label: '🏊 프라이빗 독채 풀빌라' },
                         { id: 'hotel_4star', label: '🏬 4성급 부티크 호텔' },
                         { id: 'resort', label: '🏖️ 특급 리조트' },
@@ -3815,7 +3892,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                               )}
                               <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded">
                                 {choice.type === 'pool_villa' ? '🏊 독채 풀빌라' :
-                                 choice.type === 'hotel_5star' ? '⭐ 5성급' :
+                                 choice.type === 'hotel_5star' ? '⭐ 고급 호텔' :
                                  choice.type === 'hotel_4star' ? '🏬 4성급' :
                                  choice.type === 'resort' ? '🏖️ 리조트' :
                                  choice.type === 'vehicle' ? '🚐 전용 차량' :

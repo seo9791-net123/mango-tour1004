@@ -118,6 +118,12 @@ const App: React.FC = () => {
                     pricingType: 'vehicle' as const
                   };
                 }
+                if (item.category.includes('숙박') || item.category.includes('호텔')) {
+                  return {
+                    ...item,
+                    detail: item.detail.replace(/5성급\s*럭셔리\s*호텔/g, '고급 호텔').replace(/5성급\s*호텔/g, '고급 호텔')
+                  };
+                }
                 return item;
               });
               return { ...p, costItems: updatedItems };
@@ -152,7 +158,7 @@ const App: React.FC = () => {
       // Find matching template in INITIAL_CUSTOM_PACKAGES if it's one of preset packages (pkg-1 ~ pkg-10)
       const template = INITIAL_CUSTOM_PACKAGES.find(t => t.id === pkg.id);
       
-      let baseOptions = template && (!pkg.options || pkg.options.length < 5) 
+      let baseOptions = template && pkg.id.startsWith('pkg-')
         ? [...template.options] 
         : [...(pkg.options || [])];
 
@@ -189,37 +195,47 @@ const App: React.FC = () => {
         });
       }
 
-      // 2. Ensure Guide option is 1일 기준 $120
+      // 2. Ensure Vehicle option matches 5-day travel schedule (1대 1일 $100 기준, 5일간 $500 -> 4인 기준 1인 $125)
       baseOptions = baseOptions.map(opt => {
-        if (opt.category === 'guide' || opt.name.includes('가이드')) {
-          let updatedName = opt.name;
-          if (!updatedName.includes('120$')) {
-            updatedName = updatedName.replace(/\(1일.*?기준.*?\)/g, '').replace(/\$\d+/g, '').trim() + ' (1일 기준 $120)';
-          }
-          let updatedDesc = opt.description || '';
-          if (!updatedDesc.includes('120')) {
-            updatedDesc = updatedDesc ? `${updatedDesc} (1일 $120 기준)` : '골프 체크인 및 전 일정 의전 케어 (1일 $120 기준)';
-          }
+        if (opt.category === 'vehicle') {
           return {
             ...opt,
-            name: updatedName,
-            description: updatedDesc,
-            priceUSD: 120
+            name: '전 일정 단독 VIP 전용 리무진 밴 (5일간 / 1일 $100 기준)',
+            description: '공항 픽업/샌딩 + 골프장 + 시내 투어 기사/유류비 포함 (7인승 1대 1일 $100 × 5일 = $500, 4인 기준 1인 $125)',
+            priceUSD: 125,
+            isDefaultIncluded: true
           };
         }
         return opt;
       });
 
-      // 3. Ensure Lodging option is 1인 객실 기준 (1인 1실)
+      // 3. Ensure Guide option matches 5-day travel schedule (1일 $120 기준, 5일간 $600 -> 4인 기준 1인 $150)
+      baseOptions = baseOptions.map(opt => {
+        if (opt.category === 'guide' || opt.name.includes('가이드')) {
+          return {
+            ...opt,
+            name: '한국어 전문 가이드 전 일정 동행 (5일간 / 1일 기준 $120)',
+            description: '골프 체크인/아웃 지원, 일정 조율 및 시내 올케어 (가이드 1일 $120 × 5일 = $600, 4인 기준 1인 $150)',
+            priceUSD: 150
+          };
+        }
+        return opt;
+      });
+
+      // 4. Ensure Lodging option is 1인 객실 기준 (1인 1실) and 5성급 is updated to 고급 호텔
       baseOptions = baseOptions.map(opt => {
         if (opt.category === 'hotel') {
           let updatedName = opt.name
+            .replace(/5성급\s*호텔/g, '고급 호텔')
+            .replace(/5성급/g, '고급')
             .replace(/2인\s*1실/g, '1인 객실 기준')
             .replace(/2인1실/g, '1인 객실 기준');
           if (!updatedName.includes('1인')) {
             updatedName = `${updatedName} (1인 객실 기준)`;
           }
-          let updatedDesc = opt.description || '';
+          let updatedDesc = (opt.description || '')
+            .replace(/5성급\s*호텔/g, '고급 호텔')
+            .replace(/5성급/g, '고급');
           if (!updatedDesc.includes('1인 1실') && !updatedDesc.includes('1인실')) {
             updatedDesc = updatedDesc ? `${updatedDesc} (전 일정 1인 1실 단독 객실)` : '전 일정 1인 1실 단독 객실 사용 & 조식 포함';
           }
@@ -232,8 +248,81 @@ const App: React.FC = () => {
         return opt;
       });
 
-      // Highlight Badges
-      let badges = pkg.highlightBadges ? [...pkg.highlightBadges] : ['4박 5일'];
+      // 5. Ensure Massage option is default included ($50)
+      const hasMassage = baseOptions.some(opt => opt.name.includes('마사지') || opt.id.includes('spa'));
+      if (!hasMassage) {
+        baseOptions.push({
+          id: `opt-${pkg.id}-spa`,
+          category: 'activity',
+          name: 'VIP 전신 힐링 마사지 (90분)',
+          description: '골프 라운딩 후 피로를 풀어주는 프리미엄 마사지 & 스파 케어 (기본 선택 포함)',
+          priceUSD: 50,
+          isDefaultIncluded: true
+        });
+      } else {
+        baseOptions = baseOptions.map(opt => {
+          if (opt.name.includes('마사지') || opt.id.includes('spa')) {
+            const desc = opt.description || '골프 라운딩 후 피로를 풀어주는 프리미엄 마사지 & 스파 케어';
+            return {
+              ...opt,
+              category: 'activity',
+              name: opt.name.includes('VIP') ? opt.name : 'VIP 전신 힐링 마사지 (90분)',
+              description: desc.includes('기본 선택 포함') ? desc : `${desc} (기본 선택 포함)`,
+              priceUSD: 50,
+              isDefaultIncluded: true
+            };
+          }
+          return opt;
+        });
+      }
+
+      // 6. Ensure Meal option is selectable (isDefaultIncluded: false) with 1일 $50 × 4일 = $200 pricing
+      const hasMeal = baseOptions.some(opt => opt.category === 'meal' || opt.name.includes('특식') || opt.name.includes('석식'));
+      if (!hasMeal) {
+        baseOptions.push({
+          id: `opt-${pkg.id}-meal`,
+          category: 'meal',
+          name: '프리미엄 웰컴 & 굿바이 특식 만찬 (석식 4회 / 1일 $50)',
+          description: '1인 1일 $50 × 4일 = 총 $200 / 최고급 정통 베트남식, 씨푸드 만찬, 숯불 바베큐',
+          priceUSD: 200,
+          isDefaultIncluded: false
+        });
+      } else {
+        baseOptions = baseOptions.map(opt => {
+          if (opt.category === 'meal' || opt.name.includes('특식') || opt.name.includes('석식')) {
+            return {
+              ...opt,
+              category: 'meal',
+              name: '프리미엄 웰컴 & 굿바이 특식 만찬 (석식 4회 / 1일 $50)',
+              description: '1인 1일 $50 × 4일 = 총 $200 / 최고급 정통 베트남식, 씨푸드 만찬, 숯불 바베큐',
+              priceUSD: 200,
+              isDefaultIncluded: false
+            };
+          }
+          return opt;
+        });
+      }
+
+      // 7. Sort options order: golf (1) -> hotel (2) -> vehicle (3) -> guide (4) -> etc (5) -> activity/massage (6) -> meal (7) -> other (8)
+      const catOrder: Record<string, number> = {
+        golf: 1,
+        hotel: 2,
+        vehicle: 3,
+        guide: 4,
+        etc: 5,
+        activity: 6,
+        meal: 7
+      };
+      baseOptions.sort((a, b) => {
+        const orderA = catOrder[a.category] ?? 8;
+        const orderB = catOrder[b.category] ?? 8;
+        return orderA - orderB;
+      });
+
+      // Highlight Badges & Text Update (5성급 -> 고급 호텔)
+      let badges = (pkg.highlightBadges ? [...pkg.highlightBadges] : ['4박 5일']).map(b => 
+        b.replace(/5성급\s*호텔/g, '고급 호텔').replace(/호치민 5성급/g, '호치민 고급 호텔').replace(/달랏 5성급 리조트/g, '달랏 고급 리조트').replace(/5성급/g, '고급')
+      );
       if (!badges.includes('1인 1실 숙박')) {
         badges.splice(1, 0, '1인 1실 숙박');
       }
@@ -242,6 +331,8 @@ const App: React.FC = () => {
 
       return {
         ...pkg,
+        subtitle: pkg.subtitle ? pkg.subtitle.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급') : pkg.subtitle,
+        summary: pkg.summary ? pkg.summary.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급') : pkg.summary,
         basePriceUSD: defaultTotal > 0 ? defaultTotal : (template?.basePriceUSD || pkg.basePriceUSD),
         highlightBadges: badges,
         options: baseOptions
@@ -254,8 +345,9 @@ const App: React.FC = () => {
       ...pool,
       accommodations: (pool.accommodations || []).map(acc => ({
         ...acc,
-        name: acc.name.replace(/2인\s*1실/g, '1인 객실 기준').replace(/2인1실/g, '1인 객실 기준'),
-        description: acc.description.replace(/2인\s*1실/g, '1인 1실').replace(/2인1실/g, '1인 1실')
+        name: acc.name.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급').replace(/2인\s*1실/g, '1인 객실 기준').replace(/2인1실/g, '1인 객실 기준'),
+        description: acc.description.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급').replace(/2인\s*1실/g, '1인 1실').replace(/2인1실/g, '1인 1실'),
+        badge: acc.badge ? acc.badge.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급\s*1인실/g, '고급 호텔 1인실').replace(/5성급/g, '고급') : acc.badge
       })),
       guides: (pool.guides || []).map(gui => {
         if (gui.id === 'gui-1' || gui.name.includes('가이드')) {
