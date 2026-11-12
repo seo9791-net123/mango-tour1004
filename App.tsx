@@ -23,7 +23,7 @@ import Privacy from './components/Privacy';
 import Terms from './components/Terms';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
 import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
-import { firestoreService } from './services/firestoreService';
+import { supabaseService } from './services/supabaseService';
 import { debounce } from './utils/debounce';
 
 const App: React.FC = () => {
@@ -97,8 +97,26 @@ const App: React.FC = () => {
   ]);
 
   // Data State
-  const [heroImages, setHeroImages] = useState<string[]>(HERO_IMAGES);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(SUB_MENU_ITEMS);
+  const [heroImages, setHeroImages] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('mango_hero_images_db');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return HERO_IMAGES;
+  });
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mango_menu_items_db');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return SUB_MENU_ITEMS;
+  });
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('mango_products_db');
     if (saved) {
@@ -126,20 +144,9 @@ const App: React.FC = () => {
                 }
                 return item;
               });
-              const initialTemplate = INITIAL_PRODUCTS.find(ip => ip.id === p.id);
-              return { 
-                ...p, 
-                image: initialTemplate?.image || p.image,
-                detailImages: initialTemplate?.detailImages || p.detailImages,
-                costItems: updatedItems 
-              };
+              return { ...p, costItems: updatedItems };
             }
-            const initialTemplate = INITIAL_PRODUCTS.find(ip => ip.id === p.id);
-            return {
-              ...p,
-              image: initialTemplate?.image || p.image,
-              detailImages: initialTemplate?.detailImages || p.detailImages
-            };
+            return p;
           });
           return updated;
         }
@@ -342,8 +349,6 @@ const App: React.FC = () => {
 
       return {
         ...pkg,
-        image: template?.image || pkg.image,
-        detailImages: template?.detailImages || pkg.detailImages,
         subtitle: pkg.subtitle ? pkg.subtitle.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급') : pkg.subtitle,
         summary: pkg.summary ? pkg.summary.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급') : pkg.summary,
         basePriceUSD: defaultTotal > 0 ? defaultTotal : (template?.basePriceUSD || pkg.basePriceUSD),
@@ -468,66 +473,87 @@ const App: React.FC = () => {
     }
   }, [videos]);
 
-  // --- Firestore Integration Handlers ---
+  // Persist hero images locally
+  useEffect(() => {
+    try {
+      localStorage.setItem('mango_hero_images_db', JSON.stringify(heroImages));
+    } catch (e) {
+      console.warn("Failed to persist hero images:", e);
+    }
+  }, [heroImages]);
+
+  // Persist menu items locally
+  useEffect(() => {
+    try {
+      localStorage.setItem('mango_menu_items_db', JSON.stringify(menuItems));
+    } catch (e) {
+      console.warn("Failed to persist menu items:", e);
+    }
+  }, [menuItems]);
+
+  // --- Supabase Cloud Integration Handlers ---
 
   // Debounced Sync Functions
   const isSyncing = useRef<Record<string, boolean>>({});
 
   const debouncedSyncProducts = useRef(debounce(async (newProducts: Product[]) => {
-    if (isLocalMode || isSyncing.current['products']) return;
+    if (isSyncing.current['products']) return;
     isSyncing.current['products'] = true;
     try {
-      await firestoreService.syncCollection('products', newProducts);
+      await supabaseService.syncCollection('products', newProducts);
     } finally {
       isSyncing.current['products'] = false;
     }
-  }, 3000)).current;
+  }, 2000)).current;
 
   const debouncedSyncVideos = useRef(debounce(async (newVideos: VideoItem[]) => {
-    if (isLocalMode || isSyncing.current['videos']) return;
+    if (isSyncing.current['videos']) return;
     isSyncing.current['videos'] = true;
     try {
-      await firestoreService.syncCollection('videos', newVideos);
+      await supabaseService.syncCollection('videos', newVideos);
     } finally {
       isSyncing.current['videos'] = false;
     }
-  }, 3000)).current;
+  }, 2000)).current;
 
   const debouncedSyncPosts = useRef(debounce(async (newPosts: CommunityPost[]) => {
-    if (isLocalMode || isSyncing.current['posts']) return;
+    if (isSyncing.current['posts']) return;
     isSyncing.current['posts'] = true;
     try {
-      await firestoreService.syncCollection('posts', newPosts);
+      await supabaseService.syncCollection('posts', newPosts);
     } finally {
       isSyncing.current['posts'] = false;
     }
-  }, 3000)).current;
+  }, 2000)).current;
 
   const debouncedSyncPages = useRef(debounce(async (newContents: Record<string, PageContent>) => {
-    if (isLocalMode || isSyncing.current['pages']) return;
+    if (isSyncing.current['pages']) return;
     isSyncing.current['pages'] = true;
     try {
-      await firestoreService.syncAllPages(newContents);
+      const promises = Object.entries(newContents).map(([pageId, content]) => 
+        supabaseService.savePageContent(pageId, content)
+      );
+      await Promise.all(promises);
     } finally {
       isSyncing.current['pages'] = false;
     }
-  }, 5000)).current;
+  }, 3000)).current;
 
   const debouncedSyncSettings = useRef(debounce(async (key: 'heroImages' | 'menuItems', data: any) => {
-    if (isLocalMode || isSyncing.current[`settings_${key}`]) return;
+    if (isSyncing.current[`settings_${key}`]) return;
     isSyncing.current[`settings_${key}`] = true;
     try {
-      await firestoreService.saveSettings(key, data);
+      await supabaseService.saveSettings(key, data);
     } finally {
       isSyncing.current[`settings_${key}`] = false;
     }
-  }, 3000)).current;
+  }, 1000)).current;
 
   const debouncedSyncPopup = useRef(debounce(async (newPopup: PopupNotification) => {
     if (isLocalMode || isSyncing.current['popup']) return;
     isSyncing.current['popup'] = true;
     try {
-      await firestoreService.savePopup(newPopup);
+      await supabaseService.savePopup(newPopup);
     } finally {
       isSyncing.current['popup'] = false;
     }
@@ -537,7 +563,7 @@ const App: React.FC = () => {
     if (isLocalMode || isSyncing.current['custom_packages']) return;
     isSyncing.current['custom_packages'] = true;
     try {
-      await firestoreService.syncCollection('custom_packages', newPkgs);
+      await supabaseService.syncCollection('custom_packages', newPkgs);
     } finally {
       isSyncing.current['custom_packages'] = false;
     }
@@ -547,36 +573,36 @@ const App: React.FC = () => {
   useEffect(() => {
     const initData = async () => {
       try {
-        console.log("Attempting to connect to Firestore...");
-        const data = await firestoreService.loadGlobalData();
+        console.log("Attempting to connect to Supabase/Cache...");
+        const data = await supabaseService.loadGlobalData();
         
-        // 만약 데모용 기본 설정을 사용 중이거나, 로컬 모드 플래그가 있다면
-        if (data.isDefaultConfig || (data as any).isLocal) {
+        if (data.isLocal) {
           setIsLocalMode(true);
         } else {
-          console.log("Firestore connection successful, data loaded.");
+          console.log("Supabase connection successful, cloud data loaded.");
           setIsLocalMode(false);
+        }
+
+        // Load users from Supabase if available
+        try {
+          const cloudUsers = await supabaseService.loadUsers();
+          if (cloudUsers && cloudUsers.length > 0) {
+            setUsers(cloudUsers);
+          }
+        } catch {
+          // ignore
         }
 
         setHeroImages(data.heroImages);
         setMenuItems(data.menuItems);
-        if (Array.isArray(data.videos)) {
+        if (Array.isArray(data.videos) && data.videos.length > 0) {
           const validVideos = data.videos.filter((v: VideoItem) => v?.url && !v.url.startsWith('blob:'));
-          setVideos(validVideos.length > 0 ? validVideos : INITIAL_VIDEOS);
+          if (validVideos.length > 0) {
+            setVideos(validVideos);
+          }
         }
         setPageContents(data.pageContents);
         setPopup(data.popup);
-        if (data.products && data.products.length > 0) {
-          const syncedProducts = data.products.map((p: Product) => {
-            const template = INITIAL_PRODUCTS.find(ip => ip.id === p.id);
-            return {
-              ...p,
-              image: template?.image || p.image,
-              detailImages: template?.detailImages || p.detailImages
-            };
-          });
-          setProducts(syncedProducts);
-        }
         if (data.customPackages && data.customPackages.length > 0) {
           setCustomPackages(cleanCustomPackages(data.customPackages));
         }
@@ -601,14 +627,24 @@ const App: React.FC = () => {
     initData();
   }, []);
 
-  // Update Handlers (Updates State AND Firestore)
+  // Update Handlers (Updates State, LocalStorage, and Supabase)
   const handleUpdateHeroImages = async (newImages: string[]) => {
     setHeroImages(newImages);
+    try {
+      localStorage.setItem('mango_hero_images_db', JSON.stringify(newImages));
+    } catch (e) {
+      console.warn("Failed to write hero images to localStorage:", e);
+    }
     debouncedSyncSettings('heroImages', newImages);
   };
 
   const handleUpdateMenuItems = async (newItems: MenuItem[]) => {
     setMenuItems(newItems);
+    try {
+      localStorage.setItem('mango_menu_items_db', JSON.stringify(newItems));
+    } catch (e) {
+      console.warn("Failed to write menu items to localStorage:", e);
+    }
     debouncedSyncSettings('menuItems', newItems);
   };
 
@@ -702,6 +738,7 @@ const App: React.FC = () => {
          setUser(newUser);
          setShowAuthModal(false);
          resetAuthFields();
+         supabaseService.saveUser(newUser, password).catch(() => {});
          alert('회원가입이 완료되었습니다!');
        } else {
          const existingUser = users.find(u => u.username === username);
@@ -953,7 +990,8 @@ const App: React.FC = () => {
       <main className="flex-grow w-full max-w-full min-w-0">
         {currentPage === 'admin' && isAdmin ? (
           <AdminDashboard 
-            users={users} 
+            users={users}
+            onUpdateUsers={setUsers}
             heroImages={heroImages} setHeroImages={handleUpdateHeroImages}
             menuItems={menuItems} setMenuItems={handleUpdateMenuItems} 
             products={products} setProducts={handleUpdateProducts}

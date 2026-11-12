@@ -3,8 +3,7 @@ import { VideoItem, User } from '../types';
 import { uploadFile } from '../services/uploadService';
 import { classifyVideoCategory } from '../services/geminiService';
 import BackButton from './BackButton';
-import { db } from '../services/firebaseConfig';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { supabaseService } from '../services/supabaseService';
 
 interface Props {
   videos: VideoItem[];
@@ -118,7 +117,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<VideoItem>({ id: '', title: '', url: '', category: '기타' });
   const [uploadCategory, setUploadCategory] = useState<'골프' | '여행' | '먹거리' | '기타'>('골프');
-  const [filterCategory, setFilterCategory] = useState<string>('골프');
+  const [filterCategory, setFilterCategory] = useState<string>('전체');
 
   // Video playback error tracking per video ID
   const [failedVideos, setFailedVideos] = useState<Record<string, string>>({});
@@ -278,15 +277,18 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
   // Handle Direct Link or YouTube submission
   const handleAddUrlVideo = () => {
-    if (!urlTitle.trim() || !urlLink.trim()) {
-      showToast('영상 제목과 링크(URL)를 모두 입력해주세요.');
-      return;
+    let cleanLink = urlLink.trim();
+    // Support direct Cloudinary public_id or relative path
+    if (!cleanLink.startsWith('http://') && !cleanLink.startsWith('https://')) {
+      cleanLink = `https://res.cloudinary.com/ducor31pp/video/upload/${cleanLink.replace(/^\/+/, '')}`;
     }
 
-    const cleanLink = urlLink.trim();
     const newVideoId = Date.now().toString();
     const ytId = extractYouTubeId(cleanLink);
-    const poster = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : undefined;
+    let poster = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : undefined;
+    if (!poster && cleanLink.includes('cloudinary.com')) {
+      poster = cleanLink.replace(/\.(mp4|mov|webm|avi|mkv|m4v)(\?.*)?$/i, '.jpg');
+    }
 
     const newVideo: VideoItem = {
       id: newVideoId,
@@ -300,7 +302,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
     setShowUrlModal(false);
     setUrlTitle('');
     setUrlLink('');
-    showToast('새 동영상 링크가 등록되었습니다.');
+    showToast('새 동영상이 등록되었습니다.');
   };
 
   // Handle Video Replacement during Edit
@@ -375,13 +377,11 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
         console.warn('LocalStorage save error:', e);
       }
 
-      // 2. Direct Firestore deletion
-      if (db && navigator.onLine) {
-        try {
-          await deleteDoc(doc(db, 'videos', targetId));
-        } catch (fsErr) {
-          console.warn('Firestore doc delete failed:', fsErr);
-        }
+      // 2. Direct Supabase sync
+      try {
+        await supabaseService.syncCollection('videos', updatedVideos);
+      } catch (sbErr) {
+        console.warn('Supabase videos sync failed:', sbErr);
       }
 
       showToast('동영상이 정상적으로 삭제되었습니다.');
@@ -497,7 +497,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
         {/* Category Filter */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
-          {(['골프', '여행', '먹거리', '기타'] as const).map((cat) => (
+          {(['전체', '골프', '여행', '먹거리', '기타'] as const).map((cat) => (
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
@@ -514,15 +514,15 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
         {/* Video Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {videos.filter(v => (v.category || '기타') === filterCategory).length === 0 ? (
+          {videos.filter(v => filterCategory === '전체' || (v.category || '기타') === filterCategory).length === 0 ? (
             <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-700 rounded-2xl text-gray-500">
                <span className="text-4xl block mb-4">📹</span>
-               <p>{filterCategory} 카테고리에 영상이 없습니다.</p>
-               <p className="text-xs mt-1">첫 번째 영상을 업로드해보세요!</p>
+               <p>{filterCategory === '전체' ? '등록된' : `${filterCategory} 카테고리에`} 영상이 없습니다.</p>
+               <p className="text-xs mt-1">첫 번째 영상을 업로드하거나 링크를 등록해보세요!</p>
             </div>
           ) : (
             videos
-              .filter(v => (v.category || '기타') === filterCategory)
+              .filter(v => filterCategory === '전체' || (v.category || '기타') === filterCategory)
               .map((video) => {
                 const currentUrl = editingId === video.id ? editForm.url : video.url;
                 const ytId = extractYouTubeId(currentUrl);
@@ -701,6 +701,11 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
                               {isYT && (
                                 <span className="px-1.5 py-0.5 bg-red-950 text-red-400 text-[8px] font-bold rounded border border-red-800">
                                   YouTube
+                                </span>
+                              )}
+                              {video.url.includes('cloudinary.com') && (
+                                <span className="px-1.5 py-0.5 bg-sky-950 text-sky-400 text-[8px] font-bold rounded border border-sky-800 flex items-center gap-0.5">
+                                  ☁️ Cloudinary
                                 </span>
                               )}
                             </div>

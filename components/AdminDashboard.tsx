@@ -15,15 +15,15 @@ import {
 import { driveService } from '../services/googleDriveService';
 import { fetchGoogleSheetData } from '../services/googleSheetService';
 import { uploadFile, setCloudinaryConfig } from '../services/uploadService';
-import { firestoreService } from '../services/firestoreService';
-import { DEFAULT_FIREBASE_CONFIG, db } from '../services/firebaseConfig';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { supabaseService } from '../services/supabaseService';
+import { isSupabaseConfigured, updateSupabaseCredentials } from '../services/supabaseClient';
 import { compressImage } from '../utils/imageUtils';
 import BackButton from './BackButton';
 import { getTravelDays, getItemPricingType, calculateCostItemTotal } from '../utils/costBreakdownUtils';
 
 interface Props {
   users: User[];
+  onUpdateUsers?: (users: User[]) => void;
   heroImages: string[];
   setHeroImages: (images: string[]) => void;
   menuItems: MenuItem[];
@@ -47,6 +47,7 @@ interface Props {
 
 const AdminDashboard: React.FC<Props> = ({
   users,
+  onUpdateUsers,
   heroImages,
   setHeroImages,
   menuItems,
@@ -122,25 +123,29 @@ const AdminDashboard: React.FC<Props> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Firebase Config
-  const [showFirebaseConfig, setShowFirebaseConfig] = useState(false);
-  const [fbApiKey, setFbApiKey] = useState(localStorage.getItem('fb_api_key') || '');
-  const [fbAuthDomain, setFbAuthDomain] = useState(localStorage.getItem('fb_auth_domain') || '');
-  const [fbProjectId, setFbProjectId] = useState(localStorage.getItem('fb_project_id') || '');
-  const [fbStorageBucket, setFbStorageBucket] = useState(localStorage.getItem('fb_storage_bucket') || '');
-  const [fbMessagingSenderId, setFbMessagingSenderId] = useState(localStorage.getItem('fb_messaging_sender_id') || '');
-  const [fbAppId, setFbAppId] = useState(localStorage.getItem('fb_app_id') || '');
-  const [fbDatabaseURL, setFbDatabaseURL] = useState(localStorage.getItem('fb_database_url') || '');
-  const [fbMeasurementId, setFbMeasurementId] = useState(localStorage.getItem('fb_measurement_id') || '');
+  // Supabase Config
+  const [showSupabaseConfig, setShowSupabaseConfig] = useState(false);
+  const [sbUrl, setSbUrl] = useState(localStorage.getItem('sb_url') || (import.meta as any).env?.VITE_SUPABASE_URL || '');
+  const [sbAnonKey, setSbAnonKey] = useState(localStorage.getItem('sb_anon_key') || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '');
+  const [isSeedingSupabase, setIsSeedingSupabase] = useState(false);
+
+  // User Management State
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newNickname, setNewNickname] = useState('');
+  const [newRole, setNewRole] = useState<'user' | 'admin'>('user');
 
   // Cloudinary Config
   const [showCloudinaryConfig, setShowCloudinaryConfig] = useState(false);
-  const [cloudName, setCloudName] = useState(localStorage.getItem('cloudinary_cloud_name') || '');
-  const [uploadPreset, setUploadPreset] = useState(localStorage.getItem('cloudinary_upload_preset') || '');
+  const [cloudName, setCloudName] = useState(localStorage.getItem('cloudinary_cloud_name') || 'ducor31pp');
+  const [uploadPreset, setUploadPreset] = useState(localStorage.getItem('cloudinary_upload_preset') || 'mangotour');
   
   // Upload State
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+
 
   useEffect(() => {
     if (pageContents[selectedPageId]) {
@@ -532,11 +537,9 @@ const AdminDashboard: React.FC<Props> = ({
     setProductToDelete(null);
     showToast(`🗑️ '${target.title}' 상품이 삭제되었습니다.`);
     try {
-      if (db && navigator.onLine) {
-        await deleteDoc(doc(db, 'products', prodId));
-      }
+      await supabaseService.syncCollection('products', updated);
     } catch (e) {
-      console.warn("Direct Firestore delete failed for product:", e);
+      console.warn("Supabase sync failed for product delete:", e);
     }
   };
 
@@ -969,13 +972,11 @@ const AdminDashboard: React.FC<Props> = ({
     setPackageToDelete(null);
     showToast(`🗑️ '${target.title}' 상품이 성공적으로 삭제되었습니다.`);
 
-    // 5. Firebase Firestore 실시간 삭제
+    // 5. Supabase 실시간 동기화
     try {
-      if (db && navigator.onLine) {
-        await deleteDoc(doc(db, 'custom_packages', pkgId));
-      }
+      await supabaseService.syncCollection('custom_packages', updated);
     } catch (e) {
-      console.warn("Direct Firestore delete failed:", e);
+      console.warn("Supabase package sync failed:", e);
     }
   };
 
@@ -1128,70 +1129,192 @@ const AdminDashboard: React.FC<Props> = ({
     showToast('✨ 팝업 이미지가 적용되었습니다.');
   };
 
-  const handleSaveFirebaseConfig = () => {
-    localStorage.setItem('fb_api_key', fbApiKey);
-    localStorage.setItem('fb_auth_domain', fbAuthDomain);
-    localStorage.setItem('fb_project_id', fbProjectId);
-    localStorage.setItem('fb_storage_bucket', fbStorageBucket);
-    localStorage.setItem('fb_messaging_sender_id', fbMessagingSenderId);
-    localStorage.setItem('fb_app_id', fbAppId);
-    localStorage.setItem('fb_database_url', fbDatabaseURL);
-    localStorage.setItem('fb_measurement_id', fbMeasurementId);
-    alert('Firebase 설정이 로컬에 저장되었습니다. 변경사항을 적용하기 위해 페이지가 새로고침됩니다.');
-    window.location.reload();
-  };
-
-  const handleResetFirebaseConfig = () => {
-    if (!confirm('Firebase 설정을 기본 내장 표준 설정으로 복구하시겠습니까?')) return;
-    setFbApiKey(DEFAULT_FIREBASE_CONFIG.apiKey);
-    setFbAuthDomain(DEFAULT_FIREBASE_CONFIG.authDomain);
-    setFbProjectId(DEFAULT_FIREBASE_CONFIG.projectId);
-    setFbStorageBucket(DEFAULT_FIREBASE_CONFIG.storageBucket);
-    setFbMessagingSenderId(DEFAULT_FIREBASE_CONFIG.messagingSenderId);
-    setFbAppId(DEFAULT_FIREBASE_CONFIG.appId);
-    setFbDatabaseURL(DEFAULT_FIREBASE_CONFIG.databaseURL);
-    setFbMeasurementId(DEFAULT_FIREBASE_CONFIG.measurementId);
-    
-    localStorage.removeItem('fb_api_key');
-    localStorage.removeItem('fb_auth_domain');
-    localStorage.removeItem('fb_project_id');
-    localStorage.removeItem('fb_storage_bucket');
-    localStorage.removeItem('fb_messaging_sender_id');
-    localStorage.removeItem('fb_app_id');
-    localStorage.removeItem('fb_database_url');
-    localStorage.removeItem('fb_measurement_id');
-    alert('기본 Firebase 설정으로 복구되었습니다. 페이지가 새로고침됩니다.');
-    window.location.reload();
-  };
 
   const handleSaveCloudinaryConfig = async () => {
     localStorage.setItem('cloudinary_cloud_name', cloudName);
     localStorage.setItem('cloudinary_upload_preset', uploadPreset);
     setCloudinaryConfig(cloudName, uploadPreset);
     
-    // Firestore 클라우드에도 저장하여 다른 컴퓨터에서 접속 시 자동으로 적용되도록 함
+    // Supabase 클라우드에도 저장하여 다른 컴퓨터에서 접속 시 자동으로 적용되도록 함
     try {
-      await firestoreService.saveCloudinaryConfig(cloudName, uploadPreset);
-      alert('✅ Cloudinary 이미지 서버 설정이 저장되었습니다!\n\n클라우드(Firestore)에도 동기화되어 이제 다른 컴퓨터 및 모바일 기기에서도 동일한 이미지 서버가 자동으로 적용됩니다.');
+      await supabaseService.saveCloudinaryConfig(cloudName, uploadPreset);
+      alert('✅ Cloudinary 이미지 서버 설정이 저장되었습니다!\n\n클라우드(Supabase)에도 동기화되어 이제 다른 컴퓨터 및 모바일 기기에서도 동일한 이미지 서버가 자동으로 적용됩니다.');
     } catch (e) {
       alert('Cloudinary 설정이 로컬에 저장되었습니다.');
     }
     setShowCloudinaryConfig(false);
   };
 
-  // 다른 컴퓨터 동기화용 원클릭 링크 복사
+  const handleSaveSupabaseConfig = () => {
+    const success = updateSupabaseCredentials(sbUrl, sbAnonKey);
+    if (success) {
+      alert('✅ Supabase 연결 설정이 저장되었습니다!\n\n페이지가 새로고침되며 Supabase 클라우드 데이터와 연동됩니다.');
+      window.location.reload();
+    } else {
+      alert('⚠️ 설정이 로컬에 저장되었습니다. 올바른 URL(https://...)과 Anon Key를 입력했는지 확인해주세요.');
+    }
+  };
+
+  const handleCopySupabaseSql = () => {
+    const sqlText = `-- 망고투어 (MANGO TOUR) Supabase 테이블 원클릭 생성 SQL
+CREATE TABLE IF NOT EXISTS public.settings (id TEXT PRIMARY KEY, hero_images JSONB, menu_items JSONB, cloudinary_config JSONB, updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.products (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.videos (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.posts (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.pages (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.popup (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.custom_packages (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.chat_messages (id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, sender TEXT NOT NULL, text TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.inquiries (id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.users (id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, nickname TEXT, role TEXT DEFAULT 'user', password_hash TEXT, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
+
+INSERT INTO public.users (id, username, nickname, role, password_hash)
+VALUES ('admin_primary', 'admin', '관리자', 'admin', encode('rlathdud1~'::bytea, 'base64'))
+ON CONFLICT (username) DO NOTHING;
+
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.videos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.popup ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.custom_packages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN CREATE POLICY "Public full access to settings" ON public.settings FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to products" ON public.products FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to videos" ON public.videos FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to posts" ON public.posts FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to pages" ON public.pages FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to popup" ON public.popup FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to custom_packages" ON public.custom_packages FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to chat_messages" ON public.chat_messages FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to inquiries" ON public.inquiries FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE POLICY "Public full access to users" ON public.users FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(sqlText).then(() => {
+        alert('📋 Supabase 원클릭 테이블 생성 SQL이 복사되었습니다!\n\nSupabase 대시보드 -> [SQL Editor] -> [New Query]에 붙여넣고 [Run]을 누르시면 모든 테이블이 3초 만에 생성됩니다.');
+      });
+    } else {
+      prompt('아래 SQL 코드를 복사하여 Supabase SQL Editor에서 실행하세요:', sqlText);
+    }
+  };
+
+  const handleSeedAllToSupabase = async () => {
+    if (!confirm('현재 웹사이트의 모든 상품, 동영상, 게시판 후기, 맞춤 여행 패키지, 설정 데이터를 Supabase 클라우드로 일괄 전송하시겠습니까?\n\n(이미 Supabase에 데이터가 있더라도 최신 데이터로 업데이트됩니다)')) return;
+    
+    setIsSeedingSupabase(true);
+    try {
+      await supabaseService.seedAllToSupabase({
+        products,
+        videos,
+        posts,
+        customPackages,
+        heroImages,
+        menuItems,
+        cloudinaryConfig: { cloudName, uploadPreset },
+        popup,
+        pageContents
+      });
+      alert('🎉 축하합니다! 웹사이트의 모든 상품/투어/게시글 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 다른 컴퓨터나 모바일 기기에서도 동일한 실시간 클라우드 데이터를 이용하실 수 있습니다.');
+    } catch (e: any) {
+      alert('❌ 전송 실패: ' + (e?.message || e));
+    } finally {
+      setIsSeedingSupabase(false);
+    }
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUsername.trim() || !newPassword.trim()) {
+      alert('아이디와 비밀번호를 입력해주세요.');
+      return;
+    }
+    const cleanUsername = newUsername.trim();
+    if (users.some(u => u.username === cleanUsername)) {
+      alert('이미 존재하는 아이디입니다.');
+      return;
+    }
+
+    const newUser: User = {
+      id: `u_${Date.now()}`,
+      username: cleanUsername,
+      role: newRole,
+      nickname: newNickname.trim() || cleanUsername
+    };
+
+    const nextUsers = [...users, newUser];
+    if (onUpdateUsers) onUpdateUsers(nextUsers);
+    try {
+      localStorage.setItem('mango_users_db', JSON.stringify(nextUsers));
+    } catch {}
+
+    try {
+      await supabaseService.saveUser(newUser, newPassword);
+      showToast(`✅ '${cleanUsername}' 회원이 등록되었습니다.`);
+    } catch (err) {
+      console.warn("Supabase user save notice:", err);
+    }
+
+    setShowAddUserModal(false);
+    setNewUsername('');
+    setNewPassword('');
+    setNewNickname('');
+    setNewRole('user');
+  };
+
+  const handleToggleUserRole = async (targetUser: User) => {
+    if (targetUser.username === 'admin') {
+      alert('기본 최고 관리자(admin)의 권한은 변경할 수 없습니다.');
+      return;
+    }
+    const nextRole: 'admin' | 'user' = targetUser.role === 'admin' ? 'user' : 'admin';
+    const nextUsers = users.map(u => u.id === targetUser.id ? { ...u, role: nextRole } : u);
+    if (onUpdateUsers) onUpdateUsers(nextUsers);
+    try {
+      localStorage.setItem('mango_users_db', JSON.stringify(nextUsers));
+    } catch {}
+
+    try {
+      await supabaseService.updateUserRole(targetUser.id, nextRole);
+      showToast(`'${targetUser.username}' 회원의 권한이 [${nextRole.toUpperCase()}]로 변경되었습니다.`);
+    } catch (err) {
+      console.warn("Supabase user role update notice:", err);
+    }
+  };
+
+  const handleDeleteUser = async (targetUser: User) => {
+    if (targetUser.username === 'admin') {
+      alert('기본 최고 관리자(admin) 계정은 삭제할 수 없습니다.');
+      return;
+    }
+    if (!confirm(`'${targetUser.username}' (${targetUser.nickname || '회원'}) 계정을 정말 삭제하시겠습니까?`)) return;
+
+    const nextUsers = users.filter(u => u.id !== targetUser.id);
+    if (onUpdateUsers) onUpdateUsers(nextUsers);
+    try {
+      localStorage.setItem('mango_users_db', JSON.stringify(nextUsers));
+    } catch {}
+
+    try {
+      await supabaseService.deleteUser(targetUser.id);
+      showToast(`🗑️ '${targetUser.username}' 회원이 삭제되었습니다.`);
+    } catch (err) {
+      console.warn("Supabase user delete notice:", err);
+    }
+  };
+
+  // 다른 컴퓨터 동기화용 원클릭 링크 복사 (Cloudinary & Supabase)
   const handleCopySyncUrl = () => {
     const configPayload = {
-      fbApiKey: fbApiKey || DEFAULT_FIREBASE_CONFIG.apiKey,
-      fbAuthDomain: fbAuthDomain || DEFAULT_FIREBASE_CONFIG.authDomain,
-      fbProjectId: fbProjectId || DEFAULT_FIREBASE_CONFIG.projectId,
-      fbStorageBucket: fbStorageBucket || DEFAULT_FIREBASE_CONFIG.storageBucket,
-      fbMessagingSenderId: fbMessagingSenderId || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
-      fbAppId: fbAppId || DEFAULT_FIREBASE_CONFIG.appId,
-      fbDatabaseURL: fbDatabaseURL || DEFAULT_FIREBASE_CONFIG.databaseURL,
-      fbMeasurementId: fbMeasurementId || DEFAULT_FIREBASE_CONFIG.measurementId,
-      cloudName: cloudName,
-      uploadPreset: uploadPreset
+      cloudName,
+      uploadPreset,
+      sbUrl,
+      sbAnonKey
     };
 
     const encoded = btoa(encodeURIComponent(JSON.stringify(configPayload)));
@@ -1201,98 +1324,12 @@ const AdminDashboard: React.FC<Props> = ({
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(syncUrl).then(() => {
-        alert('🔗 [다른 컴퓨터 원클릭 동기화 링크]가 클립보드에 복사되었습니다!\n\n다른 컴퓨터나 휴대폰의 웹 브라우저에서 이 링크를 한 번만 열면 모든 Firebase 및 이미지 서버 설정이 즉시 자동으로 동기화됩니다.');
+        alert('🔗 [다른 컴퓨터 원클릭 동기화 링크]가 클립보드에 복사되었습니다!\n\n다른 컴퓨터나 휴대폰의 웹 브라우저에서 이 링크를 한 번만 열면 이미지 서버 및 DB 설정이 즉시 자동으로 동기화됩니다.');
       }).catch(() => {
         prompt('아래 동기화 링크를 복사하여 다른 컴퓨터에서 접속하세요:', syncUrl);
       });
     } else {
       prompt('아래 동기화 링크를 복사하여 다른 컴퓨터에서 접속하세요:', syncUrl);
-    }
-  };
-
-  // 전체 설정 코드 복사 (JSON)
-  const handleCopyAllConfigJson = () => {
-    const configPayload = {
-      fbApiKey: fbApiKey || DEFAULT_FIREBASE_CONFIG.apiKey,
-      fbAuthDomain: fbAuthDomain || DEFAULT_FIREBASE_CONFIG.authDomain,
-      fbProjectId: fbProjectId || DEFAULT_FIREBASE_CONFIG.projectId,
-      fbStorageBucket: fbStorageBucket || DEFAULT_FIREBASE_CONFIG.storageBucket,
-      fbMessagingSenderId: fbMessagingSenderId || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
-      fbAppId: fbAppId || DEFAULT_FIREBASE_CONFIG.appId,
-      fbDatabaseURL: fbDatabaseURL || DEFAULT_FIREBASE_CONFIG.databaseURL,
-      fbMeasurementId: fbMeasurementId || DEFAULT_FIREBASE_CONFIG.measurementId,
-      cloudName: cloudName,
-      uploadPreset: uploadPreset
-    };
-
-    const jsonStr = JSON.stringify(configPayload, null, 2);
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(jsonStr).then(() => {
-        alert('📋 [설정 JSON 코드]가 복사되었습니다!\n\n다른 컴퓨터의 관리자 화면에서 [📥 설정 코드 붙여넣기]를 눌러 적용하실 수 있습니다.');
-      }).catch(() => {
-        prompt('설정 JSON 코드:', jsonStr);
-      });
-    } else {
-      prompt('설정 JSON 코드:', jsonStr);
-    }
-  };
-
-  // 설정 코드 붙여넣기 / 불러오기
-  const handlePasteAllConfigJson = () => {
-    const input = prompt('복사한 설정 JSON 코드 또는 동기화 링크(?sync_config=...)를 붙여넣어 주세요:');
-    if (!input || !input.trim()) return;
-
-    try {
-      let config: any = null;
-      const trimmed = input.trim();
-      
-      if (trimmed.includes('sync_config=') || trimmed.includes('fb_config=')) {
-        const match = trimmed.match(/[?&](?:sync_config|fb_config)=([^&#]+)/);
-        if (match && match[1]) {
-          const decoded = decodeURIComponent(atob(match[1]));
-          config = JSON.parse(decoded);
-        }
-      } else {
-        config = JSON.parse(trimmed);
-      }
-
-      if (!config) {
-        alert('올바른 설정 코드가 아닙니다.');
-        return;
-      }
-
-      if (config.fbApiKey) setFbApiKey(config.fbApiKey);
-      if (config.fbAuthDomain) setFbAuthDomain(config.fbAuthDomain);
-      if (config.fbProjectId) setFbProjectId(config.fbProjectId);
-      if (config.fbStorageBucket) setFbStorageBucket(config.fbStorageBucket);
-      if (config.fbMessagingSenderId) setFbMessagingSenderId(config.fbMessagingSenderId);
-      if (config.fbAppId) setFbAppId(config.fbAppId);
-      if (config.fbDatabaseURL) setFbDatabaseURL(config.fbDatabaseURL);
-      if (config.fbMeasurementId) setFbMeasurementId(config.fbMeasurementId);
-      if (config.cloudName) setCloudName(config.cloudName);
-      if (config.uploadPreset) setUploadPreset(config.uploadPreset);
-
-      // Save to localStorage directly
-      if (config.fbApiKey) localStorage.setItem('fb_api_key', config.fbApiKey);
-      if (config.fbAuthDomain) localStorage.setItem('fb_auth_domain', config.fbAuthDomain);
-      if (config.fbProjectId) localStorage.setItem('fb_project_id', config.fbProjectId);
-      if (config.fbStorageBucket) localStorage.setItem('fb_storage_bucket', config.fbStorageBucket);
-      if (config.fbMessagingSenderId) localStorage.setItem('fb_messaging_sender_id', config.fbMessagingSenderId);
-      if (config.fbAppId) localStorage.setItem('fb_app_id', config.fbAppId);
-      if (config.fbDatabaseURL) localStorage.setItem('fb_database_url', config.fbDatabaseURL);
-      if (config.fbMeasurementId) localStorage.setItem('fb_measurement_id', config.fbMeasurementId);
-      if (config.cloudName) localStorage.setItem('cloudinary_cloud_name', config.cloudName);
-      if (config.uploadPreset) localStorage.setItem('cloudinary_upload_preset', config.uploadPreset);
-
-      if (config.cloudName && config.uploadPreset) {
-        setCloudinaryConfig(config.cloudName, config.uploadPreset);
-        firestoreService.saveCloudinaryConfig(config.cloudName, config.uploadPreset);
-      }
-
-      alert('🎉 설정이 성공적으로 적용되었습니다! 새로고침합니다.');
-      window.location.reload();
-    } catch (e: any) {
-      alert('설정 코드를 파싱하는데 실패했습니다: ' + e.message);
     }
   };
 
@@ -1442,15 +1479,15 @@ const AdminDashboard: React.FC<Props> = ({
         </button>
         <button 
           type="button"
-          onClick={() => setShowFirebaseConfig(!showFirebaseConfig)} 
+          onClick={() => setShowSupabaseConfig(!showSupabaseConfig)} 
           className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 ${
-            showFirebaseConfig 
-              ? 'bg-orange-600 text-white border-orange-600' 
-              : 'bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200'
+            showSupabaseConfig 
+              ? 'bg-emerald-600 text-white border-emerald-600' 
+              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
           }`}
         >
-          <span className="shrink-0 text-base">🔥</span>
-          <span className="truncate">Firebase 연동 설정</span>
+          <span className="shrink-0 text-base">⚡</span>
+          <span className="truncate">Supabase DB 설정</span>
         </button>
         <button 
           type="button"
@@ -1569,118 +1606,111 @@ const AdminDashboard: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Firebase Config Panel */}
-      {showFirebaseConfig && (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 mb-8 animate-fade-in shadow-sm">
+      {/* Supabase Config Panel */}
+      {showSupabaseConfig && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 mb-8 animate-fade-in shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
               <div>
-                <h3 className="text-lg font-bold text-orange-900 flex items-center gap-2">
-                  🔥 Firebase 실시간 DB 및 다른 컴퓨터 연동
-                  <span className="text-[10px] bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-bold border border-orange-300">
-                    다중 컴퓨터/기기 동기화 지원
+                <h3 className="text-lg font-bold text-emerald-950 flex items-center gap-2">
+                  ⚡ Supabase 클라우드 데이터베이스 설정
+                  <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
+                    isSupabaseConfigured 
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                      : 'bg-amber-100 text-amber-800 border-amber-300'
+                  }`}>
+                    {isSupabaseConfigured ? '🟢 정상 연결됨' : '🟡 설정 대기 중 (안전 로컬 모드)'}
                   </span>
                 </h3>
-                <p className="text-xs text-orange-700 mt-1">
-                  다른 컴퓨터나 모바일 기기에서도 동일한 실시간 데이터베이스를 사용하려면 아래의 <strong>[원클릭 동기화 링크]</strong> 또는 <strong>[설정 코드 복사]</strong> 기능을 사용하세요.
+                <p className="text-xs text-emerald-700 mt-1">
+                  회원 정보, 상품, 게시판 글이 <strong>Supabase 클라우드 DB</strong>에 안전하게 영구 보존됩니다.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={handleCopySyncUrl}
-                  className="px-3 py-1.5 bg-orange-600 text-white hover:bg-orange-700 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-sm"
-                  title="다른 컴퓨터에서 열기만 하면 모든 연동 설정이 자동 완료되는 링크를 복사합니다."
+                  onClick={handleCopySupabaseSql}
+                  className="px-3.5 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                  title="Supabase SQL Editor에 복사하여 붙여넣을 수 있는 원클릭 테이블 생성 스크립트입니다."
                 >
-                  🔗 다른 PC 원클릭 동기화 링크 복사
+                  📋 원클릭 테이블 생성 SQL 복사
                 </button>
-                <button
-                  type="button"
-                  onClick={handleCopyAllConfigJson}
-                  className="px-3 py-1.5 bg-white border border-orange-300 text-orange-800 hover:bg-orange-100 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-xs"
-                  title="전체 설정을 JSON 텍스트로 복사합니다."
+                <a
+                  href="https://supabase.com/dashboard"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-xs"
                 >
-                  📋 설정 코드 복사 (JSON)
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePasteAllConfigJson}
-                  className="px-3 py-1.5 bg-white border border-orange-300 text-orange-800 hover:bg-orange-100 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-xs"
-                  title="복사한 JSON 또는 동기화 링크를 붙여넣어 즉시 적용합니다."
-                >
-                  📥 설정 코드 붙여넣기
-                </button>
+                  ↗ Supabase 콘솔 바로가기
+                </a>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label className="block text-[10px] font-bold text-orange-700 mb-1">API Key</label>
-                    <input type="password" value={fbApiKey} onChange={e => setFbApiKey(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="AIza..." />
+                    <label className="block text-[10px] font-bold text-emerald-800 mb-1">Project URL (API URL)</label>
+                    <input 
+                      type="text" 
+                      value={sbUrl} 
+                      onChange={e => setSbUrl(e.target.value)} 
+                      className="w-full p-2.5 rounded-lg border border-emerald-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-mono" 
+                      placeholder="https://xxxxxxxxxxxx.supabase.co" 
+                    />
                 </div>
                 <div>
-                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Auth Domain</label>
-                    <input type="text" value={fbAuthDomain} onChange={e => setFbAuthDomain(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="your-project.firebaseapp.com" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Project ID</label>
-                    <input type="text" value={fbProjectId} onChange={e => setFbProjectId(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="your-project-id" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Storage Bucket</label>
-                    <input type="text" value={fbStorageBucket} onChange={e => setFbStorageBucket(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="your-project.appspot.com" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Messaging Sender ID</label>
-                    <input type="text" value={fbMessagingSenderId} onChange={e => setFbMessagingSenderId(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="123456789" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-700 mb-1">App ID</label>
-                    <input type="text" value={fbAppId} onChange={e => setFbAppId(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="1:123456:web:abc123" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Database URL (Optional)</label>
-                    <input type="text" value={fbDatabaseURL} onChange={e => setFbDatabaseURL(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="https://your-db.firebaseio.com" />
-                </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-orange-700 mb-1">Measurement ID (Optional)</label>
-                    <input type="text" value={fbMeasurementId} onChange={e => setFbMeasurementId(e.target.value)} className="w-full p-2.5 rounded-lg border border-orange-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm font-mono" placeholder="G-XXXXXX" />
+                    <label className="block text-[10px] font-bold text-emerald-800 mb-1">Anon Public Key</label>
+                    <input 
+                      type="password" 
+                      value={sbAnonKey} 
+                      onChange={e => setSbAnonKey(e.target.value)} 
+                      className="w-full p-2.5 rounded-lg border border-emerald-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm font-mono" 
+                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." 
+                    />
                 </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={handleResetFirebaseConfig}
-                  className="text-xs text-orange-700 hover:text-orange-900 underline font-semibold transition"
-                >
-                  🔄 기본 권장 설정으로 초기화
-                </button>
-                <div className="flex gap-2">
+                <div className="text-xs text-emerald-800">
+                  {isSupabaseConfigured ? (
+                    <span className="font-semibold text-emerald-700">✅ Supabase 활성화 완료. 모든 데이터가 클라우드에 자동 동기화됩니다.</span>
+                  ) : (
+                    <span className="text-amber-800 font-semibold">⚠️ 아직 키를 넣지 않아도 웹사이트는 100% 정상 작동합니다 (로컬 캐시 보존 모드).</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <button 
-                      onClick={handleSaveFirebaseConfig} 
-                      className="px-6 py-2 bg-orange-600 text-white rounded-lg font-bold text-sm hover:bg-orange-700 transition shadow-md flex items-center gap-1.5"
+                      type="button"
+                      onClick={handleSeedAllToSupabase}
+                      disabled={isSeedingSupabase || !isSupabaseConfigured}
+                      className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 ${
+                        isSupabaseConfigured 
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-md' 
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
+                      title={isSupabaseConfigured ? '현재 웹사이트의 모든 데이터를 Supabase 클라우드로 일괄 전송합니다.' : 'Supabase 설정 후 활성화됩니다.'}
                   >
-                      <span>💾</span> 설정 저장 및 새로고침
+                      <span>{isSeedingSupabase ? '⏳' : '📤'}</span>
+                      <span>{isSeedingSupabase ? '데이터 전송 중...' : '전체 데이터 Supabase로 전송 (초기화)'}</span>
+                  </button>
+                  <button 
+                      type="button"
+                      onClick={handleSaveSupabaseConfig} 
+                      className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-bold text-sm hover:bg-emerald-800 transition shadow-md flex items-center gap-1.5"
+                  >
+                      <span>💾</span> 설정 저장 및 연결
                   </button>
                 </div>
             </div>
 
-            {/* 다른 컴퓨터 접속 및 동기화 안내 박스 */}
-            <div className="mt-4 p-4 bg-white/90 rounded-xl text-xs text-orange-900 border border-orange-200 space-y-2.5">
-                <p className="font-bold text-sm text-orange-950 flex items-center gap-1.5">
-                  💡 다른 컴퓨터에서 동일하게 연동하여 사용하는 3가지 방법
+            <div className="mt-4 p-4 bg-white/95 rounded-xl text-xs text-emerald-950 border border-emerald-200 space-y-2.5">
+                <p className="font-bold text-sm text-emerald-950 flex items-center gap-1.5">
+                  💡 초보자를 위한 3분 Supabase 설정 가이드
                 </p>
-                <ul className="space-y-1.5 text-[11px] leading-relaxed text-gray-700 pl-1">
-                  <li>
-                    <strong className="text-orange-800">방법 1 (가장 쉬움 - 원클릭 링크):</strong> 우측 상단의 <strong>[🔗 다른 PC 원클릭 동기화 링크 복사]</strong>를 클릭한 뒤, 다른 컴퓨터의 웹 브라우저 주소창에 붙여넣어 접속하시면 Firebase 및 이미지 서버 설정이 1초 만에 자동 동기화됩니다.
-                  </li>
-                  <li>
-                    <strong className="text-orange-800">방법 2 (설정 코드 복사/붙여넣기):</strong> <strong>[📋 설정 코드 복사]</strong>를 눌러 코드를 복사한 뒤, 다른 컴퓨터의 관리자 화면에서 <strong>[📥 설정 코드 붙여넣기]</strong>를 누르면 즉시 모든 설정값이 채워지고 적용됩니다.
-                  </li>
-                  <li>
-                    <strong className="text-orange-800">방법 3 (이미지 서버 자동 동기화):</strong> Cloudinary 이미지 서버 설정은 Firebase DB에 클라우드 자동 저장되므로, 동일한 Firebase 프로젝트에 연결되어 있다면 이미지 서버 설정은 아무것도 입력하지 않아도 자동으로 동기화됩니다.
-                  </li>
-                </ul>
+                <ol className="list-decimal pl-4 space-y-1.5 text-[11px] leading-relaxed text-gray-700">
+                  <li><strong>테이블 생성:</strong> 상단의 <b>[📋 원클릭 테이블 생성 SQL 복사]</b> 버튼을 누른 후, Supabase 콘솔의 <b>SQL Editor</b> 메뉴에 붙여넣고 <b>Run</b>을 누르면 모든 테이블이 3초 만에 자동 생성됩니다.</li>
+                  <li><strong>키 확인:</strong> Supabase 프로젝트 좌측 하단 <b>Project Settings (톱니바퀴) &gt; API</b>로 이동합니다.</li>
+                  <li><strong>입력:</strong> <b>Project URL</b>과 <b>Project API keys (anon public)</b> 2개를 위 칸에 복사해 넣고 <b>[설정 저장]</b>을 누르면 끝입니다.</li>
+                  <li><strong>초기 데이터 전송:</strong> 연결 후 우측의 <b>[전체 데이터 Supabase로 전송]</b> 버튼을 누르면 상품, 골프 투어, 호텔, 영상 데이터가 클라우드에 즉시 채워집니다.</li>
+                </ol>
             </div>
         </div>
       )}
@@ -4083,25 +4113,191 @@ const AdminDashboard: React.FC<Props> = ({
         {/* User Admin */}
         {activeTab === 'users' && (
           <div className="animate-fade-in-up">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">Member Management</h3>
-            <div className="overflow-x-auto rounded-2xl border border-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  👥 회원 및 관리자 계정 관리
+                  <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold">
+                    총 {users.length}명
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  망고투어 회원 정보 및 관리자 계정을 조회하고 권한을 조정할 수 있습니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddUserModal(true)}
+                className="px-4 py-2 bg-deepgreen text-white hover:bg-emerald-800 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition shadow-sm active:scale-98 self-start sm:self-auto"
+              >
+                <span>➕</span> 신규 회원/관리자 추가
+              </button>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-xs bg-white">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
-                  <tr><th className="p-4 text-left font-bold text-gray-600">ID</th><th className="p-4 text-left font-bold text-gray-600">닉네임</th><th className="p-4 text-left font-bold text-gray-600">권한</th></tr>
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="p-4 text-left font-bold text-gray-600">아이디</th>
+                    <th className="p-4 text-left font-bold text-gray-600">닉네임</th>
+                    <th className="p-4 text-left font-bold text-gray-600">권한</th>
+                    <th className="p-4 text-center font-bold text-gray-600">권한 변경</th>
+                    <th className="p-4 text-right font-bold text-gray-600">계정 관리</th>
+                  </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-gray-100">
                   {users.map(u => (
-                    <tr key={u.id} className="hover:bg-gray-50">
-                      <td className="p-4 font-bold text-gray-800">{u.username}</td>
-                      <td className="p-4 text-gray-600">{u.nickname || '-'}</td>
+                    <tr key={u.id} className="hover:bg-gray-50/80 transition-colors">
+                      <td className="p-4 font-bold text-gray-800 font-mono">
+                        {u.username}
+                        {u.username === 'admin' && (
+                          <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">
+                            최고관리자
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-gray-700 font-medium">{u.nickname || '-'}</td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${u.role === 'admin' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>{u.role.toUpperCase()}</span>
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                          u.role === 'admin' 
+                            ? 'bg-rose-100 text-rose-700 border border-rose-200' 
+                            : 'bg-blue-100 text-blue-700 border border-blue-200'
+                        }`}>
+                          {u.role === 'admin' ? '👑 관리자' : '👤 일반회원'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        {u.username !== 'admin' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleUserRole(u)}
+                            className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition"
+                          >
+                            {u.role === 'admin' ? '일반회원으로 변경' : '👑 관리자로 승격'}
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-gray-400 italic">변경 불가</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                        {u.username !== 'admin' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUser(u)}
+                            className="text-xs px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition border border-red-200"
+                          >
+                            🗑️ 삭제
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-gray-400 italic">영구 보호</span>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {/* 신규 회원 추가 모달 */}
+            {showAddUserModal && (
+              <div className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-gray-100 overflow-hidden animate-scale-in p-6">
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                    <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <span>👤</span> 신규 회원/관리자 계정 추가
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddUserModal(false)}
+                      className="text-gray-400 hover:text-gray-600 text-lg font-bold p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAddUser} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">아이디 (ID) *</label>
+                      <input
+                        type="text"
+                        value={newUsername}
+                        onChange={e => setNewUsername(e.target.value)}
+                        required
+                        className="w-full p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-deepgreen text-sm"
+                        placeholder="예: mangotour_user"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">비밀번호 *</label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        required
+                        className="w-full p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-deepgreen text-sm"
+                        placeholder="비밀번호를 입력하세요"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">닉네임</label>
+                      <input
+                        type="text"
+                        value={newNickname}
+                        onChange={e => setNewNickname(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-deepgreen text-sm"
+                        placeholder="예: 호치민골프러버"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">계정 권한</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setNewRole('user')}
+                          className={`p-2.5 rounded-xl font-bold text-xs border transition ${
+                            newRole === 'user'
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          👤 일반 회원
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNewRole('admin')}
+                          className={`p-2.5 rounded-xl font-bold text-xs border transition ${
+                            newRole === 'admin'
+                              ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          👑 관리자
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-3 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddUserModal(false)}
+                        className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-2.5 bg-deepgreen hover:bg-emerald-800 text-white font-bold rounded-xl text-xs transition shadow-md"
+                      >
+                        계정 생성 및 저장
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

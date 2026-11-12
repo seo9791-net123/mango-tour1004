@@ -1,15 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, ChatMessage } from '../types';
-import { db } from '../services/firebaseConfig';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  orderBy, 
-  limit, 
-  onSnapshot, 
-  serverTimestamp 
-} from 'firebase/firestore';
+import { supabaseService } from '../services/supabaseService';
 import { 
   playChatNotificationSound, 
   playChatSendSound, 
@@ -77,93 +68,57 @@ const ChatRoom: React.FC<Props> = ({
 
   // 2. Global Real-time Listener (Continuously active in background for instant notifications)
   useEffect(() => {
-    if (db) {
-      try {
-        const q = query(
-          collection(db, 'chat_messages'),
-          orderBy('timestamp', 'asc'),
-          limit(150)
-        );
-
-        const unsubscribe = onSnapshot(
-          q, 
-          (snapshot) => {
-            if (!snapshot.empty) {
-              const cloudMsgs: ChatMessage[] = [];
-              const newlyReceived: ChatMessage[] = [];
-
-              snapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                const msg: ChatMessage = {
-                  id: docSnap.id,
-                  sender: data.sender || '여행자',
-                  text: data.text || '',
-                  timestamp: typeof data.timestamp === 'number' ? data.timestamp : Date.now()
-                };
-                cloudMsgs.push(msg);
-
-                // If this is a new message added after initial page load
-                if (!isInitialLoadRef.current && !knownIdsRef.current.has(docSnap.id)) {
-                  newlyReceived.push(msg);
-                }
-                knownIdsRef.current.add(docSnap.id);
-              });
-
-              setMessages(cloudMsgs);
-              try {
-                localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(cloudMsgs));
-              } catch {
-                // Ignore storage quota
-              }
-
-              // Handle notification for incoming messages from others
-              if (!isInitialLoadRef.current && newlyReceived.length > 0) {
-                newlyReceived.forEach((newMsg) => {
-                  const isFromMe = newMsg.sender === (user?.nickname || user?.username);
-                  if (!isFromMe) {
-                    // Play chime sound
-                    playChatNotificationSound(isOpen ? 0.2 : 0.35);
-
-                    // Notify parent app (toast, badge increment)
-                    if (onNewIncomingMessage) {
-                      onNewIncomingMessage(newMsg);
-                    }
-
-                    // System desktop notification if tab is in background
-                    if (document.hidden) {
-                      showBrowserChatNotification(newMsg.sender, newMsg.text, () => {
-                        window.focus();
-                      });
-                    }
-
-                    // If chat is open but user is scrolled up
-                    if (isOpen && scrollRef.current) {
-                      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-                      const isNearBottom = scrollHeight - scrollTop - clientHeight < 120;
-                      if (!isNearBottom) {
-                        setHasNewMessageBelow(true);
-                      }
-                    }
-                  }
-                });
-              }
-
-              isInitialLoadRef.current = false;
-            } else {
-              isInitialLoadRef.current = false;
-            }
-          },
-          (err) => {
-            console.warn("Firestore chat listener warning (using local mode):", err);
-            isInitialLoadRef.current = false;
+    const unsubscribe = supabaseService.subscribeChat(
+      (cloudMsgs) => {
+        if (cloudMsgs && cloudMsgs.length > 0) {
+          cloudMsgs.forEach(m => knownIdsRef.current.add(m.id));
+          setMessages(cloudMsgs);
+          try {
+            localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(cloudMsgs));
+          } catch {
+            // Ignore storage quota
           }
-        );
+        }
+        isInitialLoadRef.current = false;
+      },
+      (newMsg) => {
+        if (!knownIdsRef.current.has(newMsg.id)) {
+          knownIdsRef.current.add(newMsg.id);
+          setMessages(prev => {
+            const next = [...prev, newMsg];
+            try {
+              localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(next));
+            } catch {
+              // ignore
+            }
+            return next;
+          });
 
-        return () => unsubscribe();
-      } catch (e) {
-        console.warn("Firestore chat subscription failed:", e);
+          const isFromMe = newMsg.sender === (user?.nickname || user?.username);
+          if (!isFromMe) {
+            playChatNotificationSound(isOpen ? 0.2 : 0.35);
+
+            if (onNewIncomingMessage) {
+              onNewIncomingMessage(newMsg);
+            }
+
+            if (document.hidden) {
+              showBrowserChatNotification(newMsg.sender, newMsg.text, () => {
+                window.focus();
+              });
+            }
+
+            if (isOpen && scrollRef.current) {
+              const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+              const isNearBottom = scrollHeight - scrollTop - clientHeight < 120;
+              if (!isNearBottom) {
+                setHasNewMessageBelow(true);
+              }
+            }
+          }
+        }
       }
-    }
+    );
 
     // Tab-sync fallback via storage event if Firestore is offline
     const handleStorageChange = (e: StorageEvent) => {
@@ -190,7 +145,10 @@ const ChatRoom: React.FC<Props> = ({
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [user, isOpen, onNewIncomingMessage]);
 
   // Reset unread count & auto-scroll when chat is opened
@@ -251,19 +209,17 @@ const ChatRoom: React.FC<Props> = ({
       }
     }, 50);
 
-    // Save to Firestore if available
-    if (db && navigator.onLine) {
-      try {
-        const docRef = await addDoc(collection(db, 'chat_messages'), {
-          sender: senderName,
-          text: textToSend,
-          timestamp: now,
-          createdAt: serverTimestamp()
-        });
-        knownIdsRef.current.add(docRef.id);
-      } catch (err) {
-        console.warn("Failed to write chat to Firestore, message stored locally:", err);
+    // Save to Supabase (with automatic local fallback)
+    try {
+      const savedMsg = await supabaseService.sendChatMessage({
+        sender: senderName,
+        text: textToSend
+      });
+      if (savedMsg?.id) {
+        knownIdsRef.current.add(savedMsg.id);
       }
+    } catch (err) {
+      console.warn("Failed to write chat to Supabase, message stored locally:", err);
     }
 
     setIsSending(false);

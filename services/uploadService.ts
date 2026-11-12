@@ -1,14 +1,27 @@
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "./firebaseConfig";
 import { compressImage } from "../utils/imageUtils";
 
 // 인메모리 및 로컬스토리지 연동 설정
 let inMemoryCloudName: string = "";
 let inMemoryUploadPreset: string = "";
 
+/**
+ * Cloudinary 설정 가져오기
+ * 1. 메모리 설정 -> 2. 로컬스토리지 -> 3. 환경변수(Vite) -> 4. 망고투어 기본값('ducor31pp')
+ */
 export const getCloudinaryConfig = () => {
-  const cloudName = inMemoryCloudName || (typeof localStorage !== 'undefined' ? localStorage.getItem('cloudinary_cloud_name') : '') || "";
-  const uploadPreset = inMemoryUploadPreset || (typeof localStorage !== 'undefined' ? localStorage.getItem('cloudinary_upload_preset') : '') || "";
+  const envCloudName = (import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME || "";
+  const envUploadPreset = (import.meta as any).env?.VITE_CLOUDINARY_UPLOAD_PRESET || "";
+
+  const cloudName = inMemoryCloudName || 
+    (typeof localStorage !== 'undefined' ? localStorage.getItem('cloudinary_cloud_name') : '') || 
+    envCloudName || 
+    "ducor31pp"; // 망고투어 등록 완료된 기본 Cloud Name
+
+  const uploadPreset = inMemoryUploadPreset || 
+    (typeof localStorage !== 'undefined' ? localStorage.getItem('cloudinary_upload_preset') : '') || 
+    envUploadPreset || 
+    "mangotour";
+
   return { cloudName: cloudName.trim(), uploadPreset: uploadPreset.trim() };
 };
 
@@ -19,6 +32,26 @@ export const setCloudinaryConfig = (cloudName: string, uploadPreset: string) => 
     if (inMemoryCloudName) localStorage.setItem('cloudinary_cloud_name', inMemoryCloudName);
     if (inMemoryUploadPreset) localStorage.setItem('cloudinary_upload_preset', inMemoryUploadPreset);
   }
+};
+
+/**
+ * URL이 Cloudinary에 업로드된 미디어인지 확인
+ */
+export const isCloudinaryUrl = (url?: string): boolean => {
+  if (!url) return false;
+  return url.includes('cloudinary.com') || url.includes('res.cloudinary.com');
+};
+
+/**
+ * Cloudinary URL에 가속 옵션(f_auto, q_auto 등)을 적용하여 로딩 속도 최적화
+ */
+export const getCloudinaryOptimizedUrl = (url?: string, width?: number): string => {
+  if (!url) return '';
+  if (!isCloudinaryUrl(url) || url.includes('/f_auto,q_auto/')) {
+    return url;
+  }
+  const transform = width ? `f_auto,q_auto,w_${width}` : 'f_auto,q_auto';
+  return url.replace('/upload/', `/upload/${transform}/`);
 };
 
 /**
@@ -69,7 +102,7 @@ const uploadToServer = (
 
 /**
  * Cloudinary Direct Upload
- * Uses /video/upload for videos and /image/upload for images to prevent preset/CORS errors
+ * Uses /video/upload for videos and /image/upload for images
  */
 const uploadToCloudinary = (
   uploadData: Blob | File,
@@ -105,7 +138,7 @@ const uploadToCloudinary = (
         }
       } else {
         console.warn("Cloudinary upload non-200 status:", xhr.status, xhr.responseText);
-        reject(new Error(`Cloudinary returned status ${xhr.status}`));
+        reject(new Error(`Cloudinary returned status ${xhr.status}: ${xhr.responseText}`));
       }
     };
 
@@ -116,48 +149,13 @@ const uploadToCloudinary = (
 
     const formData = new FormData();
     formData.append('file', uploadData);
-    formData.append('upload_preset', uploadPreset);
-    formData.append('folder', folder);
+    if (uploadPreset) {
+      formData.append('upload_preset', uploadPreset);
+    }
+    if (folder) {
+      formData.append('folder', folder);
+    }
     xhr.send(formData);
-  });
-};
-
-/**
- * Firebase Storage Upload
- */
-const uploadToFirebaseStorage = (
-  uploadData: Blob | File,
-  filename: string,
-  folder: string,
-  onProgress?: (progress: number) => void
-): Promise<string> => {
-  if (!storage) {
-    return Promise.reject(new Error("Firebase Storage not initialized"));
-  }
-
-  const uniqueFileName = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-  const storageRef = ref(storage, `${folder}/${uniqueFileName}`);
-  const uploadTask = uploadBytesResumable(storageRef, uploadData);
-
-  return new Promise((resolve, reject) => {
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        if (onProgress) onProgress(progress);
-      },
-      (error: any) => {
-        reject(error);
-      },
-      async () => {
-        try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadURL);
-        } catch (e: any) {
-          reject(e);
-        }
-      }
-    );
   });
 };
 
@@ -175,10 +173,10 @@ const fileToDataUrl = (file: Blob | File): Promise<string> => {
 
 /**
  * 파일 업로드 함수:
- * 1순위: Cloudinary (설정 시 - 글로벌 CDN 스트리밍 및 모바일 호환성 최적)
+ * 1순위: Cloudinary Direct Upload (글로벌 CDN 스트리밍, 이미지/비디오 최적화)
  * 2순위: 동일 오리진 서버 업로드 (/api/upload - CORS 완전 면제)
- * 3순위: Firebase Storage
- * 4순위: 이미지만 Base64 폴백 (비디오는 로컬 blob/Base64 저장 금지)
+ * 3순위: 이미지만 비상용 Base64 폴백 (비디오는 로컬 blob/Base64 저장 금지)
+ * (Firebase Storage 의존성은 100% 제거되었습니다)
  */
 export const uploadFile = async (
   file: File, 
@@ -200,11 +198,11 @@ export const uploadFile = async (
 
   // 1. Cloudinary Upload (글로벌 CDN, 모바일 부분 스트리밍 및 썸네일 지원)
   const { cloudName, uploadPreset } = getCloudinaryConfig();
-  const isCloudinaryConfigured = cloudName && 
-                                uploadPreset && 
-                                cloudName !== "Cloud Name" && 
-                                cloudName.trim() !== "" && 
-                                uploadPreset.trim() !== "";
+  const isCloudinaryConfigured = Boolean(
+    cloudName && 
+    cloudName !== "Cloud Name" && 
+    cloudName.trim() !== ""
+  );
 
   if (isCloudinaryConfigured) {
     try {
@@ -225,16 +223,7 @@ export const uploadFile = async (
     console.warn("Server upload (/api/upload) not available, checking other providers:", serverErr);
   }
 
-  // 3. Firebase Storage Upload
-  try {
-    console.log(`Attempting Firebase Storage upload for ${file.name}...`);
-    const fbUrl = await uploadToFirebaseStorage(uploadData, file.name, folder, onProgress);
-    if (fbUrl) return fbUrl;
-  } catch (fbErr) {
-    console.warn("Firebase storage upload failed:", fbErr);
-  }
-
-  // 4. Fallback: 비디오 파일은 절대로 blob: 이나 거대 Base64로 저장하지 않음 (모바일 재생 불가 및 메모리 충돌 방지)
+  // 3. Fallback: 비디오 파일은 절대로 blob: 이나 거대 Base64로 저장하지 않음 (모바일 재생 불가 및 메모리 충돌 방지)
   if (isVideo) {
     throw new Error(
       "동영상 업로드에 실패했습니다. 파일 용량(100MB 이하 권장)과 네트워크 상태를 확인하신 후 MP4(H.264) 형식으로 다시 시도해주세요."

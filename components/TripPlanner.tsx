@@ -4,8 +4,7 @@ import { jsPDF } from 'jspdf';
 import { CustomTripPackage, PackageOptionItem, MasterOptionPool, Product } from '../types';
 import { INITIAL_MASTER_OPTION_POOL } from '../constants';
 import BackButton from './BackButton';
-import { db } from '../services/firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { supabaseService } from '../services/supabaseService';
 import { A4QuotationDocument, CostItem, ItineraryDay } from './A4QuotationDocument';
 
 interface Props {
@@ -217,8 +216,8 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
   const getDIYLocationImage = (loc: string) => {
     if (loc === '호치민') return 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200';
     if (loc === '붕따우') return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200';
-    if (loc === '달랏') return 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=1200';
-    if (loc === '호치민+붕따우') return 'https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?q=80&w=1200';
+    if (loc === '달랏') return 'https://images.unsplash.com/photo-1511497584788-87676104235f?q=80&w=1200';
+    if (loc === '호치민+붕따우') return 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=1200';
     if (loc === '호치민+달랏') return 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200';
     if (loc === '다낭/나트랑') return 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1200';
     return 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=1200';
@@ -1118,16 +1117,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
       console.warn('FormSubmit AJAX request notice:', netErr);
     }
 
-    // 2. Backup save to Firestore Database
+    // 2. Backup save to Supabase Database
     try {
-      if (db) {
-        await addDoc(collection(db, 'custom_trip_inquiries'), {
-          ...inquiryPayload,
-          createdAt: new Date().toISOString()
-        });
-      }
+      await supabaseService.saveInquiry(inquiryPayload);
     } catch (dbErr) {
-      console.warn('Firestore backup save error:', dbErr);
+      console.warn('Supabase backup save error:', dbErr);
     }
 
     setIsSubmittingEmail(false);
@@ -1310,10 +1304,6 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                         <img
                           src={pkg.image}
                           alt={pkg.title}
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800';
-                          }}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
@@ -1368,40 +1358,6 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                                   <span>{course}</span>
                                 </div>
                               ))}
-                            </div>
-                          </div>
-
-                          {/* 4박 5일 추천 패키지 핵심 기준 배너 (차량 1일 $100, 가이드 1일 $120, 1인 객실 기준, 마사지 기본포함, 식사 선택) */}
-                          <div className="mt-3 bg-gradient-to-r from-emerald-50/90 to-teal-50/70 rounded-2xl p-2.5 sm:p-3 border border-emerald-200/90 space-y-1.5 text-[11px] sm:text-xs">
-                            <div className="flex items-center gap-1.5 text-blue-900 font-bold">
-                              <span className="shrink-0 text-blue-600">🚐</span>
-                              <span className="text-gray-900 font-extrabold shrink-0">차량:</span>
-                              <span className="truncate">전용 리무진 밴 (7인승 1대 1일 $100 × 5일 = $500)</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-indigo-900 font-bold">
-                              <span className="shrink-0 text-indigo-700">👨‍💼</span>
-                              <span className="text-gray-900 font-extrabold shrink-0">가이드:</span>
-                              <span className="truncate">한국어 전문 가이드 (1일 기준 $120 × 5일 = $600)</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
-                              <span className="shrink-0 text-emerald-700">🏨</span>
-                              <span className="text-gray-900 font-extrabold shrink-0">숙박:</span>
-                              <span className="truncate">1인 객실 기준 (전 일정 1인 1실 단독 투숙)</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-amber-900 font-bold">
-                              <span className="shrink-0 text-amber-600">🛫</span>
-                              <span className="text-gray-900 font-extrabold shrink-0">패스트트랙:</span>
-                              <span className="truncate">공항 VIP 패스트 트랙 (1인당 $60) 선택 가능</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
-                              <span className="shrink-0 text-emerald-700">💆</span>
-                              <span className="text-gray-900 font-extrabold shrink-0">마사지:</span>
-                              <span className="truncate">VIP 전신 힐링 마사지 (90분) 기본 포함</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-orange-950 font-bold">
-                              <span className="shrink-0 text-orange-600">🍽️</span>
-                              <span className="text-gray-900 font-extrabold shrink-0">식사:</span>
-                              <span className="truncate">석식 플랜 (1인 1일 $50 × 4일 = $200) 선택 가능</span>
                             </div>
                           </div>
                         </div>
@@ -2097,7 +2053,6 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                         const displayName = getOptionDisplayName(option);
                         const badge = getCategoryBadge(option.category, displayName);
                         const effectivePrice = getOptionPrice(option);
-                        const displayDescription = getOptionDisplayDescription(option);
                         const isCustomized = !!customOptionSelections[option.id] || (option.category === 'golf' && isGolfCoursesModified);
                         const isExpanded = expandedOptionId === option.id;
 
@@ -2186,9 +2141,6 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                                       </span>
                                     )}
                                   </div>
-                                  {displayDescription && (
-                                    <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mt-0.5 sm:mt-1 leading-relaxed font-normal break-keep">{displayDescription}</p>
-                                  )}
                                 </div>
                               </div>
 

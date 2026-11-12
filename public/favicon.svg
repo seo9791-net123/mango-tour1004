@@ -1,31 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <defs>
-    <linearGradient id="mangoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FBBF24"/>
-      <stop offset="45%" stop-color="#F59E0B"/>
-      <stop offset="100%" stop-color="#D97706"/>
-    </linearGradient>
-    <linearGradient id="leafGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#047857"/>
-      <stop offset="100%" stop-color="#10B981"/>
-    </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
-      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/>
-    </filter>
-  </defs>
-  
-  <!-- Mango Body -->
-  <path d="M38 16 C48 20, 56 32, 52 46 C48 60, 30 62, 20 54 C12 46, 12 32, 20 22 C26 14, 32 14, 38 16 Z" 
-        fill="url(#mangoGrad)" filter="url(#shadow)" />
-        
-  <!-- Mango Highlight -->
-  <path d="M28 22 C34 18, 42 20, 46 28 C48 32, 46 36, 44 32 C41 26, 34 23, 27 25 C25 25, 26 23, 28 22 Z" 
-        fill="#FEF3C7" opacity="0.6"/>
-
-  <!-- Emerald Leaf -->
-  <path d="M36 17 C38 8, 48 4, 54 6 C52 14, 44 18, 36 17 Z" 
-        fill="url(#leafGrad)" />
-        
-  <!-- Small Stem -->
-  <path d="M35 18 C33 15, 34 12, 36 10" stroke="#78350F" stroke-width="2" stroke-linecap="round" fill="none" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <path d="M38 6 C36 14 30 20 22 22 C26 14 32 8 38 6 Z" fill="#2d6a4f"/>
+  <path d="M36 8 C40 4 48 3 52 4 C48 10 42 12 36 8 Z" fill="#40916c"/>
+  <path d="M42 20 C54 28 58 46 48 56 C38 66 20 62 14 50 C8 36 22 16 38 18 C40 18 41 19 42 20 Z" fill="#ffb703"/>
+  <path d="M38 18 C48 24 54 36 50 48 C46 40 40 30 32 24 C34 21 36 19 38 18 Z" fill="#fb8500"/>
 </svg>
