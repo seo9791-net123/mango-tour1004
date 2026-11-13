@@ -1818,7 +1818,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         </div>
       </div>
 
-      <div className="bg-white p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-xl border border-gray-100 min-h-[600px]">
+      <div className={`bg-white shadow-xl border border-gray-100 min-h-[600px] ${
+        activeTab === 'users'
+          ? '-mx-2 sm:mx-0 px-0 py-2 sm:p-6 md:p-8 rounded-none sm:rounded-3xl'
+          : 'p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl'
+      }`}>
         {/* Hero Slide */}
         {activeTab === 'hero' && (
            <div className="animate-fade-in-up">
@@ -4125,92 +4129,215 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         )}
 
         {/* User Admin */}
-        {activeTab === 'users' && (
-          <div className="animate-fade-in-up">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  👥 회원 및 관리자 계정 관리
-                  <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold">
-                    총 {users.length}명
-                  </span>
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">
-                  망고투어 회원 정보 및 관리자 계정을 조회하고 권한을 조정할 수 있습니다.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddUserModal(true)}
-                className="px-4 py-2 bg-deepgreen text-white hover:bg-emerald-800 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 transition shadow-sm active:scale-98 self-start sm:self-auto"
-              >
-                <span>➕</span> 신규 회원/관리자 추가
-              </button>
-            </div>
+        {activeTab === 'users' && (() => {
+          const adminUsers = [...users]
+            .filter(u => u.role === 'admin')
+            .sort((a, b) => {
+              if (a.username === 'admin' && b.username !== 'admin') return -1;
+              if (b.username === 'admin' && a.username !== 'admin') return 1;
+              return (a.username || '').localeCompare(b.username || '');
+            });
 
-            <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-xs bg-white">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="p-4 text-left font-bold text-gray-600">아이디</th>
-                    <th className="p-4 text-left font-bold text-gray-600">닉네임</th>
-                    <th className="p-4 text-left font-bold text-gray-600">권한</th>
-                    <th className="p-4 text-center font-bold text-gray-600">권한 변경</th>
-                    <th className="p-4 text-right font-bold text-gray-600">계정 관리</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {users.map(u => (
-                    <tr key={u.id} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="p-4 font-bold text-gray-800 font-mono">
-                        {u.username}
-                        {u.username === 'admin' && (
-                          <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">
-                            최고관리자
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-4 text-gray-700 font-medium">{u.nickname || '-'}</td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                          u.role === 'admin' 
-                            ? 'bg-rose-100 text-rose-700 border border-rose-200' 
-                            : 'bg-blue-100 text-blue-700 border border-blue-200'
-                        }`}>
-                          {u.role === 'admin' ? '👑 관리자' : '👤 일반회원'}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        {u.username !== 'admin' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleToggleUserRole(u)}
-                            className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition"
-                          >
-                            {u.role === 'admin' ? '일반회원으로 변경' : '👑 관리자로 승격'}
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-gray-400 italic">변경 불가</span>
-                        )}
-                      </td>
-                      <td className="p-4 text-right">
-                        {u.username !== 'admin' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteUser(u)}
-                            className="text-xs px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition border border-red-200"
-                          >
-                            🗑️ 삭제
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-gray-400 italic">영구 보호</span>
-                        )}
-                      </td>
+          const memberUsers = [...users]
+            .filter(u => u.role !== 'admin')
+            .sort((a, b) => (a.username || '').localeCompare(b.username || ''));
+
+          const orderedGroups = [
+            { key: 'admins', title: `👑 관리자 계정 (${adminUsers.length}명)`, list: adminUsers, isMemberGroup: false },
+            { key: 'members', title: `👤 일반 회원 정보 (${memberUsers.length}명)`, list: memberUsers, isMemberGroup: true },
+          ];
+
+          return (
+            <div className="animate-fade-in-up w-full">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2.5 sm:px-0 mb-3 sm:mb-6">
+                <div>
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-800 flex flex-wrap items-center gap-2">
+                    <span>👥 회원 및 관리자 계정 관리</span>
+                    <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+                      총 {users.length}명 (관리자 {adminUsers.length} · 회원 {memberUsers.length})
+                    </span>
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    상단에 관리자 계정이 배치되며, 아래로 일반 회원 계정이 정렬됩니다.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(true)}
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-deepgreen text-white hover:bg-emerald-800 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-sm active:scale-98 shrink-0"
+                >
+                  <span>➕</span> 신규 회원/관리자 추가
+                </button>
+              </div>
+
+              {/* Mobile Edge-to-Edge Full-Width List (좌우 여백 없이 칸에 맞게 정렬) */}
+              <div className="md:hidden w-full border-y border-gray-200 bg-white">
+                {orderedGroups.map((group) => (
+                  <div key={group.key} className="w-full">
+                    <div
+                      className={`w-full px-2.5 py-2 text-xs font-extrabold flex items-center justify-between border-b border-gray-200 tabular-nums ${
+                        group.isMemberGroup
+                          ? 'bg-slate-100 text-slate-800 border-t border-gray-200'
+                          : 'bg-rose-50/90 text-rose-800'
+                      }`}
+                    >
+                      <span>{group.title}</span>
+                    </div>
+
+                    {group.list.length === 0 ? (
+                      <div className="px-2.5 py-5 text-center text-xs text-gray-400">
+                        {group.isMemberGroup ? '등록된 일반 회원이 없습니다.' : '등록된 관리자가 없습니다.'}
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-100 w-full">
+                        {group.list.map((u) => (
+                          <div key={u.id} className="w-full px-2.5 py-2.5 bg-white">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 w-full">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="font-mono font-bold text-sm text-gray-900 truncate">
+                                    {u.username}
+                                  </span>
+                                  {u.username === 'admin' && (
+                                    <span className="shrink-0 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">
+                                      최고관리자
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate mt-0.5">
+                                  닉네임: <span className="font-semibold text-gray-700">{u.nickname || '-'}</span>
+                                </div>
+                              </div>
+
+                              <span
+                                className={`shrink-0 px-2 py-1 rounded-lg text-[11px] font-bold ${
+                                  u.role === 'admin'
+                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                }`}
+                              >
+                                {u.role === 'admin' ? '👑 관리자' : '👤 일반회원'}
+                              </span>
+                            </div>
+
+                            {u.username !== 'admin' ? (
+                              <div className="grid grid-cols-2 gap-1.5 mt-2 w-full">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleUserRole(u)}
+                                  className="w-full py-1.5 px-2 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs text-center truncate transition"
+                                >
+                                  {u.role === 'admin' ? '일반회원으로 변경' : '👑 관리자로 승격'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteUser(u)}
+                                  className="w-full py-1.5 px-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs border border-red-200 text-center truncate transition"
+                                >
+                                  🗑️ 계정 삭제
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="mt-1.5 text-[11px] text-gray-400 italic">
+                                최고관리자 계정 (권한 변경 및 삭제 불가 · 영구 보호)
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (관리자 상단 -> 회원 하단) */}
+              <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-200 shadow-xs bg-white">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="p-4 text-left font-bold text-gray-600">아이디</th>
+                      <th className="p-4 text-left font-bold text-gray-600">닉네임</th>
+                      <th className="p-4 text-left font-bold text-gray-600">권한</th>
+                      <th className="p-4 text-center font-bold text-gray-600">권한 변경</th>
+                      <th className="p-4 text-right font-bold text-gray-600">계정 관리</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {orderedGroups.map((group) => (
+                      <React.Fragment key={group.key}>
+                        <tr className={group.isMemberGroup ? 'bg-slate-50/90' : 'bg-rose-50/60'}>
+                          <td
+                            colSpan={5}
+                            className={`px-4 py-2.5 text-xs font-extrabold tracking-wide tabular-nums ${
+                              group.isMemberGroup ? 'text-slate-700' : 'text-rose-800'
+                            }`}
+                          >
+                            {group.title}
+                          </td>
+                        </tr>
+                        {group.list.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="p-6 text-center text-xs text-gray-400">
+                              {group.isMemberGroup ? '등록된 일반 회원이 없습니다.' : '등록된 관리자가 없습니다.'}
+                            </td>
+                          </tr>
+                        ) : (
+                          group.list.map((u) => (
+                            <tr key={u.id} className="hover:bg-gray-50/80 transition-colors">
+                              <td className="p-4 font-bold text-gray-800 font-mono">
+                                {u.username}
+                                {u.username === 'admin' && (
+                                  <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">
+                                    최고관리자
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4 text-gray-700 font-medium">{u.nickname || '-'}</td>
+                              <td className="p-4">
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                                    u.role === 'admin'
+                                      ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                                      : 'bg-blue-100 text-blue-700 border border-blue-200'
+                                  }`}
+                                >
+                                  {u.role === 'admin' ? '👑 관리자' : '👤 일반회원'}
+                                </span>
+                              </td>
+                              <td className="p-4 text-center">
+                                {u.username !== 'admin' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleUserRole(u)}
+                                    className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition"
+                                  >
+                                    {u.role === 'admin' ? '일반회원으로 변경' : '👑 관리자로 승격'}
+                                  </button>
+                                ) : (
+                                  <span className="text-[11px] text-gray-400 italic">변경 불가</span>
+                                )}
+                              </td>
+                              <td className="p-4 text-right">
+                                {u.username !== 'admin' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteUser(u)}
+                                    className="text-xs px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition border border-red-200"
+                                  >
+                                    🗑️ 삭제
+                                  </button>
+                                ) : (
+                                  <span className="text-[11px] text-gray-400 italic">영구 보호</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
             {/* 신규 회원 추가 모달 */}
             {showAddUserModal && (
@@ -4313,7 +4440,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* 0. General Product Delete Confirmation Modal */}

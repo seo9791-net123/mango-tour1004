@@ -120,6 +120,30 @@ const App: React.FC = () => {
     } catch {}
     return SUB_MENU_ITEMS;
   });
+  const isNewPresetProductId = (id: string) =>
+    id.startsWith('p-35-') || id.startsWith('p-46-') || id.startsWith('p-57-');
+
+  const getDeletedPresetIds = (): Set<string> => {
+    try {
+      const raw = localStorage.getItem('mango_deleted_preset_ids_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return new Set(parsed.map(String));
+      }
+    } catch {}
+    return new Set();
+  };
+
+  const mergeMissingNewPresets = (existing: Product[]): Product[] => {
+    const existingIds = new Set(existing.map(p => String(p.id)));
+    const deletedIds = getDeletedPresetIds();
+    const missingPresets = INITIAL_PRODUCTS.filter(
+      p => isNewPresetProductId(String(p.id)) && !existingIds.has(String(p.id)) && !deletedIds.has(String(p.id))
+    );
+    if (missingPresets.length === 0) return existing;
+    return [...existing, ...missingPresets];
+  };
+
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('mango_products_db');
     if (saved) {
@@ -151,7 +175,7 @@ const App: React.FC = () => {
             }
             return p;
           });
-          return updated;
+          return mergeMissingNewPresets(updated);
         }
       } catch {
         // fallback
@@ -639,7 +663,14 @@ const App: React.FC = () => {
             setMenuItems(data.menuItems);
           }
           if (Array.isArray(data.products) && data.products.length > 0) {
-            setProducts(data.products);
+            const alreadyHasCloudPresets = data.products.some((p: Product) => isNewPresetProductId(String(p.id)));
+            const finalProducts = alreadyHasCloudPresets
+              ? data.products
+              : mergeMissingNewPresets(data.products);
+            setProducts(finalProducts);
+            try {
+              localStorage.setItem('mango_products_db', JSON.stringify(finalProducts));
+            } catch {}
           }
           if (Array.isArray(data.posts) && data.posts.length > 0) {
             setPosts(data.posts);
@@ -704,6 +735,17 @@ const App: React.FC = () => {
   };
 
   const handleUpdateProducts = async (newProducts: Product[]) => {
+    try {
+      const nextIds = new Set(newProducts.map(p => String(p.id)));
+      const deletedPresets = products
+        .filter(p => isNewPresetProductId(String(p.id)) && !nextIds.has(String(p.id)))
+        .map(p => String(p.id));
+      if (deletedPresets.length > 0) {
+        const currentDeleted = getDeletedPresetIds();
+        deletedPresets.forEach(id => currentDeleted.add(id));
+        localStorage.setItem('mango_deleted_preset_ids_v1', JSON.stringify(Array.from(currentDeleted)));
+      }
+    } catch {}
     setProducts(newProducts);
     try {
       localStorage.setItem('mango_products_db', JSON.stringify(newProducts));

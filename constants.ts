@@ -1,7 +1,7 @@
 
 import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, CustomTripPackage, MasterOptionPool } from './types';
 
-export const LOCATIONS = ['호치민', '붕따우', '무이네', '달랏'];
+export const LOCATIONS = ['호치민', '붕따우', '무이네', '나트랑', '달랏'];
 export const THEMES = ['골프', '관광', '먹거리', '비지니스'];
 export const ACCOMMODATIONS = ['3성급', '4성급', '호텔 숙박(고급 호텔)', '풀빌라'];
 
@@ -198,6 +198,588 @@ export const INITIAL_PRODUCTS: Product[] = [
       { day: 2, activities: ['미토 메콩강 투어(쪽배 체험)', '코끼리 귀 생선 중식', '석식 및 휴식'] },
       { day: 3, activities: ['구찌 터널 탐방', '호치민 스카이덱 야경 감상', '자유 시간'] },
       { day: 4, activities: ['벤탄 시장 기념품 쇼핑', '마사지', '공항 샌딩'] }
+    ]
+  },
+
+  // =========================================================================
+  // 3박 5일 추천 신규 패키지 (10개: 골프 7개 + 관광 3개 / 5대 지역)
+  // =========================================================================
+  {
+    id: 'p-35-1',
+    title: '호치민 태광정산·롱탄 명문 3색 골프 3박 5일',
+    description: '전용 스피드보트로 입장하는 태광정산 CC와 롱탄·송베 CC를 아우르는 호치민 54홀 실속 골프.',
+    image: '/images/products/hcm-golf-day.jpg',
+    detailImages: ['/images/products/hcm-golf-day.jpg', '/images/products/hcm-golf-resort.jpg'],
+    detailContent: '동나이 강 위의 프라이빗 아일랜드 코스 태광정산 CC와 아시아 100대 명문 롱탄 CC, 전통의 송베 CC를 3박 5일간 모두 경험할 수 있는 호치민 대표 54홀 라운딩 패키지입니다.\n\n• 포함 코스: 태광정산 CC(18H) + 롱탄 CC(18H) + 송베 CC(18H)\n• 숙박: 호치민 1군 고급 호텔 1인 1실 (조식 포함)\n• 이동: 전 일정 단독 VIP 7인승 리무진 밴 & 한국어 가이드 케어',
+    price: 990,
+    location: '호치민',
+    duration: '3박 5일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 떤선녓 공항 VIP 미팅 및 호텔 체크인', '사이공 강변 웰컴 석식', '전신 힐링 마사지 90분'] },
+      { day: 2, activities: ['태광정산 CC 18홀 라운딩 (스피드보트 이동)', '클럽하우스 중식 및 호치민 시내 카페 투어', '베트남 정통 씨푸드 석식'] },
+      { day: 3, activities: ['롱탄 CC 18홀 라운딩', '오후 휴식 및 사이공 스카이 루프탑 바', '특선 삼겹살 & 소고기 바베큐 석식'] },
+      { day: 4, activities: ['송베 CC 18홀 라운딩', '벤탄 시장·타카시마야 기념품 쇼핑 및 석식', '호치민 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-2',
+    title: '호치민 도심 나이트 라운딩 & 떤선녓 3박 5일',
+    description: '시내 20분 거리 떤선녓 CC 주·야간 라운딩과 트윈도브스 CC를 결합한 이동 최소화 일정.',
+    image: '/images/products/hcm-golf-night.jpg',
+    detailImages: ['/images/products/hcm-golf-night.jpg', '/images/products/hcm-golf-day.jpg'],
+    detailContent: '장거리 이동 피로 없이 호치민 도심의 화려한 야경 아래서 시원한 야간 라운딩과 주간 명문 코스를 동시에 즐길 수 있는 효율적인 3박 5일 일정입니다.\n\n• 포함 코스: 떤선녓 CC 주간(18H) + 떤선녓 야간(18H) + 트윈도브스 CC(18H)\n• 특징: 짧은 이동 동선으로 휴식, 미식, 나이트라이프 시간 극대화',
+    price: 1030,
+    location: '호치민',
+    duration: '3박 5일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 픽업 후 1군 고급 호텔 체크인', '호치민 시내 야경 투어 및 웰컴 디너'] },
+      { day: 2, activities: ['트윈도브스 CC 18홀 오전 라운딩', '전신 스파 케어 90분 및 휴식', '현지 유명 스테이크 & 와인 석식'] },
+      { day: 3, activities: ['오전 자유 휴식 및 미쉐린 맛집 중식', '떤선녓 CC 18홀 야간(나이트) 라운딩', '호치민 칠바 루프탑 자유 시간'] },
+      { day: 4, activities: ['떤선녓 CC 18홀 오전 라운딩', '호텔 체크아웃 및 시내 쇼핑·석식', '떤선녓 국제공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-3',
+    title: '붕따우 더 블러프 오션 링크스 VIP 3박 5일',
+    description: '그렉 노먼이 설계한 세계 100대 해안 링크스 코스 더 블러프 CC와 호짬 고급 리조트.',
+    image: '/images/products/vungtau-golf-links.jpg',
+    detailImages: ['/images/products/vungtau-golf-links.jpg', '/images/products/vungtau-golf-club.jpg'],
+    detailContent: '남중국해의 시원한 바닷바람과 자연 모래 언덕을 그대로 살린 세계 100대 명문 코스 더 블러프 호짬 스트립 CC를 중심으로 구성된 프리미엄 오션 골프 투어입니다.\n\n• 포함 코스: 더 블러프 호짬 CC 36홀 + 파라다이스 CC 18홀\n• 숙박: 더 그랜드 호짬 리조트 오션뷰 1인 1실',
+    price: 1180,
+    location: '붕따우',
+    duration: '3박 5일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 미팅 후 붕따우 호짬 리조트 전용 차량 이동', '오션뷰 리조트 체크인 및 해산물 웰컴 석식'] },
+      { day: 2, activities: ['더 블러프 호짬 CC 18홀 라운딩', '리조트 인피니티 풀 휴양 및 마사지 90분', '호짬 랍스터 씨푸드 만찬'] },
+      { day: 3, activities: ['더 블러프 호짬 CC 2차 18홀 라운딩', '리조트 카지노 및 스카이 라운지 자유 이용'] },
+      { day: 4, activities: ['붕따우 파라다이스 CC 18홀 라운딩', '호치민 시내 복귀 및 석식 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-4',
+    title: '붕따우 파라다이스 해변 2색 골프 3박 5일',
+    description: '해변 소나무 숲과 바다가 어우러진 파라다이스 CC와 쩌우득 CC 실속 54홀 라운딩.',
+    image: '/images/products/vungtau-golf-club.jpg',
+    detailImages: ['/images/products/vungtau-golf-club.jpg', '/images/products/vungtau-tour-beach.jpg'],
+    detailContent: '합리적인 가격으로 붕따우의 아름다운 해안 골프와 여유로운 휴양을 동시에 즐길 수 있는 가성비 최강 54홀 골프 상품입니다.\n\n• 포함 코스: 파라다이스 CC 36홀 + 쩌우득 CC 18홀\n• 특전: 붕따우 해변 씨푸드 야시장 탐방 및 마사지 케어 포함',
+    price: 890,
+    location: '붕따우',
+    duration: '3박 5일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 도착 후 붕따우 해변 리조트 이동', '해변 산책 및 붕따우 로컬 씨푸드 석식'] },
+      { day: 2, activities: ['붕따우 파라다이스 CC 18홀 라운딩', '붕따우 예수상 전망대 및 백비치 드라이브', '전신 아로마 마사지 90분'] },
+      { day: 3, activities: ['쩌우득 CC 18홀 라운딩', '해변 카페 휴식 및 바베큐 석식'] },
+      { day: 4, activities: ['파라다이스 CC 18홀 오전 라운딩', '호치민 이동 및 기념품 쇼핑 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-5',
+    title: '무이네 씨링크스 오션뷰 힐링 골프 3박 5일',
+    description: '붉은 모래 사구와 푸른 바다가 내려다보이는 무이네 씨링크스 CC 36홀 & 사막 투어.',
+    image: '/images/products/muine-golf-ocean.jpg',
+    detailImages: ['/images/products/muine-golf-ocean.jpg', '/images/products/muine-tour-dunes.jpg'],
+    detailContent: '베트남에서 가장 도전적이고 아름다운 해안 링크스 중 하나인 무이네 씨링크스 골프 앤 컨트리클럽에서의 라운딩과 환상적인 사막 지프투어를 함께 즐기는 일정입니다.\n\n• 포함 코스: 무이네 씨링크스 CC 36홀 + 호치민 송베 CC 18홀\n• 체험: 화이트 샌듄 일출 지프투어 & 보케 거리 해산물 만찬',
+    price: 870,
+    location: '무이네',
+    duration: '3박 5일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 픽업 및 무이네 해변 리조트 이동', '리조트 체크인 후 보케 거리 랍스터 석식'] },
+      { day: 2, activities: ['무이네 씨링크스 CC 18홀 오션뷰 라운딩', '요정의 샘물 산책 및 피싱 빌리지 일몰 감상'] },
+      { day: 3, activities: ['이른 아침 화이트샌듄 일출 지프투어', '씨링크스 CC 2차 18홀 라운딩 및 스파 마사지'] },
+      { day: 4, activities: ['호치민 이동 후 송베 CC 18홀 라운딩', '석식 후 떤선녓 국제공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-6',
+    title: '나트랑 빈펄 아일랜드 오션 골프 3박 5일',
+    description: '천혜의 섬 나트랑 혼쩨섬 빈펄 CC와 KN 골프링크스를 함께 즐기는 54홀 오션 골프.',
+    image: '/images/products/nhatrang-golf-island.jpg',
+    detailImages: ['/images/products/nhatrang-golf-island.jpg', '/images/products/nhatrang-golf-mountain.jpg'],
+    detailContent: '나트랑 베이의 에메랄드빛 바다를 삼면으로 조망하는 혼쩨섬 빈펄 CC와 그렉 노먼 설계의 KN 깜란 골프링크스를 경험하는 나트랑 대표 3박 5일 골프 패키지입니다.\n\n• 포함 코스: 빈펄 나트랑 CC 18홀 + KN 골프링크스 18홀 + 다이아몬드베이 CC 18홀\n• 숙박: 나트랑 오션뷰 5성 리조트 1인 1실',
+    price: 1050,
+    location: '나트랑',
+    duration: '3박 5일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['나트랑 깜란 공항 픽업 및 비치 리조트 체크인', '나트랑 해변 웰컴 씨푸드 석식'] },
+      { day: 2, activities: ['빈펄 나트랑 CC 18홀 라운딩 (스피드보트 이동)', '아이리조트 천연 온천 머드 스파 체험', '시내 루프탑 바 및 석식'] },
+      { day: 3, activities: ['KN 골프링크스 깜란 18홀 라운딩', '전신 오일 마사지 90분 및 야시장 투어'] },
+      { day: 4, activities: ['다이아몬드베이 CC 18홀 라운딩', '롯데마트 쇼핑 및 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-7',
+    title: '달랏 팔레스·투옌람 고원 명문 3박 5일',
+    description: '해발 1,500m 연중 선선한 봄 날씨 속에서 즐기는 달랏 황제 코스 54홀 라운딩.',
+    image: '/images/products/dalat-golf-pine.jpg',
+    detailImages: ['/images/products/dalat-golf-pine.jpg', '/images/products/dalat-tour-garden.jpg'],
+    detailContent: '한낮에도 22~25도의 쾌적한 기온을 유지하는 베트남의 작은 알프스 달랏에서 소나무 숲과 호수를 배경으로 땀 흘리지 않는 최상급 라운딩을 즐겨보세요.\n\n• 포함 코스: 달랏 팔레스 CC 18홀 + SAM 투옌람 CC 18홀 + 더 달랏 1200 CC 18홀',
+    price: 920,
+    location: '달랏',
+    duration: '3박 5일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['달랏 리엔크엉 공항 미팅 후 고원 리조트 체크인', '쑤언흐엉 호수 산책 및 달랏 야시장 투어'] },
+      { day: 2, activities: ['달랏 팔레스 헤리티지 CC 18홀 라운딩', '바오다이 황제 여름 별장 관광 및 와인 디너'] },
+      { day: 3, activities: ['SAM 투옌람 CC 18홀 라운딩', '죽림 선원 케이블카 체험 및 허브 스파'] },
+      { day: 4, activities: ['더 달랏 1200 CC 18홀 라운딩', '고원 특선 샤브샤브 석식 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-8',
+    title: '호치민 사이공 야경 크루즈 & 시티 3박 5일',
+    description: '동양의 파리 호치민의 역사와 미쉐린 맛집, 사이공 강 디너 크루즈를 담은 알찬 관광.',
+    image: '/images/products/hcm-tour-city.jpg',
+    detailImages: ['/images/products/hcm-tour-city.jpg', '/images/products/dalat-tour-garden.jpg'],
+    detailContent: '노트르담 성당, 중앙 우체국, 통일궁 등 프랑스풍 건축물 투어부터 메콩강 이색 쪽배 체험과 럭셔리 사이공강 디너 크루즈까지 포함된 품격 있는 관광 패키지입니다.\n\n• 핵심 코스: 호치민 시티 투어 + 메콩강 미토 투어 + 사이공강 디너 크루즈 + 전신 마사지',
+    price: 610,
+    location: '호치민',
+    duration: '3박 5일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['떤선녓 공항 픽업 및 시내 고급 호텔 체크인', '오페라하우스·응우옌 후에 거리 야경 산책'] },
+      { day: 2, activities: ['통일궁·중앙우체국·전쟁박물관 역사 투어', '미쉐린 선정 로컬 맛집 중식', '사이공 강 럭셔리 디너 크루즈 승선'] },
+      { day: 3, activities: ['미토 메콩강 크루즈 & 전통 쪽배 체험', '열대과일 농장 시식 및 코끼리 귀 생선 특식', 'VIP 아로마 전신 마사지 90분'] },
+      { day: 4, activities: ['벤탄 시장 & 동커이 거리 카페·쇼핑 투어', '최후의 만찬 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-9',
+    title: '무이네 사막 선라이즈 지프 & 와이너리 3박 5일',
+    description: '화이트·레드 샌듄 일출 지프투어와 와인 캐슬, 해변 리조트 휴양이 어우러진 이색 투어.',
+    image: '/images/products/muine-tour-dunes.jpg',
+    detailImages: ['/images/products/muine-tour-dunes.jpg', '/images/products/vungtau-tour-beach.jpg'],
+    detailContent: '사막과 바다가 맞닿은 신비로운 휴양지 무이네에서 전용 오픈 지프를 타고 사구를 달리며 인생 사진을 남기고, 해변 리조트에서 여유를 만끽하는 3박 5일 힐링 여행입니다.',
+    price: 640,
+    location: '무이네',
+    duration: '3박 5일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['호치민 픽업 후 고속도로 전용 차량으로 무이네 이동', '비치 프론트 리조트 체크인 및 석식'] },
+      { day: 2, activities: ['화이트샌듄 일출 지프투어 & ATV 체험', '요정의 샘물 맨발 트레킹 & 피싱 빌리지', '보케 거리 신선한 씨푸드 만찬'] },
+      { day: 3, activities: ['레드샌듄 & 무이네 RD 와인 캐슬 시음 투어', '리조트 수영장 자유 휴양 및 해변 스파 마사지'] },
+      { day: 4, activities: ['리조트 체크아웃 후 호치민 복귀', '호치민 시내 쇼핑 및 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-35-10',
+    title: '나트랑 산호섬 요트 호핑 & 머드스파 3박 5일',
+    description: '에메랄드 나트랑 베이 요트 호핑투어, 포나가르 사원, 천연 머드 온천을 즐기는 휴양 투어.',
+    image: '/images/products/nhatrang-tour-bay.jpg',
+    detailImages: ['/images/products/nhatrang-tour-bay.jpg', '/images/products/nhatrang-golf-island.jpg'],
+    detailContent: '연중 맑고 따뜻한 나트랑의 바다에서 스노클링과 선셋 요트를 즐기고, 고대 참파 유적지와 아이리조트 머드 온천으로 몸과 마음을 치유하는 완벽한 3박 5일 관광 상품입니다.',
+    price: 690,
+    location: '나트랑',
+    duration: '3박 5일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['나트랑 공항 픽업 및 해변 5성 호텔 체크인', '나트랑 해변 산책 및 웰컴 씨푸드 디너'] },
+      { day: 2, activities: ['혼문섬·혼땀섬 산호초 스노클링 호핑 투어', '선상 해산물 바베큐 중식', '전신 힐링 스파 90분 및 야시장 구경'] },
+      { day: 3, activities: ['포나가르 참 탑 & 롱선사 관광', '아이리조트 프라이빗 머드 온천 스파', '스카이라이트 루프탑 전망대 석식'] },
+      { day: 4, activities: ['담시장 및 롯데마트 기념품 쇼핑', '나트랑 특선 분짜 중식 후 공항 샌딩'] }
+    ]
+  },
+
+  // =========================================================================
+  // 4박 6일 추천 신규 패키지 (10개: 골프 7개 + 관광 3개 / 5대 지역)
+  // =========================================================================
+  {
+    id: 'p-46-1',
+    title: '호치민 4대 명문(떤선녓·롱탄·트윈도브스·정산) 72홀 4박 6일',
+    description: '호치민을 대표하는 최상급 4개 명문 골프장을 매일 한 곳씩 정복하는 골퍼의 로망 72홀.',
+    image: '/images/products/hcm-golf-resort.jpg',
+    detailImages: ['/images/products/hcm-golf-resort.jpg', '/images/products/hcm-golf-day.jpg'],
+    detailContent: '4박 6일의 여유로운 일정 동안 호치민 최고의 코스 4곳을 중복 없이 모두 라운딩하는 명문 골프 투어입니다. 전 일정 1인 1실 고급 호텔과 전용 리무진으로 피로도를 최소화했습니다.',
+    price: 1320,
+    location: '호치민',
+    duration: '4박 6일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 VIP 미팅 후 1군 고급 호텔 체크인', '환영 특식 및 자유 휴식'] },
+      { day: 2, activities: ['떤선녓 CC 18홀 라운딩', '시내 유명 스파 마사지 90분 & 미식 석식'] },
+      { day: 3, activities: ['롱탄 CC 18홀 라운딩', '호치민 랜드마크 81 전망대 & 강변 디너'] },
+      { day: 4, activities: ['트윈도브스 CC 18홀 라운딩', '무제한 한우/삼겹살 바베큐 특식'] },
+      { day: 5, activities: ['태광정산 CC 18홀 라운딩 (스피드보트 입장)', '체크아웃 후 쇼핑·마사지 및 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-2',
+    title: '호치민 비즈니스 VIP 의전 & 3색 골프 4박 6일',
+    description: '접대 및 비즈니스 라운딩에 최적화된 전용 통역·리무진 의전과 정산·베트남G.C·롱탄 54홀.',
+    image: '/images/products/hcm-golf-day.jpg',
+    detailImages: ['/images/products/hcm-golf-day.jpg', '/images/products/hcm-tour-city.jpg'],
+    detailContent: '중요한 비즈니스 파트너나 지인들과의 품격 있는 일정을 위해 멤버십 회원제 구장 중심 라운딩과 미팅·만찬 의전을 완벽하게 지원하는 4박 6일 VIP 패키지입니다.',
+    price: 1390,
+    location: '호치민',
+    duration: '4박 6일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['공항 VIP 패스트트랙(선택) 및 전용 리무진 픽업', '호치민 고급 럭셔리 호텔 체크인 & 웰컴 만찬'] },
+      { day: 2, activities: ['롱탄 CC 18홀 비즈니스 라운딩', '오후 기업 미팅/시내 투어 지원 & 파인다이닝 석식'] },
+      { day: 3, activities: ['태광정산 CC 18홀 라운딩', 'VIP 풋·전신 스파 120분 & 프라이빗 룸 디너'] },
+      { day: 4, activities: ['베트남 G.C 18홀 라운딩', '루프탑 라운지 칵테일 및 네트워킹 석식'] },
+      { day: 5, activities: ['오전 여유로운 호텔 조식·휴식', '기념품 쇼핑 및 공항 VIP 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-3',
+    title: '붕따우 호짬 그랜드 & 더 블러프 72홀 4박 6일',
+    description: '오션뷰 5성 카지노 리조트 4박 숙박과 더 블러프·파라다이스 CC 총 72홀 오션 골프.',
+    image: '/images/products/vungtau-golf-links.jpg',
+    detailImages: ['/images/products/vungtau-golf-links.jpg', '/images/products/vungtau-golf-club.jpg'],
+    detailContent: '더 그랜드 호짬 리조트에 머무르며 세계 100대 링크스 코스인 더 블러프 CC 2회와 바다 전망 파라다이스 CC 2회 총 72홀을 여유롭게 라운딩하는 오션 프리미엄 일정입니다.',
+    price: 1460,
+    location: '붕따우',
+    duration: '4박 6일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 픽업 후 호짬 리조트 이동 (약 2시간)', '체크인 및 리조트 웰컴 디너'] },
+      { day: 2, activities: ['더 블러프 호짬 CC 1차 18홀 라운딩', '리조트 수영장 휴양 & 스파 마사지'] },
+      { day: 3, activities: ['붕따우 파라다이스 CC 1차 18홀 라운딩', '붕따우 케이블카·해변 씨푸드 특식'] },
+      { day: 4, activities: ['더 블러프 호짬 CC 2차 18홀 라운딩', '카지노·라운지 나이트 휴식'] },
+      { day: 5, activities: ['파라다이스 CC 2차 18홀 라운딩', '호치민 공항 이동 및 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-4',
+    title: '붕따우 독채 풀빌라 & 해변 골프 4박 6일',
+    description: '우리 일행만 사용하는 대형 전용 수영장 풀빌라 숙박과 바베큐 풀파티, 54홀 라운딩.',
+    image: '/images/products/vungtau-golf-club.jpg',
+    detailImages: ['/images/products/vungtau-golf-club.jpg', '/images/products/vungtau-tour-beach.jpg'],
+    detailContent: '소중한 동반자들과 프라이빗하게 즐기는 붕따우 해변 독채 풀빌라(1인 1실 침실 배정)와 전담 셰프 출장 바베큐 파티, 그리고 3회 54홀 라운딩이 결합된 인기 휴양 골프입니다.',
+    price: 1280,
+    location: '붕따우',
+    duration: '4박 6일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['공항 픽업 후 붕따우 프라이빗 독채 풀빌라 입실', '풀사이드 웰컴 파티 및 해산물 그릴 석식'] },
+      { day: 2, activities: ['더 블러프 CC 18홀 라운딩', '풀빌라 자유 수영 및 전담 셰프 통돼지 바베큐 파티'] },
+      { day: 3, activities: ['파라다이스 CC 18홀 라운딩', '풀빌라 출장 VIP 전신 마사지 120분'] },
+      { day: 4, activities: ['쩌우득 CC 18홀 라운딩', '붕따우 활어 다금바리·랍스터 회 만찬'] },
+      { day: 5, activities: ['여유로운 풀빌라 조식 후 체크아웃', '호치민 시내 쇼핑 및 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-5',
+    title: '무이네 씨링크스 리조트 스테이 & 54홀 4박 6일',
+    description: '해변 리조트 풀빌라에서 숙박하며 씨링크스 CC 54홀과 사막 지프투어를 만끽하는 4박 6일.',
+    image: '/images/products/muine-golf-ocean.jpg',
+    detailImages: ['/images/products/muine-golf-ocean.jpg', '/images/products/muine-tour-dunes.jpg'],
+    detailContent: '고속도로 개통으로 2시간 반 만에 닿는 무이네에서 바다를 낀 씨링크스 CC 3회 라운딩과 사막·와이너리·씨푸드 휴양을 여유롭게 즐기는 4박 6일 스테이 패키지입니다.',
+    price: 1150,
+    location: '무이네',
+    duration: '4박 6일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 픽업 및 무이네 씨링크스 리조트 이동', '해변 석식 및 휴식'] },
+      { day: 2, activities: ['씨링크스 CC 1차 18홀 라운딩', '오후 리조트 풀사이드 휴양 및 마사지'] },
+      { day: 3, activities: ['화이트샌듄 일출 지프투어 & 요정의 샘물', '씨링크스 CC 2차 18홀 라운딩 & 와인 캐슬'] },
+      { day: 4, activities: ['씨링크스 CC 3차 18홀 라운딩', '보케 거리 랍스터·씨푸드 굿바이 파티'] },
+      { day: 5, activities: ['리조트 조식 후 체크아웃', '호치민 이동 및 시내 쇼핑 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-6',
+    title: '나트랑 KN 골프링크스·다이아몬드베이 3색 4박 6일',
+    description: '나트랑 최고의 명문 구장 KN 링크스·빈펄·다이아몬드베이를 여유롭게 도는 72홀.',
+    image: '/images/products/nhatrang-golf-mountain.jpg',
+    detailImages: ['/images/products/nhatrang-golf-mountain.jpg', '/images/products/nhatrang-golf-island.jpg'],
+    detailContent: '깜란 반도의 바람과 웅장한 산맥, 에메랄드 바다가 조화된 나트랑 3대 골프장을 4박 6일 동안 총 72홀 라운딩하며 고급 비치 리조트에서 쉼을 얻는 최고의 휴양 골프입니다.',
+    price: 1350,
+    location: '나트랑',
+    duration: '4박 6일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['나트랑 깜란 공항 픽업 및 고급 비치 리조트 체크인', '해변 웰컴 디너'] },
+      { day: 2, activities: ['KN 골프링크스 깜란 18홀 라운딩', '아이리조트 머드 온천 & 전신 마사지'] },
+      { day: 3, activities: ['빈펄 나트랑 CC 18홀 라운딩', '빈원더스 야경·분수쇼 관람 및 씨푸드 석식'] },
+      { day: 4, activities: ['다이아몬드베이 CC 18홀 라운딩', '나트랑 베이 선셋 요트 & 루프탑 바'] },
+      { day: 5, activities: ['KN 골프링크스 2차 18홀 라운딩', '체크아웃 후 시내 쇼핑 및 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-7',
+    title: '달랏 3색(팔레스·투옌람·더달랏1200) 72홀 4박 6일',
+    description: '베트남 고원 3대 명문 구장에서 매일 시원한 솔바람과 함께하는 72홀 힐링 골프.',
+    image: '/images/products/dalat-golf-pine.jpg',
+    detailImages: ['/images/products/dalat-golf-pine.jpg', '/images/products/dalat-tour-waterfall.jpg'],
+    detailContent: '1922년 개장한 역사 깊은 달랏 팔레스 CC, 투옌람 호수를 품은 SAM 투옌람 CC, 아시안투어 코스 더 달랏 1200 CC를 모두 정복하는 4박 6일 72홀 프리미엄 고원 골프입니다.',
+    price: 1240,
+    location: '달랏',
+    duration: '4박 6일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['달랏 공항 미팅 및 프렌치 헤리티지 리조트 체크인', '쑤언흐엉 호수 티타임 & 석식'] },
+      { day: 2, activities: ['달랏 팔레스 CC 18홀 라운딩', '달랏 화원·기차역 산책 & 흑돼지 바베큐'] },
+      { day: 3, activities: ['SAM 투옌람 CC 18홀 라운딩', '고원 허브 스파 90분 및 와인 디너'] },
+      { day: 4, activities: ['더 달랏 1200 CC 18홀 라운딩', '랑비앙 전망대 야경 & 특식 만찬'] },
+      { day: 5, activities: ['달랏 팔레스 CC 2차 18홀 라운딩', '달랏 야시장 쇼핑 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-8',
+    title: '붕따우 오션 케이블카 & 풀빌라 씨푸드 4박 6일',
+    description: '호마이 파크 오션 케이블카, 해안 드라이브, 프라이빗 풀빌라 바베큐로 채운 4박 6일 휴양.',
+    image: '/images/products/vungtau-tour-beach.jpg',
+    detailImages: ['/images/products/vungtau-tour-beach.jpg', '/images/products/vungtau-golf-links.jpg'],
+    detailContent: '가족, 친목 모임에 가장 인기 높은 붕따우 해변 독채 풀빌라 휴양 상품입니다. 아름다운 해안선 관광과 싱싱한 활어 씨푸드 만찬, 매일 즐기는 스파 케어가 포함됩니다.',
+    price: 790,
+    location: '붕따우',
+    duration: '4박 6일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['호치민 도착 후 붕따우 해변 풀빌라 이동', '수영장 휴식 및 웰컴 씨푸드 만찬'] },
+      { day: 2, activities: ['붕따우 호마이 파크 케이블카·전망대 투어', '백비치 오션 카페 & 전신 스파 90분'] },
+      { day: 3, activities: ['예수상·화이트 팰리스·등대 해안 드라이브', '풀빌라 전담 셰프 바베큐 & 풀사이드 파티'] },
+      { day: 4, activities: ['미네랄 온천 비치 리조트 반일 힐링', '붕따우 수산시장 랍스터 특식'] },
+      { day: 5, activities: ['호치민 시내 복귀 및 벤탄시장·백화점 쇼핑', '석식 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-9',
+    title: '나트랑 빈원더스 & 럭셔리 아일랜드 요트 4박 6일',
+    description: '에메랄드 바다 위 요트 호핑, 빈원더스 테마파크, 머드 온천을 4박 6일간 여유롭게.',
+    image: '/images/products/nhatrang-tour-bay.jpg',
+    detailImages: ['/images/products/nhatrang-tour-bay.jpg', '/images/products/nhatrang-golf-mountain.jpg'],
+    detailContent: '바다와 휴양을 사랑하는 여행자를 위한 나트랑 4박 6일 완벽 코스입니다. 전용 요트 스노클링부터 아시아 최대 규모 해상 케이블카 빈원더스, 프라이빗 마사지까지 알차게 구성했습니다.',
+    price: 850,
+    location: '나트랑',
+    duration: '4박 6일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['나트랑 공항 픽업 및 오션뷰 5성 리조트 체크인', '해변 산책 및 웰컴 디너'] },
+      { day: 2, activities: ['프라이빗 요트 3개 섬 호핑 & 산호초 스노클링', '선셋 샴페인 & 씨푸드 디너'] },
+      { day: 3, activities: ['빈원더스 나트랑 종일 프리패스 (워터파크·사파리·타타쇼)', '귀환 후 발·전신 마사지'] },
+      { day: 4, activities: ['포나가르 사원·나트랑 대성당·담시장 시티 투어', '아이리조트 VIP 머드 온천 힐링'] },
+      { day: 5, activities: ['오전 리조트 인피니티풀 자유 시간', '쇼핑 후 깜란 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-46-10',
+    title: '달랏 프렌치 헤리티지·호수·화원 힐링 4박 6일',
+    description: '시원한 고원 도시 달랏의 수국 정원, 다딴라 폭포, 클레이 터널을 여유롭게 여행하는 일정.',
+    image: '/images/products/dalat-tour-garden.jpg',
+    detailImages: ['/images/products/dalat-tour-garden.jpg', '/images/products/dalat-tour-waterfall.jpg'],
+    detailContent: '사계절 꽃이 피고 안개가 감도는 낭만 도시 달랏에서 프랑스풍 빌라에 머무르며 수국 농장, 랑비앙 산, 다딴라 폭포, 고원 커피 농장을 체험하는 감성 힐링 투어입니다.',
+    price: 760,
+    location: '달랏',
+    duration: '4박 6일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['달랏 공항 픽업 및 프렌치 헤리티지 리조트 체크인', '쑤언흐엉 호수 석양 산책 & 야시장'] },
+      { day: 2, activities: ['랑비앙 마운틴 지프 정상 투어', '달랏 플라워 가든·수국 농장 사진 투어', '고원 특선 아티초크 전골 석식'] },
+      { day: 3, activities: ['다딴라 폭포 알파인 코스터 체험', '죽림 선원 & 투옌람 호수 보트 유람'] },
+      { day: 4, activities: ['달랏 옛 기차역 빈티지 열차 체험 & 린푸억 사원', '아라비카 커피 농장 티타임 & 허브 스파 90분'] },
+      { day: 5, activities: ['클레이 터널 조각공원 관람', '기념품 구매 후 공항 샌딩'] }
+    ]
+  },
+
+  // =========================================================================
+  // 5박 7일 추천 신규 패키지 (10개: 골프 7개 + 관광 3개 / 5대 지역)
+  // =========================================================================
+  {
+    id: 'p-57-1',
+    title: '호치민 그랜드 슬램 5대 명문 90홀 5박 7일',
+    description: '떤선녓·롱탄·트윈도브스·태광정산·송베 호치민 5대 명문 구장을 모두 돌며 90홀 완주.',
+    image: '/images/products/hcm-golf-day.jpg',
+    detailImages: ['/images/products/hcm-golf-day.jpg', '/images/products/hcm-golf-resort.jpg'],
+    detailContent: '골프 마니아를 위한 호치민 결정판! 5박 7일간 호치민 최고 평점 5개 명문 구장을 하루에 하나씩 라운딩하며 총 90홀을 완주하는 최상위 골프 패키지입니다.\n\n• 5대 코스: 떤선녓 CC + 롱탄 CC + 트윈도브스 CC + 태광정산 CC + 송베 CC\n• 케어: 매일 저녁 마사지·미식 투어 선택 연계 가능',
+    price: 1650,
+    location: '호치민',
+    duration: '5박 7일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 떤선녓 공항 픽업 및 고급 호텔 체크인', '환영 만찬 및 컨디션 조절'] },
+      { day: 2, activities: ['떤선녓 CC 18홀 라운딩', '전신 아로마 마사지 90분 & 로컬 씨푸드 석식'] },
+      { day: 3, activities: ['롱탄 CC 18홀 라운딩', '사이공 강 디너 크루즈 야경'] },
+      { day: 4, activities: ['트윈도브스 CC 18홀 라운딩', '호치민 시내 루프탑 바 투어'] },
+      { day: 5, activities: ['태광정산 CC 18홀 라운딩 (스피드보트)', '무제한 스테이크 & 와인 디너'] },
+      { day: 6, activities: ['송베 CC 18홀 라운딩', '시내 쇼핑·마사지 후 떤선녓 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-2',
+    title: '호치민 럭셔리 리무진 무제한 힐링 골프 5박 7일',
+    description: '오전엔 여유로운 호캉스·스파, 오후·야간엔 쾌적한 명문 라운딩을 즐기는 VIP 5박 7일.',
+    image: '/images/products/hcm-golf-night.jpg',
+    detailImages: ['/images/products/hcm-golf-night.jpg', '/images/products/hcm-golf-resort.jpg'],
+    detailContent: '뙤약볕을 피하고 싶은 골퍼분들을 위해 오전엔 호텔 수영장과 브런치·VIP 마사지를 즐기고, 선선한 오후 및 야간 타임에 맞춰 72~90홀 라운딩을 배치한 럭셔리 슬로우 골프 일정입니다.',
+    price: 1580,
+    location: '호치민',
+    duration: '5박 7일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['공항 픽업 및 1군 5성급 호텔 체크인', '럭셔리 파인다이닝 웰컴 디너'] },
+      { day: 2, activities: ['오전 호텔 조식·수영 & 90분 스파', '떤선녓 CC 오후·야간 18홀 라운딩'] },
+      { day: 3, activities: ['오전 미쉐린 쌀국수·카페 투어', '롱탄 CC 18홀 오후 라운딩'] },
+      { day: 4, activities: ['베트남 G.C 18홀 라운딩', '사이공 나이트 칠바 & 가라오케 VIP 체험'] },
+      { day: 5, activities: ['트윈도브스 CC 18홀 라운딩', '굿바이 갈라 디너 & 야경 감상'] },
+      { day: 6, activities: ['오전 느긋한 레이트 체크아웃', '동커이 쇼핑·전신 스파 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-3',
+    title: '붕따우 더 블러프·파라다이스 장박 황제 골프 5박 7일',
+    description: '바다 전망 오션 스위트 리조트 5박 투숙과 더 블러프·파라다이스·쩌우득 90홀 황제 골프.',
+    image: '/images/products/vungtau-golf-links.jpg',
+    detailImages: ['/images/products/vungtau-golf-links.jpg', '/images/products/vungtau-golf-club.jpg'],
+    detailContent: '5박 7일 동안 짐을 싸고 푸는 번거로움 없이 붕따우 호짬 고급 리조트 한 곳에 머물며 더 블러프 3회 + 파라다이스 1회 + 쩌우득 1회 총 90홀의 오션 링크스 라운딩을 만끽하는 황제 투어입니다.',
+    price: 1790,
+    location: '붕따우',
+    duration: '5박 7일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 픽업 및 호짬 오션 리조트 이동', '체크인 및 리조트 웰컴 디너'] },
+      { day: 2, activities: ['더 블러프 호짬 CC 1차 18홀 라운딩', '오션뷰 수영장 휴식 & 씨푸드 석식'] },
+      { day: 3, activities: ['파라다이스 CC 18홀 라운딩', '붕따우 해안 드라이브 & 마사지 120분'] },
+      { day: 4, activities: ['더 블러프 호짬 CC 2차 18홀 라운딩', '리조트 내 VIP 카지노·스카이바 이용'] },
+      { day: 5, activities: ['쩌우득 CC 18홀 라운딩', '호짬 랍스터 & 스테이크 특식'] },
+      { day: 6, activities: ['더 블러프 호짬 CC 3차 18홀 피날레 라운딩', '호치민 이동 및 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-4',
+    title: '붕따우 프라이빗 풀빌라 동호회·비즈니스 골프 5박 7일',
+    description: '4~12인 단체에 맞춘 독채 풀빌라 연박, 출장 셰프 만찬, 총 72홀 여유로운 친목 골프.',
+    image: '/images/products/vungtau-golf-club.jpg',
+    detailImages: ['/images/products/vungtau-golf-club.jpg', '/images/products/vungtau-tour-beach.jpg'],
+    detailContent: '골프 동호회나 가족·지인 소그룹이 눈치 보지 않고 전용 수영장, 노래방, 야외 바베큐장이 완비된 대형 독채 풀빌라에서 5박 7일을 함께 보내며 72홀 라운딩과 휴식을 누리는 일정입니다.',
+    price: 1620,
+    location: '붕따우',
+    duration: '5박 7일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['공항 픽업 후 붕따우 대형 독채 풀빌라 체크인', '풀사이드 웰컴 샴페인 파티'] },
+      { day: 2, activities: ['더 블러프 CC 18홀 라운딩', '풀빌라 출장 셰프 통돼지 바베큐 만찬'] },
+      { day: 3, activities: ['파라다이스 CC 1차 18홀 라운딩', '붕따우 케이블카 관광 및 출장 마사지'] },
+      { day: 4, activities: ['전일 자유 휴식 (수영장·해변 요트 또는 추가 라운딩 선택)', '활어 회·랍스터 파티'] },
+      { day: 5, activities: ['파라다이스 CC 2차 18홀 & 친목 미니 대회', '시상식 갈라 디너'] },
+      { day: 6, activities: ['쩌우득 CC 18홀 라운딩 후 호치민 이동', '공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-5',
+    title: '무이네 낭만 사막 리조트 & 무제한 골프 5박 7일',
+    description: '사막과 바다가 만나는 무이네 리조트에서 72홀 라운딩과 사막 일출·와이너리·스파 장박 휴양.',
+    image: '/images/products/muine-golf-ocean.jpg',
+    detailImages: ['/images/products/muine-golf-ocean.jpg', '/images/products/muine-tour-dunes.jpg'],
+    detailContent: '조용하고 이국적인 무이네 리조트에서 5박 7일간 천천히 머물며 씨링크스 CC 4회(72홀) 라운딩과 사막 오프로드 지프투어, 매일의 해변 석양 식사를 즐기는 힐링 골프 여행입니다.',
+    price: 1420,
+    location: '무이네',
+    duration: '5박 7일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 픽업 및 무이네 씨링크스 리조트 이동', '해변 리조트 체크인'] },
+      { day: 2, activities: ['씨링크스 CC 1차 18홀 라운딩', '전신 스파 90분 & 보케 씨푸드'] },
+      { day: 3, activities: ['화이트샌듄 일출 지프투어 & 로터스 레이크', '씨링크스 CC 2차 18홀 라운딩'] },
+      { day: 4, activities: ['씨링크스 CC 3차 18홀 라운딩', 'RD 와인 캐슬 시음 투어 & 레드샌듄 일몰'] },
+      { day: 5, activities: ['씨링크스 CC 4차 18홀 라운딩', '리조트 프라이빗 해변 바베큐 만찬'] },
+      { day: 6, activities: ['오전 여유로운 리조트 자유 휴양 후 호치민 이동', '쇼핑 및 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-6',
+    title: '나트랑 올인클루시브 오션 3색 90홀 5박 7일',
+    description: '나트랑 빈펄·KN골프링크스·다이아몬드베이를 5일간 모두 라운딩하는 오션 90홀 마스터.',
+    image: '/images/products/nhatrang-golf-island.jpg',
+    detailImages: ['/images/products/nhatrang-golf-island.jpg', '/images/products/nhatrang-golf-mountain.jpg'],
+    detailContent: '5박 7일의 긴 휴가를 나트랑의 찬란한 태양 아래에서 보내는 프리미엄 90홀 오션 골프! 3대 명문 구장 순회 라운딩과 요트 호핑·머드 스파까지 균형 있게 담았습니다.',
+    price: 1720,
+    location: '나트랑',
+    duration: '5박 7일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['나트랑 깜란 공항 픽업 및 비치 리조트 체크인', '나트랑 해변 웰컴 디너'] },
+      { day: 2, activities: ['KN 골프링크스 깜란 1차 18홀 라운딩', '전신 힐링 스파 90분'] },
+      { day: 3, activities: ['빈펄 나트랑 CC 1차 18홀 라운딩', '섬 내 비치 클럽 휴양 & 석식'] },
+      { day: 4, activities: ['다이아몬드베이 CC 18홀 라운딩', '아이리조트 VIP 머드 온천 체험'] },
+      { day: 5, activities: ['KN 골프링크스 깜란 2차 18홀 라운딩', '선셋 요트 샴페인 투어 & 특식 만찬'] },
+      { day: 6, activities: ['빈펄 CC 2차 18홀 피날레 라운딩', '시내 쇼핑 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-7',
+    title: '달랏 알프스 장박 90홀 쾌적 라운딩 5박 7일',
+    description: '무더위 없는 달랏 고원에서 팔레스·투옌람·더달랏1200 3개 명문 구장을 여유롭게 90홀.',
+    image: '/images/products/dalat-golf-pine.jpg',
+    detailImages: ['/images/products/dalat-golf-pine.jpg', '/images/products/dalat-tour-garden.jpg'],
+    detailContent: '1년 내내 시원한 봄 날씨를 자랑하는 달랏에서 장박 라운딩의 진수를 느껴보세요. 고풍스러운 헤리티지 빌라에 머물며 5회 90홀 라운딩과 고원 관광을 여유롭게 즐깁니다.',
+    price: 1540,
+    location: '달랏',
+    duration: '5박 7일',
+    type: 'golf',
+    itinerary: [
+      { day: 1, activities: ['달랏 공항 픽업 및 프렌치 리조트 체크인', '쑤언흐엉 호수 산책 및 와인 웰컴 디너'] },
+      { day: 2, activities: ['달랏 팔레스 CC 1차 18홀 라운딩', '다딴라 폭포 산책 및 허브 스파 90분'] },
+      { day: 3, activities: ['SAM 투옌람 CC 1차 18홀 라운딩', '죽림 선원 & 호수 보트 유람'] },
+      { day: 4, activities: ['더 달랏 1200 CC 1차 18홀 라운딩', '랑비앙 마운틴 석양 투어 & 흑돼지 바베큐'] },
+      { day: 5, activities: ['SAM 투옌람 CC 2차 18홀 라운딩', '아라비카 로스터리 카페 & 달랏 야시장'] },
+      { day: 6, activities: ['달랏 팔레스 CC 2차 18홀 피날레 라운딩', '기념품 쇼핑 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-8',
+    title: '호치민·메콩강 시그니처 완전 정복 5박 7일',
+    description: '호치민 랜드마크, 구찌 터널, 메콩강 프라이빗 투어, 미쉐린 미식, 스파를 모두 담은 프리미엄 관광.',
+    image: '/images/products/hcm-tour-city.jpg',
+    detailImages: ['/images/products/hcm-tour-city.jpg', '/images/products/muine-tour-dunes.jpg'],
+    detailContent: '5박 7일 동안 호치민의 과거와 현재, 메콩 델타의 자연, 베트남 최고의 미쉐린 미식과 나이트 크루즈까지 여유롭고 품격 있게 모두 체험하는 완벽한 시그니처 관광 상품입니다.',
+    price: 920,
+    location: '호치민',
+    duration: '5박 7일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['호치민 공항 VIP 픽업 및 1군 고급 호텔 체크인', '사이공 스카이 라운지 야경 & 환영 만찬'] },
+      { day: 2, activities: ['통일궁·노트르담 성당·중앙우체국 시티 투어', '미쉐린 스타 레스토랑 중식', '사이공 강 럭셔리 디너 크루즈'] },
+      { day: 3, activities: ['구찌 터널 역사 탐방', '베트남 전통 아오자이 체험 & 스냅 촬영', 'VIP 전신 힐링 스파 120분'] },
+      { day: 4, activities: ['미토 메콩강 프라이빗 보트·코코넛 농장 체험', '부이비엔·동커이 야경 투어'] },
+      { day: 5, activities: ['호치민 아트 뮤지엄 & 쿠킹 클래스 체험', '랜드마크 81 전망대 & 굿바이 갈라 디너'] },
+      { day: 6, activities: ['벤탄 시장 & 타카시마야 기념품 쇼핑', '마사지 후 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-9',
+    title: '붕따우 오션 스파 & 프라이빗 휴양 5박 7일',
+    description: '남중국해를 마주한 오션뷰 리조트에서 매일 즐기는 스파와 해산물 미식, 해변 슬로우 여행.',
+    image: '/images/products/vungtau-tour-beach.jpg',
+    detailImages: ['/images/products/vungtau-tour-beach.jpg', '/images/products/nhatrang-tour-bay.jpg'],
+    detailContent: '바쁜 일상을 완전히 내려놓고 붕따우의 따스한 햇살과 바다 앞에서 온전한 쉼을 누리는 5박 7일 슬로우 힐링 패키지입니다. 온천, 마사지, 해안 명소, 랍스터 미식이 조화를 이룹니다.',
+    price: 960,
+    location: '붕따우',
+    duration: '5박 7일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['호치민 픽업 후 붕따우 오션 리조트 이동', '해변 산책 & 웰컴 씨푸드 디너'] },
+      { day: 2, activities: ['예수상 전망대 & 화이트 팰리스 문화 탐방', '오션뷰 스파 마사지 90분'] },
+      { day: 3, activities: ['빈쩌우 천연 온천 머드 스파 반일 휴양', '해변 선셋 라운지 티타임'] },
+      { day: 4, activities: ['호마이 파크 케이블카 & 전망대 투어', '활어 다금바리·랍스터 특식 만찬'] },
+      { day: 5, activities: ['전일 리조트 프라이빗 비치 & 풀장 자유 휴식', '굿바이 바베큐 만찬'] },
+      { day: 6, activities: ['체크아웃 후 호치민 이동', '기념품 쇼핑 및 공항 샌딩'] }
+    ]
+  },
+  {
+    id: 'p-57-10',
+    title: '달랏 에코 폭포·다비치·랑비앙 고원 투어 5박 7일',
+    description: '다딴라 폭포, 랑비앙 전망대, 린푸억 사원, 쑤언흐엉 호수를 5박 7일 동안 천천히 감상하는 에코 투어.',
+    image: '/images/products/dalat-tour-waterfall.jpg',
+    detailImages: ['/images/products/dalat-tour-waterfall.jpg', '/images/products/dalat-tour-garden.jpg'],
+    detailContent: '안개 낀 아침 호수에서 시작해 청정 소나무 숲, 에메랄드빛 폭포, 다채로운 고원 화원까지 달랏이 가진 모든 자연과 낭만을 빠짐없이 경험하는 5박 7일 프리미엄 에코 힐링 투어입니다.',
+    price: 890,
+    location: '달랏',
+    duration: '5박 7일',
+    type: 'tour',
+    itinerary: [
+      { day: 1, activities: ['달랏 공항 픽업 및 고원 헤리티지 리조트 체크인', '쑤언흐엉 호수 야간 마차 투어 & 석식'] },
+      { day: 2, activities: ['다딴라 폭포 알파인 코스터 & 퐁구르 폭포 탐방', '고원 특선 와인 디너'] },
+      { day: 3, activities: ['랑비앙 마운틴 지프 정상 투어 & 소수민족 문화 체험', '아로마 허브 스파 90분'] },
+      { day: 4, activities: ['달랏 플라워 가든·수국 정원 & 크레이지 하우스', '달랏 야시장 로컬 길거리 미식'] },
+      { day: 5, activities: ['달랏 빈티지 기차역 탑승 & 린푸억 모자이크 사원', '투옌람 호수 카약·죽림 선원 명상 산책'] },
+      { day: 6, activities: ['아라비카 커피 로스터리 쇼핑 후 리조트 체크아웃', '달랏 공항 샌딩'] }
     ]
   }
 ];
