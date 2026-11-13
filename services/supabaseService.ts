@@ -94,13 +94,24 @@ export const supabaseService = {
       }
 
       // 2. Products
+      let products: Product[] = INITIAL_PRODUCTS;
+      try {
+        const localProducts = localStorage.getItem('mango_products_db');
+        if (localProducts) {
+          const parsed = JSON.parse(localProducts);
+          if (Array.isArray(parsed) && parsed.length > 0) products = parsed;
+        }
+      } catch {
+        // ignore
+      }
+
       const { data: productsData } = await supabase
         .from('products')
         .select('*')
         .order('id', { ascending: true });
-      const products: Product[] = (productsData && productsData.length > 0) 
-        ? productsData.map(p => p.data || p) 
-        : INITIAL_PRODUCTS;
+      if (productsData && productsData.length > 0) {
+        products = productsData.map(p => p.data || p);
+      }
 
       // 3. Videos
       let videos: VideoItem[] = INITIAL_VIDEOS;

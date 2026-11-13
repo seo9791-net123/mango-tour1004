@@ -6,6 +6,7 @@ import { INITIAL_MASTER_OPTION_POOL } from '../constants';
 import BackButton from './BackButton';
 import { supabaseService } from '../services/supabaseService';
 import { A4QuotationDocument, CostItem, ItineraryDay } from './A4QuotationDocument';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   packages: CustomTripPackage[];
@@ -1302,7 +1303,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                       {/* Image Header */}
                       <div className="relative h-52 md:h-56 overflow-hidden bg-gray-100">
                         <img
-                          src={pkg.image}
+                          src={getFreshImageUrl(pkg.image)}
                           alt={pkg.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />

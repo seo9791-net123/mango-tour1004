@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CommunityPost, User, Comment } from '../types';
 import { uploadFile } from '../services/uploadService';
 import BackButton from './BackButton';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   posts: CommunityPost[];
@@ -286,7 +287,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
         <section className="relative h-[160px] xs:h-[180px] sm:h-[220px] md:h-[260px] flex items-center justify-center overflow-hidden bg-black">
           <div className="absolute inset-0 z-0">
             <img 
-              src="https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80" 
+              src={getFreshImageUrl("https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80")} 
               alt="Community Hero" 
               className="w-full h-full object-cover opacity-60" 
             />
@@ -356,7 +357,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                         <div className="text-gray-400 text-xs animate-pulse">이미지 업로드 중...</div>
                     ) : newPostImage ? (
                         <div className="relative inline-block">
-                            <img src={newPostImage} alt="Preview" className="max-h-40 rounded-lg shadow-sm" />
+                            <img src={getFreshImageUrl(newPostImage)} alt="Preview" className="max-h-40 rounded-lg shadow-sm" />
                             <button 
                                 onClick={() => setNewPostImage('')}
                                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold shadow hover:bg-red-600 text-xs"
@@ -624,7 +625,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                     {isEditing && editForm ? (
                        <>
                           {editForm.image ? (
-                             <img src={editForm.image} alt="Editing Post" className="w-full h-auto opacity-80" />
+                             <img src={getFreshImageUrl(editForm.image)} alt="Editing Post" className="w-full h-auto opacity-80" />
                           ) : (
                              <div className="w-full h-40 bg-gray-100 flex flex-col items-center justify-center text-gray-400 gap-2">
                                 <span className="text-2xl">🖼️</span>
@@ -661,7 +662,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                        </>
                     ) : (
                        viewingPost.image && (
-                          <img src={viewingPost.image} alt="Post" className="w-full h-auto" />
+                          <img src={getFreshImageUrl(viewingPost.image)} alt="Post" className="w-full h-auto" />
                        )
                     )}
                 </div>

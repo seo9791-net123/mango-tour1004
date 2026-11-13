@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { PageSlide } from '../types';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   slides?: PageSlide[];
@@ -42,7 +43,7 @@ const SliderPopup: React.FC<Props> = ({ slides, images, initialIndex = 0, onClos
           {/* Image Section */}
           <div className={`relative w-full ${currentItem.description ? 'md:w-2/3' : 'w-full'} h-64 md:h-auto bg-gray-900 flex items-center justify-center`}>
             <img 
-              src={currentItem.image} 
+              src={getFreshImageUrl(currentItem.image)} 
               className="w-full h-full object-contain" 
               alt={`Slide ${currentIndex + 1}`} 
             />

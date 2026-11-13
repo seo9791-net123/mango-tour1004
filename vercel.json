@@ -1,6 +1,33 @@
 {
   "framework": "vite",
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
+      ]
+    }
+  ],
   "rewrites": [
+    { "source": "/sw.js", "destination": "/sw.js" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/uploads/(.*)", "destination": "/uploads/$1" },
     { "source": "/(.*)", "destination": "/index.html" }

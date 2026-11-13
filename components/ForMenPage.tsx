@@ -2,6 +2,7 @@ import React from 'react';
 import { PageContent } from '../types';
 import PageSectionList from './PageSectionList';
 import BackButton from './BackButton';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   content: PageContent;
@@ -14,7 +15,7 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
       {/* Compact Hero */}
       <section className="relative h-[160px] xs:h-[180px] sm:h-[220px] md:h-[260px] flex items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 z-0">
-          <img src={content.heroImage} alt="Hero" className="w-full h-full object-cover opacity-50" />
+          <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover opacity-50" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-[#050505]"></div>
         </div>
         
@@ -48,7 +49,7 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
                  </div>
               </div>
               <div className="flex-1 w-full">
-                 <img src={content.introImage} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-[0_0_20px_rgba(197,160,40,0.1)] border border-white/10" alt="Nightlife" />
+                 <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-[0_0_20px_rgba(197,160,40,0.1)] border border-white/10" alt="Nightlife" />
               </div>
            </div>
 
@@ -62,7 +63,7 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5">
               {content.galleryImages.map((img, idx) => (
                  <div key={idx} className="group relative overflow-hidden rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-zinc-900 border border-white/5">
-                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Men ${idx}`} />
+                    <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Men ${idx}`} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity p-2.5 flex items-end">
                        <p className="text-gold-400 font-bold text-[10px] uppercase">Private Club {idx + 1}</p>
                     </div>

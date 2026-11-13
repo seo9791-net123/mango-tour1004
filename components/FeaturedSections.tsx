@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { PageContent, PageSection } from '../types';
 import SectionDetailModal from './SectionDetailModal';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   pageContents: Record<string, PageContent>;
@@ -43,7 +44,7 @@ const FeaturedSections: React.FC<Props> = ({ pageContents }) => {
             >
               <div className="relative h-48 overflow-hidden">
                 <img 
-                  src={section.detailImages && section.detailImages.length > 0 ? section.detailImages[0] : 'https://picsum.photos/seed/' + idx + '/800/600'} 
+                  src={getFreshImageUrl(section.detailImages && section.detailImages.length > 0 ? section.detailImages[0] : 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800&auto=format&fit=crop')} 
                   alt={section.title} 
                   className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
                 />

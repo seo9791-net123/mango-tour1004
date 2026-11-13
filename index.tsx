@@ -36,9 +36,21 @@ class ErrorBoundary extends Component<Props, State> {
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button
-                onClick={() => {
-                  localStorage.clear();
-                  sessionStorage.clear();
+                onClick={async () => {
+                  try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    if ('serviceWorker' in navigator) {
+                      const regs = await navigator.serviceWorker.getRegistrations();
+                      await Promise.all(regs.map((r) => r.unregister()));
+                    }
+                    if ('caches' in window) {
+                      const names = await caches.keys();
+                      await Promise.all(names.map((n) => caches.delete(n)));
+                    }
+                  } catch {
+                    // ignore cleanup error
+                  }
                   window.location.reload();
                 }}
                 style={{ backgroundColor: '#004d40', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
@@ -60,6 +72,35 @@ class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+// 기존 등록된 서비스 워커(sw.js) 모두 해제 및 캐시 스토리지 자동 삭제
+const clearLegacyServiceWorkersAndCaches = async () => {
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      if (registrations && registrations.length > 0) {
+        await Promise.all(registrations.map((reg) => reg.unregister()));
+        console.log('🧹 Legacy Service Workers unregistered.');
+      }
+      navigator.serviceWorker.addEventListener?.('message', (event) => {
+        if (event.data?.type === 'SW_CLEANED_UP') {
+          window.location.reload();
+        }
+      });
+    }
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      if (cacheNames && cacheNames.length > 0) {
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+        console.log('🧹 Legacy Cache Storage cleared.');
+      }
+    }
+  } catch (e) {
+    console.warn('ServiceWorker/Cache cleanup skipped:', e);
+  }
+};
+
+clearLegacyServiceWorkersAndCaches();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

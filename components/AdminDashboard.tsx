@@ -17,7 +17,7 @@ import { fetchGoogleSheetData } from '../services/googleSheetService';
 import { uploadFile, setCloudinaryConfig } from '../services/uploadService';
 import { supabaseService } from '../services/supabaseService';
 import { isSupabaseConfigured, updateSupabaseCredentials } from '../services/supabaseClient';
-import { compressImage } from '../utils/imageUtils';
+import { compressImage, getFreshImageUrl } from '../utils/imageUtils';
 import BackButton from './BackButton';
 import { getTravelDays, getItemPricingType, calculateCostItemTotal } from '../utils/costBreakdownUtils';
 
@@ -1826,7 +1826,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
               {heroImages.map((img, idx) => (
                 <div key={idx} className="relative group rounded-2xl overflow-hidden aspect-video shadow-md border bg-gray-50">
-                  <img src={img} alt={`Slide ${idx}`} className="w-full h-full object-cover" />
+                  <img src={getFreshImageUrl(img)} alt={`Slide ${idx}`} className="w-full h-full object-cover" />
                   {img.startsWith('data:') && (
                     <div className="absolute top-1 left-1 bg-red-500/80 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold backdrop-blur-sm">
                       Base64 ({(img.length / 1024).toFixed(0)}KB)
@@ -1869,7 +1869,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                 </button>
                 <button 
                   onClick={() => {
-                    const newProd: Product = { id: Date.now().toString(), title: '새 여행 상품', description: '상품 설명을 입력하세요.', image: 'https://via.placeholder.com/800x600', price: 0, location: '지역', duration: '3박 5일', type: 'tour', itinerary: [] };
+                    const newProd: Product = { id: Date.now().toString(), title: '새 여행 상품', description: '상품 설명을 입력하세요.', image: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800', price: 0, location: '지역', duration: '3박 5일', type: 'tour', itinerary: [] };
                     setProducts([newProd, ...products]);
                   }} 
                   className="bg-gold-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg text-sm"
@@ -1883,7 +1883,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                {products.map((p) => (
                  <div key={p.id} className={`flex flex-col border rounded-3xl bg-white shadow-xl overflow-hidden transition-all duration-300 ${editingProductId === p.id ? 'ring-4 ring-gold-400' : 'hover:shadow-2xl'}`}>
                    <div className="h-40 bg-gray-100 relative group">
-                     <img src={p.image} className="w-full h-full object-cover" alt={p.title} />
+                     <img src={getFreshImageUrl(p.image)} className="w-full h-full object-cover" alt={p.title} />
                      {p.image.startsWith('data:') && (
                        <div className="absolute top-2 left-2 bg-red-500/80 text-white text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur-sm">
                          Base64 ({(p.image.length / 1024).toFixed(0)}KB)
@@ -1951,7 +1951,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                                  <div className="flex flex-wrap gap-2">
                                      {p.detailImages?.map((img, imgIdx) => (
                                          <div key={imgIdx} className="w-12 h-12 rounded-lg overflow-hidden relative group border shadow-sm">
-                                             <img src={img} className="w-full h-full object-cover" alt={`Detail ${imgIdx}`} />
+                                             <img src={getFreshImageUrl(img)} className="w-full h-full object-cover" alt={`Detail ${imgIdx}`} />
                                              <button 
                                                  onClick={() => handleProductDetailImageRemove(p.id, imgIdx)}
                                                  className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[10px] font-bold"
@@ -2352,7 +2352,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         setPackageModalTab('basic');
                       }}
                     >
-                      <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      <img src={getFreshImageUrl(pkg.image)} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <span className="px-3 py-1.5 bg-gold-500 text-white font-black text-xs rounded-xl shadow-lg">
                           ✏️ 클릭하여 편집창 열기
@@ -2591,7 +2591,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                           <label className="font-bold text-gray-800 text-xs block">대표 썸네일 이미지</label>
                           <div className="flex flex-col sm:flex-row gap-4 items-start">
                             <div className="w-full sm:w-44 h-28 bg-gray-200 rounded-xl overflow-hidden border shrink-0">
-                              <img src={editingPackage.image} alt="Preview" className="w-full h-full object-cover" />
+                              <img src={getFreshImageUrl(editingPackage.image)} alt="Preview" className="w-full h-full object-cover" />
                             </div>
                             <div className="flex-1 space-y-2 w-full">
                               <div className="flex gap-2">
@@ -3537,7 +3537,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                             <input className="w-full p-3 border rounded-xl font-bold shadow-sm focus:ring-2 focus:ring-gold-500 outline-none" value={pageForm.heroSubtitle} onChange={(e) => handlePageFieldChange('heroSubtitle', e.target.value)} placeholder="부제목" />
                         </div>
                         <div className="h-32 bg-white rounded-2xl overflow-hidden relative group border-2 border-white shadow-sm">
-                        <img src={pageForm.heroImage} className="w-full h-full object-cover" alt="Hero Banner" />
+                        <img src={getFreshImageUrl(pageForm.heroImage)} className="w-full h-full object-cover" alt="Hero Banner" />
                         <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white font-bold cursor-pointer text-xs">
                             <span className="text-2xl mb-1">🖼️</span> 배너 이미지 교체
                             <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePageFieldChange('heroImage', url))} />
@@ -3554,7 +3554,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <input className="w-full p-3 border rounded-xl font-bold shadow-sm" value={pageForm.introTitle} onChange={(e) => handlePageFieldChange('introTitle', e.target.value)} placeholder="소개 제목" />
                         <textarea className="w-full p-3 border rounded-xl h-32 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-gold-500 resize-none" value={pageForm.introText} onChange={(e) => handlePageFieldChange('introText', e.target.value)} placeholder="소개글 본문" />
                         <div className="h-32 bg-white rounded-2xl overflow-hidden relative group border-2 border-white shadow-sm">
-                            <img src={pageForm.introImage} className="w-full h-full object-cover" alt="Intro Banner" />
+                            <img src={getFreshImageUrl(pageForm.introImage)} className="w-full h-full object-cover" alt="Intro Banner" />
                             <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white font-bold cursor-pointer text-xs">
                                 <span className="text-2xl mb-1">🖼️</span> 소개 이미지 교체
                                 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePageFieldChange('introImage', url))} />
@@ -3587,7 +3587,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                              ✕
                            </button>
                            <div className="h-32 rounded-xl overflow-hidden bg-gray-100">
-                             <img src={slide.image} className="w-full h-full object-cover" alt={`Slide ${idx}`} />
+                             <img src={getFreshImageUrl(slide.image)} className="w-full h-full object-cover" alt={`Slide ${idx}`} />
                            </div>
                            <textarea 
                              className="w-full text-[10px] p-2 border rounded-lg h-12 resize-none outline-none focus:border-gold-500"
@@ -3655,7 +3655,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                                         <div className="flex flex-wrap gap-2">
                                             {section.detailImages?.map((img, imgIdx) => (
                                                 <div key={imgIdx} className="w-12 h-12 rounded-lg overflow-hidden relative group border shadow-sm">
-                                                    <img src={img} className="w-full h-full object-cover" alt={`Detail ${imgIdx}`} />
+                                                    <img src={getFreshImageUrl(img)} className="w-full h-full object-cover" alt={`Detail ${imgIdx}`} />
                                                     <button 
                                                         onClick={() => handleSectionDetailImageRemove(idx, imgIdx)}
                                                         className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[10px] font-bold"
@@ -3704,7 +3704,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                     <div className="grid grid-cols-3 gap-3">
                         {pageForm.galleryImages.map((img, idx) => (
                             <div key={idx} className="aspect-square bg-gray-50 border rounded-2xl overflow-hidden relative group shadow-sm">
-                            <img src={img} className="w-full h-full object-cover" alt={`Gallery ${idx}`} />
+                            <img src={getFreshImageUrl(img)} className="w-full h-full object-cover" alt={`Gallery ${idx}`} />
                             <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
                                 <label className="bg-white text-deepgreen px-2 py-1 rounded-full text-[9px] font-bold cursor-pointer hover:bg-gray-100">
                                     교체
@@ -3748,7 +3748,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
               {menuItems.map((item, idx) => (
                 <div key={idx} className="border-2 border-gray-50 p-4 rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
                   <div className="w-20 h-20 mb-3 bg-white rounded-3xl shadow-inner flex items-center justify-center p-4 relative overflow-hidden">
-                    <img src={item.icon} alt={item.label} className="w-full h-full object-contain transform group-hover:scale-110 transition" />
+                    <img src={getFreshImageUrl(item.icon)} alt={item.label} className="w-full h-full object-contain transform group-hover:scale-110 transition" />
                     {item.icon.startsWith('data:') && (
                       <div className="absolute top-0 left-0 right-0 bg-red-500/80 text-white text-[7px] text-center py-0.5 font-bold">
                         Base64 ({(item.icon.length / 1024).toFixed(0)}KB)
@@ -3888,7 +3888,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <>
                           {/* Ambient Blurred Backdrop */}
                           <img
-                            src={popup.image}
+                            src={getFreshImageUrl(popup.image)}
                             alt=""
                             aria-hidden="true"
                             className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-40 scale-125 pointer-events-none transition-all duration-300"
@@ -3896,7 +3896,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
                           {/* Interactive Foreground Image */}
                           <img 
-                            src={popup.image} 
+                            src={getFreshImageUrl(popup.image)} 
                             alt="Popup Preview" 
                             style={{
                               transform: `scale(${popupZoom}) translate(${popupPan.x / popupZoom}px, ${popupPan.y / popupZoom}px)`,
@@ -4334,7 +4334,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             <div className="bg-red-50/80 p-3.5 rounded-2xl border border-red-200 text-left flex items-center gap-3">
               {productToDelete.image && (
                 <img 
-                  src={productToDelete.image} 
+                  src={getFreshImageUrl(productToDelete.image)} 
                   alt={productToDelete.title} 
                   className="w-12 h-12 rounded-xl object-cover border border-red-200 shrink-0" 
                 />
@@ -4384,7 +4384,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             <div className="bg-red-50/80 p-3.5 rounded-2xl border border-red-200 text-left flex items-center gap-3">
               {packageToDelete.image && (
                 <img 
-                  src={packageToDelete.image} 
+                  src={getFreshImageUrl(packageToDelete.image)} 
                   alt={packageToDelete.title} 
                   className="w-12 h-12 rounded-xl object-cover border border-red-200 shrink-0" 
                 />
@@ -4491,7 +4491,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             {popupUrlInput.trim() && (
               <div className="rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 h-36 flex items-center justify-center">
                 <img
-                  src={popupUrlInput.trim()}
+                  src={getFreshImageUrl(popupUrlInput.trim())}
                   alt="URL Preview"
                   className="max-h-full max-w-full object-contain"
                   onError={(e) => {
@@ -4597,14 +4597,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
           >
             {/* Ambient Blurred Backdrop */}
             <img
-              src={popup.image}
+              src={getFreshImageUrl(popup.image)}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover filter blur-3xl opacity-30 scale-125 pointer-events-none"
             />
             {/* Foreground Main Poster */}
             <img
-              src={popup.image}
+              src={getFreshImageUrl(popup.image)}
               alt="Popup Fullscreen"
               style={{
                 transform: `scale(${popupZoom}) translate(${popupPan.x / popupZoom}px, ${popupPan.y / popupZoom}px)`,
@@ -4664,14 +4664,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
               }`}>
                 {/* Ambient Blurred Backdrop */}
                 <img
-                  src={popup.image}
+                  src={getFreshImageUrl(popup.image)}
                   alt=""
                   aria-hidden="true"
                   className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-45 scale-125 pointer-events-none"
                 />
                 {/* Foreground Notice Image */}
                 <img
-                  src={popup.image}
+                  src={getFreshImageUrl(popup.image)}
                   className={`relative z-10 max-h-full max-w-full duration-300 ${
                     popup.imageFit === 'cover' ? 'w-full h-full object-cover' : 'object-contain'
                   }`}

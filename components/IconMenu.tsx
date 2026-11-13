@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface MenuItem {
   label: string;
@@ -30,12 +31,12 @@ const IconMenu: React.FC<Props> = ({ items, onItemClick }) => {
                {/* Icon Image */}
                <div className="w-full h-full p-2.5 sm:p-3.5 flex items-center justify-center z-10">
                   <img 
-                    src={item.icon} 
+                    src={getFreshImageUrl(item.icon)} 
                     alt={item.label}
                     className="w-full h-full object-contain drop-shadow-sm transform group-hover:scale-108 group-hover:-rotate-2 transition-all duration-300 ease-out"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'https://cdn-icons-png.flaticon.com/512/8212/8212613.png'; // Fallback
+                      target.src = getFreshImageUrl('https://cdn-icons-png.flaticon.com/512/8212/8212613.png'); // Fallback
                     }}
                   />
                </div>

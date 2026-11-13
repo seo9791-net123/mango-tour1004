@@ -3,6 +3,7 @@ import { PageContent } from '../types';
 import SliderPopup from './SliderPopup';
 import PageSectionList from './PageSectionList';
 import BackButton from './BackButton';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   content: PageContent;
@@ -17,7 +18,7 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
       {/* Compact Hero */}
       <section className="relative h-[160px] xs:h-[180px] sm:h-[220px] md:h-[260px] flex items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 z-0">
-          <img src={content.heroImage} alt="Hero" className="w-full h-full object-cover opacity-60" />
+          <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover opacity-60" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
         </div>
         
@@ -48,7 +49,7 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
                 )}
              </div>
              <div className="w-full flex-1 relative group cursor-pointer" onClick={() => content.slides && content.slides.length > 0 && setIsSliderOpen(true)}>
-                <img src={content.introImage} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
+                <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
                 {content.slides && content.slides.length > 0 && (
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 rounded-2xl xs:rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                     <span className="text-white font-bold text-xs xs:text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">슬라이드 보기</span>
@@ -64,7 +65,7 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5">
              {content.galleryImages.map((img, idx) => (
                 <div key={idx} className="group overflow-hidden rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 relative bg-gray-100">
-                   <img src={img} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Villa ${idx}`} />
+                   <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Villa ${idx}`} />
                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300"></div>
                    <div className="absolute bottom-2.5 left-2.5 text-white">
                       <p className="text-[9px] uppercase font-bold text-gold-400">Accommodation</p>

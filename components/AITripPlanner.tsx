@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { LOCATIONS, THEMES, ACCOMMODATIONS, DURATIONS, VEHICLE_OPTIONS } from '../constants';
 import { TripPlanRequest, TripPlanResult } from '../types';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   onPlanGenerated: (plan: TripPlanResult) => void;
@@ -79,7 +80,12 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
 
       {/* Hero CTA Section */}
       <section className={`py-6 bg-gradient-to-br from-gray-900 to-deepgreen relative overflow-hidden text-white ${onBack ? 'rounded-2xl mx-4 mb-3 shadow-xl' : ''}`}>
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/travel_planning/1920/800')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+        <img
+          src={getFreshImageUrl('https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=1920&auto=format&fit=crop')}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay pointer-events-none"
+        />
         <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
           <span className="inline-block py-0.5 px-2 rounded-full bg-gold-500/20 border border-gold-500 text-gold-400 text-xs font-bold mb-4 animate-pulse">
              ✨ CUSTOM TRAVEL DESIGN

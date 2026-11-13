@@ -1,33 +1,41 @@
+// Self-unregistering cleanup Service Worker (No caching)
+// 기존 모바일/PC 브라우저에 남아있는 서비스 워커와 캐시 스토리지를 즉시 모두 삭제하고 스스로 해제합니다.
 
-const CACHE_NAME = 'mango-tour-v1';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/index.tsx',
-  '/manifest.json'
-];
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
 
-self.addEventListener('install', (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    (async () => {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      } catch (e) {
+        // ignore cache deletion errors
+      }
+
+      try {
+        await self.clients.claim();
+        const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const client of clientsList) {
+          client.postMessage({ type: 'SW_CLEANED_UP' });
+        }
+      } catch (e) {
+        // ignore client message errors
+      }
+
+      try {
+        await self.registration.unregister();
+      } catch (e) {
+        // ignore unregister errors
+      }
+    })()
   );
 });
 
+// 네트워크 요청은 캐시를 거치지 않고 항상 최신 원본 서버로 직접 통과시킵니다.
 self.addEventListener('fetch', (event) => {
-  // Firebase 및 Google API 요청은 캐시하지 않고 네트워크로 직접 보냄
-  if (
-    event.request.url.includes('googleapis.com') || 
-    event.request.url.includes('firebaseio.com') ||
-    event.request.url.includes('firebaseapp.com')
-  ) {
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
-  );
+  if (event.request.method !== 'GET') return;
+  event.respondWith(fetch(event.request));
 });

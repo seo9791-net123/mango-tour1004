@@ -68,18 +68,26 @@ export const PAGE_LOAD_TIMESTAMP = typeof window !== 'undefined' && (window as a
   ? (window as any).__PAGE_LOAD_TIMESTAMP__ 
   : Date.now();
 
+export const getCurrentImageVersionTimestamp = (): number => {
+  if (typeof window !== 'undefined' && (window as any).__PAGE_LOAD_TIMESTAMP__) {
+    return (window as any).__PAGE_LOAD_TIMESTAMP__;
+  }
+  return PAGE_LOAD_TIMESTAMP;
+};
+
 /**
  * 이미지 URL 뒤에 캐시 방지용 타임스탬프(?t=현재시간)를 자동으로 덧붙여 항상 최신 이미지를 불러오도록 합니다.
- * data:, blob: URL 및 이미 타임스탬프가 붙은 URL은 보존합니다.
+ * data:, blob: URL은 보존하고, 기존 t= 파라미터가 있으면 최신 타임스탬프로 교체합니다.
  * @param url 원본 이미지 URL
- * @param timestamp 부여할 타임스탬프 (기본값: 페이지 접속 시각)
+ * @param timestamp 부여할 타임스탬프 (기본값: 현재 페이지 접속/갱신 시각)
  */
 export const getFreshImageUrl = (
   url: string | undefined | null, 
-  timestamp: number = PAGE_LOAD_TIMESTAMP
+  timestamp?: number
 ): string => {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
+  if (!trimmed) return '';
 
   // base64 data URI, blob URL, SVG 인라인, 앵커 링크 등은 캐시 방지 불필요 및 제외
   if (
@@ -91,11 +99,13 @@ export const getFreshImageUrl = (
     return trimmed;
   }
 
-  // 이미 ?t= 또는 &t= 타임스탬프가 있다면 유지 (중복 방지)
+  const ts = timestamp ?? getCurrentImageVersionTimestamp();
+
+  // 이미 ?t= 또는 &t= 타임스탬프가 있다면 최신 타임스탬프로 교체
   if (/[?&]t=\d+/.test(trimmed)) {
-    return trimmed;
+    return trimmed.replace(/([?&]t=)\d+/, `$1${ts}`);
   }
 
   const separator = trimmed.includes('?') ? '&' : '?';
-  return `${trimmed}${separator}t=${timestamp}`;
+  return `${trimmed}${separator}t=${ts}`;
 };

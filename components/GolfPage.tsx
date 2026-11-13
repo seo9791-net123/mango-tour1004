@@ -4,6 +4,7 @@ import { PageContent } from '../types';
 import SliderPopup from './SliderPopup';
 import PageSectionList from './PageSectionList';
 import BackButton from './BackButton';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   content: PageContent;
@@ -30,7 +31,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
       {/* Compact Hero */}
       <section className="relative h-[160px] xs:h-[180px] sm:h-[220px] md:h-[260px] flex items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 z-0">
-          <img src={content.heroImage} alt="Hero" className="w-full h-full object-cover opacity-60" />
+          <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover opacity-60" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
         </div>
         
@@ -65,7 +66,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5">
               {content.galleryImages.map((img, idx) => (
                  <div key={idx} className="group relative overflow-hidden rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-gray-100">
-                    <img src={img} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Golf Gallery ${idx}`} />
+                    <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Golf Gallery ${idx}`} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2.5">
                        <p className="text-white font-bold text-[10px] uppercase tracking-wider">Golf Course {idx + 1}</p>
                     </div>
@@ -86,7 +87,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
 
       <section className="py-6 xs:py-8 bg-gray-900 text-white">
          <div className="max-w-7xl mx-auto px-3 xs:px-4 grid grid-cols-1 lg:grid-cols-2 gap-6 xs:gap-8 items-center">
-            <img src={content.introImage} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-xl opacity-90" alt="Golf Service" />
+            <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-xl opacity-90" alt="Golf Service" />
             <div className="space-y-3 xs:space-y-4">
                <h3 className="text-lg xs:text-xl font-black text-gold-400 uppercase tracking-tight">MANGO TOUR만의 특별한 골프 케어</h3>
                <ul className="space-y-2.5 text-xs xs:text-sm font-normal text-gray-300">

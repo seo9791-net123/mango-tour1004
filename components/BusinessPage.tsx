@@ -2,6 +2,7 @@ import React from 'react';
 import { PageContent } from '../types';
 import PageSectionList from './PageSectionList';
 import BackButton from './BackButton';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   content: PageContent;
@@ -14,7 +15,7 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
       {/* Compact Hero */}
       <section className="relative h-[160px] xs:h-[180px] sm:h-[220px] md:h-[260px] flex items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 z-0">
-          <img src={content.heroImage} alt="Hero" className="w-full h-full object-cover opacity-60" />
+          <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover opacity-60" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
         </div>
         
@@ -37,7 +38,7 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
                 <p className="text-sm xs:text-base md:text-lg leading-relaxed font-medium text-gray-700 whitespace-pre-line">{content.introText}</p>
              </div>
              <div className="relative group">
-                <img src={content.introImage} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
+                <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
              </div>
           </div>
 
@@ -54,7 +55,7 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5">
                {content.galleryImages.map((img, idx) => (
                   <div key={idx} className="group relative overflow-hidden rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-gray-100">
-                     <img src={img} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Gallery ${idx}`} />
+                     <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Gallery ${idx}`} />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2.5">
                         <p className="text-white font-bold text-[10px] uppercase">VIP Service {idx + 1}</p>
                      </div>

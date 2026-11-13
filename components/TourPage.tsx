@@ -3,6 +3,7 @@ import React from 'react';
 import { PageContent } from '../types';
 import PageSectionList from './PageSectionList';
 import BackButton from './BackButton';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   content: PageContent;
@@ -15,7 +16,7 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
       {/* Compact Hero */}
       <section className="relative h-[160px] xs:h-[180px] sm:h-[220px] md:h-[260px] flex items-center justify-center overflow-hidden bg-black">
         <div className="absolute inset-0 z-0">
-          <img src={content.heroImage} alt="Hero" className="w-full h-full object-cover opacity-60" />
+          <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover opacity-60" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
         </div>
         
@@ -41,7 +42,7 @@ const TourPage: React.FC<Props> = ({ content, onBack }) => {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5 mt-6 xs:mt-8">
            {content.galleryImages.map((img, idx) => (
               <div key={idx} className="group overflow-hidden rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 relative bg-gray-100">
-                 <img src={img} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Tour ${idx}`} />
+                 <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Tour ${idx}`} />
               </div>
            ))}
         </div>

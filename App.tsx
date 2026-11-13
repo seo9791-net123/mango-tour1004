@@ -27,6 +27,7 @@ import { supabaseService } from './services/supabaseService';
 import { updateSupabaseCredentials } from './services/supabaseClient';
 import { setCloudinaryConfig } from './services/uploadService';
 import { debounce } from './utils/debounce';
+import { getFreshImageUrl } from './utils/imageUtils';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -586,24 +587,24 @@ const App: React.FC = () => {
   }, 1000)).current;
 
   const debouncedSyncPopup = useRef(debounce(async (newPopup: PopupNotification) => {
-    if (isLocalMode || isSyncing.current['popup']) return;
+    if (isSyncing.current['popup']) return;
     isSyncing.current['popup'] = true;
     try {
       await supabaseService.savePopup(newPopup);
     } finally {
       isSyncing.current['popup'] = false;
     }
-  }, 3000)).current;
+  }, 2000)).current;
 
   const debouncedSyncCustomPackages = useRef(debounce(async (newPkgs: CustomTripPackage[]) => {
-    if (isLocalMode || isSyncing.current['custom_packages']) return;
+    if (isSyncing.current['custom_packages']) return;
     isSyncing.current['custom_packages'] = true;
     try {
       await supabaseService.syncCollection('custom_packages', newPkgs);
     } finally {
       isSyncing.current['custom_packages'] = false;
     }
-  }, 3000)).current;
+  }, 2000)).current;
 
   // Initial Data Load
   useEffect(() => {
@@ -629,23 +630,41 @@ const App: React.FC = () => {
           // ignore
         }
 
-        setHeroImages(data.heroImages);
-        setMenuItems(data.menuItems);
-        if (Array.isArray(data.videos) && data.videos.length > 0) {
-          const validVideos = data.videos.filter((v: VideoItem) => v?.url && !v.url.startsWith('blob:'));
-          if (validVideos.length > 0) {
-            setVideos(validVideos);
+        // Supabase 클라우드 연결이 활성화된 경우에만 최신 클라우드 데이터로 상태 일괄 동기화 (PC/모바일 완전 일치)
+        if (!data.isLocal) {
+          if (Array.isArray(data.heroImages) && data.heroImages.length > 0) {
+            setHeroImages(data.heroImages);
           }
-        }
-        setPageContents(data.pageContents);
-        setPopup(data.popup);
-        if (data.customPackages && data.customPackages.length > 0) {
-          setCustomPackages(cleanCustomPackages(data.customPackages));
+          if (Array.isArray(data.menuItems) && data.menuItems.length > 0) {
+            setMenuItems(data.menuItems);
+          }
+          if (Array.isArray(data.products) && data.products.length > 0) {
+            setProducts(data.products);
+          }
+          if (Array.isArray(data.posts) && data.posts.length > 0) {
+            setPosts(data.posts);
+          }
+          if (Array.isArray(data.videos) && data.videos.length > 0) {
+            const validVideos = data.videos.filter((v: VideoItem) => v?.url && !v.url.startsWith('blob:'));
+            if (validVideos.length > 0) {
+              setVideos(validVideos);
+            }
+          }
+          if (data.pageContents && Object.keys(data.pageContents).length > 0) {
+            setPageContents(data.pageContents);
+          }
+          if (data.popup) {
+            setPopup(data.popup);
+          }
+          if (data.customPackages && data.customPackages.length > 0) {
+            setCustomPackages(cleanCustomPackages(data.customPackages));
+          }
         }
         
         // Check if popup should be shown (e.g., once per session or if active)
         const popupClosed = sessionStorage.getItem('mango_popup_closed');
-        if (data.popup.isActive && !popupClosed) {
+        const activePopup = !data.isLocal && data.popup ? data.popup : popup;
+        if (activePopup.isActive && !popupClosed) {
           setShowPopup(true);
         }
         
@@ -1201,14 +1220,14 @@ const App: React.FC = () => {
               }`}>
                 {/* Ambient Blurred Backdrop */}
                 <img
-                  src={popup.image}
+                  src={getFreshImageUrl(popup.image)}
                   alt=""
                   aria-hidden="true"
                   className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-45 scale-125 pointer-events-none"
                 />
                 {/* Foreground Notice Image */}
                 <img
-                  src={popup.image}
+                  src={getFreshImageUrl(popup.image)}
                   className={`relative z-10 max-h-full max-w-full duration-300 ${
                     popup.imageFit === 'cover' ? 'w-full h-full object-cover' : 'object-contain'
                   }`}

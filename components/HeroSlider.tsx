@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   images: string[];
@@ -32,7 +33,7 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
           style={{ transitionProperty: 'opacity, transform' }}
         >
           <img
-            src={img}
+            src={getFreshImageUrl(img)}
             alt={`Slide ${index}`}
             className="w-full h-full object-cover opacity-75"
           />

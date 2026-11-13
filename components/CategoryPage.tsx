@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Product, PageSection } from '../types';
 import SectionDetailModal from './SectionDetailModal';
 import BackButton from './BackButton';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   category: string;
@@ -75,11 +76,11 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
               <div key={product.id} className="bg-white rounded-2xl shadow-sm overflow-hidden group hover:shadow-md transition duration-300 border border-gray-100 flex flex-col">
                 <div className="relative h-44 xs:h-48 overflow-hidden bg-gray-100">
                   <img 
-                    src={product.image} 
+                    src={getFreshImageUrl(product.image)} 
                     alt={product.title} 
                     loading="lazy"
                     onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800';
+                      (e.currentTarget as HTMLImageElement).src = getFreshImageUrl('https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800');
                     }}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                   />

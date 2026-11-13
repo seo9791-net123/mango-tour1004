@@ -4,6 +4,7 @@ import { uploadFile } from '../services/uploadService';
 import { classifyVideoCategory } from '../services/geminiService';
 import BackButton from './BackButton';
 import { supabaseService } from '../services/supabaseService';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   videos: VideoItem[];
@@ -578,7 +579,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
                         <video
                           key={currentUrl}
                           src={currentUrl}
-                          poster={posterUrl}
+                          poster={posterUrl ? getFreshImageUrl(posterUrl) : undefined}
                           controls
                           preload="metadata"
                           playsInline

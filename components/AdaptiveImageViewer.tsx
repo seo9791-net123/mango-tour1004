@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
   images: string[];
@@ -21,7 +22,7 @@ const AdaptiveImageViewer: React.FC<Props> = ({
   const dragStartRef = useRef({ x: 0, y: 0 });
 
   if (!images || images.length === 0) return null;
-  const currentImg = images[activeIdx] || images[0];
+  const currentImg = getFreshImageUrl(images[activeIdx] || images[0]);
 
   const handleNext = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -236,7 +237,7 @@ const AdaptiveImageViewer: React.FC<Props> = ({
                   : 'border-transparent opacity-60 hover:opacity-90'
               }`}
             >
-              <img src={img} className="w-full h-full object-cover" alt={`Thumb ${idx + 1}`} />
+              <img src={getFreshImageUrl(img)} className="w-full h-full object-cover" alt={`Thumb ${idx + 1}`} />
               <div className="absolute bottom-0 right-0 bg-black/60 text-white text-[9px] px-1 rounded-tl font-bold">
                 {idx + 1}
               </div>
@@ -363,7 +364,7 @@ const AdaptiveImageViewer: React.FC<Props> = ({
                     activeIdx === idx ? 'border-gold-500 scale-110 shadow-lg' : 'border-transparent opacity-50'
                   }`}
                 >
-                  <img src={img} className="w-full h-full object-cover" alt={`Thumb ${idx + 1}`} />
+                  <img src={getFreshImageUrl(img)} className="w-full h-full object-cover" alt={`Thumb ${idx + 1}`} />
                 </button>
               ))}
             </div>
