@@ -134,6 +134,18 @@ export const supabaseService = {
 
       // 5. Pages
       let pageContents = { ...INITIAL_PAGE_CONTENTS };
+      try {
+        const localPages = localStorage.getItem('mango_page_contents_db');
+        if (localPages) {
+          const parsed = JSON.parse(localPages);
+          if (parsed && typeof parsed === 'object') {
+            pageContents = { ...pageContents, ...parsed };
+          }
+        }
+      } catch {
+        // ignore
+      }
+
       const { data: pagesData } = await supabase
         .from('pages')
         .select('*');

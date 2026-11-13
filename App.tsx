@@ -24,6 +24,8 @@ import Terms from './components/Terms';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
 import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { supabaseService } from './services/supabaseService';
+import { updateSupabaseCredentials } from './services/supabaseClient';
+import { setCloudinaryConfig } from './services/uploadService';
 import { debounce } from './utils/debounce';
 
 const App: React.FC = () => {
@@ -170,7 +172,18 @@ const App: React.FC = () => {
     return INITIAL_VIDEOS;
   });
   const [posts, setPosts] = useState<CommunityPost[]>(INITIAL_POSTS);
-  const [pageContents, setPageContents] = useState<Record<string, PageContent>>(INITIAL_PAGE_CONTENTS);
+  const [pageContents, setPageContents] = useState<Record<string, PageContent>>(() => {
+    try {
+      const saved = localStorage.getItem('mango_page_contents_db');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+          return { ...INITIAL_PAGE_CONTENTS, ...parsed };
+        }
+      }
+    } catch {}
+    return INITIAL_PAGE_CONTENTS;
+  });
   const cleanCustomPackages = (pkgs: CustomTripPackage[]): CustomTripPackage[] => {
     return pkgs.map(pkg => {
       // Find matching template in INITIAL_CUSTOM_PACKAGES if it's one of preset packages (pkg-1 ~ pkg-10)
@@ -415,10 +428,24 @@ const App: React.FC = () => {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search) {
       const params = new URLSearchParams(window.location.search);
+      const syncConfig = params.get('sync_config');
+      if (syncConfig) {
+        try {
+          const decoded = JSON.parse(decodeURIComponent(atob(syncConfig)));
+          if (decoded.sbUrl && decoded.sbAnonKey) {
+            updateSupabaseCredentials(decoded.sbUrl, decoded.sbAnonKey);
+          }
+          if (decoded.cloudName && decoded.uploadPreset) {
+            setCloudinaryConfig(decoded.cloudName, decoded.uploadPreset);
+          }
+          console.log("✅ Sync config applied from URL parameter!");
+        } catch (e) {
+          console.warn("Failed to parse sync_config:", e);
+        }
+      }
       if (params.get('sync_config') || params.get('fb_config')) {
         const cleanUrl = window.location.origin + window.location.pathname;
         window.history.replaceState({}, document.title, cleanUrl);
-        console.log("Sync config applied from URL parameter and query string cleaned.");
       }
     }
 
@@ -490,6 +517,15 @@ const App: React.FC = () => {
       console.warn("Failed to persist menu items:", e);
     }
   }, [menuItems]);
+
+  // Persist page contents locally
+  useEffect(() => {
+    try {
+      localStorage.setItem('mango_page_contents_db', JSON.stringify(pageContents));
+    } catch (e) {
+      console.warn("Failed to persist page contents:", e);
+    }
+  }, [pageContents]);
 
   // --- Supabase Cloud Integration Handlers ---
 
@@ -680,6 +716,11 @@ const App: React.FC = () => {
 
   const handleUpdatePageContents = async (newContents: Record<string, PageContent>) => {
     setPageContents(newContents);
+    try {
+      localStorage.setItem('mango_page_contents_db', JSON.stringify(newContents));
+    } catch (e) {
+      console.warn("Failed to write page contents to localStorage:", e);
+    }
     debouncedSyncPages(newContents);
   };
 

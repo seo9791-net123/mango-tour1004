@@ -1205,7 +1205,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
   };
 
   const handleSeedAllToSupabase = async () => {
-    if (!confirm('현재 웹사이트의 모든 상품, 동영상, 게시판 후기, 맞춤 여행 패키지, 설정 데이터를 Supabase 클라우드로 일괄 전송하시겠습니까?\n\n(이미 Supabase에 데이터가 있더라도 최신 데이터로 업데이트됩니다)')) return;
+    const currentUrl = (sbUrl || localStorage.getItem('sb_url') || (import.meta as any).env?.VITE_SUPABASE_URL || '').trim();
+    const currentKey = (sbAnonKey || localStorage.getItem('sb_anon_key') || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '').trim();
+
+    if (!currentUrl || !currentKey || !currentUrl.startsWith('https://')) {
+      alert('⚠️ Supabase 연결 정보(URL 및 Key)가 아직 입력되지 않았습니다.\n\n위의 [Project URL (API URL)] 칸에 https://로 시작하는 주소와\n[Anon Public Key] 칸에 anon 키를 입력하신 후 다시 클릭해 주세요.');
+      return;
+    }
+
+    // 자동으로 자격 증명 갱신 및 연결
+    updateSupabaseCredentials(currentUrl, currentKey);
+
+    if (!confirm('현재 웹사이트의 모든 상품, 골프/호텔 페이지 이미지, 메인 슬라이드, 메뉴, 맞춤 여행 패키지 데이터를 Supabase 클라우드로 일괄 전송하시겠습니까?\n\n(Supabase에 데이터가 성공적으로 채워지면 전 세계 모든 고객에게 실시간 반영됩니다)')) {
+      return;
+    }
     
     setIsSeedingSupabase(true);
     try {
@@ -1220,9 +1233,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         popup,
         pageContents
       });
-      alert('🎉 축하합니다! 웹사이트의 모든 상품/투어/게시글 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 다른 컴퓨터나 모바일 기기에서도 동일한 실시간 클라우드 데이터를 이용하실 수 있습니다.');
+      alert('🎉 축하합니다! 웹사이트의 모든 상품/투어/페이지/슬라이드 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 www.mangotour.co.kr에 접속하는 모든 고객이 이 클라우드 데이터를 실시간으로 보게 됩니다.');
     } catch (e: any) {
-      alert('❌ 전송 실패: ' + (e?.message || e));
+      console.error("Supabase seed error:", e);
+      alert('❌ 전송 실패: ' + (e?.message || e) + '\n\n테이블이 아직 생성되지 않았다면, 위의 [📋 원클릭 테이블 생성 SQL 복사] 버튼을 누른 후 Supabase 콘솔 SQL Editor에서 Run을 먼저 실행해 주세요.');
     } finally {
       setIsSeedingSupabase(false);
     }
@@ -1670,23 +1684,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                 <div className="text-xs text-emerald-800">
-                  {isSupabaseConfigured ? (
-                    <span className="font-semibold text-emerald-700">✅ Supabase 활성화 완료. 모든 데이터가 클라우드에 자동 동기화됩니다.</span>
+                  {sbUrl && sbAnonKey ? (
+                    <span className="font-semibold text-emerald-700">✅ Supabase 연결 정보가 입력되어 있습니다. 아래 [전체 데이터 Supabase로 전송]을 눌러 데이터를 채워주세요.</span>
                   ) : (
-                    <span className="text-amber-800 font-semibold">⚠️ 아직 키를 넣지 않아도 웹사이트는 100% 정상 작동합니다 (로컬 캐시 보존 모드).</span>
+                    <span className="text-amber-800 font-semibold">⚠️ 위의 Project URL과 Anon Key를 입력하신 후 [전체 데이터 전송]을 눌러주세요.</span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button 
                       type="button"
                       onClick={handleSeedAllToSupabase}
-                      disabled={isSeedingSupabase || !isSupabaseConfigured}
-                      className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 ${
-                        isSupabaseConfigured 
-                          ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-md' 
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      disabled={isSeedingSupabase}
+                      className={`px-4 py-2 rounded-lg font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 cursor-pointer ${
+                        isSeedingSupabase 
+                          ? 'bg-amber-400 text-white cursor-wait animate-pulse' 
+                          : 'bg-amber-600 hover:bg-amber-700 text-white shadow-md active:scale-95'
                       }`}
-                      title={isSupabaseConfigured ? '현재 웹사이트의 모든 데이터를 Supabase 클라우드로 일괄 전송합니다.' : 'Supabase 설정 후 활성화됩니다.'}
+                      title="현재 웹사이트의 모든 데이터를 Supabase 클라우드로 일괄 전송합니다."
                   >
                       <span>{isSeedingSupabase ? '⏳' : '📤'}</span>
                       <span>{isSeedingSupabase ? '데이터 전송 중...' : '전체 데이터 Supabase로 전송 (초기화)'}</span>
@@ -1694,7 +1708,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                   <button 
                       type="button"
                       onClick={handleSaveSupabaseConfig} 
-                      className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-bold text-sm hover:bg-emerald-800 transition shadow-md flex items-center gap-1.5"
+                      className="px-6 py-2 bg-emerald-700 text-white rounded-lg font-bold text-sm hover:bg-emerald-800 transition shadow-md flex items-center gap-1.5 active:scale-95 cursor-pointer"
                   >
                       <span>💾</span> 설정 저장 및 연결
                   </button>

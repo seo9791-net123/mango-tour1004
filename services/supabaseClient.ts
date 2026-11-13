@@ -16,11 +16,17 @@ const getSupabaseCredentials = () => {
 
 const credentials = getSupabaseCredentials();
 
-export const isSupabaseConfigured = Boolean(
+export let isSupabaseConfigured = Boolean(
   credentials.url && 
   credentials.anonKey && 
   credentials.url.startsWith('https://')
 );
+
+export const checkIsSupabaseConfigured = (): boolean => {
+  if (client) return true;
+  const { url, anonKey } = getSupabaseCredentials();
+  return Boolean(url && anonKey && url.startsWith('https://'));
+};
 
 let client: SupabaseClient | null = null;
 
@@ -66,17 +72,39 @@ export const updateSupabaseCredentials = (url: string, anonKey: string): boolean
           detectSessionInUrl: true
         }
       });
+      isSupabaseConfigured = true;
       console.log("✅ Supabase credentials updated and connected.");
       return true;
     } catch (e) {
       console.error("Failed to re-initialize Supabase:", e);
+      isSupabaseConfigured = false;
       return false;
     }
   }
   client = null;
+  isSupabaseConfigured = false;
   return false;
 };
 
-export const getSupabase = (): SupabaseClient | null => client;
+export const getSupabase = (): SupabaseClient | null => {
+  if (client) return client;
+  const { url, anonKey } = getSupabaseCredentials();
+  if (url && anonKey && url.startsWith('https://')) {
+    try {
+      client = createClient(url, anonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
+      isSupabaseConfigured = true;
+      return client;
+    } catch (e) {
+      console.warn("Lazy getSupabase init error:", e);
+    }
+  }
+  return null;
+};
 
 export { credentials };
