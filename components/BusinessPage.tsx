@@ -13,25 +13,25 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
   return (
     <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in pb-safe md:pb-0">
       {/* Compact Hero */}
-      <section className="relative h-[160px] xs:h-[180px] sm:h-[220px] md:h-[260px] flex items-center justify-center overflow-hidden bg-black">
-        <div className="absolute inset-0 z-0">
-          <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover opacity-60" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
-        </div>
-        
-        <div className="absolute inset-x-0 top-3 sm:top-4 z-50 pointer-events-none">
-          <div className="max-w-7xl mx-auto px-2.5 sm:px-4">
-            <div className="pointer-events-auto inline-block">
+      <div className="bg-[#f8f9fa]">
+        <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4 pb-1 sm:pb-0">
+          <section className="relative h-[170px] xs:h-[190px] sm:h-[230px] md:h-[270px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
+            <div className="absolute inset-0 z-0">
+              <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-60" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
+            </div>
+            
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
               <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
             </div>
-          </div>
-        </div>
 
-        <div className="relative z-10 text-center px-4">
-           <h1 className="text-2xl xs:text-3xl md:text-4xl font-black tracking-wide text-gold-400 drop-shadow-2xl mb-1 uppercase">{content.heroTitle}</h1>
-           <p className="text-[10px] xs:text-xs tracking-[0.4em] text-white uppercase font-bold opacity-90">{content.heroSubtitle}</p>
+            <div className="relative z-10 text-center px-4">
+               <h1 className="text-2xl xs:text-3xl md:text-4xl font-black tracking-wide text-gold-400 drop-shadow-2xl mb-1 uppercase">{content.heroTitle}</h1>
+               <p className="text-[10px] xs:text-xs tracking-[0.4em] text-white uppercase font-bold opacity-90">{content.heroSubtitle}</p>
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
 
       <section className="py-5 sm:py-8 bg-[#f8f9fa] text-black">
         <div className="max-w-7xl mx-auto px-0 sm:px-4">

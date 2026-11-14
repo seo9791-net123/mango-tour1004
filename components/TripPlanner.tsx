@@ -1410,38 +1410,40 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       )}
 
       {/* Hero Header */}
-      <div className="bg-gradient-to-br from-deepgreen via-[#00382e] to-emerald-950 text-white relative overflow-hidden w-full max-w-full">
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_30%,#c5a028_0%,transparent_70%)] pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-10 relative z-10 w-full">
-          <div className="mb-3 sm:mb-4">
-            <BackButton 
-              onClick={handleTopBack}
-              variant="hero"
-              label={activePackage ? '목록으로 돌아가기' : '뒤로가기'}
-            />
-          </div>
-          
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold-500/20 border border-gold-400/30 text-gold-300 text-[11px] sm:text-xs md:text-sm font-semibold mb-1.5">
-                <span>🏆</span> 베트남 골프 · 여행 맞춤 플래너
-              </div>
-              <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                {activePackage ? activePackage.title : '골프 / 투어 내 맘대로 여행 만들기'}
-              </h1>
-              <p className="text-gray-300 text-xs sm:text-sm md:text-base mt-1.5 max-w-2xl leading-relaxed font-normal">
-                {activePackage 
-                  ? activePackage.subtitle 
-                  : '원하시는 지역 선택, 여행기간, 숙박, 차량 등 선택하고 맞춤 견적서가 실시간으로 자동 완성됩니다'}
-              </p>
+      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4 pb-1 sm:pb-2 w-full">
+        <div className="bg-gradient-to-br from-deepgreen via-[#00382e] to-emerald-950 text-white relative overflow-hidden rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
+          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_30%,#c5a028_0%,transparent_70%)] pointer-events-none"></div>
+          <div className="px-3.5 sm:px-6 md:px-8 py-5 sm:py-8 relative z-10 w-full">
+            <div className="mb-3 sm:mb-4">
+              <BackButton 
+                onClick={handleTopBack}
+                variant="hero"
+                label={activePackage ? '목록으로 돌아가기' : '뒤로가기'}
+              />
             </div>
-
-            {!activePackage && (
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs md:text-sm font-medium text-gray-200 self-start md:self-auto">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>1:1 DIY 맞춤 자유 설계 지원</span>
+            
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold-500/20 border border-gold-400/30 text-gold-300 text-[11px] sm:text-xs md:text-sm font-semibold mb-1.5">
+                  <span>🏆</span> 베트남 골프 · 여행 맞춤 플래너
+                </div>
+                <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                  {activePackage ? activePackage.title : '골프 / 투어 내 맘대로 여행 만들기'}
+                </h1>
+                <p className="text-gray-300 text-xs sm:text-sm md:text-base mt-1.5 max-w-2xl leading-relaxed font-normal">
+                  {activePackage 
+                    ? activePackage.subtitle 
+                    : '원하시는 지역 선택, 여행기간, 숙박, 차량 등 선택하고 맞춤 견적서가 실시간으로 자동 완성됩니다'}
+                </p>
               </div>
-            )}
+
+              {!activePackage && (
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs md:text-sm font-medium text-gray-200 self-start md:self-auto">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>1:1 DIY 맞춤 자유 설계 지원</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

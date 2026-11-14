@@ -79,34 +79,36 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
       )}
 
       {/* Hero CTA Section */}
-      <section className={`py-6 bg-gradient-to-br from-gray-900 to-deepgreen relative overflow-hidden text-white ${onBack ? 'rounded-none sm:rounded-2xl mx-0 sm:mx-4 mb-3 shadow-xl' : ''}`}>
-        <img
-          src={getFreshImageUrl('https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=1920&auto=format&fit=crop')}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay pointer-events-none"
-        />
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 relative z-10 text-center">
-          <span className="inline-block py-0.5 px-2 rounded-full bg-gold-500/20 border border-gold-500 text-gold-400 text-xs font-bold mb-4 animate-pulse whitespace-nowrap">
-             ✨ CUSTOM TRAVEL DESIGN
-          </span>
-          <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">
-            꿈꾸던 여행, <span className="text-gold-400">망고투어</span>가 현실로 만들어 드립니다
-          </h2>
-          <p className="text-sm text-gray-300 mb-6 max-w-2xl mx-auto">
-            원하는 여행지, 테마, 인원만 선택하세요. <br className="hidden md:block"/>
-            전문 상담원이 상세한 일정표와 투명한 견적서를 직접 안내해 드립니다.
-          </p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 font-bold text-white transition-all duration-200 bg-gold-500 text-base sm:text-lg rounded-full hover:bg-gold-600 hover:shadow-lg hover:-translate-y-1 focus:outline-none ring-offset-2 focus:ring-2 ring-gold-400 whitespace-nowrap"
-          >
-            <span className="mr-2 text-xl sm:text-2xl">✈️</span>
-            나만의 여행상품 만들기
-            <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 animate-ping opacity-0 group-hover:opacity-100 duration-1000"></div>
-          </button>
-        </div>
-      </section>
+      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-3 pb-2">
+        <section className="py-6 sm:py-8 px-4 sm:px-8 bg-gradient-to-br from-gray-900 to-deepgreen relative overflow-hidden text-white rounded-none sm:rounded-2xl md:rounded-3xl shadow-xl">
+          <img
+            src={getFreshImageUrl('https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=1920&auto=format&fit=crop')}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay pointer-events-none"
+          />
+          <div className="relative z-10 text-center">
+            <span className="inline-block py-0.5 px-2 rounded-full bg-gold-500/20 border border-gold-500 text-gold-400 text-xs font-bold mb-4 animate-pulse whitespace-nowrap">
+               ✨ CUSTOM TRAVEL DESIGN
+            </span>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">
+              꿈꾸던 여행, <span className="text-gold-400">망고투어</span>가 현실로 만들어 드립니다
+            </h2>
+            <p className="text-sm text-gray-300 mb-6 max-w-2xl mx-auto">
+              원하는 여행지, 테마, 인원만 선택하세요. <br className="hidden md:block"/>
+              전문 상담원이 상세한 일정표와 투명한 견적서를 직접 안내해 드립니다.
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 font-bold text-white transition-all duration-200 bg-gold-500 text-base sm:text-lg rounded-full hover:bg-gold-600 hover:shadow-lg hover:-translate-y-1 focus:outline-none ring-offset-2 focus:ring-2 ring-gold-400 whitespace-nowrap"
+            >
+              <span className="mr-2 text-xl sm:text-2xl">✈️</span>
+              나만의 여행상품 만들기
+              <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 animate-ping opacity-0 group-hover:opacity-100 duration-1000"></div>
+            </button>
+          </div>
+        </section>
+      </div>
 
       {/* How it Works Section */}
       <section className="bg-gray-50 py-5 sm:py-6">
