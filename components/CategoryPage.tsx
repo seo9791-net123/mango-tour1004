@@ -22,11 +22,10 @@ const normalizeDuration = (duration?: string): string =>
 const DURATION_OPTIONS: Array<{
   key: DurationFilterKey;
   label: string;
-  subLabel: string;
 }> = [
-  { key: '3박5일', label: '3박5일', subLabel: '3N 5D' },
-  { key: '4박6일', label: '4박6일', subLabel: '4N 6D' },
-  { key: '5박7일', label: '5박7일', subLabel: '5N 7D' },
+  { key: '3박5일', label: '3박5일' },
+  { key: '4박6일', label: '4박6일' },
+  { key: '5박7일', label: '5박7일' },
 ];
 
 const DurationIcon: React.FC<{ optionKey: DurationFilterKey; active: boolean }> = ({ optionKey, active }) => {
@@ -85,21 +84,6 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
     };
   }, [selectedDetail]);
 
-  const durationCounts = useMemo(() => {
-    const counts: Record<DurationFilterKey, number> = {
-      '3박5일': 0,
-      '4박6일': 0,
-      '5박7일': 0,
-    };
-    products.forEach((p) => {
-      const norm = normalizeDuration(p.duration);
-      if (norm === '3박5일') counts['3박5일'] += 1;
-      else if (norm === '4박6일') counts['4박6일'] += 1;
-      else if (norm === '5박7일') counts['5박7일'] += 1;
-    });
-    return counts;
-  }, [products]);
-
   const filteredProducts = useMemo(() => {
     if (!isRecommendedCategory) {
       return products;
@@ -145,7 +129,6 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
               >
                 {DURATION_OPTIONS.map((opt) => {
                   const isActive = selectedDuration === opt.key;
-                  const count = durationCounts[opt.key];
                   return (
                     <button
                       key={opt.key}
@@ -153,7 +136,7 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                       role="tab"
                       aria-selected={isActive}
                       onClick={() => setSelectedDuration(opt.key)}
-                      className={`group relative flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 xs:px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border transition-all duration-200 whitespace-nowrap shrink-0 active:scale-95 ${
+                      className={`group relative flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 xs:px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border transition-all duration-200 whitespace-nowrap shrink-0 active:scale-95 ${
                         isActive
                           ? 'bg-gradient-to-br from-deepgreen via-emerald-900 to-deepgreen text-white border-gold-400 shadow-md ring-2 ring-gold-400/35'
                           : 'bg-white text-gray-700 border-gray-200 hover:border-gold-400 hover:bg-amber-50/40 shadow-xs'
@@ -168,13 +151,8 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                       >
                         <DurationIcon optionKey={opt.key} active={isActive} />
                       </span>
-                      <span className="flex flex-col items-start leading-none text-left">
-                        <span className={`text-xs sm:text-sm font-extrabold tracking-tight ${isActive ? 'text-white' : 'text-gray-900'}`}>
-                          {opt.label}
-                        </span>
-                        <span className={`text-[9px] sm:text-[10px] font-bold tracking-wider tabular-nums mt-0.5 ${isActive ? 'text-gold-300' : 'text-gray-400'}`}>
-                          {opt.subLabel} · {count}개
-                        </span>
+                      <span className={`text-xs sm:text-sm font-extrabold tracking-tight leading-none ${isActive ? 'text-white' : 'text-gray-900'}`}>
+                        {opt.label}
                       </span>
                     </button>
                   );
@@ -194,8 +172,8 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
               <h2 className="text-base xs:text-lg sm:text-xl font-extrabold text-deepgreen flex items-center gap-2">
                 <span>{category}</span>
-                <span className="text-xs sm:text-sm font-semibold text-gray-500 tabular-nums">
-                  ({selectedDuration} 일정 · {filteredProducts.length}개)
+                <span className="text-xs sm:text-sm font-semibold text-gray-500">
+                  ({selectedDuration} 일정)
                 </span>
               </h2>
               <span className="text-[11px] xs:text-xs font-medium text-gray-500 tabular-nums">
