@@ -1412,7 +1412,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       {/* Hero Header */}
       <div className="bg-gradient-to-br from-deepgreen via-[#00382e] to-emerald-950 text-white relative overflow-hidden w-full max-w-full">
         <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_30%,#c5a028_0%,transparent_70%)] pointer-events-none"></div>
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-10 relative z-10 w-full max-w-full">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-10 relative z-10 w-full">
           <div className="mb-3 sm:mb-4">
             <BackButton 
               onClick={handleTopBack}
@@ -1446,8 +1446,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         </div>
       </div>
 
-      {/* Main Container - Edge-to-edge on mobile, containerized on desktop */}
-      <div className="max-w-6xl mx-auto px-0 sm:px-4 py-2 sm:py-6 w-full max-w-full">
+      {/* Main Container - Edge-to-edge on mobile, max-w-7xl containerized on desktop */}
+      <div className="max-w-7xl mx-auto px-0 sm:px-4 py-2 sm:py-6 w-full">
         
         {/* ================= VIEW 1: 6-STEP DIY CUSTOM TRIP BUILDER ================= */}
         {!activePackage && (
@@ -1463,7 +1463,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight">
                       골프 / 투어 내 맘대로 여행 만들기
                     </h2>
-                    <p className="text-xs sm:text-sm md:text-base text-gray-200 mt-1 leading-relaxed max-w-2xl font-normal">
+                    <p className="text-xs sm:text-sm md:text-base text-gray-200 mt-1 leading-relaxed font-normal">
                       원하시는 지역 선택, 여행기간, 숙박, 차량 등 선택하고 맞춤 견적서가 실시간으로 자동 완성됩니다
                     </p>
                   </div>
@@ -1527,7 +1527,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 <button
                   type="button"
                   onClick={() => setShowScheduleModal(true)}
-                  className="w-full sm:max-w-md p-3.5 md:p-4 rounded-2xl border-2 border-emerald-500/80 bg-emerald-50/40 hover:bg-emerald-50 transition flex items-center justify-between gap-3 cursor-pointer shadow-xs"
+                  className="w-full p-3.5 md:p-4 rounded-2xl border-2 border-emerald-500/80 bg-emerald-50/40 hover:bg-emerald-50 transition flex items-center justify-between gap-3 cursor-pointer shadow-xs"
                 >
                   <div className="flex items-center gap-3 text-left">
                     <span className="w-10 h-10 rounded-xl bg-deepgreen text-white flex items-center justify-center text-lg shadow-xs shrink-0">

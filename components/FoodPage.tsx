@@ -19,8 +19,12 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
         </div>
         
-        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-          <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
+        <div className="absolute inset-x-0 top-3 sm:top-4 z-50 pointer-events-none">
+          <div className="max-w-7xl mx-auto px-2.5 sm:px-4">
+            <div className="pointer-events-auto inline-block">
+              <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
+            </div>
+          </div>
         </div>
 
         <div className="relative z-10 text-center px-4">
@@ -40,8 +44,8 @@ const FoodPage: React.FC<Props> = ({ content, onBack }) => {
            <PageSectionList sections={content.sections} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-5 sm:mt-8">
-           <div className="md:col-span-2 lg:col-span-2 relative h-[220px] xs:h-[260px] md:h-[300px] overflow-hidden rounded-none sm:rounded-2xl shadow-lg group">
+        <div className="mt-5 sm:mt-8">
+           <div className="w-full relative h-[220px] xs:h-[260px] md:h-[320px] overflow-hidden rounded-none sm:rounded-2xl shadow-lg group">
               <img src={getFreshImageUrl(content.introImage)} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="Main Food" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end p-4 xs:p-6">
                  <div className="text-white">

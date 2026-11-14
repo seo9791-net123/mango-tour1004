@@ -15,7 +15,7 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans selection:bg-gold-500 selection:text-white">
       {/* Top Sticky Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs no-print">
-        <div className="max-w-4xl mx-auto px-2.5 sm:px-4 py-3 flex items-center justify-between gap-2 sm:gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <button 
               type="button"
@@ -55,7 +55,7 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-4xl mx-auto px-0 sm:px-4 py-3 sm:py-12">
+      <main className="max-w-7xl mx-auto px-0 sm:px-4 py-3 sm:py-10">
         {/* Document Header Card */}
         <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-10 shadow-sm border-y sm:border border-gray-200/90 mb-3 sm:mb-8">
           <div className="border-b border-gray-100 pb-6 mb-6">
@@ -346,11 +346,13 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
 
       {/* Footer */}
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs border-t border-gray-700 mt-12 no-print">
-        <p>MANGO TOUR TRAVEL AGENCY | 호치민 · 붕따우 · 달랏 골프/호텔/풀빌라 단독 투어</p>
-        <p className="mt-1">
-          대표이사: 김일선 | 직통 문의: <span className="text-gold-400 font-bold">+84 37 720 4451</span> | 카카오톡: MANGO TOUR
-        </p>
-        <p className="mt-2 text-gray-500 text-[11px]">© MANGO TOUR. All rights reserved.</p>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+          <p>MANGO TOUR TRAVEL AGENCY | 호치민 · 붕따우 · 달랏 골프/호텔/풀빌라 단독 투어</p>
+          <p className="mt-1">
+            대표이사: 김일선 | 직통 문의: <span className="text-gold-400 font-bold">+84 37 720 4451</span> | 카카오톡: MANGO TOUR
+          </p>
+          <p className="mt-2 text-gray-500 text-[11px]">© MANGO TOUR. All rights reserved.</p>
+        </div>
       </footer>
     </div>
   );

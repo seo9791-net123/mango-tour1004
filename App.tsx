@@ -1199,31 +1199,33 @@ const App: React.FC = () => {
       </main>
 
       <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs no-print">
-         <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
-           <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
-             Kakao: <span className="font-bold">MANGO TOUR</span>
-           </a>
-         </p>
-         <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
-           <button 
-             type="button"
-             onClick={() => navigateTo('privacy')} 
-             className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
-           >
-             개인정보처리방침
-           </button>
-           <span className="text-gray-600">|</span>
-           <button 
-             type="button"
-             onClick={() => navigateTo('terms')} 
-             className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
-           >
-             이용약관
-           </button>
-           <span className="text-gray-600">|</span>
-           <span className="whitespace-nowrap">대표자: 김일선</span>
+         <div className="max-w-7xl mx-auto px-3 sm:px-4">
+           <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
+             <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
+               Kakao: <span className="font-bold">MANGO TOUR</span>
+             </a>
+           </p>
+           <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
+             <button 
+               type="button"
+               onClick={() => navigateTo('privacy')} 
+               className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
+             >
+               개인정보처리방침
+             </button>
+             <span className="text-gray-600">|</span>
+             <button 
+               type="button"
+               onClick={() => navigateTo('terms')} 
+               className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
+             >
+               이용약관
+             </button>
+             <span className="text-gray-600">|</span>
+             <span className="whitespace-nowrap">대표자: 김일선</span>
+           </div>
+           <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
          </div>
-         <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
       </footer>
 
       {/* Real-time Chat Notification Toast */}

@@ -14,7 +14,7 @@ interface Props {
 
 const IconMenu: React.FC<Props> = ({ items, onItemClick }) => {
   return (
-    <div className="py-3 sm:py-5 bg-white w-full max-w-7xl mx-auto px-1.5 sm:px-3 md:px-4">
+    <div className="py-3 sm:py-5 bg-white w-full max-w-7xl mx-auto px-1.5 sm:px-4">
       <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-8 gap-1.5 sm:gap-3 md:gap-3.5 items-stretch">
         {items.map((item, index) => (
           <div

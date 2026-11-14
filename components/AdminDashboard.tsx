@@ -4701,7 +4701,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
         {/* Popup Management */}
         {activeTab === 'popup' && (
-          <div className="animate-fade-in-up max-w-4xl mx-auto px-2 sm:px-0">
+          <div className="animate-fade-in-up w-full px-2 sm:px-0">
             <h3 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">공지사항 팝업 관리</h3>
             <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-gray-100 shadow-lg sm:shadow-xl overflow-hidden">
               <div className="p-3 sm:p-4 space-y-4">

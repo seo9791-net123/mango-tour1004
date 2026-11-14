@@ -22,8 +22,12 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
         </div>
         
-        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-          <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
+        <div className="absolute inset-x-0 top-3 sm:top-4 z-50 pointer-events-none">
+          <div className="max-w-7xl mx-auto px-2.5 sm:px-4">
+            <div className="pointer-events-auto inline-block">
+              <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
+            </div>
+          </div>
         </div>
 
         <div className="relative z-10 text-center px-4">
@@ -78,7 +82,7 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
       </section>
       
       <section className="py-5 sm:py-8 bg-[#f8f9fa] text-center border-t border-gray-100">
-         <div className="max-w-4xl mx-auto px-2.5 sm:px-4">
+         <div className="max-w-7xl mx-auto px-2.5 sm:px-4">
             <h2 className="text-lg xs:text-xl font-bold mb-3 xs:mb-4 text-deepgreen">완벽한 휴식을 위한 큐레이션</h2>
             <div className="flex flex-wrap justify-center gap-1.5 xs:gap-2">
                <span className="bg-white px-3 xs:px-4 py-1 rounded-full border border-gray-200 text-[10px] xs:text-xs font-bold text-gray-700 shadow-sm whitespace-nowrap">#고급호텔</span>

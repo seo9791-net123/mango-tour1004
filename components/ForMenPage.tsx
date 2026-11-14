@@ -19,8 +19,12 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-[#050505]"></div>
         </div>
         
-        <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-          <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
+        <div className="absolute inset-x-0 top-3 sm:top-4 z-50 pointer-events-none">
+          <div className="max-w-7xl mx-auto px-2.5 sm:px-4">
+            <div className="pointer-events-auto inline-block">
+              <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
+            </div>
+          </div>
         </div>
 
         <div className="relative z-10 text-center animate-fade-in-up px-4">
