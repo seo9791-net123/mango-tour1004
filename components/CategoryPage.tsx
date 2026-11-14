@@ -125,10 +125,10 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
   };
 
   return (
-    <div className="py-4 xs:py-6 bg-gray-50 min-h-[600px] animate-fade-in pb-safe md:pb-0">
-      <div className="max-w-7xl mx-auto px-3 xs:px-4">
+    <div className="py-3 sm:py-6 bg-gray-50 min-h-[600px] animate-fade-in pb-safe md:pb-0">
+      <div className="max-w-7xl mx-auto px-0 sm:px-4">
         {/* Header: BackButton + Duration Icon Boxes (3박5일, 4박6일, 5박7일) + Title */}
-        <div className="flex flex-col gap-3 mb-5">
+        <div className="flex flex-col gap-3 mb-4 sm:mb-5 px-2.5 sm:px-0">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <BackButton
               onClick={selectedDetail ? () => setSelectedDetail(null) : onBack}
@@ -209,15 +209,15 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 xs:py-16 text-gray-400 bg-white rounded-2xl border border-gray-200 shadow-sm px-4 text-center">
+          <div className="flex flex-col items-center justify-center py-12 xs:py-16 text-gray-400 bg-white rounded-none sm:rounded-2xl border-y sm:border border-gray-200 shadow-sm px-4 text-center">
             <span className="text-3xl mb-3">⛳️</span>
             <p className="text-sm font-bold text-gray-600">해당 조건에 등록된 상품이 없습니다.</p>
             <p className="text-xs text-gray-400 mt-1">다른 일정을 선택하시거나 카카오톡 채널로 맞춤 견적을 문의해 주세요.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 xs:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white rounded-2xl shadow-sm overflow-hidden group hover:shadow-md transition duration-300 border border-gray-100 flex flex-col">
+              <div key={product.id} className="bg-white rounded-none sm:rounded-2xl shadow-sm overflow-hidden group hover:shadow-md transition duration-300 border-y sm:border border-gray-100 flex flex-col">
                 <div className="relative h-44 xs:h-48 overflow-hidden bg-gray-100">
                   <img 
                     src={getFreshImageUrl(product.image)} 
@@ -233,14 +233,14 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                     }}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                   />
-                  <div className="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                  <div className="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">
                     {product.duration}
                   </div>
                 </div>
-                <div className="p-3.5 xs:p-4 flex flex-col flex-1">
+                <div className="p-3.5 sm:p-4 flex flex-col flex-1">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-[11px] xs:text-[12px] text-gold-600 font-extrabold uppercase tracking-wide">{product.location}</span>
-                    <span className={`text-[11px] font-bold ${product.type === 'golf' ? 'text-emerald-700' : product.type === 'tour' ? 'text-sky-700' : 'text-amber-700'}`}>
+                    <span className="text-[11px] xs:text-[12px] text-gold-600 font-extrabold uppercase tracking-wide whitespace-nowrap">{product.location}</span>
+                    <span className={`text-[11px] font-bold whitespace-nowrap ${product.type === 'golf' ? 'text-emerald-700' : product.type === 'tour' ? 'text-sky-700' : 'text-amber-700'}`}>
                       {product.type === 'golf' ? '골프' : product.type === 'tour' ? '관광' : '호텔&빌라'}
                     </span>
                   </div>
@@ -248,18 +248,18 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                   <p className="text-gray-600 text-xs xs:text-sm font-medium mb-3 line-clamp-2 leading-relaxed flex-1">{product.description}</p>
                   
                   <div className="flex flex-col gap-2 mt-auto border-t border-gray-100 pt-3">
-                    <div className="flex justify-between items-center">
-                      <span className="font-black text-base xs:text-lg text-red-600 tabular-nums">${product.price.toLocaleString()} <span className="text-xs font-bold text-gray-500">USD~</span></span>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="font-black text-base xs:text-lg text-red-600 tabular-nums whitespace-nowrap">${product.price.toLocaleString()} <span className="text-xs font-bold text-gray-500">USD~</span></span>
                       <button 
                         onClick={() => handlePreviewClick(product)}
-                        className="text-gold-600 font-bold text-xs xs:text-sm hover:underline py-1"
+                        className="text-gold-600 font-bold text-xs xs:text-sm hover:underline py-1 whitespace-nowrap shrink-0"
                       >
                         상세보기 +
                       </button>
                     </div>
                     <button 
                       onClick={() => onProductClick(product.id)}
-                      className="w-full bg-deepgreen text-white py-2.5 xs:py-3 rounded-xl text-xs xs:text-sm font-bold hover:bg-opacity-90 active:scale-95 transition flex items-center justify-center gap-1 shadow-sm"
+                      className="w-full bg-deepgreen text-white py-2.5 xs:py-3 rounded-xl text-xs xs:text-sm font-bold hover:bg-opacity-90 active:scale-95 transition flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"
                     >
                       견적보기 <span>↗</span>
                     </button>

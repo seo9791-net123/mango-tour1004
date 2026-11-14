@@ -29,29 +29,29 @@ const CulturePage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-6 xs:py-8 max-w-7xl mx-auto px-3 xs:px-4">
-         <div className="flex flex-col lg:flex-row gap-6 xs:gap-8 items-center mb-6 xs:mb-8">
+      <section className="py-5 sm:py-8 max-w-7xl mx-auto px-0 sm:px-4">
+         <div className="flex flex-col lg:flex-row gap-4 sm:gap-8 items-center mb-5 sm:mb-8">
             <div className="w-full flex-1 order-2 lg:order-1 relative group">
-               <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
+               <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-none sm:rounded-2xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
             </div>
-            <div className="flex-1 order-1 lg:order-2 space-y-2.5 xs:space-y-3">
+            <div className="flex-1 order-1 lg:order-2 space-y-2.5 xs:space-y-3 px-2.5 sm:px-0">
                <h2 className="text-xl xs:text-2xl md:text-3xl font-black text-deepgreen uppercase leading-tight tracking-tight">{content.introTitle}</h2>
                <div className="h-1 w-12 xs:w-16 bg-gold-500 rounded-full"></div>
                <p className="text-sm xs:text-base md:text-lg leading-relaxed text-gray-700 font-medium whitespace-pre-line">{content.introText}</p>
             </div>
          </div>
 
-         <div className="mb-6 xs:mb-8">
+         <div className="mb-5 sm:mb-8">
            <PageSectionList sections={content.sections} />
          </div>
 
-         <div className="text-center mb-6 xs:mb-8">
+         <div className="text-center mb-5 sm:mb-8 px-2.5 sm:px-0">
             <h3 className="text-lg xs:text-xl font-bold uppercase tracking-wide text-deepgreen">Culture & Beauty Collection</h3>
             <div className="w-10 h-0.5 bg-gold-500 mx-auto mt-1 rounded-full"></div>
          </div>
-         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5">
+         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-3.5">
             {content.galleryImages.map((img, idx) => (
-                <div key={idx} className="group relative h-32 xs:h-36 sm:h-40 overflow-hidden rounded-xl shadow-sm bg-gray-100">
+                <div key={idx} className="group relative h-32 xs:h-36 sm:h-40 overflow-hidden rounded-none sm:rounded-xl shadow-sm bg-gray-100">
                    <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Culture ${idx}`} />
                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-2.5 flex items-end">
                       <p className="text-white font-bold text-[10px]">Vietnam Heritage {idx + 1}</p>

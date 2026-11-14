@@ -309,11 +309,11 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
         </section>
       ) : null}
 
-      <section className="py-5 sm:py-8 bg-gray-50 text-black">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+      <section className="py-3 sm:py-8 bg-gray-50 text-black">
+        <div className="max-w-7xl mx-auto px-0 sm:px-4">
           
           {/* Action Bar (Header or Title Bar) */}
-          <div className="flex flex-row justify-between items-center mb-5 sm:mb-7 gap-3 bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-200/80 shadow-sm">
+          <div className="flex flex-row justify-between items-center mb-3 sm:mb-7 gap-3 bg-white p-3.5 sm:p-5 rounded-none sm:rounded-2xl border-y sm:border border-gray-200/80 shadow-sm">
             <div className="min-w-0 flex-1">
               <h2 className="text-base sm:text-lg md:text-xl font-black text-deepgreen tracking-tight flex items-center gap-1.5 truncate">
                 <span>💬</span>
@@ -341,7 +341,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
 
         {/* Write Post Form */}
         {isAdding && (
-          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg mb-8 border border-gold-200 animate-fade-in-up">
+          <div className="bg-white p-3.5 sm:p-6 rounded-none sm:rounded-xl shadow-lg mb-4 sm:mb-8 border-y sm:border border-gold-200 animate-fade-in-up">
             <h3 className="font-bold text-sm md:text-base mb-3 text-deepgreen">새 글 작성</h3>
             <div className="space-y-3">
                 <input
@@ -409,11 +409,11 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 </div>
                 
                 <div className="flex justify-end gap-2 pt-1">
-                  <button onClick={() => setIsAdding(false)} className="px-3.5 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition text-xs md:text-sm">취소</button>
+                  <button onClick={() => setIsAdding(false)} className="px-3.5 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition text-xs md:text-sm whitespace-nowrap">취소</button>
                   <button 
                     onClick={handleAddPost} 
                     disabled={isUploading}
-                    className="px-4.5 py-2 bg-deepgreen text-white rounded-lg font-bold shadow hover:bg-opacity-90 transition text-xs md:text-sm disabled:opacity-50"
+                    className="px-4.5 py-2 bg-deepgreen text-white rounded-lg font-bold shadow hover:bg-opacity-90 transition text-xs md:text-sm disabled:opacity-50 whitespace-nowrap"
                   >
                     {isUploading ? '업로드 대기 중' : '등록하기'}
                   </button>
@@ -423,7 +423,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
         )}
 
         {/* Post List Row Layout (줄 형태 게시판) */}
-        <div className="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-none sm:rounded-2xl border-y sm:border border-gray-200/90 shadow-sm overflow-hidden">
           {posts.length === 0 ? (
             <div className="py-20 text-center text-gray-400">
               <span className="text-4xl block mb-3">💬</span>
@@ -495,7 +495,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                       </div>
 
                       {/* Mobile Row */}
-                      <div className="md:hidden px-4 py-3.5 flex flex-col gap-1.5">
+                      <div className="md:hidden px-3 py-3 flex flex-col gap-1.5">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             {post.isPrivate && (
@@ -524,14 +524,14 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                           </p>
                         )}
 
-                        <div className="flex items-center gap-2 text-[11px] text-gray-400 pt-0.5">
-                          <span className="font-medium text-gray-600">{post.author}</span>
+                        <div className="flex items-center gap-2 text-[11px] text-gray-400 pt-0.5 flex-wrap">
+                          <span className="font-medium text-gray-600 whitespace-nowrap">{post.author}</span>
                           <span>·</span>
-                          <span>조회 {post.views}</span>
+                          <span className="whitespace-nowrap">조회 {post.views}</span>
                           {hasComments && (
                             <>
                               <span>·</span>
-                              <span>댓글 {post.comments.length}</span>
+                              <span className="whitespace-nowrap">댓글 {post.comments.length}</span>
                             </>
                           )}
                         </div>
@@ -718,14 +718,14 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                       <>
                         <button 
                           onClick={cancelEdit}
-                          className="px-3.5 md:px-4 py-1.5 md:py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px] md:text-xs hover:bg-gray-300"
+                          className="px-3.5 md:px-4 py-1.5 md:py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px] md:text-xs hover:bg-gray-300 whitespace-nowrap"
                         >
                           취소
                         </button>
                         <button 
                           onClick={saveEdit}
                           disabled={isUploading}
-                          className="px-4 md:px-5 py-1.5 md:py-2 bg-gold-500 text-white rounded-lg font-bold text-[10px] md:text-xs hover:bg-gold-600 shadow-md disabled:opacity-50"
+                          className="px-4 md:px-5 py-1.5 md:py-2 bg-gold-500 text-white rounded-lg font-bold text-[10px] md:text-xs hover:bg-gold-600 shadow-md disabled:opacity-50 whitespace-nowrap"
                         >
                           {isUploading ? '저장 중...' : '저장 완료'}
                         </button>
@@ -735,13 +735,13 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                           <>
                              <button 
                                 onClick={startEdit}
-                                className="text-blue-600 hover:text-blue-800 font-bold text-[10px] md:text-xs bg-blue-50 px-3 md:px-3.5 py-1.5 md:py-2 rounded transition"
+                                className="text-blue-600 hover:text-blue-800 font-bold text-[10px] md:text-xs bg-blue-50 px-3 md:px-3.5 py-1.5 md:py-2 rounded transition whitespace-nowrap"
                              >
                                  ✏️ 수정하기
                              </button>
                              <button 
                                 onClick={() => handleDelete(viewingPost.id)}
-                                className="text-red-500 hover:text-red-700 font-bold text-[10px] md:text-xs bg-red-50 px-3 md:px-3.5 py-1.5 md:py-2 rounded transition"
+                                className="text-red-500 hover:text-red-700 font-bold text-[10px] md:text-xs bg-red-50 px-3 md:px-3.5 py-1.5 md:py-2 rounded transition whitespace-nowrap"
                              >
                                  🗑 삭제하기
                              </button>

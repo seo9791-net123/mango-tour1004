@@ -397,14 +397,50 @@ const App: React.FC = () => {
   };
 
   const cleanMasterOptionPool = (pool: MasterOptionPool): MasterOptionPool => {
+    const existingGolf = pool.golfCourses || [];
+    const existingGolfIds = new Set(existingGolf.map(g => g.id));
+    // Ensure new Mui Ne / Nha Trang courses are available for legacy localStorage pools without overwriting user-edited ones
+    const missingRegionalGolf = (!existingGolf.some(g => g.location === '무이네' || g.location === '나트랑'))
+      ? INITIAL_MASTER_OPTION_POOL.golfCourses.filter(g => (g.location === '무이네' || g.location === '나트랑') && !existingGolfIds.has(g.id))
+      : [];
+    const mergedGolf = [...existingGolf, ...missingRegionalGolf].map(gc => ({
+      ...gc,
+      priceUSD: gc.priceUSD !== undefined ? gc.priceUSD : Math.max(80, 155 + (gc.priceDeltaUSD || 0))
+    }));
+
+    const vehicleDefaultsMap = new Map(INITIAL_MASTER_OPTION_POOL.vehicles.map(v => [v.id, v]));
+    const rawVehicles = (pool.vehicles && pool.vehicles.length > 0) ? pool.vehicles : INITIAL_MASTER_OPTION_POOL.vehicles;
+    const mergedVehicles = rawVehicles.map(v => {
+      const def = vehicleDefaultsMap.get(v.id);
+      const inferredShort =
+        v.shortName ||
+        (v.name.includes('7인승') ? '7인승' :
+         v.name.includes('9인승') ? '9인승' :
+         v.name.includes('16인승') ? '16인승' :
+         (v.name.includes('26인승') || v.name.includes('28인승') || v.name.includes('18~28')) ? '26인승' :
+         v.name.slice(0, 6));
+      return {
+        ...v,
+        shortName: inferredShort,
+        icon: v.icon || def?.icon || '🚐',
+        pricePerDayUSD: v.pricePerDayUSD !== undefined ? v.pricePerDayUSD : (def?.pricePerDayUSD ?? Math.max(15, 25 + Math.round((v.priceDeltaUSD || 0) / 5)))
+      };
+    });
+
     return {
       ...pool,
+      diyRegions: (pool.diyRegions && pool.diyRegions.length > 0) ? pool.diyRegions : INITIAL_MASTER_OPTION_POOL.diyRegions,
+      golfCourses: mergedGolf,
+      tourOptions: (pool.tourOptions && pool.tourOptions.length > 0) ? pool.tourOptions : INITIAL_MASTER_OPTION_POOL.tourOptions,
+      accommodationTiers: (pool.accommodationTiers && pool.accommodationTiers.length > 0) ? pool.accommodationTiers : INITIAL_MASTER_OPTION_POOL.accommodationTiers,
       accommodations: (pool.accommodations || []).map(acc => ({
         ...acc,
         name: acc.name.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급').replace(/2인\s*1실/g, '1인 객실 기준').replace(/2인1실/g, '1인 객실 기준'),
         description: acc.description.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급/g, '고급').replace(/2인\s*1실/g, '1인 1실').replace(/2인1실/g, '1인 1실'),
         badge: acc.badge ? acc.badge.replace(/5성급\s*호텔/g, '고급 호텔').replace(/5성급\s*1인실/g, '고급 호텔 1인실').replace(/5성급/g, '고급') : acc.badge
       })),
+      vehicles: mergedVehicles,
+      extraServices: (pool.extraServices && pool.extraServices.length > 0) ? pool.extraServices : INITIAL_MASTER_OPTION_POOL.extraServices,
       guides: (pool.guides || []).map(gui => {
         if (gui.id === 'gui-1' || gui.name.includes('가이드')) {
           return {
@@ -630,6 +666,16 @@ const App: React.FC = () => {
     }
   }, 2000)).current;
 
+  const debouncedSyncMasterOptionPool = useRef(debounce(async (newPool: MasterOptionPool) => {
+    if (isSyncing.current['master_option_pool']) return;
+    isSyncing.current['master_option_pool'] = true;
+    try {
+      await supabaseService.saveMasterOptionPool(newPool);
+    } finally {
+      isSyncing.current['master_option_pool'] = false;
+    }
+  }, 1500)).current;
+
   // Initial Data Load
   useEffect(() => {
     const initData = async () => {
@@ -689,6 +735,9 @@ const App: React.FC = () => {
           }
           if (data.customPackages && data.customPackages.length > 0) {
             setCustomPackages(cleanCustomPackages(data.customPackages));
+          }
+          if ((data as any).masterOptionPool) {
+            setMasterOptionPool(cleanMasterOptionPool((data as any).masterOptionPool));
           }
         }
         
@@ -807,6 +856,7 @@ const App: React.FC = () => {
     } catch (e) {
       console.warn("Failed to write master options pool to localStorage:", e);
     }
+    debouncedSyncMasterOptionPool(newPool);
   };
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -1154,11 +1204,11 @@ const App: React.FC = () => {
              Kakao: <span className="font-bold">MANGO TOUR</span>
            </a>
          </p>
-         <div className="mt-2.5 flex items-center justify-center gap-3 text-[11px] text-gray-400">
+         <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
            <button 
              type="button"
              onClick={() => navigateTo('privacy')} 
-             className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer"
+             className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
            >
              개인정보처리방침
            </button>
@@ -1166,12 +1216,12 @@ const App: React.FC = () => {
            <button 
              type="button"
              onClick={() => navigateTo('terms')} 
-             className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer"
+             className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
            >
              이용약관
            </button>
            <span className="text-gray-600">|</span>
-           <span>대표자: 김일선</span>
+           <span className="whitespace-nowrap">대표자: 김일선</span>
          </div>
          <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
       </footer>
@@ -1307,8 +1357,8 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-start md:items-center justify-center z-[10000] px-4 backdrop-blur-sm animate-fade-in pt-20 md:pt-0">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl relative transform transition-all animate-fade-in-up">
+        <div className="fixed inset-0 bg-black/60 flex items-start md:items-center justify-center z-[10000] px-2 sm:px-4 backdrop-blur-sm animate-fade-in pt-16 md:pt-0">
+          <div className="bg-white rounded-2xl p-5 sm:p-8 w-full max-w-md shadow-2xl relative transform transition-all animate-fade-in-up">
             <button onClick={() => { setShowAuthModal(false); resetAuthFields(); }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
             <h2 className="text-2xl font-bold text-center mb-6 text-deepgreen">{authMode === 'login' ? '로그인' : '회원가입'}</h2>
             <form onSubmit={handleLogin} className="space-y-4">

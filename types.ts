@@ -152,13 +152,38 @@ export interface OptionChoiceItem {
 }
 
 export interface MasterOptionPool {
+  diyRegions?: Array<{
+    id: string;
+    name: string;
+    subtitle: string;
+    icon: string;
+    baseFeeUSD: number;
+  }>;
   golfCourses: Array<{
     id: string;
     name: string;
     location: string;
     holes: number;
+    priceUSD?: number; // 1회 라운딩 기본 단가 ($ USD)
     priceDeltaUSD: number;
     description: string;
+    badge?: string;
+  }>;
+  tourOptions?: Array<{
+    id: string;
+    name: string;
+    location: string; // '전체' (자유여행) 또는 지역명 ('호치민' | '붕따우' | '무이네' | '나트랑' | '달랏')
+    priceUSD: number; // 1인 기준 단가 ($ USD)
+    description: string;
+    badge?: string;
+    isFreeTravel?: boolean;
+  }>;
+  accommodationTiers?: Array<{
+    id: 'hotel_5star' | 'pool_villa' | 'hotel_4star' | 'resort' | string;
+    name: string;
+    pricePerNightUSD: number; // 1박 1인 단가 ($ USD)
+    description: string;
+    icon: string;
     badge?: string;
   }>;
   accommodations: Array<{
@@ -172,10 +197,23 @@ export interface MasterOptionPool {
   }>;
   vehicles: Array<{
     id: string;
+    shortName?: string; // 예: '7인승', '9인승', '16인승', '26인승'
     name: string;
+    pricePerDayUSD?: number; // 1일 1인 기준 환산 단가 ($ USD)
     priceDeltaUSD: number;
     description: string;
+    icon?: string;
     badge?: string;
+  }>;
+  extraServices?: Array<{
+    id: string; // 'guide' | 'fasttrack' | 'massage' 등
+    name: string;
+    priceUSD: number; // 단가 ($ USD)
+    pricingUnit: 'per_day' | 'per_person';
+    description: string;
+    icon: string;
+    badge?: string;
+    defaultSelected?: boolean;
   }>;
   guides: Array<{
     id: string;

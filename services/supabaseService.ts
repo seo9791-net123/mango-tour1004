@@ -9,7 +9,8 @@ import {
   PopupNotification, 
   CustomTripPackage,
   ChatMessage,
-  User
+  User,
+  MasterOptionPool
 } from '../types';
 import { 
   INITIAL_PRODUCTS, 
@@ -19,7 +20,8 @@ import {
   SUB_MENU_ITEMS, 
   INITIAL_PAGE_CONTENTS, 
   INITIAL_POPUP, 
-  INITIAL_CUSTOM_PACKAGES 
+  INITIAL_CUSTOM_PACKAGES,
+  INITIAL_MASTER_OPTION_POOL
 } from '../constants';
 
 export const supabaseService = {
@@ -37,6 +39,7 @@ export const supabaseService = {
       pageContents: INITIAL_PAGE_CONTENTS,
       popup: INITIAL_POPUP,
       customPackages: INITIAL_CUSTOM_PACKAGES,
+      masterOptionPool: INITIAL_MASTER_OPTION_POOL,
       cloudinaryConfig: { cloudName: 'ducor31pp', uploadPreset: 'mangotour' },
       isSupabaseActive: false,
       isLocal: true
@@ -157,13 +160,16 @@ export const supabaseService = {
         // ignore
       }
 
+      let masterOptionPool: MasterOptionPool | null = null;
       const { data: pagesData } = await supabase
         .from('pages')
         .select('*');
       if (pagesData && pagesData.length > 0) {
         pagesData.forEach(row => {
           const content = row.data || row;
-          if (content.id) {
+          if (row.id === 'master_option_pool') {
+            masterOptionPool = content as MasterOptionPool;
+          } else if (content.id) {
             pageContents[content.id] = content;
           }
         });
@@ -199,6 +205,7 @@ export const supabaseService = {
         pageContents,
         popup,
         customPackages,
+        masterOptionPool,
         cloudinaryConfig,
         isSupabaseActive: true,
         isLocal: false
@@ -335,6 +342,27 @@ export const supabaseService = {
         }, { onConflict: 'id' });
     } catch (e) {
       console.warn(`Failed to save page ${pageId}:`, e);
+    }
+  },
+
+  /**
+   * DIY 마스터 옵션 풀 저장 (지역, 골프장, 여행, 숙박, 차량, 기타)
+   */
+  async saveMasterOptionPool(pool: MasterOptionPool) {
+    const supabase = getSupabase();
+    if (!supabase || !isSupabaseConfigured) return;
+
+    try {
+      await supabase
+        .from('pages')
+        .upsert({
+          id: 'master_option_pool',
+          data: pool,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      console.log("✅ Synced master_option_pool to Supabase successfully.");
+    } catch (e) {
+      console.warn("Failed to save master_option_pool to Supabase:", e);
     }
   },
 

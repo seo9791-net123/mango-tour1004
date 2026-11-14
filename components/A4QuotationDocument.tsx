@@ -56,6 +56,29 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   const exactA4Ref = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [uncheckedKeys, setUncheckedKeys] = useState<Record<string, boolean>>({});
+
+  const getCostItemKey = (item: CostItem, idx: number) => `${item.category}__${idx}`;
+
+  const isCostItemSelected = (item: CostItem, idx: number) =>
+    !uncheckedKeys[getCostItemKey(item, idx)];
+
+  const toggleCostItem = (item: CostItem, idx: number) => {
+    const key = getCostItemKey(item, idx);
+    setUncheckedKeys((prev) => {
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = true;
+      }
+      return next;
+    });
+  };
+
+  const selectAllCostItems = () => {
+    setUncheckedKeys({});
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -178,6 +201,18 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     }
   };
 
+  // Selected items & dynamic totals (recalculated immediately on checkbox toggle)
+  const selectedCostItems = costItems.filter((item, idx) => isCostItemSelected(item, idx));
+  const hasCostItems = costItems.length > 0;
+  const computedSelectedUSD = selectedCostItems.reduce((sum, item) => {
+    const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
+    return sum + itemUSD;
+  }, 0);
+  const computedSelectedKRW = selectedCostItems.reduce((sum, item) => sum + (item.amountKRW || 0), 0);
+
+  const finalTotalKRW = hasCostItems ? computedSelectedKRW : (totalPriceKRW || 0);
+  const finalTotalUSD = hasCostItems ? computedSelectedUSD : (totalPriceUSD || 0);
+
   // Copy Quotation Summary Text
   const handleCopyText = async () => {
     let text = `[MANGO TOUR 여행 견적 및 일정 안내서]\n`;
@@ -185,14 +220,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     text += `👤 고객명: ${customerName} 고객님 (외 ${Math.max(0, personCount - 1)}인)\n`;
     text += `📍 여행지: 베트남 ${location}\n`;
     text += `📅 여행기간: ${formattedDateRange} (${duration})\n`;
-    const finalUSD = totalPriceUSD || finalTotalUSD;
-    if (finalUSD || totalPriceKRW) {
-      text += `💰 총 견적 금액: $${finalUSD.toLocaleString()} USD (${personCount}인 기준)\n`;
-      text += `   (약 ₩ ${finalTotalKRW.toLocaleString()}원)\n`;
-    }
+    text += `💰 총 견적 금액: $${finalTotalUSD.toLocaleString()} USD (${personCount}인 기준)\n`;
+    text += `   (약 ₩ ${finalTotalKRW.toLocaleString()}원)\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `■ 주요 경비 내역\n`;
-    costItems.forEach((item) => {
+    text += `■ 주요 경비 내역 (선택 항목)\n`;
+    selectedCostItems.forEach((item) => {
       const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
       text += `• [${item.category}] ${item.detail} (${item.quantity}): $${itemUSD.toLocaleString()} USD (약 ₩ ${item.amountKRW.toLocaleString()}원)\n`;
     });
@@ -225,9 +257,6 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     });
   };
 
-  const finalTotalKRW = totalPriceKRW || costItems.reduce((sum, item) => sum + item.amountKRW, 0);
-  const finalTotalUSD = totalPriceUSD || costItems.reduce((sum, item) => sum + (item.amountUSD || 0), 0);
-
   return (
     <div className="w-full flex flex-col items-center select-text font-sans antialiased">
       {/* Toast Notification */}
@@ -240,17 +269,17 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
 
       {/* Action Toolbar (no-print) */}
       {showControls && (
-        <div className="no-print w-full max-w-[794px] mb-3 px-1 sm:px-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-          <div className="flex items-center justify-between text-xs text-gray-500 font-semibold px-1 sm:px-0">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <div className="no-print w-full max-w-[794px] mb-2 sm:mb-3 px-2.5 sm:px-0 pt-2 sm:pt-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+          <div className="flex items-center justify-between text-xs text-gray-500 font-semibold px-0.5 sm:px-0">
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
               <span>A4 표준 정식 견적서 폼</span>
             </div>
             {onClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="sm:hidden w-7 h-7 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 flex items-center justify-center font-bold text-xs cursor-pointer"
+                className="sm:hidden w-7 h-7 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 flex items-center justify-center font-bold text-xs cursor-pointer shrink-0"
                 aria-label="닫기"
               >
                 ✕
@@ -262,7 +291,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="py-1.5 px-2 sm:px-4 sm:py-2 bg-deepgreen text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-emerald-800 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+              className="py-1.5 px-2 sm:px-4 sm:py-2 bg-deepgreen text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-emerald-800 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>🖨️</span>
               <span>인쇄</span>
@@ -272,7 +301,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
               type="button"
               onClick={handleExportPDF}
               disabled={isExporting}
-              className="py-1.5 px-2 sm:px-4 sm:py-2 bg-gold-500 text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-gold-600 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50"
+              className="py-1.5 px-2 sm:px-4 sm:py-2 bg-gold-500 text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-gold-600 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
             >
               <span>📄</span>
               <span>PDF</span>
@@ -282,7 +311,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
               type="button"
               onClick={handleDownloadPNG}
               disabled={isExporting}
-              className="py-1.5 px-2 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+              className="py-1.5 px-2 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>📥</span>
               <span>이미지</span>
@@ -291,7 +320,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             <button
               type="button"
               onClick={handleCopyText}
-              className="py-1.5 px-2 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+              className="py-1.5 px-2 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>📋</span>
               <span>복사</span>
@@ -300,7 +329,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             <button
               type="button"
               onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
-              className="col-span-4 sm:col-span-1 py-2 sm:py-2 px-3 sm:px-4 bg-[#FEE500] text-[#191919] text-xs sm:text-sm font-black rounded-xl hover:bg-[#FDD835] transition shadow-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+              className="col-span-4 sm:col-span-1 py-2 sm:py-2 px-3 sm:px-4 bg-[#FEE500] text-[#191919] text-xs sm:text-sm font-black rounded-xl hover:bg-[#FDD835] transition shadow-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>💬</span>
               <span>카카오톡 즉시 상담</span>
@@ -324,7 +353,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       <div
         ref={documentRef}
         id="a4-screen-view"
-        className="a4-print-container bg-white w-full max-w-[794px] min-h-0 sm:min-h-[1050px] print:hidden p-3.5 xs:p-5 sm:p-10 md:p-12 border border-gray-200 shadow-xl rounded-2xl sm:rounded-2xl text-gray-900 text-xs sm:text-sm leading-normal box-border relative mx-auto"
+        className="a4-print-container bg-white w-full max-w-[794px] min-h-0 sm:min-h-[1050px] print:hidden p-3 xs:p-4 sm:p-10 md:p-12 border-y sm:border border-gray-200 shadow-xl rounded-none sm:rounded-2xl text-gray-900 text-xs sm:text-sm leading-normal box-border relative mx-auto"
         style={{
           boxSizing: 'border-box',
         }}
@@ -408,116 +437,236 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             선택 결제 금액 (Total Price)
           </span>
           <div className="text-left sm:text-right">
-            <div className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs">
-              ${(finalTotalUSD || Math.round(finalTotalKRW / 1360)).toLocaleString()} USD <span className="text-xs sm:text-sm font-semibold">({personCount}인 기준)</span>
+            <div className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs tabular-nums">
+              ${finalTotalUSD.toLocaleString()} USD <span className="text-xs sm:text-sm font-semibold">({personCount}인 기준)</span>
             </div>
-            <div className="text-[11px] sm:text-xs text-amber-100 font-medium mt-0.5">
-              (약 ₩ {finalTotalKRW.toLocaleString()}원 / 1인 약 ${Math.round((finalTotalUSD || Math.round(finalTotalKRW / 1360)) / personCount).toLocaleString()})
+            <div className="text-[11px] sm:text-xs text-amber-100 font-medium mt-0.5 tabular-nums">
+              (약 ₩ {finalTotalKRW.toLocaleString()}원 / 1인 약 ${Math.round(finalTotalUSD / Math.max(1, personCount)).toLocaleString()})
             </div>
           </div>
         </div>
 
-        {/* Section 1: ■ 여행 경비 내역 (Estimated Cost) */}
+        {/* Section 1: ■ 여행 경비 내역 (Estimated Cost) - Interactive Selectable List */}
         <div className="mb-4 sm:mb-6 page-break-avoid">
-          <h2 className="text-xs sm:text-sm md:text-[15px] font-bold text-gray-900 mb-2 sm:mb-2.5 flex items-center gap-1.5">
-            <span className="text-[#F5A623] text-xs">■</span>
-            <span>여행 경비 내역 (Estimated Cost)</span>
-          </h2>
-
-          {/* Desktop & Print Table */}
-          <div className="hidden sm:block print:block overflow-hidden rounded-md border border-gray-300">
-            <table className="w-full border-collapse text-xs sm:text-[13px]">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-300 text-gray-700">
-                  <th className="py-2 px-3 text-center font-bold w-24 sm:w-28 border-r border-gray-300">
-                    구분
-                  </th>
-                  <th className="py-2 px-3 text-left font-bold border-r border-gray-300">
-                    세부 내역
-                  </th>
-                  <th className="py-2 px-3 text-center font-bold w-16 sm:w-20 border-r border-gray-300">
-                    수량
-                  </th>
-                  <th className="py-2 px-3 text-right font-bold w-28 sm:w-36">
-                    금액
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 text-gray-800">
-                {costItems.length > 0 ? (
-                  costItems.map((item, idx) => {
-                    const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
-                    return (
-                      <tr key={idx} className="hover:bg-gray-50/50 transition">
-                        <td className="py-2.5 px-3 text-center font-bold text-gray-700 border-r border-gray-200 bg-gray-50/40">
-                          {item.category}
-                        </td>
-                        <td className="py-2.5 px-3 text-left font-medium text-gray-900 border-r border-gray-200 leading-snug">
-                          {item.detail}
-                        </td>
-                        <td className="py-2.5 px-3 text-center text-gray-600 border-r border-gray-200 whitespace-nowrap">
-                          {item.quantity}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-bold text-gray-900 whitespace-nowrap">
-                          <span className="block text-xs sm:text-[13px] font-black text-gray-900">
-                            ${itemUSD.toLocaleString()} USD
-                          </span>
-                          <span className="block text-[10px] sm:text-[11px] text-gray-500 font-normal">
-                            (약 ₩ {item.amountKRW.toLocaleString()}원)
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="py-4 text-center text-gray-400">
-                      경비 내역이 등록되지 않았습니다.
-                    </td>
-                  </tr>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 sm:mb-3">
+            <h2 className="text-xs sm:text-sm md:text-[15px] font-bold text-gray-900 flex items-center gap-1.5">
+              <span className="text-[#F5A623] text-xs">■</span>
+              <span>여행 경비 내역 (Estimated Cost)</span>
+            </h2>
+            {hasCostItems && (
+              <div className="flex items-center gap-2 text-[11px] sm:text-xs whitespace-nowrap">
+                <span className="text-gray-500 font-semibold tabular-nums whitespace-nowrap">
+                  선택 항목 <strong className="text-[#064e3b]">{selectedCostItems.length}</strong> / {costItems.length}개
+                </span>
+                {selectedCostItems.length < costItems.length && (
+                  <button
+                    type="button"
+                    onClick={selectAllCostItems}
+                    className="px-2 py-0.5 rounded-md border border-emerald-300 bg-emerald-50 text-[#064e3b] font-bold hover:bg-emerald-100 transition cursor-pointer whitespace-nowrap"
+                  >
+                    전체 선택
+                  </button>
                 )}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
 
-          {/* Mobile Responsive Cost List (sm:hidden print:hidden) */}
-          <div className="sm:hidden print:hidden rounded-lg border border-gray-300 overflow-hidden divide-y divide-gray-200 bg-white">
-            {costItems.length > 0 ? (
-              costItems.map((item, idx) => {
-                const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
-                return (
-                  <div key={idx} className="p-2.5 xs:p-3 space-y-1.5">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-800 text-[11px] font-bold rounded">
-                        {item.category}
-                      </span>
-                      <span className="text-[11px] font-semibold text-gray-500">
-                        수량: {item.quantity}
-                      </span>
-                    </div>
-                    <p className="text-xs font-medium text-gray-900 leading-snug break-keep">
-                      {item.detail}
-                    </p>
-                    <div className="flex items-baseline justify-between pt-1 border-t border-gray-100">
-                      <span className="text-[10px] text-gray-400 font-medium">항목 금액</span>
-                      <div className="text-right">
-                        <span className="text-xs font-black text-gray-900">
+          {/* Desktop Interactive Selectable List */}
+          <div className="hidden sm:block print:block">
+            <div className="grid grid-cols-[44px_105px_1fr_92px_136px] items-center px-3 py-2 mb-2 rounded-lg bg-gray-50 border border-gray-200 text-xs font-bold text-gray-600">
+              <div className="text-center">선택</div>
+              <div className="text-center">구분</div>
+              <div className="pl-2 text-left">세부 내역</div>
+              <div className="text-center">수량</div>
+              <div className="text-right">금액</div>
+            </div>
+
+            {hasCostItems ? (
+              <div className="space-y-2">
+                {costItems.map((item, idx) => {
+                  const selected = isCostItemSelected(item, idx);
+                  const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
+                  return (
+                    <button
+                      key={getCostItemKey(item, idx)}
+                      type="button"
+                      role="checkbox"
+                      aria-checked={selected}
+                      onClick={() => toggleCostItem(item, idx)}
+                      className={`w-full grid grid-cols-[44px_105px_1fr_92px_136px] items-center px-3 py-3 rounded-xl border text-left transition-all duration-150 cursor-pointer ${
+                        selected
+                          ? 'border-emerald-300 bg-emerald-50/25 shadow-2xs hover:bg-emerald-50/45'
+                          : 'border-gray-200 bg-gray-50/60 hover:bg-gray-50'
+                      }`}
+                    >
+                      {/* Far-left custom checkbox */}
+                      <div className="flex items-center justify-center">
+                        <span
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
+                            selected
+                              ? 'bg-[#064e3b] border border-[#064e3b] shadow-2xs'
+                              : 'bg-white border-2 border-gray-300'
+                          }`}
+                        >
+                          {selected && (
+                            <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* 구분 */}
+                      <div className="text-center px-1">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-bold transition-colors ${
+                            selected
+                              ? 'bg-emerald-100/80 text-[#064e3b]'
+                              : 'bg-gray-200/60 text-gray-400'
+                          }`}
+                        >
+                          {item.category}
+                        </span>
+                      </div>
+
+                      {/* 세부 내역 */}
+                      <div
+                        className={`pl-2 pr-3 text-xs sm:text-[13px] font-medium leading-snug break-keep transition-colors ${
+                          selected ? 'text-gray-900' : 'text-gray-400'
+                        }`}
+                      >
+                        {item.detail}
+                      </div>
+
+                      {/* 수량 */}
+                      <div
+                        className={`text-center text-xs whitespace-nowrap font-medium transition-colors ${
+                          selected ? 'text-gray-600' : 'text-gray-400'
+                        }`}
+                      >
+                        {item.quantity}
+                      </div>
+
+                      {/* 금액 */}
+                      <div className="text-right whitespace-nowrap tabular-nums">
+                        <span
+                          className={`block text-xs sm:text-[13px] font-black transition-colors ${
+                            selected ? 'text-[#064e3b]' : 'text-gray-400'
+                          }`}
+                        >
                           ${itemUSD.toLocaleString()} USD
                         </span>
-                        <span className="block text-[10px] text-gray-500 font-normal">
+                        <span
+                          className={`block text-[10px] sm:text-[11px] font-normal transition-colors ${
+                            selected ? 'text-gray-500' : 'text-gray-400'
+                          }`}
+                        >
                           (약 ₩ {item.amountKRW.toLocaleString()}원)
                         </span>
                       </div>
-                    </div>
-                  </div>
-                );
-              })
+                    </button>
+                  );
+                })}
+              </div>
             ) : (
-              <div className="py-4 text-center text-gray-400 text-xs">
+              <div className="py-5 text-center text-gray-400 rounded-xl border border-gray-200 text-xs">
                 경비 내역이 등록되지 않았습니다.
               </div>
             )}
           </div>
+
+          {/* Mobile Responsive Interactive Cost List (sm:hidden print:hidden) */}
+          <div className="sm:hidden print:hidden space-y-2">
+            {hasCostItems ? (
+              costItems.map((item, idx) => {
+                const selected = isCostItemSelected(item, idx);
+                const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
+                return (
+                  <button
+                    key={getCostItemKey(item, idx)}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={selected}
+                    onClick={() => toggleCostItem(item, idx)}
+                    className={`w-full p-3 rounded-xl border text-left transition-all duration-150 flex items-start gap-2.5 cursor-pointer ${
+                      selected
+                        ? 'border-emerald-300 bg-emerald-50/25 shadow-2xs'
+                        : 'border-gray-200 bg-gray-50/60'
+                    }`}
+                  >
+                    {/* Far-left custom checkbox */}
+                    <span
+                      className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                        selected
+                          ? 'bg-[#064e3b] border border-[#064e3b] shadow-2xs'
+                          : 'bg-white border-2 border-gray-300'
+                      }`}
+                    >
+                      {selected && (
+                        <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </span>
+
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span
+                          className={`inline-block px-2 py-0.5 text-[11px] font-bold rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                            selected
+                              ? 'bg-emerald-100/80 text-[#064e3b]'
+                              : 'bg-gray-200/60 text-gray-400'
+                          }`}
+                        >
+                          {item.category}
+                        </span>
+                        <span className={`text-[11px] font-semibold transition-colors whitespace-nowrap ${selected ? 'text-gray-500' : 'text-gray-400'}`}>
+                          수량: {item.quantity}
+                        </span>
+                      </div>
+
+                      <p className={`text-xs font-medium leading-snug break-keep transition-colors ${selected ? 'text-gray-900' : 'text-gray-400'}`}>
+                        {item.detail}
+                      </p>
+
+                      <div className={`flex items-baseline justify-between pt-1.5 border-t ${selected ? 'border-emerald-100' : 'border-gray-200/70'}`}>
+                        <span className={`text-[10px] font-medium ${selected ? 'text-gray-500' : 'text-gray-400'}`}>항목 금액</span>
+                        <div className="text-right tabular-nums">
+                          <span className={`text-xs font-black transition-colors ${selected ? 'text-[#064e3b]' : 'text-gray-400'}`}>
+                            ${itemUSD.toLocaleString()} USD
+                          </span>
+                          <span className={`block text-[10px] font-normal transition-colors ${selected ? 'text-gray-500' : 'text-gray-400'}`}>
+                            (약 ₩ {item.amountKRW.toLocaleString()}원)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="py-4 text-center text-gray-400 rounded-xl border border-gray-200 text-xs">
+                경비 내역이 등록되지 않았습니다.
+              </div>
+            )}
+          </div>
+
+          {/* Live Subtotal Footer inside Section */}
+          {hasCostItems && (
+            <div className="mt-2.5 px-3.5 py-2.5 rounded-xl bg-emerald-50/50 border border-emerald-200/80 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-bold text-[#064e3b]">
+                선택 항목 실시간 합계 ({selectedCostItems.length}개 선택됨)
+              </span>
+              <div className="text-right tabular-nums">
+                <span className="text-sm sm:text-base font-black text-[#064e3b]">
+                  ${finalTotalUSD.toLocaleString()} USD
+                </span>
+                <span className="text-[11px] sm:text-xs text-gray-600 font-medium ml-1.5">
+                  (약 ₩ {finalTotalKRW.toLocaleString()}원)
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Section 2: ■ 여행 추천 일정 (Itinerary) */}
@@ -653,10 +802,10 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           </span>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '-0.5px' }}>
-              ${(finalTotalUSD || Math.round(finalTotalKRW / 1360)).toLocaleString()} USD ({personCount}인 기준)
+              ${finalTotalUSD.toLocaleString()} USD ({personCount}인 기준)
             </div>
             <div style={{ fontSize: '12px', color: '#fef3c7', marginTop: '2px', fontWeight: 500 }}>
-              (약 ₩ {finalTotalKRW.toLocaleString()}원 / 1인 약 ${Math.round((finalTotalUSD || Math.round(finalTotalKRW / 1360)) / personCount).toLocaleString()})
+              (약 ₩ {finalTotalKRW.toLocaleString()}원 / 1인 약 ${Math.round(finalTotalUSD / Math.max(1, personCount)).toLocaleString()})
             </div>
           </div>
         </div>
@@ -679,30 +828,38 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
               </tr>
             </thead>
             <tbody>
-              {costItems.map((item, idx) => {
-                const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
-                return (
-                  <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#374151', borderRight: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
-                      {item.category}
-                    </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 500, color: '#111827', borderRight: '1px solid #e5e7eb', lineHeight: 1.5 }}>
-                      {item.detail}
-                    </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'center', color: '#4b5563', borderRight: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}>
-                      {item.quantity}
-                    </td>
-                    <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 900, color: '#111827' }}>
-                        ${itemUSD.toLocaleString()} USD
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 400 }}>
-                        (약 ₩ {item.amountKRW.toLocaleString()}원)
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {selectedCostItems.length > 0 ? (
+                selectedCostItems.map((item, idx) => {
+                  const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
+                  return (
+                    <tr key={idx} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                      <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#374151', borderRight: '1px solid #e5e7eb', backgroundColor: '#fafafa' }}>
+                        {item.category}
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 500, color: '#111827', borderRight: '1px solid #e5e7eb', lineHeight: 1.5 }}>
+                        {item.detail}
+                      </td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center', color: '#4b5563', borderRight: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}>
+                        {item.quantity}
+                      </td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 900, color: '#111827' }}>
+                          ${itemUSD.toLocaleString()} USD
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 400 }}>
+                          (약 ₩ {item.amountKRW.toLocaleString()}원)
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={4} style={{ padding: '16px 12px', textAlign: 'center', color: '#9ca3af' }}>
+                    선택된 경비 항목이 없습니다.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

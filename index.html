@@ -338,6 +338,19 @@
       .bottom-safe {
         bottom: env(safe-area-inset-bottom, 0px);
       }
+      /* Mobile horizontal table scrolling & short label protection */
+      .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+      }
+      table th {
+        white-space: nowrap;
+      }
+      @media (max-width: 767px) {
+        button, [role="tab"] {
+          word-break: keep-all;
+        }
+      }
       /* Custom Scrollbar */
       ::-webkit-scrollbar {
         width: 8px;

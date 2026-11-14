@@ -404,10 +404,10 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   };
 
   return (
-    <section className={`py-6 bg-gray-900 text-white ${onBack ? 'min-h-screen' : ''} pb-20 md:pb-0`}>
-      <div className="max-w-7xl mx-auto px-4">
+    <section className={`py-4 sm:py-6 bg-gray-900 text-white ${onBack ? 'min-h-screen' : ''} pb-20 md:pb-0`}>
+      <div className="max-w-7xl mx-auto px-0 sm:px-4">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-4 px-2.5 sm:px-0">
           <div className="flex items-center gap-3">
             {onBack && (
               <BackButton onClick={handleInternalBack} variant="dark" label={showUrlModal || videoToDelete || editingId ? '목록으로' : '뒤로가기'} />
@@ -448,7 +448,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
                 <button 
                   onClick={triggerUpload}
                   disabled={isUploading || isAnalyzing}
-                  className="flex-1 sm:flex-initial bg-gold-500 hover:bg-gold-600 text-white px-5 py-2 rounded-full font-bold transition flex items-center justify-center gap-1.5 text-xs shadow-lg min-w-[130px] h-[38px]"
+                  className="flex-1 sm:flex-initial bg-gold-500 hover:bg-gold-600 text-white px-4 sm:px-5 py-2 rounded-full font-bold transition flex items-center justify-center gap-1.5 text-xs shadow-lg min-w-[130px] h-[38px] whitespace-nowrap"
                 >
                   {isUploading ? (
                     <div className="w-full">
@@ -474,7 +474,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
                 <button
                   onClick={() => setShowUrlModal(true)}
                   disabled={isUploading}
-                  className="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 hover:border-gold-500/50 px-3.5 py-2 rounded-full font-semibold transition flex items-center justify-center gap-1.5 text-xs h-[38px]"
+                  className="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 hover:border-gold-500/50 px-3.5 py-2 rounded-full font-semibold transition flex items-center justify-center gap-1.5 text-xs h-[38px] whitespace-nowrap shrink-0"
                   title="유튜브 또는 직접 영상 URL 링크 등록"
                 >
                   <span>🔗 링크 등록</span>
@@ -486,7 +486,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
         {/* Admin Tip: Mobile Video Optimization Notice */}
         {isAdmin && (
-          <div className="mb-6 p-3 bg-gray-800/80 border border-gray-700/80 rounded-xl flex items-center justify-between gap-3 text-xs text-gray-300">
+          <div className="mb-4 sm:mb-6 p-3 bg-gray-800/80 border-y sm:border border-gray-700/80 rounded-none sm:rounded-xl flex items-center justify-between gap-3 text-xs text-gray-300">
             <div className="flex items-center gap-2">
               <span className="text-base shrink-0">💡</span>
               <p className="text-[11px] leading-relaxed">
@@ -497,12 +497,12 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
         )}
 
         {/* Category Filter */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide px-2.5 sm:px-0">
           {(['골프', '여행', '먹거리', '기타'] as const).map((cat) => (
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                 filterCategory === cat 
                 ? 'bg-gold-500 text-white shadow-lg' 
                 : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700'
@@ -514,9 +514,9 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
         </div>
 
         {/* Video Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {videos.filter(v => (v.category || '기타') === filterCategory).length === 0 ? (
-            <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-700 rounded-2xl text-gray-500">
+            <div className="col-span-full py-20 text-center border-y sm:border-2 border-dashed border-gray-700 rounded-none sm:rounded-2xl text-gray-500">
                <span className="text-4xl block mb-4">📹</span>
                <p>{filterCategory} 카테고리에 영상이 없습니다.</p>
                <p className="text-xs mt-1">첫 번째 영상을 업로드하거나 링크를 등록해보세요!</p>
@@ -532,7 +532,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
                 const hasError = Boolean(failedVideos[video.id]);
 
                 return (
-                  <div key={video.id} className={`group bg-gray-800 rounded-xl overflow-hidden shadow-xl border transition-all duration-300 ${editingId === video.id ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-gray-700'}`}>
+                  <div key={video.id} className={`group bg-gray-800 rounded-none sm:rounded-xl overflow-hidden shadow-xl border-y sm:border transition-all duration-300 ${editingId === video.id ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-gray-700'}`}>
                     <div className="aspect-video bg-black relative">
                       {isYT ? (
                         <iframe

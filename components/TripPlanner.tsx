@@ -6,18 +6,16 @@ import { INITIAL_MASTER_OPTION_POOL } from '../constants';
 import BackButton from './BackButton';
 import { supabaseService } from '../services/supabaseService';
 import { A4QuotationDocument, CostItem, ItineraryDay } from './A4QuotationDocument';
-import { getFreshImageUrl } from '../utils/imageUtils';
 
 interface Props {
-  packages: CustomTripPackage[];
+  packages?: CustomTripPackage[];
   masterOptionPool?: MasterOptionPool;
   products?: Product[];
   onBack: () => void;
 }
 
-export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, products = [], onBack }) => {
+export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], onBack }) => {
   const pool = masterOptionPool || INITIAL_MASTER_OPTION_POOL;
-  const [selectedLocation, setSelectedLocation] = useState<string>('전체');
   const [activePackage, setActivePackage] = useState<CustomTripPackage | null>(null);
   
   // Customization state for active package
@@ -62,12 +60,22 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
   const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState<string | null>(null);
   const [viewTab, setViewTab] = useState<'options' | 'itinerary'>('options');
+  const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
+  const [showActivityModal, setShowActivityModal] = useState<'golf' | 'tour' | null>(null);
 
   const quotationCardRef = useRef<HTMLDivElement>(null);
   const a4QuotationPrintRef = useRef<HTMLDivElement>(null);
 
   // Handle internal step-by-step back (closing modals or returning from package customization)
   const handleTopBack = () => {
+    if (showScheduleModal) {
+      setShowScheduleModal(false);
+      return;
+    }
+    if (showActivityModal) {
+      setShowActivityModal(null);
+      return;
+    }
     if (showImagePreviewModal) {
       setShowImagePreviewModal(false);
       return;
@@ -98,6 +106,16 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
   // Listen for mobile bottom nav "뒤로가기" event
   useEffect(() => {
     const handleSubViewBack = (e: any) => {
+      if (showScheduleModal) {
+        setShowScheduleModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (showActivityModal) {
+        setShowActivityModal(null);
+        e?.detail?.handled?.();
+        return;
+      }
       if (showImagePreviewModal) {
         setShowImagePreviewModal(false);
         e?.detail?.handled?.();
@@ -134,68 +152,120 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
     return () => {
       window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
     };
-  }, [showImagePreviewModal, showGolfModal, customizingOption, showKakaoModal, showInquiryModal, activePackage]);
+  }, [showScheduleModal, showActivityModal, showImagePreviewModal, showGolfModal, customizingOption, showKakaoModal, showInquiryModal, activePackage]);
 
-  // Planner View Mode: Presets (10 packages) vs DIY (Customer builds from scratch)
-  const [plannerMode, setPlannerMode] = useState<'presets' | 'diy'>('presets');
+  // Live Pools synced from AdminDashboard (with safe fallbacks)
+  const diyRegions = pool.diyRegions?.length ? pool.diyRegions : (INITIAL_MASTER_OPTION_POOL.diyRegions || []);
+  const diyAccommodations = pool.accommodationTiers?.length ? pool.accommodationTiers : (INITIAL_MASTER_OPTION_POOL.accommodationTiers || []);
+  const diyVehicles = pool.vehicles?.length ? pool.vehicles : INITIAL_MASTER_OPTION_POOL.vehicles;
+  const diyTourPool = pool.tourOptions?.length ? pool.tourOptions : (INITIAL_MASTER_OPTION_POOL.tourOptions || []);
+  const diyExtraServices = pool.extraServices?.length ? pool.extraServices : (INITIAL_MASTER_OPTION_POOL.extraServices || []);
 
-  // DIY Trip Builder States (Schedule, Region, Accommodations, Vehicle, Options)
-  const [diyLocation, setDiyLocation] = useState<string>('호치민');
+  // DIY Trip Builder States (6-Step Flow)
+  const [diyLocation, setDiyLocation] = useState<string>(diyRegions[0]?.name || '호치민');
   const [diyNights, setDiyNights] = useState<number>(3);
   const [diyRounds, setDiyRounds] = useState<number>(3);
+  const [diyActivityMode, setDiyActivityMode] = useState<'golf' | 'tour'>('golf');
   const [diyGolfCourses, setDiyGolfCourses] = useState<string[]>([
-    '떤선넷 CC (18홀)',
+    '떤선녓 CC (18홀)',
     '롱탄 CC (18홀)',
     '트윈도브스 CC (18홀)'
   ]);
-  const [diyHotelType, setDiyHotelType] = useState<'hotel_5star' | 'pool_villa' | 'hotel_4star' | 'resort'>('hotel_5star');
-  const [diyVehicleType, setDiyVehicleType] = useState<'vip_limousine' | 'transit_van' | 'suv'>('vip_limousine');
-  const [diyIncludeGuide, setDiyIncludeGuide] = useState<boolean>(true);
-  const [diyIncludeFastTrack, setDiyIncludeFastTrack] = useState<boolean>(false);
-  const [diyMealPlan, setDiyMealPlan] = useState<'special' | 'local' | 'free'>('special');
-  const [diyIncludeSpa, setDiyIncludeSpa] = useState<boolean>(true);
+  const [diySelectedTourIds, setDiySelectedTourIds] = useState<string[]>(['tour-free']);
+  const [diyHotelType, setDiyHotelType] = useState<string>(diyAccommodations[0]?.id || 'hotel_5star');
+  const [diyVehicleType, setDiyVehicleType] = useState<string>(
+    diyVehicles.find(v => v.shortName === '9인승' || v.id === 'veh-1')?.id || diyVehicles[0]?.id || 'veh-1'
+  );
+  const [diySelectedExtraIds, setDiySelectedExtraIds] = useState<string[]>(() =>
+    diyExtraServices.filter(e => e.defaultSelected).map(e => e.id)
+  );
+
+  // Step Modal Helpers
   const [diyChangingRoundIndex, setDiyChangingRoundIndex] = useState<number | null>(null);
+  const [showAllCoursesInGolfModal, setShowAllCoursesInGolfModal] = useState<boolean>(false);
 
   const diyDays = diyNights + 1;
+
+  // Resolve currently active items safely (handles Admin edits/deletions cleanly)
+  const selectedRegionItem = diyRegions.find(r => r.name === diyLocation) || diyRegions[0];
+  const selectedHotelTier = diyAccommodations.find(a => a.id === diyHotelType) || diyAccommodations[0];
+  const selectedVehicleItem = diyVehicles.find(v => v.id === diyVehicleType) || diyVehicles[0];
+
+  // Combine Admin Tour Pool + Regional Tour Products for the selected region
+  const getDIYTourOptionsForRegion = (loc: string) => {
+    const poolTours = diyTourPool.filter(t =>
+      t.isFreeTravel || t.location === '전체' || t.location === loc || t.location.includes(loc) || loc.includes(t.location)
+    );
+    const seenNames = new Set(poolTours.map(t => t.name.trim().toLowerCase()));
+    const productTours = products
+      .filter(p => p.type === 'tour' && (p.location === loc || p.location.includes(loc) || loc.includes(p.location)))
+      .filter(p => !seenNames.has(p.title.trim().toLowerCase()))
+      .map(p => ({
+        id: `prod-tour-${p.id}`,
+        name: p.title,
+        location: p.location,
+        priceUSD: p.price || 80,
+        description: p.description,
+        badge: p.duration || '추천 투어',
+        isFreeTravel: false
+      }));
+    return [...poolTours, ...productTours];
+  };
+
+  const activeRegionTourOptions = getDIYTourOptionsForRegion(diyLocation);
+  const selectedTourItems = activeRegionTourOptions.filter(t => diySelectedTourIds.includes(t.id));
+
+  // Golf courses filtered by selected region
+  const getRegionalGolfCourses = (loc: string) => {
+    const matched = pool.golfCourses.filter(g =>
+      g.location === loc || loc.includes(g.location) || g.location.includes(loc)
+    );
+    return matched.length > 0 ? matched : pool.golfCourses;
+  };
+
+  // Single course price resolver prioritizing AdminDashboard pool.golfCourses.priceUSD
+  const resolveSingleCourseUSD = (courseName: string, isWeekend: boolean) => {
+    const clean = courseName.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+    const poolMatch = pool.golfCourses.find(g => {
+      const gClean = g.name.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+      return gClean.includes(clean) || clean.includes(gClean);
+    });
+    const productMatch = products.find(p => {
+      const pClean = p.title.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+      return p.price < 450 && (pClean.includes(clean) || clean.includes(pClean));
+    });
+
+    const baseFromDelta = poolMatch ? Math.max(80, 155 + (poolMatch.priceDeltaUSD || 0)) : 155;
+    const weekdayUSD = poolMatch?.priceUSD ?? (poolMatch as any)?.weekdayPriceUSD ?? productMatch?.price ?? baseFromDelta;
+    const weekendUSD = (poolMatch as any)?.weekendPriceUSD ?? (productMatch as any)?.weekendPrice ?? Math.round(weekdayUSD * 1.35);
+    return { weekdayUSD, weekendUSD, appliedUSD: isWeekend ? weekendUSD : weekdayUSD };
+  };
 
   // DIY Region change handler
   const handleDIYLocationChange = (loc: string) => {
     setDiyLocation(loc);
-    let defaults: string[] = [];
-    if (loc === '호치민') {
-      defaults = ['떤선넷 CC (18홀)', '롱탄 CC (18홀)', '트윈도브스 CC (18홀)', '송베 CC (18홀)', '태광 정산 CC (18홀)'];
-    } else if (loc === '붕따우') {
-      defaults = ['더 블러프 호짬 스트립 CC (18홀)', '붕따우 파라다이스 CC (18홀)', '쩌우득 CC (18홀)'];
-    } else if (loc === '달랏') {
-      defaults = ['SAM 투옌람 CC (18홀)', '달랏 팔레스 헤리티지 CC (18홀)', '더 달랏 1200 CC (18홀)'];
-    } else if (loc === '호치민+붕따우') {
-      defaults = ['떤선넷 CC (18홀)', '더 블러프 호짬 스트립 CC (18홀)', '롱탄 CC (18홀)', '붕따우 파라다이스 CC (18홀)'];
-    } else if (loc === '호치민+달랏') {
-      defaults = ['떤선넷 CC (18홀)', 'SAM 투옌람 CC (18홀)', '달랏 팔레스 헤리티지 CC (18홀)', '롱탄 CC (18홀)'];
-    } else if (loc === '다낭/나트랑') {
-      defaults = ['다낭 바나힐스 CC (18홀)', '몽고메리 링크스 CC (18홀)', 'BRG 다낭 CC (18홀)', '빈펄 골프 나트랑 CC (18홀)'];
-    } else {
-      defaults = pool.golfCourses.slice(0, 5).map(g => g.name);
-    }
-
+    const regionalCourses = getRegionalGolfCourses(loc).map(g => g.name);
     const courses: string[] = [];
     for (let i = 0; i < diyRounds; i++) {
-      courses.push(defaults[i % defaults.length]);
+      courses.push(regionalCourses[i % regionalCourses.length]);
     }
     setDiyGolfCourses(courses);
+
+    // Filter out tours belonging strictly to another region (preserve 'tour-free')
+    const nextRegionTours = getDIYTourOptionsForRegion(loc);
+    const validIds = new Set(nextRegionTours.map(t => t.id));
+    const filteredTours = diySelectedTourIds.filter(id => validIds.has(id));
+    setDiySelectedTourIds(filteredTours.length > 0 ? filteredTours : ['tour-free']);
   };
 
   // DIY Rounds change handler
-  const handleDIYRoundsChange = (newRounds: number) => {
-    const validRounds = Math.max(1, Math.min(diyNights + 1, newRounds));
+  const handleDIYRoundsChange = (newRounds: number, overrideNights?: number) => {
+    const nightsLimit = overrideNights ?? diyNights;
+    const validRounds = Math.max(1, Math.min(nightsLimit + 1, newRounds));
     setDiyRounds(validRounds);
 
-    const available = pool.golfCourses.filter(g => 
-      diyLocation === '전체' ? true :
-      diyLocation.includes('+') ? diyLocation.split('+').some(p => g.location.includes(p)) :
-      g.location === diyLocation || diyLocation.includes(g.location)
-    );
-    const poolNames = available.length > 0 ? available.map(g => g.name) : pool.golfCourses.map(g => g.name);
+    const available = getRegionalGolfCourses(diyLocation);
+    const poolNames = available.map(g => g.name);
 
     const updated = [...diyGolfCourses];
     while (updated.length < validRounds) {
@@ -204,127 +274,142 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
     setDiyGolfCourses(updated.slice(0, validRounds));
   };
 
-  // DIY Nights change handler
-  const handleDIYNightsChange = (newNights: number) => {
-    const validNights = Math.max(1, Math.min(10, newNights));
-    setDiyNights(validNights);
-    if (diyRounds > validNights + 1) {
-      handleDIYRoundsChange(validNights);
+  // DIY Schedule selection handler (3박4일 ~ 6박7일)
+  const handleSelectSchedule = (nights: number, recommendedRounds: number) => {
+    setDiyNights(nights);
+    handleDIYRoundsChange(recommendedRounds, nights);
+    setShowScheduleModal(false);
+  };
+
+  // Toggle Tour Option in Tour Modal
+  const handleToggleTourOption = (tourId: string, isFreeTravel?: boolean) => {
+    if (isFreeTravel || tourId === 'tour-free') {
+      setDiySelectedTourIds(['tour-free']);
+      return;
     }
+    setDiySelectedTourIds(prev => {
+      const withoutFree = prev.filter(id => id !== 'tour-free');
+      if (withoutFree.includes(tourId)) {
+        const next = withoutFree.filter(id => id !== tourId);
+        return next.length > 0 ? next : ['tour-free'];
+      }
+      return [...withoutFree, tourId];
+    });
+  };
+
+  // Toggle Extra Service (Step 6: 가이드, 패스트 트랙, 마사지)
+  const handleToggleExtraService = (serviceId: string) => {
+    setDiySelectedExtraIds(prev =>
+      prev.includes(serviceId) ? prev.filter(id => id !== serviceId) : [...prev, serviceId]
+    );
   };
 
   // DIY Location representative image
   const getDIYLocationImage = (loc: string) => {
     if (loc === '호치민') return 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=1200';
     if (loc === '붕따우') return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200';
+    if (loc === '무이네') return 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?q=80&w=1200';
+    if (loc === '나트랑') return 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1200';
     if (loc === '달랏') return 'https://images.unsplash.com/photo-1511497584788-87676104235f?q=80&w=1200';
-    if (loc === '호치민+붕따우') return 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=1200';
-    if (loc === '호치민+달랏') return 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1200';
-    if (loc === '다낭/나트랑') return 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1200';
     return 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=1200';
   };
 
-  // Real-time DIY Estimated Price Calculator (Per person USD with Date-Matched Green Fees)
+  // Real-time DIY Estimated Price Calculator (Per person USD synced to AdminDashboard pools)
   const calculateDIYEstimatedPrice = () => {
-    let golfTotal = 0;
-    const courses = diyGolfCourses.slice(0, diyRounds);
-    courses.forEach((cName, idx) => {
-      const [y, m, d] = departureDate.split('-').map(Number);
-      const targetDate = new Date(y, m - 1, d + idx + 1);
-      const isWeekend = targetDate.getDay() === 0 || targetDate.getDay() === 6;
+    const regionBase = selectedRegionItem?.baseFeeUSD || 0;
 
-      const clean = cName.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
-      const productMatch = products.find(p => {
-        const pClean = p.title.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
-        return pClean.includes(clean) || clean.includes(pClean);
+    let activityTotal = 0;
+    if (diyActivityMode === 'golf') {
+      const courses = diyGolfCourses.slice(0, diyRounds);
+      courses.forEach((cName, idx) => {
+        const [y, m, d] = departureDate.split('-').map(Number);
+        const targetDate = new Date(y, m - 1, d + idx + 1);
+        const isWeekend = targetDate.getDay() === 0 || targetDate.getDay() === 6;
+        activityTotal += resolveSingleCourseUSD(cName, isWeekend).appliedUSD;
       });
-      const poolMatch = pool.golfCourses.find(g => {
-        const gClean = g.name.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
-        return gClean.includes(clean) || clean.includes(gClean);
-      });
+    } else {
+      activityTotal = selectedTourItems.reduce((sum, t) => sum + (t.priceUSD || 0), 0);
+    }
 
-      const weekdayUSD = productMatch?.price || (poolMatch as any)?.weekdayPriceUSD || (poolMatch as any)?.priceDeltaUSD || 100;
-      const weekendUSD = (productMatch as any)?.weekendPrice || (poolMatch as any)?.weekendPriceUSD || Math.round(weekdayUSD * 1.35);
-      golfTotal += isWeekend ? weekendUSD : weekdayUSD;
-    });
-
-    const nightRate = 
-      diyHotelType === 'hotel_5star' ? 90 :
-      diyHotelType === 'pool_villa' ? 110 :
-      diyHotelType === 'hotel_4star' ? 60 : 100;
+    const nightRate = selectedHotelTier?.pricePerNightUSD ?? 90;
     const hotelTotal = diyNights * nightRate;
 
-    const diyDays = diyNights + 1;
-    // 차량 비용: 7인승 1대 1일 $100 기준 (4인 기준 1인당 1일 $25 환산)
-    const dayVehRate = 
-      diyVehicleType === 'vip_limousine' ? 25 :
-      diyVehicleType === 'transit_van' ? 20 : 18;
+    const dayVehRate = selectedVehicleItem?.pricePerDayUSD ?? Math.max(15, 25 + (selectedVehicleItem?.priceDeltaUSD || 0));
     const vehicleTotal = diyDays * dayVehRate;
 
-    // 가이드 비용: 1일 기준 $120 (4인 기준 1인당 1일 $30 환산)
-    const guideTotal = diyIncludeGuide ? diyDays * 30 : 0;
-    // 패스트 트랙: 1인당 $60
-    const fastTrackTotal = diyIncludeFastTrack ? 60 : 0;
-    // VIP 전신 마사지 (90분): 1인 $50 (기본 선택)
-    const spaTotal = diyIncludeSpa ? 50 : 0;
-    // 식사 플랜: 1인 1일 $50 기준 (특식 만찬 $50/일, 로컬 미식 $25/일, 자유 식사 $0) × diyNights
-    const mealTotal = 
-      diyMealPlan === 'special' ? diyNights * 50 :
-      diyMealPlan === 'local' ? diyNights * 25 : 0;
+    const extraTotal = diyExtraServices.reduce((sum, svc) => {
+      if (!diySelectedExtraIds.includes(svc.id)) return sum;
+      return sum + (svc.pricingUnit === 'per_day' ? svc.priceUSD * diyDays : svc.priceUSD);
+    }, 0);
+
     const insuranceTotal = 15;
 
-    return golfTotal + hotelTotal + vehicleTotal + guideTotal + mealTotal + spaTotal + fastTrackTotal + insuranceTotal;
+    return Math.round(regionBase + activityTotal + hotelTotal + vehicleTotal + extraTotal + insuranceTotal);
   };
 
-  // Build DIY package dynamically & open into customizer
+  // Build DIY package dynamically & open into customizer (View 2)
   const handleCreateDIYPackage = () => {
     const days = diyNights + 1;
     const totalEst = calculateDIYEstimatedPrice();
-    const courses = diyGolfCourses.slice(0, diyRounds);
+    const isGolf = diyActivityMode === 'golf';
+    const courses = isGolf ? diyGolfCourses.slice(0, diyRounds) : [];
+    const regionBase = selectedRegionItem?.baseFeeUSD || 0;
 
-    const hotelName = 
-      diyHotelType === 'hotel_5star' ? `${diyLocation} 1군 고급 호텔 (${diyNights}박/1인 객실 기준)` :
-      diyHotelType === 'pool_villa' ? `${diyLocation} 최고급 독채 프라이빗 풀빌라 (${diyNights}박/1인 1실 배정)` :
-      diyHotelType === 'hotel_4star' ? `${diyLocation} 중심가 4성급 실속 호텔 (${diyNights}박/1인 객실 기준)` :
-      `${diyLocation} 프리미엄 골프 & 비치 리조트 (${diyNights}박/1인 객실 기준)`;
+    const nightRate = selectedHotelTier?.pricePerNightUSD ?? 90;
+    const hotelLabel = selectedHotelTier?.name || '고급 호텔';
+    const hotelName = `${diyLocation} ${hotelLabel} (${diyNights}박/1인 객실 기준)`;
 
-    const vehicleName = 
-      diyVehicleType === 'vip_limousine' ? `전 일정 단독 VIP 전용 리무진 밴 (${days}일간 / 1대 1일 $100 기준)` :
-      diyVehicleType === 'transit_van' ? `전 일정 단독 16인승 대용량 밴 (${days}일간 / 1대 1일 $120 기준)` :
-      `전 일정 단독 7인승 프리미엄 SUV (${days}일간 / 1대 1일 $80 기준)`;
-
-    const mealName = 
-      diyMealPlan === 'special' ? `프리미엄 웰컴 & 굿바이 특식 만찬 (석식 ${diyNights}회 / 1일 $50)` :
-      diyMealPlan === 'local' ? `로컬 대표 미식 탐방 플랜 (석식 ${diyNights}회 / 1일 $25)` :
-      `전 일정 자유 식사 (골프 클럽식 및 개별 자유식)`;
+    const dayVehRate = selectedVehicleItem?.pricePerDayUSD ?? Math.max(15, 25 + (selectedVehicleItem?.priceDeltaUSD || 0));
+    const vehicleTitle = selectedVehicleItem?.shortName
+      ? `${selectedVehicleItem.shortName} (${selectedVehicleItem.name})`
+      : (selectedVehicleItem?.name || '전용 차량');
+    const vehicleName = `전 일정 단독 ${vehicleTitle} (${days}일간 / 1일 $${dayVehRate}/인)`;
 
     // Dynamic Itinerary Generation
     const itinerary = [];
     itinerary.push({
       day: 1,
-      title: `${diyLocation} 도착 & 전용 픽업 미팅 & 호텔/풀빌라 체크인`,
+      title: `${diyLocation} 도착 & 전용 픽업 미팅 & 숙소 체크인`,
       activities: [
-        `${diyLocation} 공항 도착 및 MANGO TOUR VIP 전담 기사 미팅`,
-        `${vehicleName} 탑승 후 숙소로 편안한 이동`,
+        `${diyLocation} 도착 및 MANGO TOUR VIP 전담 기사 미팅`,
+        `${vehicleTitle} 탑승 후 숙소로 편안한 이동`,
         `${hotelName} 체크인 및 객실 배정 후 휴식`,
-        diyMealPlan !== 'free' ? '웰컴 석식 만찬 (특식 코스) 및 사이공 야경 탐방' : '자유 석식 및 개인 휴식 시간'
+        '현지 추천 맛집 석식 및 자유 휴식'
       ]
     });
 
-    for (let d = 2; d <= days - 1; d++) {
-      const rIdx = d - 2;
-      const c = courses[rIdx] || courses[courses.length - 1] || '명문 CC';
-      itinerary.push({
-        day: d,
-        title: `${c} ${d - 1}회차 라운딩 & 휴식/미식`,
-        activities: [
-          '숙소 조식 뷔페 후 골프장으로 전용 차량 이동',
-          `${c} 18홀 라운딩 (골프 체크인/아웃 케어)`,
-          '라운딩 후 클럽하우스 중식 및 휴식',
-          diyIncludeSpa && rIdx < 2 ? '골프 피로 회복 VIP 전신 마사지 (90분)' : '숙소 휴식 또는 시내 쇼핑/자유 일정',
-          diyMealPlan !== 'free' ? '현지 대표 미식 석식 및 나이트라이프' : '개별 석식 및 휴식'
-        ]
-      });
+    const hasMassage = diySelectedExtraIds.includes('massage');
+    if (isGolf) {
+      for (let d = 2; d <= days - 1; d++) {
+        const rIdx = d - 2;
+        const c = courses[rIdx] || courses[courses.length - 1] || '명문 CC';
+        itinerary.push({
+          day: d,
+          title: `${c} ${d - 1}회차 라운딩 & 휴식/미식`,
+          activities: [
+            '숙소 조식 뷔페 후 골프장으로 전용 차량 이동',
+            `${c} 18홀 라운딩 (골프 체크인/아웃 케어)`,
+            '라운딩 후 클럽하우스 중식 및 휴식',
+            hasMassage && rIdx < 2 ? '골프 피로 회복 VIP 전신 마사지 (90분)' : '숙소 휴식 또는 시내 쇼핑/자유 일정',
+            '현지 대표 미식 석식 및 나이트라이프'
+          ]
+        });
+      }
+    } else {
+      const tourList = selectedTourItems.length > 0 ? selectedTourItems : [{ id: 'tour-free', name: '자유 여행 (자유 일정)', description: '여유로운 휴양 및 자유 투어', priceUSD: 0, isFreeTravel: true }];
+      for (let d = 2; d <= days - 1; d++) {
+        const tItem = tourList[(d - 2) % tourList.length];
+        itinerary.push({
+          day: d,
+          title: tItem.isFreeTravel ? `${diyLocation} 자유 여행 & 힐링 데이` : `${tItem.name}`,
+          activities: [
+            '숙소 조식 뷔페 후 전용 차량 미팅',
+            tItem.isFreeTravel ? `${diyLocation} 내 맘대로 자유 일정 (카페, 쇼핑, 해변 휴양)` : `${tItem.name} 진행 (${tItem.description})`,
+            hasMassage && d === 2 ? '여행 피로 회복 VIP 전신 마사지 (90분)' : '여유로운 휴식 및 시내 자유 탐방',
+            '현지 대표 맛집 탐방 & 휴식'
+          ]
+        });
+      }
     }
 
     itinerary.push({
@@ -333,132 +418,133 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
       activities: [
         '숙소 조식 뷔페 및 여유로운 체크아웃 준비',
         '현지 인기 기념품 마켓 및 커피/특산품 쇼핑',
-        '마지막 일정 식사 후 공항으로 전용 차량 이동',
+        '마지막 일정 후 공항으로 전용 차량 이동',
         '공항 도착 및 출국 수속, 귀국'
       ]
     });
 
-    // Options list
-    const options: PackageOptionItem[] = [
-      {
-        id: `diy-opt-golf`,
+    const golfTotalUSD = isGolf
+      ? courses.reduce((sum, cName, idx) => {
+          const [y, m, d] = departureDate.split('-').map(Number);
+          const targetDate = new Date(y, m - 1, d + idx + 1);
+          const isWeekend = targetDate.getDay() === 0 || targetDate.getDay() === 6;
+          return sum + resolveSingleCourseUSD(cName, isWeekend).appliedUSD;
+        }, 0)
+      : 0;
+
+    const options: PackageOptionItem[] = [];
+
+    if (regionBase > 0) {
+      options.push({
+        id: 'diy-opt-region',
+        category: 'etc',
+        name: `${diyLocation} 지역 기본 운영 수배비`,
+        description: `${diyLocation} 현지 전담 수배 및 맞춤 일정 관리 비용`,
+        priceUSD: regionBase,
+        isDefaultIncluded: true,
+        isRequired: true
+      });
+    }
+
+    if (isGolf) {
+      options.push({
+        id: 'diy-opt-golf',
         category: 'golf',
         name: `${diyRounds}대 명문 코스 그린피 (${courses.map(c => c.split(' ')[0]).join(' + ')})`,
         description: `[고객 맞춤 선택 라운딩 코스]: ${courses.join(' · ')}`,
-        priceUSD: diyRounds * 155,
+        priceUSD: golfTotalUSD,
         isDefaultIncluded: true,
         isRequired: true,
         allowCustomSelection: true,
         dayScheduleCourses: courses
-      },
-      {
-        id: `diy-opt-hotel`,
-        category: 'hotel',
-        name: hotelName,
-        description: diyHotelType === 'pool_villa' ? '전용 개인 수영장, 넓은 거실, 바베큐 완비 1인 1실 배정 독채 전체 단독 사용' : '시내 중심가 위치, 1인 1실 단독 객실 & 럭셔리 시설과 조식 뷔페 포함',
-        priceUSD: diyNights * (diyHotelType === 'pool_villa' ? 110 : diyHotelType === 'hotel_4star' ? 60 : diyHotelType === 'resort' ? 100 : 90),
-        isDefaultIncluded: true,
-        isRequired: false,
-        allowCustomSelection: true
-      },
-      {
-        id: `diy-opt-vehicle`,
-        category: 'vehicle',
-        name: vehicleName,
-        description: `공항 픽업/샌딩 + 골프장 + 시내 투어 기사/유류비 포함 전용 차량 (7인승 1대 1일 $100 × ${days}일 = $${days * 100}, 4인 기준 1인 $${days * 25})`,
-        priceUSD: days * (diyVehicleType === 'vip_limousine' ? 25 : diyVehicleType === 'transit_van' ? 20 : 18),
-        isDefaultIncluded: true,
-        isRequired: false,
-        allowCustomSelection: true
-      },
-      {
-        id: `diy-opt-guide`,
-        category: 'guide',
-        name: `한국어 전문 가이드 전 일정 동행 (${days}일간 / 1일 기준 $120)`,
-        description: `골프 체크인/아웃 지원, 식당 예약, 통역 및 전 일정 올케어 (가이드 1일 $120 × ${days}일 = $${days * 120}, 4인 기준 1인 $${days * 30})`,
-        priceUSD: days * 30,
-        isDefaultIncluded: diyIncludeGuide,
-        isRequired: false,
-        allowCustomSelection: true
-      },
-      {
-        id: `diy-opt-fasttrack`,
-        category: 'etc',
-        name: '공항 VIP 패스트 트랙 (Fast Track / 1인당 $60)',
-        description: '공항 도착 시 VIP 전담팀 입국 심사 대기 없는 초고속 통과 및 수하물 수취 케어',
-        priceUSD: 60,
-        isDefaultIncluded: diyIncludeFastTrack,
-        isRequired: false,
-        allowCustomSelection: false
-      },
-      {
-        id: `diy-opt-spa`,
+      });
+    } else {
+      const tourTotal = selectedTourItems.reduce((sum, t) => sum + (t.priceUSD || 0), 0);
+      const tourNames = selectedTourItems.map(t => t.name).join(' + ') || '자유 여행 (내 맘대로 자유 일정)';
+      options.push({
+        id: 'diy-opt-tour',
         category: 'activity',
-        name: 'VIP 전신 힐링 마사지 (90분)',
-        description: '골프 라운딩 후 피로를 풀어주는 프리미엄 마사지 & 스파 케어 (기본 선택 포함)',
-        priceUSD: 50,
-        isDefaultIncluded: diyIncludeSpa,
-        isRequired: false,
-        allowCustomSelection: true
-      },
-      {
-        id: `diy-opt-meal`,
-        category: 'meal',
-        name: mealName,
-        description: diyMealPlan === 'free' 
-          ? '자유 식사 일정 (개별 취향에 따른 자유 식사 / 식사비 미포함)' 
-          : `베트남 대표 미식 석식 ${diyNights}회 (1인 1일 기준 $${diyMealPlan === 'special' ? 50 : 25} × ${diyNights}일 = $${diyMealPlan === 'special' ? diyNights * 50 : diyNights * 25})`,
-        priceUSD: diyMealPlan === 'special' ? diyNights * 50 : diyMealPlan === 'local' ? diyNights * 25 : 0,
-        isDefaultIncluded: diyMealPlan !== 'free',
-        isRequired: false,
-        allowCustomSelection: true
-      },
-      {
-        id: `diy-opt-insurance`,
-        category: 'etc',
-        name: '해외 여행자 안심 보험 (최고 1억원 보장)',
-        description: '골프 상해 및 해외 의료비 보장 여행자 보험',
-        priceUSD: 15,
+        name: `선택 여행 일정: ${tourNames}`,
+        description: selectedTourItems.map(t => t.description).join(' / ') || '자유 여행 맞춤 구성',
+        priceUSD: tourTotal,
         isDefaultIncluded: true,
-        isRequired: false
-      }
-    ];
+        isRequired: true,
+        allowCustomSelection: false
+      });
+    }
+
+    options.push({
+      id: 'diy-opt-hotel',
+      category: 'hotel',
+      name: hotelName,
+      description: selectedHotelTier?.description || '시내 중심가 위치, 1인 1실 단독 객실 & 조식 뷔페 포함',
+      priceUSD: diyNights * nightRate,
+      isDefaultIncluded: true,
+      isRequired: false,
+      allowCustomSelection: true
+    });
+
+    options.push({
+      id: 'diy-opt-vehicle',
+      category: 'vehicle',
+      name: vehicleName,
+      description: `${selectedVehicleItem?.description || '전 일정 전용 기사 및 유류비 포함'} (1일 $${dayVehRate}/인 × ${days}일 = $${days * dayVehRate})`,
+      priceUSD: days * dayVehRate,
+      isDefaultIncluded: true,
+      isRequired: false,
+      allowCustomSelection: true
+    });
+
+    diyExtraServices.forEach(svc => {
+      const isChecked = diySelectedExtraIds.includes(svc.id);
+      const svcPrice = svc.pricingUnit === 'per_day' ? svc.priceUSD * days : svc.priceUSD;
+      const cat: PackageOptionItem['category'] =
+        svc.id === 'guide' ? 'guide' : svc.id === 'fasttrack' ? 'etc' : 'activity';
+      options.push({
+        id: svc.id === 'guide' ? 'diy-opt-guide' : svc.id === 'fasttrack' ? 'diy-opt-fasttrack' : `diy-opt-extra-${svc.id}`,
+        category: cat,
+        name: svc.pricingUnit === 'per_day'
+          ? `${svc.name} (${days}일간 / 1일 $${svc.priceUSD})`
+          : `${svc.name} (1인 $${svc.priceUSD})`,
+        description: svc.description,
+        priceUSD: svcPrice,
+        isDefaultIncluded: isChecked,
+        isRequired: false,
+        allowCustomSelection: svc.id === 'guide'
+      });
+    });
+
+    options.push({
+      id: 'diy-opt-insurance',
+      category: 'etc',
+      name: '해외 여행자 안심 보험 (최고 1억원 보장)',
+      description: '상해 및 해외 의료비 보장 여행자 보험',
+      priceUSD: 15,
+      isDefaultIncluded: true,
+      isRequired: false
+    });
+
+    const activitySubtitle = isGolf
+      ? `${diyRounds}회 라운딩`
+      : (selectedTourItems.map(t => t.name.split(' ')[0]).join('+') || '자유 여행');
 
     const diyPkg: CustomTripPackage = {
       id: `diy-pkg-${Date.now()}`,
-      title: `[고객 맞춤 DIY] ${diyLocation} ${diyNights}박 ${days}일 맞춤 골프 투어`,
-      subtitle: `고객님이 직접 설계한 ${diyLocation} ${diyNights}박 ${days}일 (${diyRounds}회 라운딩) 맞춤 견적`,
+      title: `[고객 맞춤 DIY] ${diyLocation} ${diyNights}박 ${days}일 ${isGolf ? '맞춤 골프 투어' : '맞춤 여행'}`,
+      subtitle: `고객님이 직접 설계한 ${diyLocation} ${diyNights}박 ${days}일 (${activitySubtitle}) 맞춤 견적`,
       location: diyLocation,
       duration: `${diyNights}박 ${days}일`,
       golfCourses: courses,
       image: getDIYLocationImage(diyLocation),
       basePriceUSD: totalEst,
-      summary: `${diyLocation} ${diyNights}박 ${days}일 ${diyRounds}회 라운딩과 고객 맞춤 구성`,
-      highlightBadges: [`${diyNights}박 ${days}일`, `${diyRounds}회 라운딩`, `${diyLocation}`, '고객 직접 설계'],
+      summary: `${diyLocation} ${diyNights}박 ${days}일 ${activitySubtitle} 및 고객 맞춤 구성`,
+      highlightBadges: [`${diyNights}박 ${days}일`, activitySubtitle, `${diyLocation}`, '고객 직접 설계'],
       itinerary,
       options
     };
 
     handleOpenPackage(diyPkg);
   };
-
-  // Filter packages
-  const filteredPackages = packages.filter(pkg => {
-    if (selectedLocation === '전체') return true;
-    if (selectedLocation === '호치민') return pkg.location === '호치민';
-    if (selectedLocation === '붕따우') return pkg.location === '붕따우';
-    if (selectedLocation === '달랏') return pkg.location === '달랏';
-    if (selectedLocation === '복합/연계') return pkg.location.includes('+');
-    return pkg.location === selectedLocation;
-  });
-
-  const locations = [
-    { id: '전체', label: '전체 상품', count: packages.length },
-    { id: '호치민', label: '호치민', count: packages.filter(p => p.location === '호치민').length },
-    { id: '붕따우', label: '붕따우', count: packages.filter(p => p.location === '붕따우').length },
-    { id: '달랏', label: '달랏', count: packages.filter(p => p.location === '달랏').length },
-    { id: '복합/연계', label: '호치민/달랏/붕따우 복합', count: packages.filter(p => p.location.includes('+')).length },
-  ];
 
   // Open customizer for a package
   const handleOpenPackage = (pkg: CustomTripPackage) => {
@@ -546,20 +632,21 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
   const getCourseMatchedRates = (courseName: string) => {
     const clean = courseName.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
 
-    // 1. Search in products (syncs directly from Google Sheets)
-    const productMatch = products.find(p => {
-      const pClean = p.title.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
-      return pClean.includes(clean) || clean.includes(pClean);
-    });
-
-    // 2. Search in pool.golfCourses
+    // 1. Search in pool.golfCourses (directly reflects AdminDashboard edits)
     const poolMatch = pool.golfCourses.find(g => {
       const gClean = g.name.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
       return gClean.includes(clean) || clean.includes(gClean);
     });
 
-    const weekdayUSD = productMatch?.price || (poolMatch as any)?.weekdayPriceUSD || 100;
-    const weekendUSD = (productMatch as any)?.weekendPrice || (poolMatch as any)?.weekendPriceUSD || Math.round(weekdayUSD * 1.35);
+    // 2. Fallback match in products only when it's a single green-fee item (< $450)
+    const productMatch = products.find(p => {
+      const pClean = p.title.replace(/[\s\(\)CC|GC|G\.C|골프장]/g, '').toLowerCase();
+      return p.price < 450 && (pClean.includes(clean) || clean.includes(pClean));
+    });
+
+    const baseFromDelta = poolMatch ? Math.max(80, 155 + (poolMatch.priceDeltaUSD || 0)) : 155;
+    const weekdayUSD = poolMatch?.priceUSD ?? (poolMatch as any)?.weekdayPriceUSD ?? productMatch?.price ?? baseFromDelta;
+    const weekendUSD = (poolMatch as any)?.weekendPriceUSD ?? (productMatch as any)?.weekendPrice ?? Math.round(weekdayUSD * 1.35);
     const weekdayVND = (productMatch as any)?.priceVND || weekdayUSD * 25000;
     const weekendVND = (productMatch as any)?.weekendPriceVND || weekendUSD * 25000;
     const notes = (productMatch as any)?.notes || poolMatch?.description || '카트비/캐디피 포함, 캐디 팁 별도';
@@ -572,7 +659,7 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
       weekendVND,
       notes,
       deltaUSD,
-      title: productMatch?.title || poolMatch?.name || courseName
+      title: poolMatch?.name || productMatch?.title || courseName
     };
   };
 
@@ -747,10 +834,11 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
   const currentTotalGroup = activePackage
     ? activePackage.options.reduce((sum, opt) => {
         if (!selectedOptionIds.has(opt.id)) return sum;
-        if (opt.category === 'vehicle') {
+        const isDiyPkg = activePackage.id.startsWith('diy-pkg-');
+        if (!isDiyPkg && opt.category === 'vehicle') {
           return sum + (100 * pkgTravelDays * pkgVehicleCount);
         }
-        if (opt.category === 'guide') {
+        if (!isDiyPkg && opt.category === 'guide') {
           return sum + (120 * pkgTravelDays * pkgGuideCount);
         }
         return sum + (getOptionPrice(opt) * personCount);
@@ -856,11 +944,12 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
       }
 
       const travelDays = activePackage.itinerary?.length || 5;
+      const isDiyPkg = activePackage.id.startsWith('diy-pkg-');
       let totalItemUSD = unitUSD * personCount;
-      if (opt.category === 'vehicle') {
+      if (!isDiyPkg && opt.category === 'vehicle') {
         const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
         totalItemUSD = 100 * travelDays * vehicleCount;
-      } else if (opt.category === 'guide') {
+      } else if (!isDiyPkg && opt.category === 'guide') {
         const guideCount = Math.max(1, Math.ceil(personCount / 16));
         totalItemUSD = 120 * travelDays * guideCount;
       }
@@ -1177,22 +1266,22 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold-500/20 border border-gold-400/30 text-gold-300 text-[11px] sm:text-xs md:text-sm font-semibold mb-1.5">
-                <span>🏆</span> 베트남 명문 맞춤 골프 플래너
+                <span>🏆</span> 베트남 골프 · 여행 맞춤 플래너
               </div>
               <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                {activePackage ? activePackage.title : '나만의 맞춤 골프 여행 플래너'}
+                {activePackage ? activePackage.title : '골프 / 투어 내 맘대로 여행 만들기'}
               </h1>
               <p className="text-gray-300 text-xs sm:text-sm md:text-base mt-1.5 max-w-2xl leading-relaxed font-normal">
                 {activePackage 
                   ? activePackage.subtitle 
-                  : '엄선된 4박 5일 추천 상품부터 고객이 직접 일정(박/일)과 지역을 설계하는 DIY 맞춤 여행까지! 실시간 맞춤 견적을 확인하고 즉시 상담받으세요.'}
+                  : '원하시는 지역 선택, 여행기간, 숙박, 차량 등 선택하고 맞춤 견적서가 실시간으로 자동 완성됩니다'}
               </p>
             </div>
 
             {!activePackage && (
               <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs md:text-sm font-medium text-gray-200 self-start md:self-auto">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>추천 {packages.length}선 & DIY 자유 설계 지원</span>
+                <span>1:1 DIY 맞춤 자유 설계 지원</span>
               </div>
             )}
           </div>
@@ -1202,682 +1291,424 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
       {/* Main Container - Edge-to-edge on mobile, containerized on desktop */}
       <div className="max-w-6xl mx-auto px-0 sm:px-4 py-2 sm:py-6 w-full max-w-full">
         
-        {/* ================= VIEW 1: PACKAGE LIST OR DIY BUILDER ================= */}
+        {/* ================= VIEW 1: 6-STEP DIY CUSTOM TRIP BUILDER ================= */}
         {!activePackage && (
           <div className="px-0 sm:px-0">
-            {/* Mode Switcher Tabs */}
-            <div className="px-3.5 sm:px-0 mb-4 sm:mb-6">
-              <div className="bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPlannerMode('presets')}
-                  className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
-                    plannerMode === 'presets'
-                      ? 'bg-deepgreen text-white shadow-md border border-deepgreen font-black scale-[1.01]'
-                      : 'bg-white text-gray-700 hover:text-deepgreen hover:bg-emerald-50/60 border border-gray-200/90 shadow-xs font-bold hover:border-emerald-300'
-                  }`}
-                >
-                  <span className="text-sm sm:text-base">⭐</span>
-                  <span className="truncate">추천 4박 5일 패키지</span>
-                  <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
-                    plannerMode === 'presets'
-                      ? 'bg-white/20 text-white font-black'
-                      : 'bg-emerald-100 text-deepgreen border border-emerald-200 font-bold'
-                  }`}>
-                    {packages.length}선
+            <div className="space-y-4 sm:space-y-6">
+              {/* Main DIY Banner */}
+              <div className="bg-gradient-to-br from-emerald-900 via-deepgreen to-teal-950 text-white rounded-none sm:rounded-3xl p-4 sm:p-7 md:p-8 border-y sm:border border-emerald-600/30 shadow-md relative overflow-hidden">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-300 border border-gold-400/30 text-[10px] sm:text-xs md:text-sm font-bold mb-1.5">
+                      <span>✨</span> MANGO TOUR 실시간 맞춤 견적
+                    </div>
+                    <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight">
+                      골프 / 투어 내 맘대로 여행 만들기
+                    </h2>
+                    <p className="text-xs sm:text-sm md:text-base text-gray-200 mt-1 leading-relaxed max-w-2xl font-normal">
+                      원하시는 지역 선택, 여행기간, 숙박, 차량 등 선택하고 맞춤 견적서가 실시간으로 자동 완성됩니다
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 1. 여행 지역 선택 (5 Regions - Concise Buttons) */}
+              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
+                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">1</span>
+                    <span>여행 지역 선택</span>
+                  </h3>
+                  <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 whitespace-nowrap shrink-0">
+                    선택: {diyLocation}
                   </span>
-                </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5">
+                  {diyRegions.map((reg) => {
+                    const isSelected = diyLocation === reg.name;
+                    return (
+                      <button
+                        key={reg.id}
+                        type="button"
+                        onClick={() => handleDIYLocationChange(reg.name)}
+                        className={`p-3 md:p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                          isSelected
+                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-md scale-[1.02]'
+                            : 'bg-gray-50/70 hover:bg-gray-100 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-lg md:text-xl">{reg.icon}</span>
+                          <span className="font-black text-sm md:text-base text-gray-900">{reg.name}</span>
+                        </div>
+                        <span className="text-[10px] md:text-xs text-gray-500 line-clamp-1">{reg.subtitle}</span>
+                        <span className={`text-[10px] font-bold mt-0.5 ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
+                          {isSelected ? '✓ 선택됨' : '선택'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. 여행 일정 (Single Select Box -> Opens 3박4일 ~ 6박7일 Modal) */}
+              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">2</span>
+                    <span>여행 일정</span>
+                  </h3>
+                  <span className="text-[11px] sm:text-xs text-gray-400 font-medium">3박 4일 ~ 6박 7일 선택</span>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setPlannerMode('diy')}
-                  className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
-                    plannerMode === 'diy'
-                      ? 'bg-gradient-to-r from-gold-500 via-amber-500 to-amber-600 text-white shadow-md border border-amber-500 font-black scale-[1.01]'
-                      : 'bg-white text-gray-700 hover:text-amber-800 hover:bg-amber-50/70 border border-gray-200/90 shadow-xs font-bold hover:border-amber-300'
-                  }`}
+                  onClick={() => setShowScheduleModal(true)}
+                  className="w-full sm:max-w-md p-3.5 md:p-4 rounded-2xl border-2 border-emerald-500/80 bg-emerald-50/40 hover:bg-emerald-50 transition flex items-center justify-between gap-3 cursor-pointer shadow-xs"
                 >
-                  <span className="text-sm sm:text-base">✨</span>
-                  <span className="truncate">내 맘대로 DIY 여행 만들기</span>
-                  <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
-                    plannerMode === 'diy'
-                      ? 'bg-white/20 text-white font-black'
-                      : 'bg-amber-100 text-amber-800 border border-amber-200 font-bold'
-                  }`}>
-                    자유설계
+                  <div className="flex items-center gap-3 text-left">
+                    <span className="w-10 h-10 rounded-xl bg-deepgreen text-white flex items-center justify-center text-lg shadow-xs shrink-0">
+                      📅
+                    </span>
+                    <div>
+                      <span className="text-[10px] md:text-xs font-bold text-emerald-700 block">선택된 여행 기간</span>
+                      <span className="text-base md:text-lg font-black text-gray-900">
+                        {diyNights}박 {diyDays}일
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-xs md:text-sm font-extrabold text-deepgreen shadow-2xs flex items-center gap-1 shrink-0 whitespace-nowrap">
+                    <span>기간 선택</span>
+                    <span>▾</span>
                   </span>
                 </button>
               </div>
-            </div>
 
-            {/* SUB-VIEW 1: PRESET 4박 5일 PACKAGES (Existing 10 Packages - 100% Preserved) */}
-            {plannerMode === 'presets' && (
-              <div>
-                {/* DIY Invitation Callout Banner */}
-                <div className="mx-3.5 sm:mx-0 mb-4 p-3.5 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-                  <div className="flex items-start gap-2.5">
-                    <span className="text-xl md:text-2xl shrink-0 mt-0.5">💡</span>
-                    <div>
-                      <div className="text-xs sm:text-sm md:text-base font-extrabold text-amber-950">원하는 일정(2박3일, 3박4일, 5박6일 등)이나 다른 지역으로 맞춤 여행을 원하시나요?</div>
-                      <div className="text-[11px] sm:text-xs md:text-sm text-amber-800 mt-0.5 leading-snug">고객님이 직접 여행 기간, 방문 도시, 라운딩 횟수, 코스, 숙소를 처음부터 자유롭게 지정하는 맞춤 여행을 만들어보세요!</div>
-                    </div>
+              {/* 3. 골프, 여행 선택 (Conditional Popup Buttons) */}
+              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3.5">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                      <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">3</span>
+                      <span>골프, 여행 선택</span>
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                      버튼을 클릭하면 {diyLocation} ({diyNights}박 {diyDays}일) 기준 맞춤 팝업이 열립니다.
+                    </p>
                   </div>
+                  <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 whitespace-nowrap shrink-0">
+                    {diyActivityMode === 'golf' ? '⛳ 골프 선택됨' : '🧳 여행 선택됨'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* 골프 버튼 */}
                   <button
                     type="button"
-                    onClick={() => setPlannerMode('diy')}
-                    className="px-3.5 py-2 md:px-5 md:py-2.5 bg-gradient-to-r from-deepgreen to-emerald-800 text-white rounded-xl text-xs md:text-sm font-bold shadow hover:bg-gold-600 transition flex items-center gap-1.5 whitespace-nowrap active:scale-95 shrink-0 self-end sm:self-auto cursor-pointer"
+                    onClick={() => {
+                      setDiyActivityMode('golf');
+                      setShowAllCoursesInGolfModal(false);
+                      setShowActivityModal('golf');
+                    }}
+                    className={`p-4 md:p-5 rounded-2xl border-2 text-left transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer ${
+                      diyActivityMode === 'golf'
+                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-md'
+                        : 'bg-gray-50/70 hover:bg-gray-100 border-gray-200'
+                    }`}
                   >
-                    <span>✨ 내 맘대로 직접 만들기</span>
-                    <span>→</span>
+                    <div className="flex items-center gap-2.5 md:gap-3">
+                      <span className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-deepgreen text-white text-xl md:text-2xl flex items-center justify-center shadow-sm shrink-0">
+                        ⛳
+                      </span>
+                      <div>
+                        <div className="font-black text-base md:text-lg text-gray-900">골프</div>
+                        <div className="text-[11px] md:text-xs text-gray-500">
+                          {diyLocation} 골프장 선택 ({diyRounds}회)
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`self-end sm:self-center px-2.5 py-1 rounded-xl text-[11px] md:text-xs font-extrabold border whitespace-nowrap shrink-0 ${
+                      diyActivityMode === 'golf'
+                        ? 'bg-white text-deepgreen border-emerald-300'
+                        : 'bg-white text-gray-500 border-gray-200'
+                    }`}>
+                      골프장 선택 ▾
+                    </span>
+                  </button>
+
+                  {/* 여행 버튼 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDiyActivityMode('tour');
+                      setShowActivityModal('tour');
+                    }}
+                    className={`p-3.5 sm:p-4 md:p-5 rounded-2xl border-2 text-left transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer ${
+                      diyActivityMode === 'tour'
+                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-md'
+                        : 'bg-gray-50/70 hover:bg-gray-100 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 md:gap-3">
+                      <span className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-amber-500 text-white text-xl md:text-2xl flex items-center justify-center shadow-sm shrink-0">
+                        🧳
+                      </span>
+                      <div>
+                        <div className="font-black text-base md:text-lg text-gray-900">여행</div>
+                        <div className="text-[11px] md:text-xs text-gray-500">
+                          자유 여행 또는 {diyLocation} 관광 상품
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`self-end sm:self-center px-2.5 py-1 rounded-xl text-[11px] md:text-xs font-extrabold border whitespace-nowrap shrink-0 ${
+                      diyActivityMode === 'tour'
+                        ? 'bg-white text-deepgreen border-emerald-300'
+                        : 'bg-white text-gray-500 border-gray-200'
+                    }`}>
+                      상품 선택 ▾
+                    </span>
                   </button>
                 </div>
 
-                {/* Region Tabs */}
-                <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar mb-4 sm:mb-6 px-3.5 sm:px-0">
-                  {locations.map(loc => (
-                    <button
-                      key={loc.id}
-                      onClick={() => setSelectedLocation(loc.id)}
-                      className={`px-4 py-2.5 md:px-5 md:py-3 rounded-2xl text-xs sm:text-sm md:text-base font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
-                        selectedLocation === loc.id
-                          ? 'bg-deepgreen text-white shadow-md scale-105'
-                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      <span>{loc.label}</span>
-                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] md:text-xs ${
-                        selectedLocation === loc.id ? 'bg-gold-500 text-white' : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        {loc.count}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Packages Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
-                  {filteredPackages.map((pkg) => (
-                    <div
-                      key={pkg.id}
-                      className="bg-white rounded-none sm:rounded-3xl overflow-hidden border-y sm:border border-gray-200/90 shadow-xs sm:shadow-xl transition-all duration-300 flex flex-col group w-full"
-                    >
-                      {/* Image Header */}
-                      <div className="relative h-52 md:h-56 overflow-hidden bg-gray-100">
-                        <img
-                          src={getFreshImageUrl(pkg.image)}
-                          alt={pkg.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                        
-                        {/* Location Badge */}
-                        <div className="absolute top-3 left-3 flex gap-1.5">
-                          <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md text-white text-[11px] md:text-xs font-black rounded-xl border border-white/20">
-                            📍 {pkg.location}
+                {/* Current Active Golf / Tour Summary Strip */}
+                <div className="p-3 md:p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  {diyActivityMode === 'golf' ? (
+                    <>
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
+                        <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">⛳ 배정 골프장 ({diyRounds}회):</span>
+                        {diyGolfCourses.slice(0, diyRounds).map((c, idx) => (
+                          <span key={idx} className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-gray-800 whitespace-nowrap">
+                            {idx + 1}R {c.split(' ')[0]}
                           </span>
-                          <span className="px-2.5 py-1 bg-gold-500 text-white text-[11px] md:text-xs font-black rounded-xl shadow-md">
-                            {pkg.duration}
-                          </span>
-                        </div>
-
-                        {/* Price Tag on Image */}
-                        <div className="absolute bottom-3 right-3 text-right">
-                          <span className="text-[10px] md:text-xs text-gray-300 font-bold block">기본 1인 예상가</span>
-                          <span className="text-lg sm:text-xl md:text-2xl font-black text-white drop-shadow-md">
-                            ${pkg.basePriceUSD?.toLocaleString()} <span className="text-xs md:text-sm font-normal text-gold-300">(약 {((pkg.basePriceUSD || 0) * USD_TO_KRW).toLocaleString()}원)</span>
-                          </span>
-                        </div>
+                        ))}
                       </div>
-
-                      {/* Card Body */}
-                      <div className="p-5 md:p-6 flex-grow flex flex-col justify-between space-y-4">
-                        <div>
-                          {/* Highlight Badges */}
-                          <div className="flex flex-wrap gap-1.5 mb-2.5">
-                            {pkg.highlightBadges?.slice(0, 3).map((badge, bIdx) => (
-                              <span key={bIdx} className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md text-[10px] md:text-xs font-bold border border-emerald-200">
-                                ✓ {badge}
-                              </span>
-                            ))}
-                          </div>
-
-                          <h3 className="font-black text-base sm:text-lg md:text-xl text-gray-900 line-clamp-1 group-hover:text-deepgreen transition">
-                            {pkg.title}
-                          </h3>
-                          <p className="text-xs sm:text-sm md:text-base text-gray-500 mt-1 line-clamp-2 leading-relaxed">
-                            {pkg.subtitle}
-                          </p>
-
-                          {/* Golf Courses */}
-                          <div className="mt-3.5 bg-gray-50 rounded-2xl p-3 md:p-4 border border-gray-100">
-                            <div className="text-[11px] md:text-xs font-black text-deepgreen mb-1.5 flex items-center gap-1">
-                              <span>⛳ 포함 골프장 ({pkg.golfCourses.length}개소)</span>
-                            </div>
-                            <div className="space-y-1 md:space-y-1.5">
-                              {pkg.golfCourses.map((course, cIdx) => (
-                                <div key={cIdx} className="text-xs md:text-sm text-gray-700 font-medium flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-gold-500"></span>
-                                  <span>{course}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Options Count & CTA */}
-                        <div>
-                          <div className="flex justify-between items-center text-xs md:text-sm text-gray-500 font-bold mb-3 px-1">
-                            <span>선택 가능 항목: {pkg.options?.length || 0}개</span>
-                            <span className="text-deepgreen">일정: 4박 5일 풀코스</span>
-                          </div>
-
-                          <button
-                            onClick={() => handleOpenPackage(pkg)}
-                            className="w-full py-3.5 md:py-4 bg-deepgreen text-white font-bold rounded-2xl hover:bg-gold-600 transition shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm md:text-base active:scale-95 cursor-pointer"
-                          >
-                            <span>✏️ 내 맘대로 견적 만들기</span>
-                            <span className="text-gold-300">→</span>
-                          </button>
-                        </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowActivityModal('golf')}
+                        className="self-start sm:self-auto px-3 py-1 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap"
+                      >
+                        코스/회차 변경 ✏️
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
+                        <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">🧳 선택 여행 구성:</span>
+                        {selectedTourItems.map((t) => (
+                          <span key={t.id} className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-gray-800 whitespace-nowrap">
+                            {t.name} {t.priceUSD > 0 ? `($${t.priceUSD})` : '(자유일정)'}
+                          </span>
+                        ))}
                       </div>
-                    </div>
-                  ))}
+                      <button
+                        type="button"
+                        onClick={() => setShowActivityModal('tour')}
+                        className="self-start sm:self-auto px-3 py-1 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap"
+                      >
+                        여행 상품 변경 ✏️
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
-            )}
 
-            {/* SUB-VIEW 2: DIY CUSTOM TRIP BUILDER (Customer directly builds schedule, region, rounds & options) */}
-            {plannerMode === 'diy' && (
-              <div className="space-y-4 sm:space-y-6">
-                
-                {/* DIY Intro Banner */}
-                <div className="bg-gradient-to-br from-emerald-900 via-deepgreen to-teal-950 text-white rounded-none sm:rounded-3xl p-4 sm:p-7 md:p-8 border-y sm:border border-emerald-600/30 shadow-md relative overflow-hidden">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                    <div>
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-300 border border-gold-400/30 text-[10px] sm:text-xs md:text-sm font-bold mb-1.5">
-                        <span>✨</span> 나만의 일정 & 지역 직접 설계 플래너
-                      </div>
-                      <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight">
-                        내 맘대로 DIY 여행 만들기
-                      </h2>
-                      <p className="text-xs sm:text-sm md:text-base text-gray-200 mt-1 leading-relaxed max-w-2xl font-normal">
-                        원하시는 여행 지역(호치민/붕따우/달랏/다낭), 여행 기간(2박3일~6박7일), 라운딩 횟수, 코스, 숙소와 차량을 선택하시면 맞춤 견적서가 실시간으로 자동 완성됩니다.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setPlannerMode('presets')}
-                      className="px-3.5 py-2 md:px-5 md:py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs md:text-sm font-bold transition flex items-center gap-1.5 border border-white/20 active:scale-95 whitespace-nowrap self-start sm:self-auto cursor-pointer"
-                    >
-                      <span>←</span>
-                      <span>추천 패키지 목록 보기</span>
-                    </button>
-                  </div>
+              {/* 4. 숙박 (4 Uniform Cards synced from pool.accommodationTiers) */}
+              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">4</span>
+                    <span>숙박</span>
+                  </h3>
+                  <span className="text-xs md:text-sm font-bold text-deepgreen">
+                    {diyNights}박 기준 · 1인 1실
+                  </span>
                 </div>
 
-                {/* Step 1: Destination / Region Selection */}
-                <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <div>
-                      <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
-                        <span className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">1</span>
-                        <span>여행 지역 선택</span>
-                      </h3>
-                      <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mt-0.5">라운딩하고 싶은 베트남 주요 도시를 선택하세요.</p>
-                    </div>
-                    <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
-                      현재: {diyLocation}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
-                    {[
-                      { id: '호치민', name: '호치민', sub: '명문 36홀 & 시내 나이트라이프', icon: '🏙️' },
-                      { id: '붕따우', name: '붕따우', sub: '남중국해 오션뷰 & 더 블러프스', icon: '🌊' },
-                      { id: '달랏', name: '달랏', sub: '해발 1,500m 고원 힐링 골프', icon: '🌲' },
-                      { id: '호치민+붕따우', name: '호치민+붕따우', sub: '도심 & 해양 2색 복합 투어', icon: '🌴' },
-                      { id: '호치민+달랏', name: '호치민+달랏', sub: '대도시 & 고원 2색 복합 투어', icon: '🏔️' },
-                      { id: '다낭/나트랑', name: '다낭/나트랑', sub: '중부 최고 인기 해양 리조트 골프', icon: '🏖️' },
-                    ].map((loc) => {
-                      const isSelected = diyLocation === loc.id;
-                      return (
-                        <button
-                          key={loc.id}
-                          type="button"
-                          onClick={() => handleDIYLocationChange(loc.id)}
-                          className={`p-3 md:p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-md scale-[1.02]'
-                              : 'bg-gray-50/70 hover:bg-gray-100 border-gray-200'
-                          }`}
-                        >
-                          <div>
-                            <span className="text-xl md:text-2xl block mb-1">{loc.icon}</span>
-                            <div className="font-extrabold text-xs sm:text-sm md:text-base text-gray-900">{loc.name}</div>
-                            <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-2 leading-tight">{loc.sub}</div>
-                          </div>
-                          <div className="mt-2 text-right">
-                            <span className={`text-[10px] md:text-xs font-bold ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
-                              {isSelected ? '✓ 선택됨' : '선택'}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+                  {diyAccommodations.map((item) => {
+                    const isSelected = selectedHotelTier?.id === item.id;
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => setDiyHotelType(item.id)}
+                        className={`p-3 md:p-4 rounded-2xl border text-left cursor-pointer transition flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-sm'
+                            : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-lg md:text-xl">{item.icon}</span>
+                            <span className="text-[10px] md:text-xs font-extrabold text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200">
+                              1박 ${item.pricePerNightUSD}
                             </span>
                           </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Step 2: Duration (Nights / Days) & Rounds Selection */}
-                <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-4">
-                  <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <div>
-                      <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
-                        <span className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">2</span>
-                        <span>여행 일정(박/일) & 라운딩 회차 설정</span>
-                      </h3>
-                      <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mt-0.5">빠른 추천 일정을 누르거나 직접 박수/라운딩 수를 조절하세요.</p>
-                    </div>
-                    <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
-                      {diyNights}박 {diyDays}일 · {diyRounds}회 ({diyRounds * 18}홀)
-                    </span>
-                  </div>
-
-                  {/* Preset Buttons */}
-                  <div>
-                    <label className="text-xs md:text-sm font-bold text-gray-700 block mb-1.5">⚡ 빠른 추천 일정 프리셋</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                      {[
-                        { label: '2박 3일', sub: '2회 36홀', n: 2, r: 2 },
-                        { label: '3박 4일', sub: '3회 54홀', n: 3, r: 3 },
-                        { label: '4박 5일', sub: '3회 54홀', n: 4, r: 3 },
-                        { label: '4박 5일', sub: '4회 72홀', n: 4, r: 4 },
-                        { label: '5박 6일', sub: '4회 72홀', n: 5, r: 4 },
-                        { label: '6박 7일', sub: '5회 90홀', n: 6, r: 5 },
-                      ].map((item, idx) => {
-                        const isCurrent = diyNights === item.n && diyRounds === item.r;
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setDiyNights(item.n);
-                              handleDIYRoundsChange(item.r);
-                            }}
-                            className={`py-2 px-2.5 md:py-3 rounded-xl border text-center transition cursor-pointer ${
-                              isCurrent
-                                ? 'bg-deepgreen text-white border-deepgreen shadow-md'
-                                : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
-                            }`}
-                          >
-                            <div className="font-extrabold text-xs md:text-sm">{item.label}</div>
-                            <div className={`text-[10px] md:text-xs ${isCurrent ? 'text-gold-300' : 'text-gray-400'}`}>{item.sub}</div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Fine Adjustment Controls */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    {/* Nights Controller */}
-                    <div className="p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-200 flex items-center justify-between">
-                      <div>
-                        <span className="text-xs md:text-sm font-bold text-gray-700 block">숙박 기간 (박수)</span>
-                        <span className="text-[10px] md:text-xs text-gray-400">총 일정: {diyNights}박 {diyDays}일</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleDIYNightsChange(diyNights - 1)}
-                          disabled={diyNights <= 1}
-                          className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white border border-gray-300 text-gray-800 font-bold hover:bg-gray-100 active:scale-95 disabled:opacity-40 cursor-pointer"
-                        >
-                          -
-                        </button>
-                        <span className="w-16 md:w-20 text-center font-black text-sm md:text-base text-deepgreen">
-                          {diyNights} 박
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDIYNightsChange(diyNights + 1)}
-                          disabled={diyNights >= 10}
-                          className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white border border-gray-300 text-gray-800 font-bold hover:bg-gray-100 active:scale-95 disabled:opacity-40 cursor-pointer"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Rounds Controller */}
-                    <div className="p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-200 flex items-center justify-between">
-                      <div>
-                        <span className="text-xs md:text-sm font-bold text-gray-700 block">라운딩 횟수</span>
-                        <span className="text-[10px] md:text-xs text-gray-400">총 {diyRounds * 18}홀 라운딩</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleDIYRoundsChange(diyRounds - 1)}
-                          disabled={diyRounds <= 1}
-                          className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white border border-gray-300 text-gray-800 font-bold hover:bg-gray-100 active:scale-95 disabled:opacity-40 cursor-pointer"
-                        >
-                          -
-                        </button>
-                        <span className="w-16 md:w-20 text-center font-black text-sm md:text-base text-deepgreen">
-                          {diyRounds} 회
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDIYRoundsChange(diyRounds + 1)}
-                          disabled={diyRounds >= diyDays}
-                          className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white border border-gray-300 text-gray-800 font-bold hover:bg-gray-100 active:scale-95 disabled:opacity-40 cursor-pointer"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 3: Round-by-Round Golf Course Assignment */}
-                <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
-                  <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <div>
-                      <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
-                        <span className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">3</span>
-                        <span>일정별 라운딩 골프장 배정</span>
-                      </h3>
-                      <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mt-0.5">각 회차별 골프장을 클릭하여 원하는 다른 명문 골프장으로 변경할 수 있습니다.</p>
-                    </div>
-                    <span className="text-[11px] sm:text-xs md:text-sm text-emerald-700 font-bold">
-                      총 {diyRounds}개 골프장 배정됨
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                    {diyGolfCourses.slice(0, diyRounds).map((courseName, rIdx) => {
-                      return (
-                        <div
-                          key={rIdx}
-                          onClick={() => setDiyChangingRoundIndex(rIdx)}
-                          className="p-3.5 md:p-4 rounded-2xl border border-emerald-300 bg-emerald-50/50 hover:bg-emerald-100/60 transition cursor-pointer flex items-center justify-between gap-3 shadow-xs"
-                        >
-                          <div className="flex items-center gap-2.5 md:gap-3">
-                            <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-deepgreen text-white font-extrabold text-xs md:text-sm flex items-center justify-center shrink-0">
-                              {rIdx + 1}R
-                            </div>
-                            <div>
-                              <div className="text-[10px] md:text-xs text-emerald-700 font-bold">
-                                {rIdx + 2}일차 라운딩
-                              </div>
-                              <div className="font-extrabold text-xs sm:text-sm md:text-base text-gray-900">
-                                {courseName}
-                              </div>
-                            </div>
-                          </div>
-                          <span className="px-2 py-1 md:px-2.5 md:py-1 bg-white text-deepgreen border border-emerald-300 rounded-lg text-[10px] md:text-xs font-bold shadow-2xs whitespace-nowrap">
-                            변경 ✏️
+                          <div className="font-extrabold text-xs md:text-sm text-gray-900">{item.name}</div>
+                          <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</div>
+                        </div>
+                        <div className="mt-2 text-right">
+                          <span className={`text-[10px] font-bold ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
+                            {isSelected ? '✓ 선택됨' : '선택'}
                           </span>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {/* Step 4: Accommodation, Vehicle & Additional Services */}
-                <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-5">
-                  <div className="pb-2 border-b border-gray-100">
-                    <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
-                      <span className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">4</span>
-                      <span>숙박 & 전용 차량 & 부가 케어 선택</span>
-                    </h3>
-                    <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mt-0.5">여행 스타일과 인원수에 맞게 원하는 세부 옵션을 설정하세요.</p>
-                  </div>
-
-                  {/* 4-1: Accommodation Tier */}
-                  <div>
-                    <label className="text-xs md:text-sm font-bold text-gray-700 block mb-2">🏨 기본 숙박 형태 ({diyNights}박 기준)</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {[
-                        { id: 'hotel_5star', name: '고급 호텔', desc: '시내 중심, 조식 뷔페, 수영장 완비', icon: '⭐' },
-                        { id: 'pool_villa', name: '독채 프라이빗 풀빌라', desc: '단독 수영장, 바베큐 파티 가능', icon: '🏊' },
-                        { id: 'hotel_4star', name: '4성급 실속 호텔', desc: '가성비 뛰어난 중심가 호텔', icon: '🏢' },
-                        { id: 'resort', name: '골프&비치 리조트', desc: '해변/골프장 인접 최고급 휴양', icon: '🏖️' },
-                      ].map((item) => {
-                        const isSelected = diyHotelType === item.id;
-                        return (
-                          <div
-                            key={item.id}
-                            onClick={() => setDiyHotelType(item.id as any)}
-                            className={`p-3 md:p-4 rounded-2xl border text-left cursor-pointer transition ${
-                              isSelected
-                                ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-sm'
-                                : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                            }`}
-                          >
-                            <span className="text-lg md:text-xl block mb-1">{item.icon}</span>
-                            <div className="font-extrabold text-xs md:text-sm text-gray-900">{item.name}</div>
-                            <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-1">{item.desc}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* 4-2: Dedicated Vehicle Type */}
-                  <div>
-                    <label className="text-xs md:text-sm font-bold text-gray-700 block mb-2">🚐 전 일정 단독 전용 차량 ({diyDays}일간)</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      {[
-                        { id: 'vip_limousine', name: '단독 VIP 리무진 밴 (9인승)', desc: '가죽 리클라이너 좌석, 전용 기사/유류비 일체', icon: '👑' },
-                        { id: 'transit_van', name: '단독 16인승 대용량 밴', desc: '골프백 대량 적재 및 편안한 단체 이동', icon: '🚐' },
-                        { id: 'suv', name: '단독 7인승 프리미엄 SUV', desc: '2~3인 소수 정예 전용 차량', icon: '🚗' },
-                      ].map((item) => {
-                        const isSelected = diyVehicleType === item.id;
-                        return (
-                          <div
-                            key={item.id}
-                            onClick={() => setDiyVehicleType(item.id as any)}
-                            className={`p-3 md:p-4 rounded-2xl border text-left cursor-pointer transition ${
-                              isSelected
-                                ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-sm'
-                                : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5 font-extrabold text-xs md:text-sm text-gray-900">
-                              <span>{item.icon}</span>
-                              <span>{item.name}</span>
-                            </div>
-                            <div className="text-[10px] md:text-xs text-gray-500 mt-0.5">{item.desc}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* 4-3: Guide, Meals, Spa & Fast Track Checklist */}
-                  <div className="pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    {/* Guide */}
-                    <div 
-                      onClick={() => setDiyIncludeGuide(!diyIncludeGuide)}
-                      className={`p-3 md:p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${
-                        diyIncludeGuide ? 'bg-emerald-50/60 border-emerald-400' : 'bg-gray-50 border-gray-200 opacity-70'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={diyIncludeGuide}
-                          onChange={() => {}}
-                          className="w-4 h-4 md:w-5 md:h-5 rounded text-deepgreen accent-deepgreen cursor-pointer"
-                        />
-                        <div>
-                          <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1">
-                            <span>한국어 가이드</span>
-                            <span className="text-[10px] md:text-xs text-indigo-700 bg-indigo-100 px-1.5 py-0.2 rounded font-bold">1일 $120</span>
-                          </div>
-                          <div className="text-[10px] md:text-xs text-gray-500">전 일정 올케어 통역/체크인</div>
-                        </div>
-                      </div>
-                      <span className="text-xs md:text-sm font-bold text-deepgreen">
-                        {diyIncludeGuide ? '포함' : '미포함'}
-                      </span>
-                    </div>
-
-                    {/* Fast Track */}
-                    <div 
-                      onClick={() => setDiyIncludeFastTrack(!diyIncludeFastTrack)}
-                      className={`p-3 md:p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${
-                        diyIncludeFastTrack ? 'bg-amber-50/70 border-amber-400' : 'bg-gray-50 border-gray-200 opacity-70'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={diyIncludeFastTrack}
-                          onChange={() => {}}
-                          className="w-4 h-4 md:w-5 md:h-5 rounded text-amber-600 accent-amber-600 cursor-pointer"
-                        />
-                        <div>
-                          <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1">
-                            <span>🛫 패스트 트랙</span>
-                            <span className="text-[10px] md:text-xs text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded font-bold">1인 $60</span>
-                          </div>
-                          <div className="text-[10px] md:text-xs text-gray-500">초고속 VIP 입국 심사</div>
-                        </div>
-                      </div>
-                      <span className="text-xs md:text-sm font-bold text-amber-800">
-                        {diyIncludeFastTrack ? '포함 ($60)' : '미포함'}
-                      </span>
-                    </div>
-
-                    {/* Spa & Massage (마사지 - 기본 선택 포함) */}
-                    <div 
-                      onClick={() => setDiyIncludeSpa(!diyIncludeSpa)}
-                      className={`p-3 md:p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between ${
-                        diyIncludeSpa ? 'bg-emerald-50/60 border-emerald-400' : 'bg-gray-50 border-gray-200 opacity-70'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={diyIncludeSpa}
-                          onChange={() => {}}
-                          className="w-4 h-4 md:w-5 md:h-5 rounded text-deepgreen accent-deepgreen cursor-pointer"
-                        />
-                        <div>
-                          <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1.5">
-                            <span>💆 VIP 전신 마사지 (90분)</span>
-                            <span className="text-[10px] md:text-xs text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded font-bold">1인 $50</span>
-                          </div>
-                          <div className="text-[10px] md:text-xs text-gray-500">라운딩 피로 회복 프리미엄 스파 케어 (기본 선택)</div>
-                        </div>
-                      </div>
-                      <span className="text-xs md:text-sm font-bold text-deepgreen">
-                        {diyIncludeSpa ? '포함 ($50)' : '미포함'}
-                      </span>
-                    </div>
-
-                    {/* Meal Plan (식사 - 일자별 1인 1일 $50 기준 적용 및 선택 가능) */}
-                    <div className="p-3 md:p-3.5 bg-gray-50 rounded-2xl border border-gray-200 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm md:text-base">🍽️</span>
-                          <span className="text-xs md:text-sm font-bold text-gray-900">
-                            석식 플랜 선택 ({diyNights}일 석식)
-                          </span>
-                        </div>
-                        <span className="text-xs md:text-sm font-bold text-amber-800">
-                          {diyMealPlan === 'special' ? `포함 ($${diyNights * 50})` : diyMealPlan === 'local' ? `포함 ($${diyNights * 25})` : '미포함 ($0)'}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {[
-                          { id: 'special', label: '특식 만찬', dailyRate: 50, desc: '씨푸드&BBQ' },
-                          { id: 'local', label: '로컬 미식', dailyRate: 25, desc: '대표 현지식' },
-                          { id: 'free', label: '자유 식사', dailyRate: 0, desc: '미포함 ($0)' },
-                        ].map((m) => {
-                          const isSelected = diyMealPlan === m.id;
-                          const total = m.dailyRate * diyNights;
-                          return (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => setDiyMealPlan(m.id as any)}
-                              className={`p-2 rounded-xl text-center transition cursor-pointer flex flex-col justify-between ${
-                                isSelected
-                                  ? 'bg-deepgreen text-white shadow-sm ring-2 ring-deepgreen/20'
-                                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                              }`}
-                            >
-                              <div className="text-xs font-extrabold">{m.label}</div>
-                              <div className={`text-[10px] font-semibold mt-0.5 ${isSelected ? 'text-amber-300' : 'text-gray-500'}`}>
-                                {m.dailyRate > 0 ? `1일 $${m.dailyRate}` : '선택 안함'}
-                              </div>
-                              <div className={`text-[11px] font-black mt-1 ${isSelected ? 'text-white' : 'text-deepgreen'}`}>
-                                {total > 0 ? `${diyNights}일 $${total}` : '$0'}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="text-[10px] text-gray-500 text-center">
-                        * 1인 1일 기준 단가 × {diyNights}일 적용 ({diyMealPlan === 'special' ? `특식 만찬: 1일 $50 × ${diyNights}일 = 총 $${diyNights * 50}` : diyMealPlan === 'local' ? `로컬 미식: 1일 $25 × ${diyNights}일 = 총 $${diyNights * 25}` : '자유 식사 선택 시 식사비 미포함 $0'})
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Step 5: Real-Time Price Preview & Package Generation Action Box */}
-                <div className="bg-gradient-to-br from-gray-900 via-deepgreen to-emerald-950 text-white rounded-none sm:rounded-3xl p-4 sm:p-7 md:p-8 border-y sm:border border-gold-500/40 shadow-xl space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-white/15">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 rounded-full bg-gold-500 text-white text-[10px] md:text-xs font-black">
-                          {diyLocation}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-white/20 text-emerald-300 text-[10px] md:text-xs font-bold">
-                          {diyNights}박 {diyDays}일 · {diyRounds}회 ({diyRounds * 18}홀)
-                        </span>
-                      </div>
-                      <h3 className="text-base sm:text-xl md:text-2xl font-black text-white">
-                        [고객 맞춤 DIY] {diyLocation} {diyNights}박 {diyDays}일 명문 골프 투어
-                      </h3>
-                      <p className="text-xs md:text-sm text-gray-300 mt-0.5">
-                        {diyGolfCourses.slice(0, diyRounds).join(' · ')} 라운딩 & 맞춤 구성
-                      </p>
-                    </div>
-
-                    <div className="text-left sm:text-right shrink-0">
-                      <span className="text-[10px] md:text-xs text-gold-300 block font-bold">1인 기준 실시간 예상 견적</span>
-                      <span className="text-xl sm:text-3xl md:text-4xl font-black text-gold-400">
-                        ${calculateDIYEstimatedPrice().toLocaleString()}
-                      </span>
-                      <span className="text-xs md:text-sm text-gray-300 block">
-                        (약 {(calculateDIYEstimatedPrice() * USD_TO_KRW).toLocaleString()}원 / 1인)
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-1">
-                    <div className="text-xs md:text-sm text-gray-300 leading-snug w-full sm:w-auto">
-                      💡 아래 버튼을 누르시면 <strong>상세 견적서 화면</strong>으로 이동하여 항목별 세부 조율, 일정표 확인, 카카오톡 상담 및 고해상도 견적서 이미지 캡처가 가능합니다.
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleCreateDIYPackage}
-                      className="w-full sm:w-auto px-6 py-4 md:px-8 md:py-4.5 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white rounded-2xl font-black text-sm sm:text-base md:text-lg shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-                    >
-                      <span>✨ 나만의 맞춤 견적서 생성 & 세부 조율하기</span>
-                      <span>→</span>
-                    </button>
-                  </div>
-                </div>
-
               </div>
-            )}
 
+              {/* 5. 차량 (4 Uniform Cards matching Step 4 style: 7인승, 9인승, 16인승, 26인승) */}
+              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">5</span>
+                    <span>차량</span>
+                  </h3>
+                  <span className="text-xs md:text-sm font-bold text-deepgreen">
+                    전 일정 ({diyDays}일) 단독 전용
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+                  {diyVehicles.map((item) => {
+                    const isSelected = selectedVehicleItem?.id === item.id;
+                    const dayRate = item.pricePerDayUSD ?? Math.max(15, 25 + (item.priceDeltaUSD || 0));
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => setDiyVehicleType(item.id)}
+                        className={`p-3 md:p-4 rounded-2xl border text-left cursor-pointer transition flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-sm'
+                            : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-lg md:text-xl">{item.icon || '🚐'}</span>
+                            <span className="text-[10px] md:text-xs font-extrabold text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200">
+                              1일 ${dayRate}/인
+                            </span>
+                          </div>
+                          <div className="font-extrabold text-xs md:text-sm text-gray-900">
+                            {item.shortName || item.name}
+                          </div>
+                          <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</div>
+                        </div>
+                        <div className="mt-2 text-right">
+                          <span className={`text-[10px] font-bold ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
+                            {isSelected ? '✓ 선택됨' : '선택'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 6. 기타 (Multi-select Toggle Cards: 가이드, 패스트 트랙, 마사지) */}
+              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">6</span>
+                    <span>기타</span>
+                  </h3>
+                  <span className="text-[11px] sm:text-xs text-gray-500 font-medium">복수 선택 가능 (가이드 · 패스트 트랙 · 마사지)</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {diyExtraServices.map((svc) => {
+                    const isChecked = diySelectedExtraIds.includes(svc.id);
+                    const unitText = svc.pricingUnit === 'per_day' ? `1일 $${svc.priceUSD}` : `1인 $${svc.priceUSD}`;
+                    const appliedCost = svc.pricingUnit === 'per_day' ? svc.priceUSD * diyDays : svc.priceUSD;
+                    return (
+                      <div
+                        key={svc.id}
+                        onClick={() => handleToggleExtraService(svc.id)}
+                        className={`p-3.5 md:p-4 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-2 ${
+                          isChecked
+                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/70 shadow-xs'
+                            : 'bg-gray-50 border-gray-200 opacity-75 hover:opacity-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}}
+                            className="w-4 h-4 md:w-5 md:h-5 rounded text-deepgreen accent-deepgreen cursor-pointer shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
+                              <span>{svc.icon} {svc.name}</span>
+                              <span className="text-[10px] md:text-xs text-emerald-800 bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-bold">
+                                {unitText}
+                              </span>
+                            </div>
+                            <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-1">{svc.description}</div>
+                          </div>
+                        </div>
+                        <span className={`text-xs md:text-sm font-extrabold shrink-0 whitespace-nowrap ${isChecked ? 'text-deepgreen' : 'text-gray-400'}`}>
+                          {isChecked ? `포함 ($${appliedCost})` : '미포함'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bottom Real-Time Price Preview & Package Generation Action Box */}
+              <div className="bg-gradient-to-br from-gray-900 via-deepgreen to-emerald-950 text-white rounded-none sm:rounded-3xl p-4 sm:p-7 md:p-8 border-y sm:border border-gold-500/40 shadow-xl space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-white/15">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-full bg-gold-500 text-white text-[10px] md:text-xs font-black">
+                        {diyLocation}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-white/20 text-emerald-300 text-[10px] md:text-xs font-bold">
+                        {diyNights}박 {diyDays}일 · {diyActivityMode === 'golf' ? `${diyRounds}회 (${diyRounds * 18}홀)` : '여행 맞춤'}
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-xl md:text-2xl font-black text-white">
+                      [고객 맞춤 DIY] {diyLocation} {diyNights}박 {diyDays}일 {diyActivityMode === 'golf' ? '명문 골프 투어' : '맞춤 여행'}
+                    </h3>
+                    <p className="text-xs md:text-sm text-gray-300 mt-0.5">
+                      {diyActivityMode === 'golf'
+                        ? `${diyGolfCourses.slice(0, diyRounds).join(' · ')} 라운딩 & 맞춤 구성`
+                        : `${selectedTourItems.map(t => t.name).join(' · ') || '자유 여행'} & ${selectedHotelTier?.name || '숙박'} · ${selectedVehicleItem?.shortName || selectedVehicleItem?.name || '전용 차량'}`}
+                    </p>
+                  </div>
+
+                  <div className="text-left sm:text-right shrink-0">
+                    <span className="text-[10px] md:text-xs text-gold-300 block font-bold">1인 기준 실시간 예상 견적</span>
+                    <span className="text-xl sm:text-3xl md:text-4xl font-black text-gold-400">
+                      ${calculateDIYEstimatedPrice().toLocaleString()}
+                    </span>
+                    <span className="text-xs md:text-sm text-gray-300 block">
+                      (약 {(calculateDIYEstimatedPrice() * USD_TO_KRW).toLocaleString()}원 / 1인)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-1">
+                  <div className="text-xs md:text-sm text-gray-300 leading-snug w-full sm:w-auto">
+                    💡 아래 버튼을 누르시면 <strong>상세 견적서 화면</strong>으로 이동하여 항목별 세부 조율, 일정표 확인, 카카오톡 상담 및 고해상도 견적서 이미지 캡처가 가능합니다.
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCreateDIYPackage}
+                    className="w-full sm:w-auto px-6 py-4 md:px-8 md:py-4.5 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white rounded-2xl font-black text-sm sm:text-base md:text-lg shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                  >
+                    <span>✨ 나만의 맞춤 견적서 생성 & 세부 조율하기</span>
+                    <span>→</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
           </div>
         )}
 
@@ -1910,19 +1741,19 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between pb-2.5 sm:pb-3">
                     <div>
                       <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 flex-wrap">
-                        <span className="px-2 py-0.5 rounded-full bg-deepgreen text-white text-[10px] sm:text-[11px] md:text-xs font-semibold">
+                        <span className="px-2 py-0.5 rounded-full bg-deepgreen text-white text-[10px] sm:text-[11px] md:text-xs font-semibold whitespace-nowrap">
                           📍 {activePackage.location}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-gold-500 text-white text-[10px] sm:text-[11px] md:text-xs font-semibold shadow-sm">
+                        <span className="px-2 py-0.5 rounded-full bg-gold-500 text-white text-[10px] sm:text-[11px] md:text-xs font-semibold shadow-sm whitespace-nowrap">
                           ⏱️ {activePackage.duration}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[10px] sm:text-[11px] md:text-xs font-bold border border-blue-200">
+                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[10px] sm:text-[11px] md:text-xs font-bold border border-blue-200 whitespace-nowrap">
                           🏨 1인 객실 기준 (1인 1실)
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 text-[10px] sm:text-[11px] md:text-xs font-bold border border-amber-300">
+                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 text-[10px] sm:text-[11px] md:text-xs font-bold border border-amber-300 whitespace-nowrap">
                           🛫 VIP 패스트트랙 ($60) 선택
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-900 text-[10px] sm:text-[11px] md:text-xs font-bold border border-indigo-200">
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-900 text-[10px] sm:text-[11px] md:text-xs font-bold border border-indigo-200 whitespace-nowrap">
                           👨‍💼 가이드 (1일 $120)
                         </span>
                       </div>
@@ -1931,44 +1762,57 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                     </div>
                   </div>
 
-                  {/* Golf Course Chips */}
-                  <div className="mt-2.5 pt-2.5 border-t border-gray-100">
-                    <div className="text-xs md:text-sm font-bold text-gray-700 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span>⛳ 라운딩 코스 안내</span>
-                        <span className="text-[10px] md:text-xs font-normal text-gray-400">({customGolfCourses.length}개소)</span>
-                        {isGolfCoursesModified && (
-                          <span className="px-2 py-0.5 bg-gold-100 text-gold-800 rounded-full text-[10px] md:text-xs font-semibold border border-gold-300">
-                            ✨ 맞춤 코스 설정됨
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowGolfModal(true)}
-                        className="self-start sm:self-auto px-2.5 sm:px-3 md:px-3.5 py-1.5 bg-gradient-to-r from-deepgreen to-emerald-700 hover:from-emerald-700 hover:to-deepgreen text-white text-[11px] sm:text-xs md:text-sm font-bold rounded-xl shadow transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                      >
-                        <span>⚙️</span>
-                        <span>일정별 골프장 직접 변경/선택</span>
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                      {customGolfCourses.map((c, i) => (
-                        <span 
-                          key={i} 
+                  {/* Golf Course or Tour Summary Chips */}
+                  {customGolfCourses.length > 0 ? (
+                    <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+                      <div className="text-xs md:text-sm font-bold text-gray-700 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="whitespace-nowrap">⛳ 라운딩 코스 안내</span>
+                          <span className="text-[10px] md:text-xs font-normal text-gray-400 whitespace-nowrap">({customGolfCourses.length}개소)</span>
+                          {isGolfCoursesModified && (
+                            <span className="px-2 py-0.5 bg-gold-100 text-gold-800 rounded-full text-[10px] md:text-xs font-semibold border border-gold-300 whitespace-nowrap">
+                              ✨ 맞춤 코스 설정됨
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
                           onClick={() => setShowGolfModal(true)}
-                          className="px-2.5 py-1 sm:py-1.5 md:px-3 md:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold border border-emerald-200 flex items-center gap-1.5 cursor-pointer transition shadow-xs"
-                          title="클릭하여 골프장 변경"
+                          className="self-start sm:self-auto px-2.5 sm:px-3 md:px-3.5 py-1.5 bg-gradient-to-r from-deepgreen to-emerald-700 hover:from-emerald-700 hover:to-deepgreen text-white text-[11px] sm:text-xs md:text-sm font-bold rounded-xl shadow transition flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap"
                         >
-                          <span className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full bg-emerald-600 text-white text-[9px] md:text-[10px] flex items-center justify-center font-bold">
-                            {i + 1}
+                          <span>⚙️</span>
+                          <span>일정별 골프장 직접 변경/선택</span>
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                        {customGolfCourses.map((c, i) => (
+                          <span 
+                            key={i} 
+                            onClick={() => setShowGolfModal(true)}
+                            className="px-2.5 py-1 sm:py-1.5 md:px-3 md:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold border border-emerald-200 flex items-center gap-1.5 cursor-pointer transition shadow-xs"
+                            title="클릭하여 골프장 변경"
+                          >
+                            <span className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full bg-emerald-600 text-white text-[9px] md:text-[10px] flex items-center justify-center font-bold">
+                              {i + 1}
+                            </span>
+                            <span>{c}</span>
+                            <span className="text-emerald-500 text-[10px] md:text-xs">✏️</span>
                           </span>
-                          <span>{c}</span>
-                          <span className="text-emerald-500 text-[10px] md:text-xs">✏️</span>
-                        </span>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+                      <div className="text-xs md:text-sm font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                        <span>🧳 선택 여행 구성</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-xl text-xs md:text-sm font-semibold border border-emerald-200">
+                          {activePackage.subtitle}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Tabs: Options Customizer vs Itinerary */}
@@ -2384,8 +2228,17 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                     {/* Customer Custom Selection Summary Badges in Captured Card */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 my-2 py-2 border-y border-white/10 text-[10px] sm:text-[11px] md:text-xs">
                       <div className="bg-white/10 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl">
-                        <span className="text-gold-300 font-semibold block mb-0.5">⛳ 선택 골프장 ({customGolfCourses.length}회 라운딩):</span>
-                        <span className="text-white font-medium line-clamp-1">{customGolfCourses.join(' · ')}</span>
+                        {customGolfCourses.length > 0 ? (
+                          <>
+                            <span className="text-gold-300 font-semibold block mb-0.5">⛳ 선택 골프장 ({customGolfCourses.length}회 라운딩):</span>
+                            <span className="text-white font-medium line-clamp-1">{customGolfCourses.join(' · ')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-gold-300 font-semibold block mb-0.5">🧳 선택 여행 일정:</span>
+                            <span className="text-white font-medium line-clamp-1">{activePackage.location} {activePackage.duration} 맞춤 여행</span>
+                          </>
+                        )}
                       </div>
                       <div className="bg-white/10 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl">
                         <span className="text-gold-300 font-semibold block mb-0.5">🏨 선택 숙박 형태:</span>
@@ -3054,13 +2907,17 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                       ))
                     ) : (
                       <div className="text-xs md:text-sm text-gray-600 space-y-1">
-                        <div>• 전 일정 단독 전용 차량 포함 (7인승 1대 1일 $100 기준)</div>
-                        <div>• {diyRounds}회 18홀 명문 골프장 그린피 포함</div>
-                        <div>• {getChosenAccommodationName()} (1인 1실) 숙박 포함</div>
-                        <div>• {diyIncludeGuide ? '한국어 전문 가이드 포함 (1일 기준 $120)' : '자유 일정 (기사 온리)'}</div>
-                        <div>• {diyIncludeFastTrack ? '공항 VIP 패스트 트랙 포함 (1인당 $60)' : '패스트 트랙 미포함'}</div>
-                        <div>• {diyIncludeSpa ? 'VIP 전신 마사지 (90분) 포함' : '마사지 미포함'}</div>
-                        <div>• {diyMealPlan === 'special' ? `프리미엄 특식 만찬 포함 (${diyNights}일: $${diyNights * 50})` : diyMealPlan === 'local' ? `로컬 미식 포함 (${diyNights}일: $${diyNights * 25})` : '자유 식사 (식사비 미포함)'}</div>
+                        <div>• 전 일정 단독 차량: {selectedVehicleItem?.shortName || selectedVehicleItem?.name}</div>
+                        <div>• {diyActivityMode === 'golf' ? `${diyRounds}회 18홀 명문 골프장 그린피 포함` : `여행 구성: ${selectedTourItems.map(t => t.name).join(', ') || '자유 여행'}`}</div>
+                        <div>• {selectedHotelTier?.name || '고급 호텔'} (1인 1실) 숙박 포함</div>
+                        {diyExtraServices.map(svc => {
+                          const isChecked = diySelectedExtraIds.includes(svc.id);
+                          return (
+                            <div key={svc.id}>
+                              • {svc.name}: {isChecked ? '포함' : '미포함'}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -4066,6 +3923,303 @@ export const TripPlanner: React.FC<Props> = ({ packages, masterOptionPool, produ
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs md:text-sm font-bold transition cursor-pointer"
               >
                 닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 7: DIY STEP 2 SCHEDULE PICKER MODAL (3박4일 ~ 6박7일) ================= */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm animate-fade-in font-sans break-keep">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl animate-scale-in space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">STEP 2 · 일정 선택</span>
+                <h3 className="text-lg font-black text-deepgreen mt-1">📅 여행 일정을 선택해 주세요</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScheduleModal(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {[
+                { label: '3박 4일', desc: '단기 집중 실속 일정 (추천 라운딩 3회)', nights: 3, rounds: 3 },
+                { label: '4박 5일', desc: '가장 인기 있는 표준 일정 (추천 라운딩 3~4회)', nights: 4, rounds: 4 },
+                { label: '5박 6일', desc: '여유로운 휴양 & 라운딩 일정 (추천 라운딩 4회)', nights: 5, rounds: 4 },
+                { label: '6박 7일', desc: '장기 황제 풀코스 일정 (추천 라운딩 5회)', nights: 6, rounds: 5 },
+              ].map((opt) => {
+                const isSelected = diyNights === opt.nights;
+                return (
+                  <button
+                    key={opt.nights}
+                    type="button"
+                    onClick={() => handleSelectSchedule(opt.nights, opt.rounds)}
+                    className={`p-4 rounded-2xl border-2 text-left transition flex items-center justify-between gap-3 cursor-pointer ${
+                      isSelected
+                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/50 shadow-sm'
+                        : 'bg-gray-50 hover:bg-emerald-50/40 border-gray-200'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-black text-base text-gray-900">{opt.label}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-xl text-xs font-extrabold ${
+                      isSelected ? 'bg-deepgreen text-white' : 'bg-white text-gray-600 border border-gray-200'
+                    }`}>
+                      {isSelected ? '✓ 선택됨' : '선택'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 8: DIY STEP 3 CONDITIONAL POPUP (골프 / 여행) ================= */}
+      {showActivityModal === 'golf' && (
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-2xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 sm:px-0 sm:pt-0 sm:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+              <div>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
+                  {diyLocation} · {diyNights}박 {diyDays}일 맞춤 골프장 선택
+                </span>
+                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
+                  ⛳ 라운딩 횟수 및 골프장을 선택하세요
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowActivityModal(null)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-4 sm:px-0 py-4 space-y-4">
+              {/* Round count selector */}
+              <div className="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-200 flex items-center justify-between">
+                <div>
+                  <span className="text-xs md:text-sm font-black text-gray-900 block">총 라운딩 횟수 ({diyNights}박 {diyDays}일 기준)</span>
+                  <span className="text-[11px] text-gray-500">최대 {diyDays}회까지 선택 가능 · {diyRounds * 18}홀</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDIYRoundsChange(diyRounds - 1)}
+                    disabled={diyRounds <= 1}
+                    className="w-9 h-9 rounded-xl bg-white border border-gray-300 font-black text-gray-800 disabled:opacity-40 cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="w-14 text-center font-black text-base text-deepgreen">{diyRounds}회</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDIYRoundsChange(diyRounds + 1)}
+                    disabled={diyRounds >= diyDays}
+                    className="w-9 h-9 rounded-xl bg-white border border-gray-300 font-black text-gray-800 disabled:opacity-40 cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Round selector tabs */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-gray-700">1) 변경할 회차를 먼저 클릭하세요</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAllCoursesInGolfModal(prev => !prev)}
+                    className="text-[11px] font-bold text-deepgreen underline cursor-pointer"
+                  >
+                    {showAllCoursesInGolfModal ? `${diyLocation} 골프장만 보기` : '타 지역 골프장도 함께 보기'}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {diyGolfCourses.slice(0, diyRounds).map((cName, idx) => {
+                    const isFocused = activeRoundIndex === idx;
+                    const rate = resolveSingleCourseUSD(cName, false);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveRoundIndex(idx)}
+                        className={`p-3 rounded-xl border text-left transition flex items-center justify-between gap-2 cursor-pointer ${
+                          isFocused
+                            ? 'bg-deepgreen text-white border-deepgreen shadow-md'
+                            : 'bg-gray-50 hover:bg-gray-100 text-gray-800 border-gray-200'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <span className={`text-[10px] font-bold block ${isFocused ? 'text-gold-300' : 'text-emerald-700'}`}>
+                            {idx + 1}회차 ({idx + 2}일차)
+                          </span>
+                          <span className="font-extrabold text-xs md:text-sm truncate block">{cName}</span>
+                        </div>
+                        <span className={`text-xs font-black shrink-0 ${isFocused ? 'text-gold-300' : 'text-deepgreen'}`}>
+                          ${rate.weekdayUSD}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Regional Course Pool */}
+              <div className="space-y-2">
+                <span className="text-xs font-extrabold text-gray-700 block">
+                  2) {activeRoundIndex + 1}회차에 배정할 골프장 선택
+                </span>
+                <div className="space-y-2">
+                  {(showAllCoursesInGolfModal ? pool.golfCourses : getRegionalGolfCourses(diyLocation)).map((course) => {
+                    const isSelected = diyGolfCourses[activeRoundIndex] === course.name;
+                    const price = resolveSingleCourseUSD(course.name, false).weekdayUSD;
+                    return (
+                      <div
+                        key={course.id}
+                        onClick={() => {
+                          const updated = [...diyGolfCourses];
+                          updated[activeRoundIndex] = course.name;
+                          setDiyGolfCourses(updated);
+                          showToast(`⛳ ${activeRoundIndex + 1}회차: ${course.name.split(' ')[0]} 선택`);
+                        }}
+                        className={`p-3 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-3 ${
+                          isSelected
+                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-xs'
+                            : 'bg-white hover:bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] font-bold rounded">
+                              📍 {course.location}
+                            </span>
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                              {course.holes}홀
+                            </span>
+                            {course.badge && (
+                              <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                                {course.badge}
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-extrabold text-sm text-gray-900">{course.name}</h4>
+                          <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{course.description}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-xs font-black text-deepgreen mb-1">${price}</div>
+                          <span className={`inline-block px-2.5 py-1 rounded-xl text-[11px] font-bold ${
+                            isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {isSelected ? '✓ 선택됨' : '선택'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-4 py-3 sm:px-0 sm:pb-0 sm:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowActivityModal(null)}
+                className="w-full sm:w-auto px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer"
+              >
+                선택 완료 & 적용 ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showActivityModal === 'tour' && (
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-2xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 sm:px-0 sm:pt-0 sm:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+              <div>
+                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] md:text-xs font-bold rounded-md">
+                  {diyLocation} · {diyNights}박 {diyDays}일 여행 상품 선택
+                </span>
+                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
+                  🧳 자유 여행 또는 추천 관광 상품을 선택하세요
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowActivityModal(null)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-4 sm:px-0 py-4 space-y-2.5">
+              {activeRegionTourOptions.map((item) => {
+                const isSelected = diySelectedTourIds.includes(item.id);
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleToggleTourOption(item.id, item.isFreeTravel)}
+                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/50 shadow-xs'
+                        : 'bg-white hover:bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
+                          item.isFreeTravel ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {item.isFreeTravel ? '✨ 자유 일정' : `📍 ${item.location}`}
+                        </span>
+                        {item.badge && (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="font-extrabold text-sm md:text-base text-gray-900">{item.name}</h4>
+                      <p className="text-[11px] md:text-xs text-gray-500 mt-0.5">{item.description}</p>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className="text-sm font-black text-deepgreen mb-1">
+                        {item.priceUSD > 0 ? `$${item.priceUSD}/인` : '자유 ($0)'}
+                      </div>
+                      <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
+                        isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {isSelected ? '✓ 선택됨' : '선택'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="px-4 py-3 sm:px-0 sm:pb-0 sm:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3">
+              <div className="text-xs text-gray-500 font-medium">
+                자유 여행 또는 {diyLocation} 지역 상품을 복수 선택할 수 있습니다.
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowActivityModal(null)}
+                className="px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
+              >
+                선택 완료 & 적용 ✓
               </button>
             </div>
           </div>

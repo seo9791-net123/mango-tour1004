@@ -69,27 +69,37 @@ const AdminDashboard: React.FC<Props> = ({
   setCurrentPage
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'menu' | 'popup'>('users');
-  const [plannerSubTab, setPlannerSubTab] = useState<'packages' | 'masterPool'>('packages');
-  const [poolCategory, setPoolCategory] = useState<'golf' | 'hotel' | 'vehicle' | 'guide' | 'meal'>('golf');
+  const [plannerSubTab, setPlannerSubTab] = useState<'packages' | 'masterPool'>('masterPool');
+  const [poolCategory, setPoolCategory] = useState<'region' | 'golf' | 'tour' | 'hotel' | 'vehicle' | 'extra' | 'guide' | 'meal'>('region');
   
   // Master Pool item creation modal states
   const [showAddPoolModal, setShowAddPoolModal] = useState(false);
   const [newPoolItem, setNewPoolItem] = useState<{
-    category: 'golf' | 'hotel' | 'vehicle' | 'guide' | 'meal';
+    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'guide' | 'meal';
     name: string;
+    shortName?: string;
+    icon?: string;
     location: string;
     holes?: number;
     type?: 'hotel_5star' | 'hotel_4star' | 'pool_villa' | 'resort';
+    priceUSD?: number;
     priceDeltaUSD: number;
+    pricingUnit?: 'per_day' | 'per_person';
+    isFreeTravel?: boolean;
     description: string;
     badge: string;
   }>({
     category: 'golf',
     name: '',
+    shortName: '',
+    icon: '✨',
     location: '호치민',
     holes: 18,
     type: 'hotel_5star',
+    priceUSD: 150,
     priceDeltaUSD: 0,
+    pricingUnit: 'per_person',
+    isFreeTravel: false,
     description: '',
     badge: ''
   });
@@ -772,19 +782,31 @@ const AdminDashboard: React.FC<Props> = ({
 
   // Master Pool Handlers
   const handleUpdateMasterOptionPoolItem = (
-    category: 'golf' | 'hotel' | 'vehicle' | 'guide' | 'meal',
+    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'guide' | 'meal',
     id: string,
     field: string,
     value: any
   ) => {
     if (!setMasterOptionPool) return;
     const pool = { ...masterOptionPool };
-    if (category === 'golf') {
+    if (category === 'region') {
+      const list = pool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || [];
+      pool.diyRegions = list.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'golf') {
       pool.golfCourses = pool.golfCourses.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'tour') {
+      const list = pool.tourOptions || INITIAL_MASTER_OPTION_POOL.tourOptions || [];
+      pool.tourOptions = list.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'hotelTier') {
+      const list = pool.accommodationTiers || INITIAL_MASTER_OPTION_POOL.accommodationTiers || [];
+      pool.accommodationTiers = list.map(item => item.id === id ? { ...item, [field]: value } : item);
     } else if (category === 'hotel') {
       pool.accommodations = pool.accommodations.map(item => item.id === id ? { ...item, [field]: value } : item);
     } else if (category === 'vehicle') {
       pool.vehicles = pool.vehicles.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'extra') {
+      const list = pool.extraServices || INITIAL_MASTER_OPTION_POOL.extraServices || [];
+      pool.extraServices = list.map(item => item.id === id ? { ...item, [field]: value } : item);
     } else if (category === 'guide') {
       pool.guides = pool.guides.map(item => item.id === id ? { ...item, [field]: value } : item);
     } else if (category === 'meal') {
@@ -800,19 +822,27 @@ const AdminDashboard: React.FC<Props> = ({
   };
 
   const handleDeleteMasterOptionPoolItem = (
-    category: 'golf' | 'hotel' | 'vehicle' | 'guide' | 'meal',
+    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'guide' | 'meal',
     id: string,
     itemName: string
   ) => {
     if (!window.confirm(`[맞춤 풀 항목 삭제]\n\n'${itemName}' 항목을 삭제하시겠습니까?`)) return;
     if (!setMasterOptionPool) return;
     const pool = { ...masterOptionPool };
-    if (category === 'golf') {
+    if (category === 'region') {
+      pool.diyRegions = (pool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).filter(item => item.id !== id);
+    } else if (category === 'golf') {
       pool.golfCourses = pool.golfCourses.filter(item => item.id !== id);
+    } else if (category === 'tour') {
+      pool.tourOptions = (pool.tourOptions || INITIAL_MASTER_OPTION_POOL.tourOptions || []).filter(item => item.id !== id);
+    } else if (category === 'hotelTier') {
+      pool.accommodationTiers = (pool.accommodationTiers || INITIAL_MASTER_OPTION_POOL.accommodationTiers || []).filter(item => item.id !== id);
     } else if (category === 'hotel') {
       pool.accommodations = pool.accommodations.filter(item => item.id !== id);
     } else if (category === 'vehicle') {
       pool.vehicles = pool.vehicles.filter(item => item.id !== id);
+    } else if (category === 'extra') {
+      pool.extraServices = (pool.extraServices || INITIAL_MASTER_OPTION_POOL.extraServices || []).filter(item => item.id !== id);
     } else if (category === 'guide') {
       pool.guides = pool.guides.filter(item => item.id !== id);
     } else if (category === 'meal') {
@@ -837,18 +867,58 @@ const AdminDashboard: React.FC<Props> = ({
     const pool = { ...masterOptionPool };
     const newItemId = `pool-${Date.now()}`;
 
-    if (newPoolItem.category === 'golf') {
+    if (newPoolItem.category === 'region') {
+      const current = pool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || [];
+      pool.diyRegions = [
+        ...current,
+        {
+          id: `reg-${Date.now()}`,
+          name: newPoolItem.name.trim(),
+          subtitle: newPoolItem.description || '맞춤 골프 & 투어 지역',
+          icon: newPoolItem.icon || '🌴',
+          baseFeeUSD: Number(newPoolItem.priceUSD ?? newPoolItem.priceDeltaUSD) || 0,
+        }
+      ];
+    } else if (newPoolItem.category === 'golf') {
       pool.golfCourses = [
         {
           id: newItemId,
           name: newPoolItem.name,
           location: newPoolItem.location || '호치민',
           holes: newPoolItem.holes || 18,
+          priceUSD: Number(newPoolItem.priceUSD) || 150,
           priceDeltaUSD: Number(newPoolItem.priceDeltaUSD) || 0,
           description: newPoolItem.description || '',
           badge: newPoolItem.badge || ''
         },
         ...pool.golfCourses
+      ];
+    } else if (newPoolItem.category === 'tour') {
+      const current = pool.tourOptions || INITIAL_MASTER_OPTION_POOL.tourOptions || [];
+      pool.tourOptions = [
+        {
+          id: `tour-${Date.now()}`,
+          name: newPoolItem.name,
+          location: newPoolItem.location || '전체',
+          priceUSD: Number(newPoolItem.priceUSD) || 0,
+          description: newPoolItem.description || '',
+          badge: newPoolItem.badge || '',
+          isFreeTravel: !!newPoolItem.isFreeTravel,
+        },
+        ...current
+      ];
+    } else if (newPoolItem.category === 'hotelTier') {
+      const current = pool.accommodationTiers || INITIAL_MASTER_OPTION_POOL.accommodationTiers || [];
+      pool.accommodationTiers = [
+        ...current,
+        {
+          id: `tier-${Date.now()}`,
+          name: newPoolItem.name,
+          pricePerNightUSD: Number(newPoolItem.priceUSD) || 90,
+          description: newPoolItem.description || '',
+          icon: newPoolItem.icon || '🏨',
+          badge: newPoolItem.badge || ''
+        }
       ];
     } else if (newPoolItem.category === 'hotel') {
       pool.accommodations = [
@@ -865,14 +935,32 @@ const AdminDashboard: React.FC<Props> = ({
       ];
     } else if (newPoolItem.category === 'vehicle') {
       pool.vehicles = [
+        ...pool.vehicles,
         {
           id: newItemId,
+          shortName: newPoolItem.shortName || newPoolItem.name.slice(0, 6),
           name: newPoolItem.name,
+          pricePerDayUSD: Number(newPoolItem.priceUSD) || 25,
           priceDeltaUSD: Number(newPoolItem.priceDeltaUSD) || 0,
           description: newPoolItem.description || '',
+          icon: newPoolItem.icon || '🚐',
           badge: newPoolItem.badge || ''
-        },
-        ...pool.vehicles
+        }
+      ];
+    } else if (newPoolItem.category === 'extra') {
+      const current = pool.extraServices || INITIAL_MASTER_OPTION_POOL.extraServices || [];
+      pool.extraServices = [
+        ...current,
+        {
+          id: `extra-${Date.now()}`,
+          name: newPoolItem.name,
+          priceUSD: Number(newPoolItem.priceUSD) || 50,
+          pricingUnit: newPoolItem.pricingUnit || 'per_person',
+          description: newPoolItem.description || '',
+          icon: newPoolItem.icon || '✨',
+          badge: newPoolItem.badge || '',
+          defaultSelected: false
+        }
       ];
     } else if (newPoolItem.category === 'guide') {
       pool.guides = [
@@ -907,10 +995,15 @@ const AdminDashboard: React.FC<Props> = ({
     setNewPoolItem({
       category: 'golf',
       name: '',
+      shortName: '',
+      icon: '✨',
       location: '호치민',
       holes: 18,
       type: 'hotel_5star',
+      priceUSD: 150,
       priceDeltaUSD: 0,
+      pricingUnit: 'per_person',
+      isFreeTravel: false,
       description: '',
       badge: ''
     });
@@ -918,7 +1011,7 @@ const AdminDashboard: React.FC<Props> = ({
   };
 
   const handleResetMasterOptionPool = () => {
-    if (!window.confirm('맞춤 옵션 풀(Pool) 데이터를 초기 기본값(호치민, 붕따우, 달랏 명문 골프장 및 호텔/풀빌라 전체)으로 복원하시겠습니까?')) return;
+    if (!window.confirm('DIY 맞춤 옵션 풀(지역 5곳, 골프장, 여행/자유여행, 숙박 4종, 차량 4종, 기타 3종)을 기본 표준 데이터로 복원하시겠습니까?')) return;
     if (setMasterOptionPool) {
       setMasterOptionPool(INITIAL_MASTER_OPTION_POOL);
       try {
@@ -1447,26 +1540,26 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-6 animate-fade-in-up">
+    <div className="max-w-7xl mx-auto px-0 sm:px-4 py-2 sm:py-6 animate-fade-in-up w-full overflow-x-hidden">
       {/* Top Bar: Title & Back Button */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 sm:gap-3 mb-3 px-2.5 sm:px-0">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-deepgreen flex items-center gap-2">
+          <h1 className="text-lg sm:text-2xl font-black text-deepgreen flex items-center gap-2">
             <span className="text-2xl sm:text-3xl">🛠️</span> MANGO TOUR 관리 센터
           </h1>
           <p className="text-xs text-gray-500 mt-0.5">베트남 골프/투어 통합 관리 및 실시간 클라우드 연동</p>
         </div>
         <div className="self-end sm:self-auto shrink-0">
-          <BackButton onClick={() => setCurrentPage('home')} variant="light" label="메인으로 나가기" className="px-3.5 py-2 text-xs sm:text-sm shadow-xs font-bold" />
+          <BackButton onClick={() => setCurrentPage('home')} variant="light" label="메인으로 나가기" className="px-3.5 py-2 text-xs sm:text-sm shadow-xs font-bold whitespace-nowrap" />
         </div>
       </div>
 
       {/* Top Quick Actions Grid (좌우 여백 없이 칸에 딱 맞게 정렬) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 w-full mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 sm:gap-2 w-full mb-3 sm:mb-4 px-2 sm:px-0">
         <button 
           type="button"
           onClick={handleResetToDefaults} 
-          className="w-full py-2.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs active:scale-98"
+          className="w-full py-2.5 px-2.5 sm:px-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs active:scale-98 whitespace-nowrap"
         >
           <span className="shrink-0 text-base">🔄</span>
           <span className="truncate">데이터 초기화</span>
@@ -1474,7 +1567,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         <button 
           type="button"
           onClick={handleExportData} 
-          className="w-full py-2.5 px-3 bg-gray-700 hover:bg-gray-800 text-white border border-gray-700 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs active:scale-98"
+          className="w-full py-2.5 px-2.5 sm:px-3 bg-gray-700 hover:bg-gray-800 text-white border border-gray-700 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs active:scale-98 whitespace-nowrap"
         >
           <span className="shrink-0 text-base">💾</span>
           <span className="truncate">데이터 백업</span>
@@ -1482,7 +1575,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         <button 
           type="button"
           onClick={() => setShowCloudinaryConfig(!showCloudinaryConfig)} 
-          className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 ${
+          className={`w-full py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 whitespace-nowrap ${
             showCloudinaryConfig 
               ? 'bg-pink-600 text-white border-pink-600' 
               : 'bg-pink-50 hover:bg-pink-100 text-pink-700 border-pink-200'
@@ -1494,7 +1587,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         <button 
           type="button"
           onClick={() => setShowSupabaseConfig(!showSupabaseConfig)} 
-          className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 ${
+          className={`w-full py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 whitespace-nowrap ${
             showSupabaseConfig 
               ? 'bg-emerald-600 text-white border-emerald-600' 
               : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
@@ -1506,7 +1599,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         <button 
           type="button"
           onClick={() => setShowDriveConfig(!showDriveConfig)} 
-          className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 col-span-2 sm:col-span-1 md:col-span-1 ${
+          className={`w-full py-2.5 px-2.5 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 col-span-2 sm:col-span-1 md:col-span-1 whitespace-nowrap ${
             showDriveConfig 
               ? 'bg-blue-600 text-white border-blue-600' 
               : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200'
@@ -1547,7 +1640,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
       {/* Cloudinary Config Panel */}
       {showCloudinaryConfig && (
-        <div className="bg-pink-50 border border-pink-100 rounded-2xl p-6 mb-8 animate-fade-in shadow-sm">
+        <div className="bg-pink-50 border-y sm:border border-pink-100 rounded-none sm:rounded-2xl p-3.5 sm:p-6 mb-4 sm:mb-8 animate-fade-in shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
               <div>
                 <h3 className="text-lg font-bold text-pink-800 flex items-center gap-2">
@@ -1622,7 +1715,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
       {/* Supabase Config Panel */}
       {showSupabaseConfig && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 mb-8 animate-fade-in shadow-sm">
+        <div className="bg-emerald-50 border-y sm:border border-emerald-200 rounded-none sm:rounded-2xl p-3.5 sm:p-6 mb-4 sm:mb-8 animate-fade-in shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
               <div>
                 <h3 className="text-lg font-bold text-emerald-950 flex items-center gap-2">
@@ -1731,7 +1824,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
       {/* Google Drive Config Panel */}
       {showDriveConfig && (
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-8 animate-fade-in">
+        <div className="bg-blue-50 border-y sm:border border-blue-100 rounded-none sm:rounded-2xl p-3.5 sm:p-6 mb-4 sm:mb-8 animate-fade-in">
             <h3 className="text-lg font-bold text-blue-800 mb-4 flex items-center gap-2">☁️ 구글 드라이브 백업 센터</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -1787,7 +1880,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
       )}
       
       {/* Navigation Tabs (좌우 여백 없이 칸에 딱 맞게 배치된 세련된 탭 바) */}
-      <div className="w-full mb-5 bg-gray-100/90 p-1.5 rounded-2xl border border-gray-200/80 shadow-xs">
+      <div className="w-full mb-3 sm:mb-5 bg-gray-100/90 p-1.5 rounded-none sm:rounded-2xl border-y sm:border border-gray-200/80 shadow-xs">
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 sm:gap-1.5 w-full">
           {[
             { id: 'users', icon: '👥', label: '회원' },
@@ -1804,43 +1897,39 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all text-center ${
+                className={`w-full py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1 transition-all text-center whitespace-nowrap ${
                   isActive
                     ? 'bg-deepgreen text-white shadow-md'
                     : 'text-gray-600 hover:text-deepgreen hover:bg-white/80'
                 }`}
               >
                 <span className="text-sm shrink-0">{tab.icon}</span>
-                <span className="truncate">{tab.label}</span>
+                <span className="truncate whitespace-nowrap">{tab.label}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className={`bg-white shadow-xl border border-gray-100 min-h-[600px] ${
-        activeTab === 'users'
-          ? '-mx-2 sm:mx-0 px-0 py-2 sm:p-6 md:p-8 rounded-none sm:rounded-3xl'
-          : 'p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl'
-      }`}>
+      <div className="bg-white shadow-xl border-y sm:border border-gray-100 min-h-[600px] px-0 py-3 sm:p-6 md:p-8 rounded-none sm:rounded-3xl">
         {/* Hero Slide */}
         {activeTab === 'hero' && (
-           <div className="animate-fade-in-up">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">메인 슬라이드 이미지 (총 {heroImages.length}개)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+           <div className="animate-fade-in-up px-2.5 sm:px-0">
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">메인 슬라이드 이미지 (총 {heroImages.length}개)</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-4">
               {heroImages.map((img, idx) => (
                 <div key={idx} className="relative group rounded-2xl overflow-hidden aspect-video shadow-md border bg-gray-50">
                   <img src={getFreshImageUrl(img)} alt={`Slide ${idx}`} className="w-full h-full object-cover" />
                   {img.startsWith('data:') && (
-                    <div className="absolute top-1 left-1 bg-red-500/80 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold backdrop-blur-sm">
+                    <div className="absolute top-1 left-1 bg-red-500/80 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold backdrop-blur-sm whitespace-nowrap">
                       Base64 ({(img.length / 1024).toFixed(0)}KB)
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
-                    <label className="bg-white text-deepgreen px-3 py-1 rounded-full font-bold text-[10px] cursor-pointer hover:bg-gold-50 shadow-md">
+                    <label className="bg-white text-deepgreen px-3 py-1 rounded-full font-bold text-[10px] cursor-pointer hover:bg-gold-50 shadow-md whitespace-nowrap">
                       교체 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleReplaceHeroImage(idx, e)} />
                     </label>
-                    <button onClick={() => setHeroImages(heroImages.filter((_, i) => i !== idx))} className="bg-red-600 text-white px-3 py-1 rounded-full font-bold text-[10px] shadow-md">삭제</button>
+                    <button onClick={() => setHeroImages(heroImages.filter((_, i) => i !== idx))} className="bg-red-600 text-white px-3 py-1 rounded-full font-bold text-[10px] shadow-md whitespace-nowrap">삭제</button>
                   </div>
                 </div>
               ))}
@@ -1855,19 +1944,19 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         {/* Product Catalog Management */}
         {activeTab === 'products' && (
           <div className="animate-fade-in-up">
-            <div className="flex justify-between items-center mb-8 border-b pb-4">
-              <h3 className="text-2xl font-bold text-gray-800">상품 카탈로그 관리</h3>
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-8 border-b pb-4 px-2.5 sm:px-0">
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-800">상품 카탈로그 관리</h3>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 w-full sm:w-auto">
                 <button 
                   onClick={handleConvertVndToUsd}
-                  className="bg-blue-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-blue-600 transition text-sm"
+                  className="bg-blue-500 text-white px-3 sm:px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-blue-600 transition text-xs sm:text-sm whitespace-nowrap"
                 >
                   VND -&gt; USD 변환
                 </button>
                 <button 
                   onClick={handleSyncFromGoogleSheet}
                   disabled={isSyncing}
-                  className={`bg-green-600 text-white px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-green-700 transition text-sm flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-wait' : ''}`}
+                  className={`bg-green-600 text-white px-3 sm:px-5 py-2 rounded-xl font-bold shadow-lg hover:bg-green-700 transition text-xs sm:text-sm flex items-center gap-1.5 whitespace-nowrap ${isSyncing ? 'opacity-50 cursor-wait' : ''}`}
                 >
                   {isSyncing ? '🔄 동기화 중...' : '📊 구글 시트 동기화'}
                 </button>
@@ -1876,16 +1965,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                     const newProd: Product = { id: Date.now().toString(), title: '새 여행 상품', description: '상품 설명을 입력하세요.', image: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=800', price: 0, location: '지역', duration: '3박 5일', type: 'tour', itinerary: [] };
                     setProducts([newProd, ...products]);
                   }} 
-                  className="bg-gold-500 text-white px-5 py-2 rounded-xl font-bold shadow-lg text-sm"
+                  className="bg-gold-500 text-white px-3 sm:px-5 py-2 rounded-xl font-bold shadow-lg text-xs sm:text-sm whitespace-nowrap"
                 >
                   + 새 상품 추가
                 </button>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8 px-2 sm:px-0">
                {products.map((p) => (
-                 <div key={p.id} className={`flex flex-col border rounded-3xl bg-white shadow-xl overflow-hidden transition-all duration-300 ${editingProductId === p.id ? 'ring-4 ring-gold-400' : 'hover:shadow-2xl'}`}>
+                 <div key={p.id} className={`flex flex-col border rounded-2xl sm:rounded-3xl bg-white shadow-md sm:shadow-xl overflow-hidden transition-all duration-300 ${editingProductId === p.id ? 'ring-4 ring-gold-400' : 'hover:shadow-2xl'}`}>
                    <div className="h-40 bg-gray-100 relative group">
                      <img src={getFreshImageUrl(p.image)} className="w-full h-full object-cover" alt={p.title} />
                      {p.image.startsWith('data:') && (
@@ -2258,14 +2347,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <button 
                           type="button"
                           onClick={() => setEditingProductId(editingProductId === p.id ? null : p.id)} 
-                          className={`flex-1 py-2 rounded-xl font-bold text-xs transition cursor-pointer ${editingProductId === p.id ? 'bg-gold-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                          className={`flex-1 py-2 rounded-xl font-bold text-xs transition cursor-pointer whitespace-nowrap ${editingProductId === p.id ? 'bg-gold-500 text-white' : 'bg-gray-100 text-gray-600'}`}
                         >
                           {editingProductId === p.id ? '편집 완료' : '상세 편집'}
                         </button>
                         <button 
                           type="button"
                           onClick={(e) => handleDeleteProduct(p, e)} 
-                          className="px-4 py-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-xs font-bold transition border border-red-200 cursor-pointer active:scale-95 flex items-center gap-1"
+                          className="px-4 py-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-xs font-bold transition border border-red-200 cursor-pointer active:scale-95 flex items-center gap-1 whitespace-nowrap shrink-0"
                         >
                           <span>🗑️</span> 삭제
                         </button>
@@ -2279,30 +2368,30 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
         {/* 맞춤 여행 상품 관리 (Planner Tab) */}
         {activeTab === 'planner' && (
-          <div className="animate-fade-in-up space-y-6">
+          <div className="animate-fade-in-up space-y-4 sm:space-y-6 px-2 sm:px-0">
             {/* Top Sub-Nav Tabs for Planner */}
-            <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
-              <button
-                type="button"
-                onClick={() => setPlannerSubTab('packages')}
-                className={`flex-1 py-3 text-xs sm:text-sm font-black rounded-xl transition flex items-center justify-center gap-2 ${
-                  plannerSubTab === 'packages'
-                    ? 'bg-deepgreen text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <span>📦</span> 4박 5일 패키지 상품 관리 ({customPackages.length}개)
-              </button>
+            <div className="flex flex-col sm:flex-row bg-gray-100 p-1.5 rounded-2xl border border-gray-200 gap-1.5 sm:gap-1">
               <button
                 type="button"
                 onClick={() => setPlannerSubTab('masterPool')}
-                className={`flex-1 py-3 text-xs sm:text-sm font-black rounded-xl transition flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 sm:py-3 px-3 text-xs sm:text-sm font-black rounded-xl transition flex items-center justify-center gap-1.5 whitespace-nowrap ${
                   plannerSubTab === 'masterPool'
                     ? 'bg-deepgreen text-white shadow-md'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <span>🌐</span> 맞춤 선택 풀(Pool) 관리 (골프장·숙박·차량 등)
+                <span>🌐</span> DIY 6단계 항목·단가 통합 관리
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlannerSubTab('packages')}
+                className={`flex-1 py-2.5 sm:py-3 px-3 text-xs sm:text-sm font-black rounded-xl transition flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                  plannerSubTab === 'packages'
+                    ? 'bg-deepgreen text-white shadow-md'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>📦</span> 기존 패키지 템플릿 ({customPackages.length}개)
               </button>
             </div>
 
@@ -2963,10 +3052,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
                   <div>
                     <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                      <span>🌐</span> 맞춤 선택 풀(Pool) 관리 센터
+                      <span>🌐</span> DIY 6단계 플래너 항목·단가 통합 관리 센터
                     </h3>
                     <p className="text-xs text-gray-500 mt-1 max-w-2xl leading-relaxed">
-                      고객이 여행 견적을 낼 때 각 일정별로 직접 선택/변경할 수 있는 <strong>골프장 리스트(호치민, 붕따우, 달랏 등)</strong> 및 <strong>숙박(고급 호텔, 프라이빗 독채 풀빌라 등)</strong>의 마스터 풀입니다. 여기서 추가/수정된 내용은 플래너에 즉시 반영됩니다.
+                      <strong>지역 5곳 · 골프장 · 여행/자유여행 · 숙박 4종 · 차량 4종 · 기타 부가서비스 3종</strong>의 명칭, 설명, 개별 단가($)를 수정·추가·삭제하면 고객 DIY 페이지와 실시간 견적에 즉시 반영됩니다.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -2983,10 +3072,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         setNewPoolItem({
                           category: poolCategory,
                           name: '',
+                          shortName: '',
+                          icon: '✨',
                           location: '호치민',
                           holes: 18,
                           type: 'hotel_5star',
+                          priceUSD: poolCategory === 'golf' ? 150 : poolCategory === 'tour' ? 80 : 50,
                           priceDeltaUSD: 0,
+                          pricingUnit: 'per_person',
+                          isFreeTravel: false,
                           description: '',
                           badge: ''
                         });
@@ -3002,17 +3096,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                 {/* Pool Category Selector */}
                 <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                   {[
+                    { id: 'region' as const, label: '📍 지역 5곳', count: (masterOptionPool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).length },
                     { id: 'golf' as const, label: '⛳ 골프장 풀', count: masterOptionPool.golfCourses?.length || 0 },
-                    { id: 'hotel' as const, label: '🏨 숙박/풀빌라 풀', count: masterOptionPool.accommodations?.length || 0 },
-                    { id: 'vehicle' as const, label: '🚐 차량 옵션 풀', count: masterOptionPool.vehicles?.length || 0 },
-                    { id: 'guide' as const, label: '👨‍💼 가이드 풀', count: masterOptionPool.guides?.length || 0 },
-                    { id: 'meal' as const, label: '🦞 식사 옵션 풀', count: masterOptionPool.meals?.length || 0 },
+                    { id: 'tour' as const, label: '🗺️ 여행/자유여행', count: (masterOptionPool.tourOptions || INITIAL_MASTER_OPTION_POOL.tourOptions || []).length },
+                    { id: 'hotel' as const, label: '🏨 숙박 4종 풀', count: (masterOptionPool.accommodationTiers || INITIAL_MASTER_OPTION_POOL.accommodationTiers || []).length },
+                    { id: 'vehicle' as const, label: '🚐 차량 4종 풀', count: masterOptionPool.vehicles?.length || 0 },
+                    { id: 'extra' as const, label: '✨ 기타 서비스 3종', count: (masterOptionPool.extraServices || INITIAL_MASTER_OPTION_POOL.extraServices || []).length },
+                    { id: 'guide' as const, label: '👨‍💼 세부 가이드 풀', count: masterOptionPool.guides?.length || 0 },
+                    { id: 'meal' as const, label: '🦞 세부 식사 풀', count: masterOptionPool.meals?.length || 0 },
                   ].map(cat => (
                     <button
                       key={cat.id}
                       type="button"
                       onClick={() => setPoolCategory(cat.id)}
-                      className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black whitespace-nowrap transition-all flex items-center gap-2 ${
+                      className={`px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-black whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                         poolCategory === cat.id
                           ? 'bg-deepgreen text-white shadow-md scale-102'
                           : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
@@ -3028,6 +3125,101 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                   ))}
                 </div>
 
+                {/* CATEGORY 0: DIY REGIONS (5곳) */}
+                {poolCategory === 'region' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200">
+                      <div className="text-xs text-emerald-900">
+                        <strong className="font-black">📍 1단계 여행 지역 버튼 관리 (총 {(masterOptionPool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).length}곳)</strong>
+                        <span className="block text-[11px] text-emerald-700 mt-0.5">
+                          호치민, 붕따우, 무이네, 나트랑, 달랏 등 1단계 지역 버튼 이름과 지역 기본 추가금($)을 수정할 수 있습니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPoolItem({
+                            category: 'region',
+                            name: '',
+                            icon: '🌴',
+                            location: '호치민',
+                            priceUSD: 0,
+                            priceDeltaUSD: 0,
+                            description: '',
+                            badge: ''
+                          });
+                          setShowAddPoolModal(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
+                      >
+                        + 지역 추가
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {(masterOptionPool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).map((reg) => (
+                        <div key={reg.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3 flex flex-col justify-between">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-2xl">{reg.icon}</span>
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                                기본 추가금 ${reg.baseFeeUSD || 0}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">아이콘</label>
+                                <input
+                                  type="text"
+                                  value={reg.icon}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('region', reg.id, 'icon', e.target.value)}
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-sm text-center outline-none"
+                                />
+                              </div>
+                              <div className="col-span-3">
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">지역명</label>
+                                <input
+                                  type="text"
+                                  value={reg.name}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('region', reg.id, 'name', e.target.value)}
+                                  className="w-full font-bold text-sm text-gray-900 border-b border-gray-200 pb-1 outline-none focus:border-gold-500"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">지역 기본 추가금 ($ USD)</label>
+                              <input
+                                type="number"
+                                value={reg.baseFeeUSD}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('region', reg.id, 'baseFeeUSD', Number(e.target.value) || 0)}
+                                className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-black text-deepgreen outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">설명</label>
+                              <input
+                                type="text"
+                                value={reg.subtitle}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('region', reg.id, 'subtitle', e.target.value)}
+                                className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs text-gray-600 outline-none"
+                              />
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMasterOptionPoolItem('region', reg.id, reg.name)}
+                              className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* CATEGORY 1: GOLF COURSES */}
                 {poolCategory === 'golf' && (
                   <div className="space-y-4">
@@ -3035,7 +3227,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                       <div className="text-xs text-emerald-900">
                         <strong className="font-black">⛳ 등록된 라운딩 골프장: 총 {masterOptionPool.golfCourses?.length || 0}개</strong>
                         <span className="block text-[11px] text-emerald-700 mt-0.5">
-                          고객이 4박 5일 플래너에서 라운딩 코스 변경 버튼을 눌렀을 때 나타나는 골프장 목록입니다.
+                          3단계에서 고객이 &apos;골프&apos; 선택 시 열리는 팝업 목록과 1회 라운딩 단가($ USD)에 즉시 반영됩니다.
                         </span>
                       </div>
                       <button
@@ -3047,6 +3239,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                             location: '호치민',
                             holes: 18,
                             type: 'hotel_5star',
+                            priceUSD: 155,
                             priceDeltaUSD: 0,
                             description: '',
                             badge: ''
@@ -3089,7 +3282,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                               />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>
                                 <label className="text-[10px] font-bold text-gray-400 block mb-0.5">지역</label>
                                 <select
@@ -3099,16 +3292,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                                 >
                                   <option value="호치민">호치민</option>
                                   <option value="붕따우">붕따우</option>
+                                  <option value="무이네">무이네</option>
+                                  <option value="나트랑">나트랑</option>
                                   <option value="달랏">달랏</option>
                                 </select>
                               </div>
                               <div>
-                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1인 가격차액 ($ USD)</label>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1회 단가($)</label>
+                                <input
+                                  type="number"
+                                  value={gc.priceUSD ?? Math.max(80, 155 + (gc.priceDeltaUSD || 0))}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('golf', gc.id, 'priceUSD', Number(e.target.value) || 0)}
+                                  className="w-full p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-black text-deepgreen outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">차액($)</label>
                                 <input
                                   type="number"
                                   value={gc.priceDeltaUSD}
                                   onChange={(e) => handleUpdateMasterOptionPoolItem('golf', gc.id, 'priceDeltaUSD', Number(e.target.value) || 0)}
-                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-black text-deepgreen outline-none"
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-bold text-gray-700 outline-none"
                                 />
                               </div>
                             </div>
@@ -3150,14 +3354,214 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                   </div>
                 )}
 
-                {/* CATEGORY 2: ACCOMMODATIONS */}
-                {poolCategory === 'hotel' && (
+                {/* CATEGORY 1.5: TOUR & FREE TRAVEL OPTIONS */}
+                {poolCategory === 'tour' && (
                   <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200">
+                      <div className="text-xs text-amber-950">
+                        <strong className="font-black">🗺️ 3단계 &apos;여행 / 자유여행&apos; 팝업 상품 풀 (총 {(masterOptionPool.tourOptions || INITIAL_MASTER_OPTION_POOL.tourOptions || []).length}개)</strong>
+                        <span className="block text-[11px] text-amber-800 mt-0.5">
+                          고객이 3단계에서 &apos;여행&apos; 선택 시 나타나는 자유 여행 및 지역별 관광 상품 목록입니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPoolItem({
+                            category: 'tour',
+                            name: '',
+                            location: '호치민',
+                            priceUSD: 80,
+                            priceDeltaUSD: 0,
+                            isFreeTravel: false,
+                            description: '',
+                            badge: '추천 투어'
+                          });
+                          setShowAddPoolModal(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
+                      >
+                        + 여행 상품 추가
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {(masterOptionPool.tourOptions || INITIAL_MASTER_OPTION_POOL.tourOptions || []).map((t) => (
+                        <div key={t.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3 flex flex-col justify-between">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="px-2.5 py-0.5 bg-amber-600 text-white text-[10px] font-bold rounded-md">
+                                📍 {t.location}
+                              </span>
+                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${t.isFreeTravel ? 'bg-emerald-100 text-emerald-800' : 'bg-gold-100 text-gold-800'}`}>
+                                {t.isFreeTravel ? '자유 여행 모드' : (t.badge || '관광 투어')}
+                              </span>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">상품 / 투어 명칭</label>
+                              <input
+                                type="text"
+                                value={t.name}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('tour', t.id, 'name', e.target.value)}
+                                className="w-full font-bold text-sm text-gray-900 border-b border-gray-200 pb-1 outline-none focus:border-gold-500"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">지역</label>
+                                <select
+                                  value={t.location}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('tour', t.id, 'location', e.target.value)}
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-bold outline-none"
+                                >
+                                  <option value="전체">전체 (자유여행)</option>
+                                  <option value="호치민">호치민</option>
+                                  <option value="붕따우">붕따우</option>
+                                  <option value="무이네">무이네</option>
+                                  <option value="나트랑">나트랑</option>
+                                  <option value="달랏">달랏</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1인 단가 ($ USD)</label>
+                                <input
+                                  type="number"
+                                  value={t.priceUSD}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('tour', t.id, 'priceUSD', Number(e.target.value) || 0)}
+                                  className="w-full p-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-black text-amber-900 outline-none"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">강조 뱃지</label>
+                              <input
+                                type="text"
+                                value={t.badge || ''}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('tour', t.id, 'badge', e.target.value)}
+                                className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">상품 설명</label>
+                              <textarea
+                                value={t.description}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('tour', t.id, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full p-2 bg-gray-50 border rounded-xl text-xs text-gray-600 outline-none resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMasterOptionPoolItem('tour', t.id, t.name)}
+                              className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CATEGORY 2: ACCOMMODATIONS (4종 메인 카드 + 지역별 상세 풀) */}
+                {poolCategory === 'hotel' && (
+                  <div className="space-y-6">
+                    {/* DIY 4종 숙박 카드 관리 */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200">
+                        <div className="text-xs text-emerald-950">
+                          <strong className="font-black">🏨 4단계 숙박 4종 카드 단가·설명 관리</strong>
+                          <span className="block text-[11px] text-emerald-800 mt-0.5">
+                            DIY 4단계에 표시되는 고급 호텔, 럭셔리 프라이빗 풀빌라, 4성급 실속 호텔, 골프&비치 리조트의 1박 단가($)와 설명을 수정합니다.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewPoolItem({
+                              category: 'hotelTier',
+                              name: '',
+                              icon: '🏨',
+                              location: '호치민',
+                              priceUSD: 90,
+                              priceDeltaUSD: 0,
+                              description: '',
+                              badge: ''
+                            });
+                            setShowAddPoolModal(true);
+                          }}
+                          className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
+                        >
+                          + 숙박 타입 추가
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                        {(masterOptionPool.accommodationTiers || INITIAL_MASTER_OPTION_POOL.accommodationTiers || []).map((tier) => (
+                          <div key={tier.id} className="bg-white p-4 rounded-2xl border-2 border-emerald-200/80 shadow-sm space-y-2.5 flex flex-col justify-between">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xl">{tier.icon}</span>
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                                  1박 ${tier.pricePerNightUSD}
+                                </span>
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">카드 명칭</label>
+                                <input
+                                  type="text"
+                                  value={tier.name}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('hotelTier', tier.id, 'name', e.target.value)}
+                                  className="w-full font-bold text-sm text-gray-900 border-b border-gray-200 pb-1 outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1박 1인 단가 ($ USD)</label>
+                                <input
+                                  type="number"
+                                  value={tier.pricePerNightUSD}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('hotelTier', tier.id, 'pricePerNightUSD', Number(e.target.value) || 0)}
+                                  className="w-full p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-black text-deepgreen outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">카드 설명</label>
+                                <textarea
+                                  value={tier.description}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('hotelTier', tier.id, 'description', e.target.value)}
+                                  rows={2}
+                                  className="w-full p-2 bg-gray-50 border rounded-xl text-xs text-gray-600 outline-none resize-none"
+                                />
+                              </div>
+                            </div>
+                            <div className="pt-2 border-t flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMasterOptionPoolItem('hotelTier', tier.id, tier.name)}
+                                className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 지역별 세부 숙박 시설 풀 */}
                     <div className="flex justify-between items-center bg-blue-50/70 p-3.5 rounded-2xl border border-blue-200">
                       <div className="text-xs text-blue-900">
-                        <strong className="font-black">🏨 등록된 숙박/풀빌라 옵션: 총 {masterOptionPool.accommodations?.length || 0}개</strong>
+                        <strong className="font-black">🏨 지역별 세부 숙박/풀빌라 풀: 총 {masterOptionPool.accommodations?.length || 0}개</strong>
                         <span className="block text-[11px] text-blue-700 mt-0.5">
-                          고객이 숙박 형태를 호텔 또는 단독 독채 풀빌라 등으로 변경할 때 표시되는 옵션 풀입니다.
+                          상세 견적서 화면에서 숙소를 특정 호텔·풀빌라로 교체할 때 표시되는 옵션 풀입니다.
                         </span>
                       </div>
                       <button
@@ -3177,7 +3581,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         }}
                         className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
                       >
-                        + 숙박/풀빌라 추가
+                        + 세부 숙박 추가
                       </button>
                     </div>
 
@@ -3264,16 +3668,222 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                   </div>
                 )}
 
-                {/* CATEGORIES 3, 4, 5: VEHICLE, GUIDE, MEAL */}
-                {['vehicle', 'guide', 'meal'].includes(poolCategory) && (
+                {/* CATEGORY 3: VEHICLE 4종 */}
+                {poolCategory === 'vehicle' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+                      <div className="text-xs text-gray-800">
+                        <strong className="font-black">🚐 5단계 차량 4종 (7인승 · 9인승 · 16인승 · 26인승) 관리</strong>
+                        <span className="block text-[11px] text-gray-500 mt-0.5">
+                          차량 카드 표기명(7인승 등), 세부 명칭, 1일 1인 기준 단가($), 설명 수정 시 고객 페이지에 즉시 반영됩니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPoolItem({
+                            category: 'vehicle',
+                            name: '',
+                            shortName: '',
+                            icon: '🚐',
+                            location: '호치민',
+                            priceUSD: 25,
+                            priceDeltaUSD: 0,
+                            description: '',
+                            badge: ''
+                          });
+                          setShowAddPoolModal(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
+                      >
+                        + 차량 추가
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {(masterOptionPool.vehicles || []).map((item) => (
+                        <div key={item.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition space-y-2.5 flex flex-col justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xl">{item.icon || '🚐'}</span>
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                                1일 ${item.pricePerDayUSD ?? 25}/인
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">단축명</label>
+                                <input
+                                  type="text"
+                                  value={item.shortName || ''}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('vehicle', item.id, 'shortName', e.target.value)}
+                                  placeholder="예: 7인승"
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-black text-deepgreen outline-none"
+                                />
+                              </div>
+                              <div className="col-span-2">
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">차량 명칭</label>
+                                <input
+                                  type="text"
+                                  value={item.name}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('vehicle', item.id, 'name', e.target.value)}
+                                  className="w-full font-bold text-xs text-gray-900 border-b border-gray-200 pb-1 outline-none"
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1일 단가($/인)</label>
+                                <input
+                                  type="number"
+                                  value={item.pricePerDayUSD ?? 25}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('vehicle', item.id, 'pricePerDayUSD', Number(e.target.value) || 0)}
+                                  className="w-full p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-black text-deepgreen outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">세부 차액($)</label>
+                                <input
+                                  type="number"
+                                  value={item.priceDeltaUSD}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('vehicle', item.id, 'priceDeltaUSD', Number(e.target.value) || 0)}
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-bold text-gray-700 outline-none"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">설명</label>
+                              <textarea
+                                value={item.description}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('vehicle', item.id, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full p-2 bg-gray-50 border rounded-xl text-xs text-gray-600 outline-none resize-none"
+                              />
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMasterOptionPoolItem('vehicle', item.id, item.name)}
+                              className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CATEGORY 4: EXTRA SERVICES (기타 부가서비스 3종: 가이드, 패스트 트랙, 마사지) */}
+                {poolCategory === 'extra' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-purple-50/70 p-3.5 rounded-2xl border border-purple-200">
+                      <div className="text-xs text-purple-950">
+                        <strong className="font-black">✨ 6단계 기타 부가서비스 3종 (가이드 · 패스트 트랙 · 마사지)</strong>
+                        <span className="block text-[11px] text-purple-800 mt-0.5">
+                          복수 선택이 가능한 6단계 부가 서비스의 명칭, 단가($ USD), 요금 적용 방식(일당/정액), 설명을 관리합니다.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewPoolItem({
+                            category: 'extra',
+                            name: '',
+                            icon: '✨',
+                            location: '전체',
+                            priceUSD: 50,
+                            priceDeltaUSD: 0,
+                            pricingUnit: 'per_person',
+                            description: '',
+                            badge: ''
+                          });
+                          setShowAddPoolModal(true);
+                        }}
+                        className="px-3.5 py-1.5 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0"
+                      >
+                        + 서비스 추가
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {(masterOptionPool.extraServices || INITIAL_MASTER_OPTION_POOL.extraServices || []).map((svc) => (
+                        <div key={svc.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-2.5 flex flex-col justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xl">{svc.icon}</span>
+                              <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded">
+                                {svc.pricingUnit === 'per_day' ? `1일 $${svc.priceUSD}` : `1인 $${svc.priceUSD}`}
+                              </span>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">서비스명</label>
+                              <input
+                                type="text"
+                                value={svc.name}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('extra', svc.id, 'name', e.target.value)}
+                                className="w-full font-bold text-sm text-gray-900 border-b border-gray-200 pb-1 outline-none"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">단가 ($ USD)</label>
+                                <input
+                                  type="number"
+                                  value={svc.priceUSD}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('extra', svc.id, 'priceUSD', Number(e.target.value) || 0)}
+                                  className="w-full p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-black text-deepgreen outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">과금 방식</label>
+                                <select
+                                  value={svc.pricingUnit}
+                                  onChange={(e) => handleUpdateMasterOptionPoolItem('extra', svc.id, 'pricingUnit', e.target.value)}
+                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-bold outline-none"
+                                >
+                                  <option value="per_day">1일당 (× 일정)</option>
+                                  <option value="per_person">1인 정액</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-400 block mb-0.5">설명</label>
+                              <textarea
+                                value={svc.description}
+                                onChange={(e) => handleUpdateMasterOptionPoolItem('extra', svc.id, 'description', e.target.value)}
+                                rows={2}
+                                className="w-full p-2 bg-gray-50 border rounded-xl text-xs text-gray-600 outline-none resize-none"
+                              />
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMasterOptionPoolItem('extra', svc.id, svc.name)}
+                              className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* CATEGORIES 5, 6: GUIDE, MEAL */}
+                {['guide', 'meal'].includes(poolCategory) && (
                   <div className="space-y-4">
                     <div className="flex justify-between items-center bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
                       <div className="text-xs text-gray-800">
                         <strong className="font-black">
-                          {poolCategory === 'vehicle' ? '🚐 차량 옵션 풀' : poolCategory === 'guide' ? '👨‍💼 가이드 옵션 풀' : '🦞 식사 옵션 풀'}
+                          {poolCategory === 'guide' ? '👨‍💼 세부 가이드 옵션 풀' : '🦞 세부 식사 옵션 풀'}
                         </strong>
                         <span className="block text-[11px] text-gray-500 mt-0.5">
-                          고객이 플래너에서 선택할 수 있는 {poolCategory === 'vehicle' ? '차량' : poolCategory === 'guide' ? '가이드' : '식사'} 목록입니다.
+                          상세 견적서 화면에서 선택할 수 있는 {poolCategory === 'guide' ? '가이드' : '식사'} 목록입니다.
                         </span>
                       </div>
                       <button
@@ -3298,7 +3908,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {((poolCategory === 'vehicle' ? masterOptionPool.vehicles : poolCategory === 'guide' ? masterOptionPool.guides : masterOptionPool.meals) || []).map((item) => (
+                      {((poolCategory === 'guide' ? masterOptionPool.guides : masterOptionPool.meals) || []).map((item) => (
                         <div key={item.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition space-y-3 flex flex-col justify-between">
                           <div className="space-y-2.5">
                             <div className="flex items-center justify-between gap-2">
@@ -3381,27 +3991,61 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         onChange={(e) => setNewPoolItem({ ...newPoolItem, category: e.target.value as any })}
                         className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
                       >
+                        <option value="region">📍 1단계 여행 지역</option>
                         <option value="golf">⛳ 골프장 풀</option>
-                        <option value="hotel">🏨 숙박/풀빌라 풀</option>
-                        <option value="vehicle">🚐 차량 풀</option>
-                        <option value="guide">👨‍💼 가이드 풀</option>
-                        <option value="meal">🦞 식사 풀</option>
+                        <option value="tour">🗺️ 여행/자유여행 상품 풀</option>
+                        <option value="hotelTier">🏨 4단계 숙박 4종 카드</option>
+                        <option value="hotel">🏨 지역별 세부 숙박/풀빌라 풀</option>
+                        <option value="vehicle">🚐 5단계 차량 풀</option>
+                        <option value="extra">✨ 6단계 기타 부가서비스</option>
+                        <option value="guide">👨‍💼 세부 가이드 풀</option>
+                        <option value="meal">🦞 세부 식사 풀</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1">항목명 (골프장명 또는 숙박시설명) *</label>
+                      <label className="font-bold text-gray-700 block mb-1">항목명 *</label>
                       <input
                         type="text"
                         required
-                        placeholder={newPoolItem.category === 'golf' ? '예: 로얄 아일랜드 CC (18홀)' : newPoolItem.category === 'hotel' ? '예: 단독 럭셔리 프라이빗 풀빌라' : '항목명 입력'}
+                        placeholder={
+                          newPoolItem.category === 'region' ? '예: 푸꾸옥' :
+                          newPoolItem.category === 'golf' ? '예: 빈펄 골프 나트랑 CC (18홀)' :
+                          newPoolItem.category === 'tour' ? '예: 나트랑 스노클링 호핑 투어' :
+                          newPoolItem.category === 'vehicle' ? '예: 9인승 VIP 리무진 밴' :
+                          '항목명 입력'
+                        }
                         value={newPoolItem.name}
                         onChange={(e) => setNewPoolItem({ ...newPoolItem, name: e.target.value })}
                         className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none focus:ring-2 focus:ring-gold-400"
                       />
                     </div>
 
-                    {(newPoolItem.category === 'golf' || newPoolItem.category === 'hotel') && (
+                    {newPoolItem.category === 'vehicle' && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="font-bold text-gray-700 block mb-1">버튼 단축명</label>
+                          <input
+                            type="text"
+                            placeholder="예: 7인승, 9인승"
+                            value={newPoolItem.shortName || ''}
+                            onChange={(e) => setNewPoolItem({ ...newPoolItem, shortName: e.target.value })}
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-bold text-gray-700 block mb-1">아이콘 이모지</label>
+                          <input
+                            type="text"
+                            value={newPoolItem.icon || '🚐'}
+                            onChange={(e) => setNewPoolItem({ ...newPoolItem, icon: e.target.value })}
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none text-center"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {(newPoolItem.category === 'golf' || newPoolItem.category === 'hotel' || newPoolItem.category === 'tour') && (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="font-bold text-gray-700 block mb-1">지역</label>
@@ -3410,10 +4054,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                             onChange={(e) => setNewPoolItem({ ...newPoolItem, location: e.target.value })}
                             className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
                           >
+                            {newPoolItem.category === 'tour' && <option value="전체">전체 (자유여행)</option>}
                             <option value="호치민">호치민</option>
                             <option value="붕따우">붕따우</option>
-                            <option value="달랏">달랏</option>
                             <option value="무이네">무이네</option>
+                            <option value="나트랑">나트랑</option>
+                            <option value="달랏">달랏</option>
                           </select>
                         </div>
                         {newPoolItem.category === 'golf' ? (
@@ -3429,7 +4075,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                               <option value={36}>36홀</option>
                             </select>
                           </div>
-                        ) : (
+                        ) : newPoolItem.category === 'hotel' ? (
                           <div>
                             <label className="font-bold text-gray-700 block mb-1">숙박 형태</label>
                             <select
@@ -3443,21 +4089,50 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                               <option value="hotel_4star">4성급 호텔</option>
                             </select>
                           </div>
+                        ) : (
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">과금 유형</label>
+                            <select
+                              value={newPoolItem.isFreeTravel ? 'free' : 'tour'}
+                              onChange={(e) => setNewPoolItem({ ...newPoolItem, isFreeTravel: e.target.value === 'free' })}
+                              className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
+                            >
+                              <option value="tour">추천 관광 상품</option>
+                              <option value="free">자유 여행 옵션</option>
+                            </select>
+                          </div>
                         )}
                       </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="font-bold text-gray-700 block mb-1">1인 가격 차액 ($ USD)</label>
-                        <input
-                          type="number"
-                          placeholder="0 (기준가 동일) 또는 +50, -30"
-                          value={newPoolItem.priceDeltaUSD}
-                          onChange={(e) => setNewPoolItem({ ...newPoolItem, priceDeltaUSD: Number(e.target.value) })}
-                          className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-black text-deepgreen outline-none"
-                        />
-                      </div>
+                      {['region', 'golf', 'tour', 'hotelTier', 'vehicle', 'extra'].includes(newPoolItem.category) ? (
+                        <div>
+                          <label className="font-bold text-gray-700 block mb-1">
+                            {newPoolItem.category === 'hotelTier' ? '1박 단가 ($ USD)' :
+                             newPoolItem.category === 'vehicle' ? '1일 1인 단가 ($ USD)' :
+                             newPoolItem.category === 'golf' ? '1회 라운딩 단가 ($ USD)' :
+                             '단가 ($ USD)'}
+                          </label>
+                          <input
+                            type="number"
+                            value={newPoolItem.priceUSD ?? 0}
+                            onChange={(e) => setNewPoolItem({ ...newPoolItem, priceUSD: Number(e.target.value) })}
+                            className="w-full p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl font-black text-deepgreen outline-none"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="font-bold text-gray-700 block mb-1">1인 가격 차액 ($ USD)</label>
+                          <input
+                            type="number"
+                            placeholder="0 (기준가 동일) 또는 +50, -30"
+                            value={newPoolItem.priceDeltaUSD}
+                            onChange={(e) => setNewPoolItem({ ...newPoolItem, priceDeltaUSD: Number(e.target.value) })}
+                            className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-black text-deepgreen outline-none"
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="font-bold text-gray-700 block mb-1">강조 뱃지 (선택)</label>
                         <input
@@ -3474,7 +4149,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                       <label className="font-bold text-gray-700 block mb-1">고객 안내용 세부 설명</label>
                       <textarea
                         rows={3}
-                        placeholder="골프장 위치, 특장점, 시설 설명 또는 객실/풀빌라 구성 안내"
+                        placeholder="위치, 특장점, 시설 설명 또는 서비스 구성 안내"
                         value={newPoolItem.description}
                         onChange={(e) => setNewPoolItem({ ...newPoolItem, description: e.target.value })}
                         className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none resize-none"
@@ -3505,11 +4180,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
         {/* Page Editor (Golf, Hotel, etc) */}
         {activeTab === 'pages' && (
-          <div className="animate-fade-in-up">
-            <div className="flex justify-between items-center mb-8 border-b pb-6">
-               <h3 className="text-2xl font-bold text-gray-800">서브 페이지 통합 편집기</h3>
+          <div className="animate-fade-in-up px-2.5 sm:px-0">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-5 sm:mb-8 border-b pb-4 sm:pb-6">
+               <h3 className="text-lg sm:text-2xl font-bold text-gray-800 whitespace-nowrap">서브 페이지 통합 편집기</h3>
                <select 
-                className="p-3 bg-white border-2 border-deepgreen rounded-2xl font-bold text-deepgreen shadow-md outline-none"
+                className="p-2.5 sm:p-3 bg-white border-2 border-deepgreen rounded-xl sm:rounded-2xl font-bold text-deepgreen shadow-md outline-none text-xs sm:text-sm"
                 value={selectedPageId}
                 onChange={(e) => setSelectedPageId(e.target.value)}
               >
@@ -3746,11 +4421,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
         {/* Menu Icon Management */}
         {activeTab === 'menu' && (
-           <div className="animate-fade-in-up">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">메인 아이콘 메뉴 관리</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+           <div className="animate-fade-in-up px-2.5 sm:px-0">
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">메인 아이콘 메뉴 관리</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-6">
               {menuItems.map((item, idx) => (
-                <div key={idx} className="border-2 border-gray-50 p-4 rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
+                <div key={idx} className="border-2 border-gray-50 p-3 sm:p-4 rounded-2xl sm:rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
                   <div className="w-20 h-20 mb-3 bg-white rounded-3xl shadow-inner flex items-center justify-center p-4 relative overflow-hidden">
                     <img src={getFreshImageUrl(item.icon)} alt={item.label} className="w-full h-full object-contain transform group-hover:scale-110 transition" />
                     {item.icon.startsWith('data:') && (
@@ -3758,7 +4433,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         Base64 ({(item.icon.length / 1024).toFixed(0)}KB)
                       </div>
                     )}
-                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white text-[10px] font-bold flex-col">
+                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white text-[10px] font-bold flex-col whitespace-nowrap">
                       <span>🖼️</span>
                       <span>아이콘 변경</span>
                       <input 
@@ -3789,35 +4464,35 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         setMenuItems(ni);
                       }
                     }}
-                    className="mt-2 text-[10px] text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100"
+                    className="mt-2 text-[10px] text-gray-400 hover:text-red-500 transition opacity-100 sm:opacity-0 sm:group-hover:opacity-100 whitespace-nowrap"
                   >
                     삭제
                   </button>
                 </div>
               ))}
             </div>
-            <div className="mt-8 flex justify-center">
+            <div className="mt-6 sm:mt-8 flex justify-center">
               <button 
                 onClick={() => {
                   const newItem: MenuItem = { label: '새 메뉴', icon: 'https://cdn-icons-png.flaticon.com/512/1039/1039328.png' };
                   setMenuItems([...menuItems, newItem]);
                 }}
-                className="bg-deepgreen text-white px-8 py-3 rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition flex items-center gap-2"
+                className="bg-deepgreen text-white px-6 sm:px-8 py-3 rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition flex items-center gap-2 whitespace-nowrap text-xs sm:text-sm"
               >
                 <span>➕</span> 메뉴 아이콘 추가
               </button>
             </div>
-            <p className="text-center text-gray-400 text-xs mt-8 bg-gray-50 p-3 rounded-xl inline-block mx-auto">※ 아이콘 메뉴의 이름과 이미지를 자유롭게 수정하거나 추가/삭제할 수 있습니다. 변경사항은 실시간으로 저장됩니다.</p>
+            <p className="text-center text-gray-400 text-xs mt-6 sm:mt-8 bg-gray-50 p-3 rounded-xl inline-block mx-auto">※ 아이콘 메뉴의 이름과 이미지를 자유롭게 수정하거나 추가/삭제할 수 있습니다. 변경사항은 실시간으로 저장됩니다.</p>
           </div>
         )}
 
         {/* Popup Management */}
         {activeTab === 'popup' && (
-          <div className="animate-fade-in-up max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold text-gray-800 mb-6">공지사항 팝업 관리</h3>
-            <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl overflow-hidden">
-              <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between bg-gray-50 p-4 rounded-3xl">
+          <div className="animate-fade-in-up max-w-4xl mx-auto px-2 sm:px-0">
+            <h3 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">공지사항 팝업 관리</h3>
+            <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-gray-100 shadow-lg sm:shadow-xl overflow-hidden">
+              <div className="p-3 sm:p-4 space-y-4">
+                <div className="flex items-center justify-between bg-gray-50 p-3 sm:p-4 rounded-2xl sm:rounded-3xl">
                   <div>
                     <h4 className="font-bold text-gray-800">팝업 활성화 상태</h4>
                     <p className="text-xs text-gray-500">사용자가 웹을 열 때 팝업을 표시할지 결정합니다.</p>
@@ -4149,11 +4824,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
           return (
             <div className="animate-fade-in-up w-full">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2.5 sm:px-0 mb-3 sm:mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 px-2.5 sm:px-0 mb-3 sm:mb-6">
                 <div>
                   <h3 className="text-lg sm:text-2xl font-bold text-gray-800 flex flex-wrap items-center gap-2">
                     <span>👥 회원 및 관리자 계정 관리</span>
-                    <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold tabular-nums">
+                    <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold tabular-nums whitespace-nowrap">
                       총 {users.length}명 (관리자 {adminUsers.length} · 회원 {memberUsers.length})
                     </span>
                   </h3>
@@ -4164,102 +4839,27 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                 <button
                   type="button"
                   onClick={() => setShowAddUserModal(true)}
-                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-deepgreen text-white hover:bg-emerald-800 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-sm active:scale-98 shrink-0"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-deepgreen text-white hover:bg-emerald-800 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-sm active:scale-98 shrink-0 whitespace-nowrap"
                 >
                   <span>➕</span> 신규 회원/관리자 추가
                 </button>
               </div>
 
-              {/* Mobile Edge-to-Edge Full-Width List (좌우 여백 없이 칸에 맞게 정렬) */}
-              <div className="md:hidden w-full border-y border-gray-200 bg-white">
-                {orderedGroups.map((group) => (
-                  <div key={group.key} className="w-full">
-                    <div
-                      className={`w-full px-2.5 py-2 text-xs font-extrabold flex items-center justify-between border-b border-gray-200 tabular-nums ${
-                        group.isMemberGroup
-                          ? 'bg-slate-100 text-slate-800 border-t border-gray-200'
-                          : 'bg-rose-50/90 text-rose-800'
-                      }`}
-                    >
-                      <span>{group.title}</span>
-                    </div>
-
-                    {group.list.length === 0 ? (
-                      <div className="px-2.5 py-5 text-center text-xs text-gray-400">
-                        {group.isMemberGroup ? '등록된 일반 회원이 없습니다.' : '등록된 관리자가 없습니다.'}
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-gray-100 w-full">
-                        {group.list.map((u) => (
-                          <div key={u.id} className="w-full px-2.5 py-2.5 bg-white">
-                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 w-full">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="font-mono font-bold text-sm text-gray-900 truncate">
-                                    {u.username}
-                                  </span>
-                                  {u.username === 'admin' && (
-                                    <span className="shrink-0 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">
-                                      최고관리자
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-gray-500 truncate mt-0.5">
-                                  닉네임: <span className="font-semibold text-gray-700">{u.nickname || '-'}</span>
-                                </div>
-                              </div>
-
-                              <span
-                                className={`shrink-0 px-2 py-1 rounded-lg text-[11px] font-bold ${
-                                  u.role === 'admin'
-                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                                    : 'bg-blue-50 text-blue-700 border border-blue-200'
-                                }`}
-                              >
-                                {u.role === 'admin' ? '👑 관리자' : '👤 일반회원'}
-                              </span>
-                            </div>
-
-                            {u.username !== 'admin' ? (
-                              <div className="grid grid-cols-2 gap-1.5 mt-2 w-full">
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleUserRole(u)}
-                                  className="w-full py-1.5 px-2 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs text-center truncate transition"
-                                >
-                                  {u.role === 'admin' ? '일반회원으로 변경' : '👑 관리자로 승격'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteUser(u)}
-                                  className="w-full py-1.5 px-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs border border-red-200 text-center truncate transition"
-                                >
-                                  🗑️ 계정 삭제
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="mt-1.5 text-[11px] text-gray-400 italic">
-                                최고관리자 계정 (권한 변경 및 삭제 불가 · 영구 보호)
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+              {/* Mobile Horizontal Scroll Hint */}
+              <div className="md:hidden px-2.5 pb-1.5 flex items-center justify-between text-[11px] font-medium text-gray-400">
+                <span>↔ 표를 좌우로 스크롤하여 전체 항목을 확인하세요</span>
               </div>
 
-              {/* Desktop Table View (관리자 상단 -> 회원 하단) */}
-              <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-200 shadow-xs bg-white">
-                <table className="w-full text-sm">
+              {/* Full-Width Horizontally Scrollable Table (Mobile + Desktop Unified) */}
+              <div className="w-full overflow-x-auto rounded-none sm:rounded-2xl border-y sm:border border-gray-200 shadow-xs bg-white">
+                <table className="w-full min-w-[560px] text-xs sm:text-sm border-collapse">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="p-4 text-left font-bold text-gray-600">아이디</th>
-                      <th className="p-4 text-left font-bold text-gray-600">닉네임</th>
-                      <th className="p-4 text-left font-bold text-gray-600">권한</th>
-                      <th className="p-4 text-center font-bold text-gray-600">권한 변경</th>
-                      <th className="p-4 text-right font-bold text-gray-600">계정 관리</th>
+                      <th className="py-3 px-3 sm:p-4 text-left font-bold text-gray-600 whitespace-nowrap">아이디</th>
+                      <th className="py-3 px-3 sm:p-4 text-left font-bold text-gray-600 whitespace-nowrap">닉네임</th>
+                      <th className="py-3 px-3 sm:p-4 text-left font-bold text-gray-600 whitespace-nowrap">권한</th>
+                      <th className="py-3 px-3 sm:p-4 text-center font-bold text-gray-600 whitespace-nowrap">권한 변경</th>
+                      <th className="py-3 px-3 sm:p-4 text-right font-bold text-gray-600 whitespace-nowrap">계정 관리</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -4268,7 +4868,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <tr className={group.isMemberGroup ? 'bg-slate-50/90' : 'bg-rose-50/60'}>
                           <td
                             colSpan={5}
-                            className={`px-4 py-2.5 text-xs font-extrabold tracking-wide tabular-nums ${
+                            className={`px-3 sm:px-4 py-2 sm:py-2.5 text-xs font-extrabold tracking-wide tabular-nums whitespace-nowrap ${
                               group.isMemberGroup ? 'text-slate-700' : 'text-rose-800'
                             }`}
                           >
@@ -4284,18 +4884,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         ) : (
                           group.list.map((u) => (
                             <tr key={u.id} className="hover:bg-gray-50/80 transition-colors">
-                              <td className="p-4 font-bold text-gray-800 font-mono">
-                                {u.username}
-                                {u.username === 'admin' && (
-                                  <span className="ml-2 text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">
-                                    최고관리자
-                                  </span>
-                                )}
+                              <td className="py-3 px-3 sm:p-4 font-bold text-gray-800 font-mono whitespace-nowrap">
+                                <div className="inline-flex items-center gap-1.5">
+                                  <span>{u.username}</span>
+                                  {u.username === 'admin' && (
+                                    <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">
+                                      최고관리자
+                                    </span>
+                                  )}
+                                </div>
                               </td>
-                              <td className="p-4 text-gray-700 font-medium">{u.nickname || '-'}</td>
-                              <td className="p-4">
+                              <td className="py-3 px-3 sm:p-4 text-gray-700 font-medium whitespace-nowrap">{u.nickname || '-'}</td>
+                              <td className="py-3 px-3 sm:p-4 whitespace-nowrap">
                                 <span
-                                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${
                                     u.role === 'admin'
                                       ? 'bg-rose-100 text-rose-700 border border-rose-200'
                                       : 'bg-blue-100 text-blue-700 border border-blue-200'
@@ -4304,30 +4906,30 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                                   {u.role === 'admin' ? '👑 관리자' : '👤 일반회원'}
                                 </span>
                               </td>
-                              <td className="p-4 text-center">
+                              <td className="py-3 px-3 sm:p-4 text-center whitespace-nowrap">
                                 {u.username !== 'admin' ? (
                                   <button
                                     type="button"
                                     onClick={() => handleToggleUserRole(u)}
-                                    className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition"
+                                    className="text-xs px-2.5 py-1 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition whitespace-nowrap"
                                   >
                                     {u.role === 'admin' ? '일반회원으로 변경' : '👑 관리자로 승격'}
                                   </button>
                                 ) : (
-                                  <span className="text-[11px] text-gray-400 italic">변경 불가</span>
+                                  <span className="text-[11px] text-gray-400 italic whitespace-nowrap">변경 불가</span>
                                 )}
                               </td>
-                              <td className="p-4 text-right">
+                              <td className="py-3 px-3 sm:p-4 text-right whitespace-nowrap">
                                 {u.username !== 'admin' ? (
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteUser(u)}
-                                    className="text-xs px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition border border-red-200"
+                                    className="text-xs px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition border border-red-200 whitespace-nowrap"
                                   >
                                     🗑️ 삭제
                                   </button>
                                 ) : (
-                                  <span className="text-[11px] text-gray-400 italic">영구 보호</span>
+                                  <span className="text-[11px] text-gray-400 italic whitespace-nowrap">영구 보호</span>
                                 )}
                               </td>
                             </tr>

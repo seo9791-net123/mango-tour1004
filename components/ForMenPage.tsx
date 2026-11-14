@@ -32,37 +32,37 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-6 xs:py-8 bg-[#0a0a0a] border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-3 xs:px-4">
-           <div className="flex flex-col lg:flex-row gap-6 xs:gap-8 items-center mb-6 xs:mb-8">
-              <div className="flex-1 space-y-3">
+      <section className="py-5 sm:py-8 bg-[#0a0a0a] border-y border-white/5">
+        <div className="max-w-7xl mx-auto px-0 sm:px-4">
+           <div className="flex flex-col lg:flex-row gap-4 sm:gap-8 items-center mb-5 sm:mb-8">
+              <div className="flex-1 space-y-3 px-2.5 sm:px-0">
                  <h2 className="text-xl xs:text-2xl md:text-3xl font-black uppercase mb-2 text-gold-400 tracking-tight">{content.introTitle}</h2>
                  <div className="h-1 w-12 bg-gold-500 rounded-full"></div>
                  <p className="text-sm xs:text-base md:text-lg leading-relaxed text-gray-300 font-medium whitespace-pre-line">{content.introText}</p>
                  <div className="pt-2">
                     <button 
                       onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
-                      className="w-full xs:w-auto bg-gold-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-gold-500 active:scale-95 transition shadow-lg text-xs xs:text-sm uppercase tracking-wider"
+                      className="w-full sm:w-auto bg-gold-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-gold-500 active:scale-95 transition shadow-lg text-xs xs:text-sm uppercase tracking-wider whitespace-nowrap"
                     >
                       VIP 프라이빗 상담 신청
                     </button>
                  </div>
               </div>
               <div className="flex-1 w-full">
-                 <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-[0_0_20px_rgba(197,160,40,0.1)] border border-white/10" alt="Nightlife" />
+                 <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-none sm:rounded-3xl shadow-[0_0_20px_rgba(197,160,40,0.1)] border-y sm:border border-white/10" alt="Nightlife" />
               </div>
            </div>
 
-           <div className="mb-6 xs:mb-8">
+           <div className="mb-5 sm:mb-8">
              <PageSectionList sections={content.sections} />
            </div>
 
-           <div className="text-center mb-6">
+           <div className="text-center mb-5 sm:mb-6 px-2.5 sm:px-0">
               <h3 className="text-base xs:text-lg font-bold text-white uppercase tracking-wider border-b border-gold-500 inline-block pb-1">HCMC Night Collection</h3>
            </div>
-           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5">
+           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-3.5">
               {content.galleryImages.map((img, idx) => (
-                 <div key={idx} className="group relative overflow-hidden rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-zinc-900 border border-white/5">
+                 <div key={idx} className="group relative overflow-hidden rounded-none sm:rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-zinc-900 border border-white/5">
                     <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Men ${idx}`} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity p-2.5 flex items-end">
                        <p className="text-gold-400 font-bold text-[10px] uppercase">Private Club {idx + 1}</p>

@@ -230,8 +230,8 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
               <span>가이드 ($120)</span>
             </label>
 
-            <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 sm:px-2.5 py-1">
-              <span className="text-gray-500 font-bold text-[11px] sm:text-xs">인원:</span>
+            <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 sm:px-2.5 py-1 whitespace-nowrap">
+              <span className="text-gray-500 font-bold text-[11px] sm:text-xs whitespace-nowrap">인원:</span>
               <select
                 value={personCount}
                 onChange={(e) => setPersonCount(Number(e.target.value))}
@@ -246,7 +246,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-sm transition cursor-pointer"
+              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-sm transition cursor-pointer shrink-0"
               aria-label="닫기"
             >
               ✕
@@ -255,8 +255,8 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
         </div>
 
         {/* Mobile Quick Option Strip (scrollable horizontally) */}
-        <div className="sm:hidden no-print bg-gray-50/95 border-b border-gray-200 px-3 py-1.5 flex items-center gap-2 overflow-x-auto scrollbar-hide text-xs shrink-0">
-          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0">
+        <div className="sm:hidden no-print bg-gray-50/95 border-b border-gray-200 px-2.5 py-1.5 flex items-center gap-2 overflow-x-auto scrollbar-hide text-xs shrink-0 whitespace-nowrap">
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 whitespace-nowrap">
             <span className="text-[10px] text-gray-500 font-bold">고객명:</span>
             <input
               type="text"
@@ -265,7 +265,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
               className="w-14 text-xs font-bold outline-none"
             />
           </div>
-          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0">
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 whitespace-nowrap">
             <span className="text-[10px] text-gray-500 font-bold">출발일:</span>
             <input
               type="date"
@@ -274,7 +274,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
               className="text-xs font-bold outline-none"
             />
           </div>
-          <label className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 font-bold text-[11px] text-amber-900 shrink-0 cursor-pointer">
+          <label className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 font-bold text-[11px] text-amber-900 shrink-0 cursor-pointer whitespace-nowrap">
             <input
               type="checkbox"
               checked={includeFastTrack}
@@ -283,7 +283,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
             />
             <span>패스트트랙 (+$60)</span>
           </label>
-          <label className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 font-bold text-[11px] text-indigo-900 shrink-0 cursor-pointer">
+          <label className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 font-bold text-[11px] text-indigo-900 shrink-0 cursor-pointer whitespace-nowrap">
             <input
               type="checkbox"
               checked={includeGuide}
@@ -295,7 +295,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
         </div>
 
         {/* Scrollable Document Area */}
-        <div className="flex-1 overflow-y-auto p-1.5 xs:p-2 sm:p-6 print:p-0 print:overflow-visible">
+        <div className="flex-1 overflow-y-auto p-0 sm:p-6 print:p-0 print:overflow-visible">
           <A4QuotationDocument
             customerName={customerName}
             personCount={personCount}

@@ -1438,26 +1438,63 @@ export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
 ];
 
 export const INITIAL_MASTER_OPTION_POOL: MasterOptionPool = {
+  diyRegions: [
+    { id: 'reg-hcm', name: '호치민', subtitle: '명문 36홀 & 도심 나이트라이프', icon: '🏙️', baseFeeUSD: 0 },
+    { id: 'reg-vt', name: '붕따우', subtitle: '오션뷰 링크스 & 해변 휴양', icon: '🌊', baseFeeUSD: 0 },
+    { id: 'reg-mn', name: '무이네', subtitle: '사막 투어 & 해안 리조트 골프', icon: '🏜️', baseFeeUSD: 0 },
+    { id: 'reg-nt', name: '나트랑', subtitle: '에메랄드 바다 & 섬 리조트', icon: '🏝️', baseFeeUSD: 0 },
+    { id: 'reg-dl', name: '달랏', subtitle: '해발 1,500m 고원 힐링 투어', icon: '🌲', baseFeeUSD: 0 },
+  ],
+
   golfCourses: [
     // Ho Chi Minh
-    { id: 'gc-hcm-1', name: '떤선녓 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: 0, description: '호치민 시내 20분 거리, 최상급 관리와 야간 라운딩 시설을 갖춘 최고 인기 36홀 명문 코스', badge: '인기 1위' },
-    { id: 'gc-hcm-2', name: '롱탄 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: 0, description: '아시아 최고 경관을 자랑하는 36홀 챔피언십 힐 & 레이크 코스, 아름다운 조경과 완벽한 잔디', badge: '베스트 뷰' },
-    { id: 'gc-hcm-3', name: '트윈도브스 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: 15, description: 'KLPGA 정규 투어 개최 멤버십 명문 코스, 까다롭고 도전적인 그린과 최고급 클럽하우스', badge: 'KLPGA 대회 코스' },
-    { id: 'gc-hcm-4', name: '송베 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: -10, description: '베트남 최초 국제 챔피언십 인증 코스, 자연 야자수와 사막/로터스 코스의 환상적 조화', badge: '전통 명문' },
-    { id: 'gc-hcm-5', name: '태광 정산 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: 15, description: '전용 스피드보트로 동나이강을 건너 진입하는 이색 럭셔리 아일랜드 골프 코스', badge: '스피드보트 이색체험' },
-    { id: 'gc-hcm-6', name: '베트남 G.C (18홀)', location: '호치민', holes: 18, priceDeltaUSD: -15, description: '호치민 시내 중심 30분 거리, 동코스 & 서코스 36홀 정통 챔피언십 회원제 코스', badge: '정통 36홀' },
-    { id: 'gc-hcm-7', name: '동나이 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: -20, description: '자연 호수를 끼고 도는 27홀의 시원하고 여유로운 가성비 힐링 코스', badge: '가성비 추천' },
-    { id: 'gc-hcm-8', name: '로얄 아일랜드 CC (18홀)', location: '호치민', holes: 18, priceDeltaUSD: -10, description: '동나이 강변 쾌적한 18홀 정규 코스, 평탄하고 편안한 페어웨이', badge: '강변 코스' },
-    
+    { id: 'gc-hcm-1', name: '떤선녓 CC (18홀)', location: '호치민', holes: 18, priceUSD: 155, priceDeltaUSD: 0, description: '호치민 시내 20분 거리, 최상급 관리와 야간 라운딩 시설을 갖춘 최고 인기 36홀 명문 코스', badge: '인기 1위' },
+    { id: 'gc-hcm-2', name: '롱탄 CC (18홀)', location: '호치민', holes: 18, priceUSD: 155, priceDeltaUSD: 0, description: '아시아 최고 경관을 자랑하는 36홀 챔피언십 힐 & 레이크 코스, 아름다운 조경과 완벽한 잔디', badge: '베스트 뷰' },
+    { id: 'gc-hcm-3', name: '트윈도브스 CC (18홀)', location: '호치민', holes: 18, priceUSD: 170, priceDeltaUSD: 15, description: 'KLPGA 정규 투어 개최 멤버십 명문 코스, 까다롭고 도전적인 그린과 최고급 클럽하우스', badge: 'KLPGA 대회 코스' },
+    { id: 'gc-hcm-4', name: '송베 CC (18홀)', location: '호치민', holes: 18, priceUSD: 145, priceDeltaUSD: -10, description: '베트남 최초 국제 챔피언십 인증 코스, 자연 야자수와 사막/로터스 코스의 환상적 조화', badge: '전통 명문' },
+    { id: 'gc-hcm-5', name: '태광 정산 CC (18홀)', location: '호치민', holes: 18, priceUSD: 170, priceDeltaUSD: 15, description: '전용 스피드보트로 동나이강을 건너 진입하는 이색 럭셔리 아일랜드 골프 코스', badge: '스피드보트 이색체험' },
+    { id: 'gc-hcm-6', name: '베트남 G.C (18홀)', location: '호치민', holes: 18, priceUSD: 140, priceDeltaUSD: -15, description: '호치민 시내 중심 30분 거리, 동코스 & 서코스 36홀 정통 챔피언십 회원제 코스', badge: '정통 36홀' },
+    { id: 'gc-hcm-7', name: '동나이 CC (18홀)', location: '호치민', holes: 18, priceUSD: 135, priceDeltaUSD: -20, description: '자연 호수를 끼고 도는 27홀의 시원하고 여유로운 가성비 힐링 코스', badge: '가성비 추천' },
+    { id: 'gc-hcm-8', name: '로얄 아일랜드 CC (18홀)', location: '호치민', holes: 18, priceUSD: 145, priceDeltaUSD: -10, description: '동나이 강변 쾌적한 18홀 정규 코스, 평탄하고 편안한 페어웨이', badge: '강변 코스' },
+
     // Vung Tau
-    { id: 'gc-vt-1', name: '더 블러프 호짬 스트립 CC (18홀)', location: '붕따우', holes: 18, priceDeltaUSD: 50, description: '그렉 노먼 설계 세계 100대 오션뷰 링크스 코스, 남중국해 파도와 해풍을 마주하는 최고 명문', badge: '세계 100대 명문' },
-    { id: 'gc-vt-2', name: '붕따우 파라다이스 CC (18홀)', location: '붕따우', holes: 18, priceDeltaUSD: -30, description: '남중국해 바다와 울창한 해변 소나무 숲이 어우러진 시원한 27홀 씨사이드 코스', badge: '해변 링크스' },
-    { id: 'gc-vt-3', name: '쩌우득 CC (18홀)', location: '붕따우', holes: 18, priceDeltaUSD: -40, description: '넓은 페어웨이와 현대적 시설을 갖춘 붕따우 인근 실속 골프 코스', badge: '신규 코스' },
+    { id: 'gc-vt-1', name: '더 블러프 호짬 스트립 CC (18홀)', location: '붕따우', holes: 18, priceUSD: 205, priceDeltaUSD: 50, description: '그렉 노먼 설계 세계 100대 오션뷰 링크스 코스, 남중국해 파도와 해풍을 마주하는 최고 명문', badge: '세계 100대 명문' },
+    { id: 'gc-vt-2', name: '붕따우 파라다이스 CC (18홀)', location: '붕따우', holes: 18, priceUSD: 125, priceDeltaUSD: -30, description: '남중국해 바다와 울창한 해변 소나무 숲이 어우러진 시원한 27홀 씨사이드 코스', badge: '해변 링크스' },
+    { id: 'gc-vt-3', name: '쩌우득 CC (18홀)', location: '붕따우', holes: 18, priceUSD: 115, priceDeltaUSD: -40, description: '넓은 페어웨이와 현대적 시설을 갖춘 붕따우 인근 실속 골프 코스', badge: '신규 코스' },
+
+    // Mui Ne
+    { id: 'gc-mn-1', name: '씨링크스 골프 & 컨트리 클럽 (18홀)', location: '무이네', holes: 18, priceUSD: 150, priceDeltaUSD: 0, description: '아시아 최고 수준 오션뷰 모래언덕 링크스 코스, 모든 홀에서 무이네 바다가 내려다보이는 절경', badge: '오션뷰 명문' },
+    { id: 'gc-mn-2', name: '노바월드 판티엣 PGA 오션 코스 (18홀)', location: '무이네', holes: 18, priceUSD: 165, priceDeltaUSD: 15, description: '그렉 노먼 설계 PGA 공식 인증 국제 토너먼트 규격 챔피언십 코스', badge: 'PGA 인증' },
+
+    // Nha Trang
+    { id: 'gc-nt-1', name: '빈펄 골프 나트랑 CC (18홀)', location: '나트랑', holes: 18, priceUSD: 175, priceDeltaUSD: 20, description: '혼쩨섬 프라이빗 아일랜드 내 위치한 에메랄드빛 바다 조망 아일랜드 명문 코스', badge: '아일랜드 명문' },
+    { id: 'gc-nt-2', name: 'KN 골프 링크스 깜란 CC (18홀)', location: '나트랑', holes: 18, priceUSD: 170, priceDeltaUSD: 15, description: '그렉 노먼 설계 아시아 베스트 뉴 코스, 백사장 해안선을 따라 펼쳐지는 정통 링크스', badge: '링크스 명작' },
+    { id: 'gc-nt-3', name: '다이아몬드 베이 골프 & 빌라 (18홀)', location: '나트랑', holes: 18, priceUSD: 145, priceDeltaUSD: -10, description: '산과 바다가 어우러진 다이나믹한 18홀 리조트 코스, 쾌적한 라운딩 환경', badge: '리조트 골프' },
 
     // Da Lat
-    { id: 'gc-dl-1', name: '달랏 팔레스 헤리티지 CC (18홀)', location: '달랏', holes: 18, priceDeltaUSD: 10, description: '1922년 개장한 베트남 최고(最古) 황제의 골프장, 고풍스러운 소나무 숲과 쑤언흐엉 호수 전망', badge: '1922년 황제 코스' },
-    { id: 'gc-dl-2', name: 'SAM 투옌람 CC (18홀)', location: '달랏', holes: 18, priceDeltaUSD: 0, description: '투옌람 호수 계곡과 울창한 고원 소나무 숲에 둘러싸인 천혜의 힐링 챔피언십 코스', badge: '호수 전경 힐링' },
-    { id: 'gc-dl-3', name: '더 달랏 1200 CC (18홀)', location: '달랏', holes: 18, priceDeltaUSD: 10, description: '해발 1,200m에 위치하여 한여름에도 시원한 바람이 부는 아시안투어 대회 개최 코스', badge: '해발 1200m 고원' },
+    { id: 'gc-dl-1', name: '달랏 팔레스 헤리티지 CC (18홀)', location: '달랏', holes: 18, priceUSD: 165, priceDeltaUSD: 10, description: '1922년 개장한 베트남 최고(最古) 황제의 골프장, 고풍스러운 소나무 숲과 쑤언흐엉 호수 전망', badge: '1922년 황제 코스' },
+    { id: 'gc-dl-2', name: 'SAM 투옌람 CC (18홀)', location: '달랏', holes: 18, priceUSD: 155, priceDeltaUSD: 0, description: '투옌람 호수 계곡과 울창한 고원 소나무 숲에 둘러싸인 천혜의 힐링 챔피언십 코스', badge: '호수 전경 힐링' },
+    { id: 'gc-dl-3', name: '더 달랏 1200 CC (18홀)', location: '달랏', holes: 18, priceUSD: 165, priceDeltaUSD: 10, description: '해발 1,200m에 위치하여 한여름에도 시원한 바람이 부는 아시안투어 대회 개최 코스', badge: '해발 1200m 고원' },
+  ],
+
+  tourOptions: [
+    { id: 'tour-free', name: '자유 여행 (내 맘대로 자유 일정)', location: '전체', priceUSD: 0, description: '패키지 투어 없이 전용 차량·숙박·옵션만 조합해 내 맘대로 자유롭게 여행합니다.', badge: '자유 일정', isFreeTravel: true },
+    { id: 'tour-hcm-1', name: '호치민 시티 랜드마크 & 메콩델타 VIP 투어', location: '호치민', priceUSD: 85, description: '통일궁·노트르담·중앙우체국 핵심 시내 관광과 메콩강 프라이빗 크루즈 체험', badge: '호치민 인기' },
+    { id: 'tour-hcm-2', name: '구찌터널 역사 탐방 & 사이공 디너 크루즈', location: '호치민', priceUSD: 95, description: '역사적인 구찌터널 오전 투어 후 저녁 사이공강 야경 선상 디너 크루즈', badge: '야경 디너' },
+    { id: 'tour-vt-1', name: '붕따우 거대 예수상 & 해안 케이블카 웰빙 투어', location: '붕따우', priceUSD: 80, description: '남중국해 절경을 한눈에 담는 예수상, 호마이 파크 케이블카 및 씨푸드 미식 코스', badge: '붕따우 필수' },
+    { id: 'tour-mn-1', name: '무이네 선라이즈 지프 사막 투어 (화이트&레드샌듄)', location: '무이네', priceUSD: 75, description: '전용 지프를 타고 달리는 이국적인 사막 투어 & 요정의 샘, 피싱 빌리지 감상', badge: '지프 투어' },
+    { id: 'tour-mn-2', name: '무이네 RD 와인 캐슬 시음 & 해변 힐링 투어', location: '무이네', priceUSD: 65, description: '유럽식 와인 캐슬 투어 및 해안 절벽 카페·씨푸드 레스토랑 코스', badge: '힐링 코스' },
+    { id: 'tour-nt-1', name: '나트랑 아일랜드 호핑 VIP 요트 스노클링', location: '나트랑', priceUSD: 95, description: '에메랄드빛 나트랑 바다 스노클링 & 선상 씨푸드 BBQ 파티 프라이빗 요트 투어', badge: '해양 액티비티' },
+    { id: 'tour-nt-2', name: '빈원더스 테마파크 & 나트랑 시내 랜드마크 투어', location: '나트랑', priceUSD: 85, description: '혼쩨섬 케이블카 빈원더스 종일 입장 및 포나가르 사원·담시장 핵심 시내 투어', badge: '가족 추천' },
+    { id: 'tour-dl-1', name: '달랏 다딴라 알파인코스터 & 랑비앙 지프 투어', location: '달랏', priceUSD: 85, description: '고원 숲속 짜릿한 알파인 코스터, 랑비앙 정상 지프 등반 및 크레이지 하우스 관람', badge: '달랏 시그니처' },
+    { id: 'tour-dl-2', name: '달랏 클레이 터널 & 야시장 커피 투어', location: '달랏', priceUSD: 70, description: '포토존 클레이 터널과 아라비카 고원 커피 농장, 달랏 밤도깨비 야시장 탐방', badge: '감성 투어' },
+  ],
+
+  accommodationTiers: [
+    { id: 'hotel_5star', name: '고급 호텔', pricePerNightUSD: 90, description: '시내 중심, 조식 뷔페, 수영장 완비', icon: '⭐', badge: '1인 1실 기준' },
+    { id: 'pool_villa', name: '럭셔리 프라이빗 풀빌라', pricePerNightUSD: 110, description: '단독 수영장, 바베큐 파티 가능', icon: '🏊', badge: '프라이빗 독채' },
+    { id: 'hotel_4star', name: '4성급 실속 호텔', pricePerNightUSD: 60, description: '가성비 뛰어난 중심가 호텔', icon: '🏢', badge: '가성비 추천' },
+    { id: 'resort', name: '골프&비치 리조트', pricePerNightUSD: 100, description: '해변/골프장 인접 최고급 휴양', icon: '🏖️', badge: '프리미엄 휴양' },
   ],
 
   accommodations: [
@@ -1472,6 +1509,10 @@ export const INITIAL_MASTER_OPTION_POOL: MasterOptionPool = {
     { id: 'acc-vt-2', name: '붕따우 비치 프라이빗 단독 풀빌라 (개인 수영장 독채, 1인 1실)', location: '붕따우', type: 'pool_villa', priceDeltaUSD: 50, description: '해변 인접 전용 수영장 단독 풀빌라 1인 1실 사용 & 야외 풀사이드 바베큐 가능', badge: '오션뷰 풀빌라' },
     { id: 'acc-vt-3', name: '붕따우 4성급 비치 프론트 호텔 (1인 객실 기준)', location: '붕따우', type: 'hotel_4star', priceDeltaUSD: -40, description: '해변 도로 위치 가성비 오션뷰 4성 호텔 1인실, 야시장 및 해변 도보 5분', badge: '실속 4성급' },
 
+    // Mui Ne / Nha Trang
+    { id: 'acc-mn-1', name: '무이네 아난타라 / 센타라 미라지 비치 리조트 (1인 객실 기준)', location: '무이네', type: 'resort', priceDeltaUSD: 0, description: '무이네 프라이빗 비치와 인피니티 풀을 품은 특급 오션 리조트 1인 1실', badge: '비치 리조트' },
+    { id: 'acc-nt-1', name: '나트랑 빈펄 / 아미아나 프라이빗 풀빌라 & 리조트 (1인 객실 기준)', location: '나트랑', type: 'resort', priceDeltaUSD: 20, description: '에메랄드 해변을 조망하는 나트랑 대표 고급 오션 리조트 1인 1실', badge: '오션 럭셔리' },
+
     // Da Lat
     { id: 'acc-dl-1', name: '달랏 고급 프랑스풍 헤리티지 리조트 (아나만다라 빌라 급, 1인 객실 기준)', location: '달랏', type: 'resort', priceDeltaUSD: 0, description: '소나무 숲속 고풍스러운 프렌치 콜로니얼 빌라 리조트 1인실, 최고급 힐링 휴양', badge: '고급 헤리티지' },
     { id: 'acc-dl-2', name: '달랏 프라이빗 독채 럭셔리 빌라 (전용 정원 & 벽난로, 1인 1실)', location: '달랏', type: 'pool_villa', priceDeltaUSD: 60, description: '가족/팀 전용 프라이빗 정원과 벽난로가 구비된 프랑스풍 독채 빌라 1인실 배정', badge: '프라이빗 독채' },
@@ -1479,10 +1520,16 @@ export const INITIAL_MASTER_OPTION_POOL: MasterOptionPool = {
   ],
 
   vehicles: [
-    { id: 'veh-1', name: '전 일정 단독 VIP 9인승 리무진 밴 (5일간 / 1대 1일 $100 기준)', priceDeltaUSD: 0, description: '최고급 가죽 리클라이너 좌석, 무료 Wi-Fi, 전용 냉장고, 전 일정 베테랑 전담 기사 포함 (7인승 1대 1일 $100 × 5일 = $500, 4인 기준 1인 $125)', badge: '1일 $100' },
-    { id: 'veh-2', name: '전 일정 단독 16인승 포드 트랜짓 밴 (대용량 밴)', priceDeltaUSD: -25, description: '여유로운 16인승 밴, 골프백 대량 적재 및 편안한 단체 이동', badge: '실속 밴' },
-    { id: 'veh-3', name: '전 일정 단독 VIP 18~28인승 대형 리무진 버스', priceDeltaUSD: 50, description: '8인 이상 대규모 단체 골퍼를 위한 최고급 대형 리무진 버스 (전담 기사/유류비 일체)', badge: '대형 단체용' },
-    { id: 'veh-4', name: '전 일정 단독 7인승 프리미엄 SUV (카니발/포츄너)', priceDeltaUSD: -35, description: '소수 인원(2~3인)의 빠르고 안락한 이동에 최적화된 프리미엄 SUV', badge: '소수 정예' },
+    { id: 'veh-4', shortName: '7인승', name: '7인승 프리미엄 SUV / 밴', pricePerDayUSD: 18, priceDeltaUSD: -35, description: '소수 인원(2~3인)의 빠르고 안락한 이동 최적화', icon: '🚗', badge: '소수 정예' },
+    { id: 'veh-1', shortName: '9인승', name: '9인승 VIP 리무진 밴', pricePerDayUSD: 25, priceDeltaUSD: 0, description: '최고급 가죽 리클라이너 좌석, 전용 기사/유류비 일체', icon: '👑', badge: '인기 1위' },
+    { id: 'veh-2', shortName: '16인승', name: '16인승 대용량 전용 밴', pricePerDayUSD: 20, priceDeltaUSD: -25, description: '여유로운 실내와 골프백 대량 적재 가능한 단체 밴', icon: '🚐', badge: '단체 실속' },
+    { id: 'veh-3', shortName: '26인승', name: '26인승 대형 리무진 버스', pricePerDayUSD: 35, priceDeltaUSD: 50, description: '대규모 단체 골퍼/관광을 위한 최고급 대형 리무진 버스', icon: '🚌', badge: '대형 단체용' },
+  ],
+
+  extraServices: [
+    { id: 'guide', name: '가이드', priceUSD: 30, pricingUnit: 'per_day', description: '한국어 전문 가이드 전 일정 동행 올케어 (1일 $30/인)', icon: '👨‍💼', badge: '전 일정 통역', defaultSelected: true },
+    { id: 'fasttrack', name: '패스트 트랙', priceUSD: 60, pricingUnit: 'per_person', description: '공항 VIP 전용 입국 심사 초고속 패스 (1인 $60)', icon: '🛫', badge: 'VIP 의전', defaultSelected: false },
+    { id: 'massage', name: '마사지', priceUSD: 50, pricingUnit: 'per_person', description: '피로 회복 VIP 전신 힐링 마사지 90분 (1인 $50)', icon: '💆', badge: '힐링 스파', defaultSelected: true },
   ],
 
   guides: [

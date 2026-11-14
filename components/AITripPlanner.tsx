@@ -58,12 +58,12 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
     <div className={(onBack ? "min-h-screen bg-white" : "") + " pb-20 md:pb-0"}>
       {/* Header if onBack exists (Page Mode) */}
       {onBack && (
-         <div className="max-w-7xl mx-auto px-4 pt-4 pb-2">
+         <div className="max-w-7xl mx-auto px-2.5 sm:px-4 pt-4 pb-2">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
                 <div className="flex items-center gap-3">
                     <button
                     onClick={onBack}
-                    className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition shadow-sm text-gray-600"
+                    className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition shadow-sm text-gray-600 shrink-0"
                     >
                     ←
                     </button>
@@ -79,15 +79,15 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
       )}
 
       {/* Hero CTA Section */}
-      <section className={`py-6 bg-gradient-to-br from-gray-900 to-deepgreen relative overflow-hidden text-white ${onBack ? 'rounded-2xl mx-4 mb-3 shadow-xl' : ''}`}>
+      <section className={`py-6 bg-gradient-to-br from-gray-900 to-deepgreen relative overflow-hidden text-white ${onBack ? 'rounded-none sm:rounded-2xl mx-0 sm:mx-4 mb-3 shadow-xl' : ''}`}>
         <img
           src={getFreshImageUrl('https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=1920&auto=format&fit=crop')}
           alt=""
           aria-hidden="true"
           className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay pointer-events-none"
         />
-        <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
-          <span className="inline-block py-0.5 px-2 rounded-full bg-gold-500/20 border border-gold-500 text-gold-400 text-xs font-bold mb-4 animate-pulse">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 relative z-10 text-center">
+          <span className="inline-block py-0.5 px-2 rounded-full bg-gold-500/20 border border-gold-500 text-gold-400 text-xs font-bold mb-4 animate-pulse whitespace-nowrap">
              ✨ CUSTOM TRAVEL DESIGN
           </span>
           <h2 className="text-2xl md:text-3xl font-bold mb-4 leading-tight">
@@ -99,9 +99,9 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
           </p>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-gold-500 text-lg rounded-full hover:bg-gold-600 hover:shadow-lg hover:-translate-y-1 focus:outline-none ring-offset-2 focus:ring-2 ring-gold-400"
+            className="group relative inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 font-bold text-white transition-all duration-200 bg-gold-500 text-base sm:text-lg rounded-full hover:bg-gold-600 hover:shadow-lg hover:-translate-y-1 focus:outline-none ring-offset-2 focus:ring-2 ring-gold-400 whitespace-nowrap"
           >
-            <span className="mr-2 text-2xl">✈️</span>
+            <span className="mr-2 text-xl sm:text-2xl">✈️</span>
             나만의 여행상품 만들기
             <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 animate-ping opacity-0 group-hover:opacity-100 duration-1000"></div>
           </button>
@@ -109,21 +109,21 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
       </section>
 
       {/* How it Works Section */}
-      <section className="bg-gray-50 py-6">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-4">
-            <h2 className="text-2xl font-black text-deepgreen mb-2">여행이 만들어지는 과정</h2>
-            <p className="text-gray-500 text-sm">단 3단계면 충분합니다. 나머지는 망고투어가 책임집니다.</p>
+      <section className="bg-gray-50 py-5 sm:py-6">
+        <div className="max-w-7xl mx-auto px-0 sm:px-4">
+          <div className="text-center mb-4 px-2.5 sm:px-0">
+            <h2 className="text-xl sm:text-2xl font-black text-deepgreen mb-2">여행이 만들어지는 과정</h2>
+            <p className="text-gray-500 text-xs sm:text-sm">단 3단계면 충분합니다. 나머지는 망고투어가 책임집니다.</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-8">
             {[
               { step: '01', title: '취향 선택', desc: '여행지, 테마, 인원 등 고객님의 취향을 알려주세요.', icon: '🎯' },
               { step: '02', title: '전문가 맞춤 설계', desc: '망고투어 전문가가 최적의 동선과 합리적인 견적을 산출합니다.', icon: '⚡' },
               { step: '03', title: '상담 및 확정', desc: '제안된 견적서를 바탕으로 최종 상담 후 여행을 시작하세요.', icon: '🤝' }
             ].map((item, i) => (
               <div key={i} className="relative group">
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                <div className="bg-white p-4 sm:p-6 rounded-none sm:rounded-3xl shadow-sm border-y sm:border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
                   <div className="text-4xl mb-4">{item.icon}</div>
                   <div className="text-gold-500 font-black text-4xl opacity-10 absolute top-6 right-8 group-hover:opacity-20 transition-opacity">{item.step}</div>
                   <h3 className="text-lg font-bold text-deepgreen mb-2">{item.title}</h3>
@@ -141,9 +141,9 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
       </section>
 
       {/* Manual Inquiry Section */}
-      <section className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-           <div className="space-y-6">
+      <section className="max-w-7xl mx-auto px-0 sm:px-4 py-6 sm:py-8 overflow-x-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-center">
+           <div className="space-y-5 sm:space-y-6 px-2.5 sm:px-0">
               <div>
                  <h3 className="text-gold-600 font-bold tracking-widest text-[10px] md:text-xs mb-2 uppercase">DIRECT CUSTOM INQUIRY</h3>
                  <h2 className="text-2xl md:text-3xl font-black text-deepgreen leading-tight">
@@ -163,15 +163,15 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
                    '실시간 항공권 및 호텔 최저가 조합'
                  ].map((item, i) => (
                    <li key={i} className="flex items-center gap-3 text-sm font-bold text-gray-700">
-                      <span className="w-5 h-5 rounded-full bg-gold-100 text-gold-600 flex items-center justify-center text-[10px]">✓</span>
+                      <span className="w-5 h-5 rounded-full bg-gold-100 text-gold-600 flex items-center justify-center text-[10px] shrink-0">✓</span>
                       {item}
                    </li>
                  ))}
               </ul>
-              <div className="pt-4">
+              <div className="pt-2 sm:pt-4">
                  <button 
                    onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
-                   className="px-8 py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-xl hover:bg-opacity-90 transition flex items-center gap-3"
+                   className="w-full sm:w-auto justify-center px-6 sm:px-8 py-3.5 sm:py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-xl hover:bg-opacity-90 transition flex items-center gap-3 whitespace-nowrap"
                  >
                     <span className="text-2xl">💬</span>
                     전문가에게 직접 문의하기
@@ -180,8 +180,8 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
            </div>
            
            <div className="relative">
-              <div className="absolute -inset-4 bg-gold-500/10 rounded-[2.5rem] rotate-3"></div>
-              <div className="relative bg-white border border-gray-100 p-8 rounded-[2rem] shadow-2xl">
+              <div className="hidden sm:block absolute -inset-4 bg-gold-500/10 rounded-[2.5rem] rotate-3"></div>
+              <div className="relative bg-white border-y sm:border border-gray-100 p-4 sm:p-8 rounded-none sm:rounded-[2rem] shadow-2xl">
                  <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 rounded-full bg-gold-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">M</div>
                     <div>

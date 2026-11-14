@@ -15,28 +15,28 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans selection:bg-gold-500 selection:text-white">
       {/* Top Sticky Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs no-print">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+        <div className="max-w-4xl mx-auto px-2.5 sm:px-4 py-3 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <button 
               type="button"
               onClick={onGoHome} 
-              className="flex items-center gap-2 text-deepgreen hover:text-gold-600 transition active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 text-deepgreen hover:text-gold-600 transition active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
               title="망고투어 메인 홈으로 이동"
             >
-              <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-xs">
+              <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-xs shrink-0">
                 M
               </div>
-              <span className="font-black text-base tracking-tight uppercase">MANGO TOUR</span>
+              <span className="font-black text-sm sm:text-base tracking-tight uppercase whitespace-nowrap">MANGO TOUR</span>
             </button>
             <span className="text-gray-300">|</span>
-            <span className="text-xs sm:text-sm font-bold text-gray-700">개인정보처리방침</span>
+            <span className="text-xs sm:text-sm font-bold text-gray-700 whitespace-nowrap truncate">개인정보처리방침</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handlePrint}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-100 text-xs font-bold text-gray-700 transition cursor-pointer shadow-2xs"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-100 text-xs font-bold text-gray-700 transition cursor-pointer shadow-2xs whitespace-nowrap"
             >
               <span>🖨️ 인쇄 / PDF 저장</span>
             </button>
@@ -45,7 +45,7 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
               <button
                 type="button"
                 onClick={onGoHome}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-deepgreen hover:bg-teal-900 text-white text-xs font-bold transition shadow-xs active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-deepgreen hover:bg-teal-900 text-white text-xs font-bold transition shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
               >
                 <span>🏠 메인 홈 이동</span>
               </button>
@@ -55,9 +55,9 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <main className="max-w-4xl mx-auto px-0 sm:px-4 py-3 sm:py-12">
         {/* Document Header Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-200/90 mb-8">
+        <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-10 shadow-sm border-y sm:border border-gray-200/90 mb-3 sm:mb-8">
           <div className="border-b border-gray-200 pb-6 mb-6">
             <div className="inline-block bg-gold-50 text-gold-800 text-[11px] font-black px-3 py-1 rounded-full border border-gold-200 mb-3">
               대한민국 표준 개인정보처리방침 (공식 고지)
@@ -88,7 +88,7 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
         </div>
 
         {/* Detailed Sections Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-200/90 space-y-10 text-xs sm:text-sm text-gray-700 leading-relaxed">
+        <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-10 shadow-sm border-y sm:border border-gray-200/90 space-y-8 sm:space-y-10 text-xs sm:text-sm text-gray-700 leading-relaxed">
           {/* 제1조 */}
           <section id="section-1" className="space-y-3">
             <h2 className="text-base sm:text-lg font-black text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-2">
@@ -114,33 +114,33 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
               회사는 여행 서비스 제공 및 원활한 상담을 위해 다음과 같은 개인정보 항목을 수집 및 처리하고 있습니다.
             </p>
 
-            <div className="overflow-x-auto rounded-xl border border-gray-200">
-              <table className="w-full text-left text-xs">
+            <div className="overflow-x-auto rounded-none sm:rounded-xl border border-gray-200">
+              <table className="w-full min-w-[480px] text-left text-xs">
                 <thead className="bg-slate-100 text-gray-800 font-bold border-b border-gray-200">
                   <tr>
-                    <th className="p-3">구분</th>
-                    <th className="p-3">수집 항목</th>
-                    <th className="p-3">수집 목적</th>
+                    <th className="p-3 whitespace-nowrap">구분</th>
+                    <th className="p-3 whitespace-nowrap">수집 항목</th>
+                    <th className="p-3 whitespace-nowrap">수집 목적</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 text-gray-600">
                   <tr>
-                    <td className="p-3 font-bold text-gray-900 bg-slate-50/50">회원가입 (기본)</td>
+                    <td className="p-3 font-bold text-gray-900 bg-slate-50/50 whitespace-nowrap">회원가입 (기본)</td>
                     <td className="p-3">아이디(ID), 비밀번호, 닉네임, 연락처(휴대전화번호)</td>
                     <td className="p-3">회원 식별, 서비스 로그인 및 공지 안내</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-bold text-gray-900 bg-slate-50/50">여행 예약 (필수)</td>
+                    <td className="p-3 font-bold text-gray-900 bg-slate-50/50 whitespace-nowrap">여행 예약 (필수)</td>
                     <td className="p-3">예약자 성명, 영문 성명(여권 기준), 생년월일, 성별, 연락처, 이메일, 탑승 항공편 정보</td>
                     <td className="p-3">골프장 티오프 예약, 호텔 투숙자 등록, 공항 픽업 차량 배차</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-bold text-gray-900 bg-slate-50/50">실시간 채팅 / 상담</td>
+                    <td className="p-3 font-bold text-gray-900 bg-slate-50/50 whitespace-nowrap">실시간 채팅 / 상담</td>
                     <td className="p-3">대화명(닉네임), 상담 내역, 문의 메시지</td>
                     <td className="p-3">실시간 문의 응대 및 견적 상담</td>
                   </tr>
                   <tr>
-                    <td className="p-3 font-bold text-gray-900 bg-slate-50/50">자동 수집 항목</td>
+                    <td className="p-3 font-bold text-gray-900 bg-slate-50/50 whitespace-nowrap">자동 수집 항목</td>
                     <td className="p-3">접속 IP 정보, 쿠키(Cookie), 서비스 이용 기록, 접속 로그, 불량 이용 기록</td>
                     <td className="p-3">서비스 안정성 확보 및 부정 이용 방지</td>
                   </tr>
@@ -182,14 +182,14 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
               ② 회사는 원활한 베트남 현지 여행 일정 수행을 위하여 아래와 같이 필수적인 제3자(현지 제휴업체)에게 개인정보를 제공하고 있습니다:
             </p>
 
-            <div className="overflow-x-auto rounded-xl border border-gray-200">
-              <table className="w-full text-left text-xs">
+            <div className="overflow-x-auto rounded-none sm:rounded-xl border border-gray-200">
+              <table className="w-full min-w-[540px] text-left text-xs">
                 <thead className="bg-slate-100 text-gray-800 font-bold border-b border-gray-200">
                   <tr>
-                    <th className="p-3">제공받는 자</th>
-                    <th className="p-3">제공 목적</th>
-                    <th className="p-3">제공 항목</th>
-                    <th className="p-3">보유 및 이용기간</th>
+                    <th className="p-3 whitespace-nowrap">제공받는 자</th>
+                    <th className="p-3 whitespace-nowrap">제공 목적</th>
+                    <th className="p-3 whitespace-nowrap">제공 항목</th>
+                    <th className="p-3 whitespace-nowrap">보유 및 이용기간</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 text-gray-600">
@@ -197,19 +197,19 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
                     <td className="p-3 font-bold text-gray-900">현지 예약 골프장<br/>(탄손녓, 트윈도브스, 정산, 블러프 등)</td>
                     <td className="p-3">티오프 시간 배정 및 골퍼 등록</td>
                     <td className="p-3">예약자 성명(영문/국문), 성별, 연락처</td>
-                    <td className="p-3">라운딩 이용 완료 시까지</td>
+                    <td className="p-3 whitespace-nowrap">라운딩 이용 완료 시까지</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-bold text-gray-900">현지 예약 숙박시설<br/>(호치민/붕따우/달랏 5성 호텔 및 풀빌라)</td>
                     <td className="p-3">체크인 등록 및 객실 배정</td>
                     <td className="p-3">투숙자 영문 성명, 생년월일, 연락처</td>
-                    <td className="p-3">투숙 종료 시까지</td>
+                    <td className="p-3 whitespace-nowrap">투숙 종료 시까지</td>
                   </tr>
                   <tr>
                     <td className="p-3 font-bold text-gray-900">현지 전용 차량 및 가이드사</td>
                     <td className="p-3">공항 픽업/샌딩 및 전용 기사 배차, 일정 안내</td>
                     <td className="p-3">대표자 성명, 연락처, 도착 항공편 편명</td>
-                    <td className="p-3">전 일정 종료 시까지</td>
+                    <td className="p-3 whitespace-nowrap">전 일정 종료 시까지</td>
                   </tr>
                 </tbody>
               </table>
@@ -348,12 +348,12 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
         </div>
 
         {/* Back to Home Button at Bottom */}
-        <div className="mt-8 text-center no-print">
+        <div className="mt-6 sm:mt-8 px-2.5 sm:px-0 text-center no-print">
           {onGoHome && (
             <button
               type="button"
               onClick={onGoHome}
-              className="px-8 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white font-bold rounded-2xl shadow-lg transition transform active:scale-95 inline-flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto justify-center px-8 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white font-bold rounded-2xl shadow-lg transition transform active:scale-95 inline-flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <span>🏠 망고투어 메인 홈으로 둘러보기</span>
             </button>

@@ -32,23 +32,25 @@ const EventPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-6 xs:py-8 max-w-7xl mx-auto px-3 xs:px-4">
-        <div className="text-left mb-6 xs:mb-8">
-           <h2 className="text-xl xs:text-2xl md:text-3xl font-black text-deepgreen uppercase mb-2 tracking-tight">{content.introTitle}</h2>
-           <div className="h-1 w-12 xs:w-16 bg-gold-500 mb-3 xs:mb-4 rounded-full"></div>
-           <p className="text-sm xs:text-base md:text-lg leading-relaxed text-gray-700 font-medium whitespace-pre-line mb-6 xs:mb-8">{content.introText}</p>
+      <section className="py-5 sm:py-8 max-w-7xl mx-auto px-0 sm:px-4">
+        <div className="text-left mb-5 sm:mb-8">
+           <div className="px-2.5 sm:px-0">
+              <h2 className="text-xl xs:text-2xl md:text-3xl font-black text-deepgreen uppercase mb-2 tracking-tight">{content.introTitle}</h2>
+              <div className="h-1 w-12 xs:w-16 bg-gold-500 mb-3 xs:mb-4 rounded-full"></div>
+              <p className="text-sm xs:text-base md:text-lg leading-relaxed text-gray-700 font-medium whitespace-pre-line mb-5 sm:mb-8">{content.introText}</p>
+           </div>
            
            <PageSectionList sections={content.sections} />
         </div>
 
-        <div className="mt-6 xs:mt-8">
-           <div className="text-left mb-4">
+        <div className="mt-5 sm:mt-8">
+           <div className="text-left mb-4 px-2.5 sm:px-0">
               <h3 className="text-gold-600 font-extrabold tracking-widest text-[10px] xs:text-xs mb-0.5 uppercase">EVENT GALLERY</h3>
               <h2 className="text-xl xs:text-2xl font-black uppercase text-deepgreen">이벤트 현장 갤러리</h2>
            </div>
-           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5">
+           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-3.5">
               {content.galleryImages.map((img, idx) => (
-                 <div key={idx} className="group relative overflow-hidden rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-gray-100">
+                 <div key={idx} className="group relative overflow-hidden rounded-none sm:rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-gray-100">
                     <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Event Gallery ${idx}`} />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                        <span className="text-white text-[10px] font-bold border border-white/40 px-3 py-1 rounded-full backdrop-blur-sm">VIEW</span>

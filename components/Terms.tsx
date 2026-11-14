@@ -15,28 +15,28 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
     <div className="min-h-screen bg-slate-50 text-gray-800 font-sans selection:bg-gold-500 selection:text-white">
       {/* Top Sticky Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs no-print">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+        <div className="max-w-4xl mx-auto px-2.5 sm:px-4 py-3 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <button 
               type="button"
               onClick={onGoHome} 
-              className="flex items-center gap-2 text-deepgreen hover:text-gold-600 transition active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 text-deepgreen hover:text-gold-600 transition active:scale-95 cursor-pointer shrink-0 whitespace-nowrap"
               title="망고투어 메인 홈으로 이동"
             >
-              <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-xs">
+              <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-xs shrink-0">
                 M
               </div>
-              <span className="font-black text-base tracking-tight uppercase">MANGO TOUR</span>
+              <span className="font-black text-sm sm:text-base tracking-tight uppercase whitespace-nowrap">MANGO TOUR</span>
             </button>
             <span className="text-gray-300">|</span>
-            <span className="text-xs sm:text-sm font-bold text-gray-700">서비스 이용약관</span>
+            <span className="text-xs sm:text-sm font-bold text-gray-700 whitespace-nowrap truncate">서비스 이용약관</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handlePrint}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-100 text-xs font-bold text-gray-700 transition cursor-pointer shadow-2xs"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-100 text-xs font-bold text-gray-700 transition cursor-pointer shadow-2xs whitespace-nowrap"
             >
               <span>🖨️ 인쇄 / PDF 저장</span>
             </button>
@@ -45,7 +45,7 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
               <button
                 type="button"
                 onClick={onGoHome}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-deepgreen hover:bg-teal-900 text-white text-xs font-bold transition shadow-xs active:scale-95 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-deepgreen hover:bg-teal-900 text-white text-xs font-bold transition shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
               >
                 <span>🏠 메인 홈 이동</span>
               </button>
@@ -55,9 +55,9 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
       </header>
 
       {/* Main Content Area */}
-      <main className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
+      <main className="max-w-4xl mx-auto px-0 sm:px-4 py-3 sm:py-12">
         {/* Document Header Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-200/90 mb-8">
+        <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-10 shadow-sm border-y sm:border border-gray-200/90 mb-3 sm:mb-8">
           <div className="border-b border-gray-100 pb-6 mb-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold mb-3 border border-emerald-200/60">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -89,7 +89,7 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
         </div>
 
         {/* Detailed Sections Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-200/90 space-y-10 text-xs sm:text-sm text-gray-700 leading-relaxed">
+        <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-10 shadow-sm border-y sm:border border-gray-200/90 space-y-8 sm:space-y-10 text-xs sm:text-sm text-gray-700 leading-relaxed">
           {/* 제1조 */}
           <section id="section-1" className="space-y-3">
             <h2 className="text-base sm:text-lg font-black text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-2">
@@ -331,12 +331,12 @@ const Terms: React.FC<Props> = ({ onGoHome }) => {
         </div>
 
         {/* Back to Home Button at Bottom */}
-        <div className="mt-8 text-center no-print">
+        <div className="mt-6 sm:mt-8 px-2.5 sm:px-0 text-center no-print">
           {onGoHome && (
             <button
               type="button"
               onClick={onGoHome}
-              className="px-8 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white font-bold rounded-2xl shadow-lg transition transform active:scale-95 inline-flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto justify-center px-8 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white font-bold rounded-2xl shadow-lg transition transform active:scale-95 inline-flex items-center gap-2 cursor-pointer whitespace-nowrap"
             >
               <span>🏠 망고투어 메인 홈으로 둘러보기</span>
             </button>

@@ -29,16 +29,16 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-6 xs:py-8 bg-[#f8f9fa] text-black">
-        <div className="max-w-7xl mx-auto px-3 xs:px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xs:gap-8 items-center mb-6 xs:mb-8">
-             <div className="space-y-3">
+      <section className="py-5 sm:py-8 bg-[#f8f9fa] text-black">
+        <div className="max-w-7xl mx-auto px-0 sm:px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 items-center mb-5 sm:mb-8">
+             <div className="space-y-3 px-2.5 sm:px-0">
                 <h2 className="text-xl xs:text-2xl md:text-3xl font-black text-deepgreen uppercase leading-tight tracking-tight whitespace-pre-line">{content.introTitle}</h2>
                 <div className="h-1 w-12 xs:w-16 bg-gold-500 rounded-full"></div>
                 <p className="text-sm xs:text-base md:text-lg leading-relaxed font-medium text-gray-700 whitespace-pre-line">{content.introText}</p>
              </div>
              <div className="relative group">
-                <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl xs:rounded-3xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
+                <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-none sm:rounded-3xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
              </div>
           </div>
 
@@ -46,15 +46,15 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-6 xs:py-8 bg-white">
-         <div className="max-w-7xl mx-auto px-3 xs:px-4">
-            <div className="text-center mb-6">
+      <section className="py-5 sm:py-8 bg-white">
+         <div className="max-w-7xl mx-auto px-0 sm:px-4">
+            <div className="text-center mb-5 sm:mb-6 px-2.5 sm:px-0">
                <h3 className="text-gold-600 font-extrabold tracking-widest text-[10px] xs:text-xs mb-0.5 uppercase">GALLERY</h3>
                <h2 className="text-xl xs:text-2xl font-black uppercase text-deepgreen">비즈니스 VIP 갤러리</h2>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-3.5">
                {content.galleryImages.map((img, idx) => (
-                  <div key={idx} className="group relative overflow-hidden rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-gray-100">
+                  <div key={idx} className="group relative overflow-hidden rounded-none sm:rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-gray-100">
                      <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Gallery ${idx}`} />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2.5">
                         <p className="text-white font-bold text-[10px] uppercase">VIP Service {idx + 1}</p>
