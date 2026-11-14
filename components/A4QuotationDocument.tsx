@@ -251,7 +251,6 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     const isMassageItem = (i: CostItem) =>
       i.category.includes('마사지') || i.category.includes('스파') || i.detail.includes('마사지');
     const isMealItem = (i: CostItem) => i.category.includes('식사') || i.category.includes('만찬');
-    const isInsuranceItem = (i: CostItem) => i.category.includes('보험');
 
     const golfCost = selectedCostItems.find(isGolfItem);
     const tourCost = selectedCostItems.find(isTourItem);
@@ -261,7 +260,6 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     const fastTrackCost = selectedCostItems.find(isFastTrackItem);
     const massageCost = selectedCostItems.find(isMassageItem);
     const mealCost = selectedCostItems.find(isMealItem);
-    const insuranceCost = selectedCostItems.find(isInsuranceItem);
     const flightCost = selectedCostItems.find(isFlightItem);
     const isFlightPaid = !!flightCost && ((flightCost.amountUSD ?? 0) > 0 || (flightCost.amountKRW ?? 0) > 0);
 
@@ -343,9 +341,6 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     if (mealCost) {
       includedList.push(`포함 식사 (${mealCost.detail})`);
     }
-    if (insuranceCost) {
-      includedList.push('해외 여행자 안심 보험');
-    }
     // Include any additional checked items (e.g., 지역 운영 수배비 등)
     selectedCostItems.forEach((item) => {
       if (
@@ -357,8 +352,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
         isGuideItem(item) ||
         isFastTrackItem(item) ||
         isMassageItem(item) ||
-        isMealItem(item) ||
-        isInsuranceItem(item)
+        isMealItem(item)
       ) {
         return;
       }
@@ -381,15 +375,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     if (!fastTrackIncluded) {
       excludedList.push('공항 VIP 패스트트랙 (미포함 · 선택 추가 가능)');
     }
-    if (hasCostItems && !insuranceCost) {
-      excludedList.push('여행자 보험 (미포함)');
-    } else if (!hasCostItems) {
-      excludedList.push('여행자 보험');
-    }
+    excludedList.push('여행자 보험 (미포함)');
 
     // Add any items explicitly unchecked in the cost table
     uncheckedCostItems.forEach((item) => {
-      if (isFlightItem(item) || isHotelItem(item) || isVehicleItem(item) || isGuideItem(item) || isFastTrackItem(item) || isInsuranceItem(item)) {
+      if (isFlightItem(item) || isHotelItem(item) || isVehicleItem(item) || isGuideItem(item) || isFastTrackItem(item)) {
         return;
       }
       excludedList.push(`${item.category} (미선택)`);

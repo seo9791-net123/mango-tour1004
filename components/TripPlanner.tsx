@@ -352,8 +352,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       }
     });
 
-    const insuranceTotal = 15;
-    const perPersonOnlyUSD = Math.round(regionBase + activityTotal + hotelTotal + nonGuideExtraPerPersonTotal + insuranceTotal);
+    const perPersonOnlyUSD = Math.round(regionBase + activityTotal + hotelTotal + nonGuideExtraPerPersonTotal);
     const teamFixedUSD = Math.round(vehicleTotal + guideTotal);
     const groupTotalUSD = Math.round(perPersonOnlyUSD * Math.max(1, personCount) + teamFixedUSD);
     const perPersonWithShareUSD = Math.round(groupTotalUSD / Math.max(1, personCount));
@@ -542,16 +541,6 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         isRequired: false,
         allowCustomSelection: isGuideSvc
       });
-    });
-
-    options.push({
-      id: 'diy-opt-insurance',
-      category: 'etc',
-      name: '해외 여행자 안심 보험 (최고 1억원 보장)',
-      description: '상해 및 해외 의료비 보장 여행자 보험',
-      priceUSD: 15,
-      isDefaultIncluded: true,
-      isRequired: false
     });
 
     const activitySubtitle = isGolf
@@ -1061,9 +1050,6 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       } else if (opt.category === 'activity') {
         catName = '투어/액티비티';
         qty = `${personCount}인`;
-      } else if (opt.id === 'diy-opt-insurance' || opt.name.includes('보험')) {
-        catName = '여행자 보험';
-        qty = `${personCount}인`;
       } else if (opt.category === 'etc') {
         catName = '기타 옵션';
         qty = `${personCount}인`;
@@ -1133,8 +1119,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
           o.id.includes('fasttrack') ||
           o.name.includes('마사지') ||
           o.name.includes('스파') ||
-          o.category === 'meal' ||
-          o.name.includes('보험')
+          o.category === 'meal'
       )
       .map(o => ({
         name: getOptionDisplayName(o),
