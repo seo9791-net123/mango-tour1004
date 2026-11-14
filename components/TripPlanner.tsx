@@ -2778,15 +2778,15 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       {/* ================= MODAL 1: 1:1 ONLINE INQUIRY MODAL (EMAIL TO seo9791@gmail.com) ================= */}
       {showInquiryModal && (
         <div 
-          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
+          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
           style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
         >
           <div 
-            className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full max-w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] relative shadow-2xl animate-scale-in flex flex-col overflow-hidden box-border"
+            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-lg w-full max-w-full h-full md:h-auto max-h-none md:max-h-[92vh] relative shadow-2xl animate-scale-in flex flex-col overflow-hidden box-border"
             style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
           >
             {/* Modal Header with Back Button (Edge-to-edge pinned on top) */}
-            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-gray-100 bg-white sticky top-0 z-30 shrink-0">
+            <div className="flex items-center justify-between px-3 py-2.5 md:px-6 md:py-3.5 border-b border-gray-100 bg-white sticky top-0 z-30 shrink-0">
               <button
                 type="button"
                 onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
@@ -2817,7 +2817,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               <form onSubmit={handleSubmitOnlineInquiry} className="flex-1 flex flex-col overflow-hidden">
                 {/* Scrollable Form Body */}
                 <div 
-                  className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
+                  className="flex-1 overflow-y-auto px-3 py-3 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
                   style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -2932,7 +2932,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                 {/* Sticky Pinned Bottom Action Bar - Email Submit Button ALWAYS VISIBLE */}
                 <div 
-                  className="bg-white/95 backdrop-blur-md px-4 py-3 sm:px-6 sm:py-3.5 md:px-7 md:py-4 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] shrink-0 z-30"
+                  className="bg-white/95 backdrop-blur-md px-3 py-2.5 md:px-7 md:py-4 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] shrink-0 z-30"
                   style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
                 >
                   <button
@@ -2951,7 +2951,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 </div>
               </form>
             ) : (
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 text-center space-y-4 w-full max-w-full">
+              <div className="flex-1 overflow-y-auto px-3 py-4 md:p-8 text-center space-y-4 w-full max-w-full">
                 <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl md:text-4xl mx-auto">
                   ✓
                 </div>
@@ -3024,11 +3024,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       {/* ================= MODAL 2: KAKAOTALK CONSULTATION & SCREENSHOT SHARING MODAL ================= */}
       {showKakaoModal && (
         <div 
-          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-x-hidden overflow-y-auto overscroll-x-none font-sans break-keep"
+          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-x-hidden overflow-y-auto overscroll-x-none font-sans break-keep"
           style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none', WebkitOverflowScrolling: 'touch' }}
         >
           <div 
-            className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-xl w-full max-w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-3.5 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-8 overflow-x-hidden overflow-y-auto box-border"
+            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-xl w-full max-w-full h-full md:h-auto max-h-none md:max-h-[92vh] px-3 py-3 md:p-7 relative shadow-2xl animate-scale-in m-0 md:my-8 overflow-x-hidden overflow-y-auto box-border"
             style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none', WebkitOverflowScrolling: 'touch' }}
           >
             {/* Modal Header with Back Button */}
@@ -3275,15 +3275,15 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       {/* ================= MODAL 3: QUOTATION CAPTURE & SAVE MODAL (SAME FORM AS 1:1 ONLINE INQUIRY) ================= */}
       {showImagePreviewModal && (
         <div 
-          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
+          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
           style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
         >
           <div 
-            className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-lg w-full max-w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] relative shadow-2xl animate-scale-in flex flex-col overflow-hidden box-border"
+            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-lg w-full max-w-full h-full md:h-auto max-h-none md:max-h-[92vh] relative shadow-2xl animate-scale-in flex flex-col overflow-hidden box-border"
             style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
           >
             {/* Modal Header with Back Button (Edge-to-edge pinned on top) */}
-            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-gray-100 bg-white sticky top-0 z-30 shrink-0">
+            <div className="flex items-center justify-between px-3 py-2.5 md:px-6 md:py-3.5 border-b border-gray-100 bg-white sticky top-0 z-30 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowImagePreviewModal(false)}
@@ -3312,7 +3312,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
             {/* Scrollable Form Body */}
             <div 
-              className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
+              className="flex-1 overflow-y-auto px-3 py-3 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <div className="flex items-center gap-2 mb-1">
@@ -3425,7 +3425,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
             {/* Sticky Pinned Bottom Action Bar */}
             <div 
-              className="bg-white/95 backdrop-blur-md px-4 py-3 sm:px-6 sm:py-3.5 md:px-7 md:py-4 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] shrink-0 z-30 space-y-2"
+              className="bg-white/95 backdrop-blur-md px-3 py-2.5 md:px-7 md:py-4 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] shrink-0 z-30 space-y-2"
               style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
             >
               <div className="grid grid-cols-2 gap-2">
@@ -3478,11 +3478,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 4: INTERACTIVE DAY-BY-DAY GOLF COURSE PICKER MODAL ================= */}
       {showGolfModal && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-3xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-3xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-7 relative shadow-2xl animate-scale-in m-0 md:my-6 flex flex-col overflow-hidden">
             
             {/* Modal Header - Edge-to-edge pinned on mobile */}
-            <div className="flex items-start justify-between px-3.5 py-3 sm:px-0 sm:py-0 sm:pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+            <div className="flex items-start justify-between px-3 py-2.5 md:px-0 md:py-0 md:pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
                   <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">나만의 일정 설계</span>
@@ -3504,7 +3504,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             </div>
 
             {/* Scrollable Content Body - Edge-to-edge padding on mobile */}
-            <div className="overflow-y-auto flex-1 px-3 sm:px-0 space-y-4 py-3 sm:py-4 md:py-5">
+            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 space-y-4 py-3 md:py-5">
 
               {/* Step 1: Select Round / Day to Modify */}
               <div>
@@ -3701,8 +3701,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             </div>
 
             {/* Modal Footer - Edge-to-edge pinned on mobile */}
-            <div className="px-3.5 py-3 sm:px-0 sm:py-0 sm:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-md sm:shadow-none">
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="px-3 py-2.5 md:px-0 md:py-0 md:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col md:flex-row justify-between items-center gap-3 shadow-md md:shadow-none">
+              <div className="flex items-center gap-3 w-full md:w-auto">
                 <div>
                   <span className="text-[10px] md:text-xs text-gray-400 block">골프장 총 변경 차액 (1인 기준)</span>
                   <span className={`text-sm md:text-base font-black ${
@@ -3749,11 +3749,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 5: DEDICATED CUSTOM OPTION POPUP MODAL (HOTEL, VEHICLE, GUIDE, MEAL, ETC.) ================= */}
       {customizingOption && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-3xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-7 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-3xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-7 relative shadow-2xl animate-scale-in m-0 md:my-6 flex flex-col overflow-hidden">
             
             {/* Modal Header - Edge-to-edge pinned on mobile */}
-            <div className="flex items-start justify-between px-3.5 py-3 sm:px-0 sm:py-0 sm:pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+            <div className="flex items-start justify-between px-3 py-2.5 md:px-0 md:py-0 md:pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
                   <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">나만의 일정 설계</span>
@@ -3791,7 +3791,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             </div>
 
             {/* Scrollable Content Body - Edge-to-edge padding on mobile */}
-            <div className="overflow-y-auto flex-1 px-3 sm:px-0 space-y-4 py-3 sm:py-4">
+            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 space-y-4 py-3 md:py-4">
 
               {/* Step 1: Current Selection Status Card */}
               <div>
@@ -4054,8 +4054,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             </div>
 
             {/* Modal Footer - Edge-to-edge pinned on mobile */}
-            <div className="px-3.5 py-3 sm:px-0 sm:py-0 sm:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-md sm:shadow-none">
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="px-3 py-2.5 md:px-0 md:py-0 md:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col md:flex-row justify-between items-center gap-3 shadow-md md:shadow-none">
+              <div className="flex items-center gap-3 w-full md:w-auto">
                 <div>
                   <span className="text-[10px] md:text-xs text-gray-400 block">
                     {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
@@ -4099,11 +4099,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 )}
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-2 w-full md:w-auto">
                 <button
                   type="button"
                   onClick={() => setCustomizingOption(null)}
-                  className="flex-1 sm:flex-initial px-5 py-3 bg-deepgreen text-white font-black text-xs sm:text-sm md:text-base rounded-2xl hover:bg-[#00382e] transition shadow-md active:scale-95"
+                  className="flex-1 md:flex-initial px-5 py-3 bg-deepgreen text-white font-black text-xs sm:text-sm md:text-base rounded-2xl hover:bg-[#00382e] transition shadow-md active:scale-95"
                 >
                   선택 완료 및 견적 적용 ✓
                 </button>
@@ -4116,9 +4116,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 6: DIY COURSE SELECTOR MODAL ================= */}
       {diyChangingRoundIndex !== null && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-2xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-6 relative shadow-2xl animate-scale-in m-0 sm:my-6 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3.5 py-3 sm:px-0 sm:py-0 sm:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in m-0 md:my-6 flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:py-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
                   {diyChangingRoundIndex + 1}회차 ({diyChangingRoundIndex + 2}일차) 코스 지정
@@ -4136,7 +4136,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-3 sm:px-0 py-3 space-y-2 max-h-[65vh]">
+            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 space-y-2 md:max-h-[65vh]">
               {pool.golfCourses.map((course) => {
                 const isSelected = diyGolfCourses[diyChangingRoundIndex] === course.name;
                 return (
@@ -4190,7 +4190,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               })}
             </div>
 
-            <div className="px-3.5 py-3 sm:px-0 sm:py-0 sm:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 text-right">
+            <div className="px-3 py-2.5 md:px-0 md:py-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 text-right">
               <button
                 type="button"
                 onClick={() => setDiyChangingRoundIndex(null)}
@@ -4205,8 +4205,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 7: DIY STEP 2 SCHEDULE PICKER MODAL (3박4일 ~ 6박7일) ================= */}
       {showScheduleModal && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-3 sm:p-4 backdrop-blur-sm animate-fade-in font-sans break-keep">
-          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl animate-scale-in space-y-4">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in font-sans break-keep">
+          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-md w-full h-full md:h-auto px-3 py-4 md:p-6 shadow-2xl animate-scale-in space-y-4 overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">STEP 2 · 일정 선택</span>
@@ -4259,9 +4259,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 8: DIY STEP 3 CONDITIONAL POPUP (골프 / 여행) ================= */}
       {showActivityModal === 'golf' && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-2xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 sm:px-0 sm:pt-0 sm:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
                   {diyLocation} · {diyNights}박 {diyDays}일 맞춤 골프장 선택
@@ -4279,7 +4279,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-4 sm:px-0 py-4 space-y-4">
+            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 md:py-4 space-y-4">
               {/* Round count selector */}
               <div className="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-200 flex items-center justify-between">
                 <div>
@@ -4405,11 +4405,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               </div>
             </div>
 
-            <div className="px-4 py-3 sm:px-0 sm:pb-0 sm:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex justify-end gap-2">
+            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowActivityModal(null)}
-                className="w-full sm:w-auto px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer"
+                className="w-full md:w-auto px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer"
               >
                 선택 완료 & 적용 ✓
               </button>
@@ -4419,9 +4419,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       )}
 
       {showActivityModal === 'tour' && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none sm:rounded-3xl max-w-none sm:max-w-2xl w-full h-full sm:h-auto max-h-none sm:max-h-[92vh] p-0 sm:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 sm:px-0 sm:pt-0 sm:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
+          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
               <div>
                 <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] md:text-xs font-bold rounded-md">
                   {diyLocation} · {diyNights}박 {diyDays}일 여행 상품 선택
@@ -4439,7 +4439,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-4 sm:px-0 py-4 space-y-2.5">
+            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 md:py-4 space-y-2.5">
               {activeRegionTourOptions.map((item) => {
                 const isSelected = diySelectedTourIds.includes(item.id);
                 return (
@@ -4484,7 +4484,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               })}
             </div>
 
-            <div className="px-4 py-3 sm:px-0 sm:pb-0 sm:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3">
+            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3">
               <div className="text-xs text-gray-500 font-medium">
                 자유 여행 또는 {diyLocation} 지역 상품을 복수 선택할 수 있습니다.
               </div>

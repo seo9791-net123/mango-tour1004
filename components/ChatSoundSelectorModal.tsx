@@ -55,13 +55,13 @@ const ChatSoundSelectorModal: React.FC<Props> = ({ isOpen, onClose, onThemeChang
   };
 
   return (
-    <div className="fixed inset-0 z-[10015] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in no-print">
+    <div className="fixed inset-0 z-[10015] flex items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-xs animate-fade-in no-print">
       <div 
-        className="bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-md w-full overflow-hidden animate-scale-in flex flex-col max-h-[90vh]"
+        className="bg-white rounded-none md:rounded-3xl shadow-2xl border-0 md:border border-gray-200 max-w-none md:max-w-md w-full overflow-hidden animate-scale-in flex flex-col h-full md:h-auto max-h-none md:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-deepgreen to-teal-800 text-white p-4 sm:p-5 flex items-center justify-between shrink-0 shadow-sm">
+        <div className="bg-gradient-to-r from-deepgreen to-teal-800 text-white px-3 py-3.5 md:p-5 flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-xl shadow-inner">
               🎵

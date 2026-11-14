@@ -249,11 +249,11 @@ const AdaptiveImageViewer: React.FC<Props> = ({
       {/* ================= FULLSCREEN LIGHTBOX MODAL ================= */}
       {isFullscreen && (
         <div
-          className="fixed inset-0 z-[10020] bg-black/95 flex flex-col justify-between p-3 sm:p-6 backdrop-blur-xl animate-fade-in"
+          className="fixed inset-0 z-[10020] bg-black/95 flex flex-col justify-between p-0 md:p-6 backdrop-blur-xl animate-fade-in"
           onClick={() => setIsFullscreen(false)}
         >
           {/* Top Bar in Lightbox */}
-          <div className="flex items-center justify-between text-white shrink-0 z-30" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between text-white shrink-0 z-30 px-2.5 py-2.5 md:p-0" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm sm:text-base text-gold-400">
                 사진 상세 크게보기 ({activeIdx + 1} / {images.length})

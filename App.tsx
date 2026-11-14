@@ -1300,8 +1300,8 @@ const App: React.FC = () => {
 
       {/* Popup Notification */}
       {showPopup && popup.isActive && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-sm w-full animate-scale-in border border-white/20">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-none md:rounded-[2.5rem] overflow-hidden shadow-2xl max-w-none md:max-w-sm w-full h-full md:h-auto flex flex-col justify-center animate-scale-in border-0 md:border border-white/20 overflow-y-auto">
             {popup.image && (
               <div className={`relative overflow-hidden bg-gray-950 flex items-center justify-center ${
                 popup.imageHeight === 'compact' ? 'h-48' :
@@ -1327,7 +1327,7 @@ const App: React.FC = () => {
                 />
               </div>
             )}
-            <div className="p-8 space-y-4">
+            <div className="p-4 md:p-8 space-y-4">
               {!popup.image && <h3 className="text-deepgreen font-bold text-xl">{popup.title}</h3>}
               <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{popup.content}</p>
               
@@ -1357,8 +1357,8 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-start md:items-center justify-center z-[10000] px-2 sm:px-4 backdrop-blur-sm animate-fade-in pt-16 md:pt-0">
-          <div className="bg-white rounded-2xl p-5 sm:p-8 w-full max-w-md shadow-2xl relative transform transition-all animate-fade-in-up">
+        <div className="fixed inset-0 bg-black/60 flex items-stretch md:items-center justify-center z-[10000] px-0 md:px-4 backdrop-blur-sm animate-fade-in pt-0">
+          <div className="bg-white rounded-none md:rounded-2xl px-3.5 py-6 md:p-8 w-full max-w-none md:max-w-md h-full md:h-auto flex flex-col justify-center shadow-2xl relative transform transition-all animate-fade-in-up overflow-y-auto">
             <button onClick={() => { setShowAuthModal(false); resetAuthFields(); }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
             <h2 className="text-2xl font-bold text-center mb-6 text-deepgreen">{authMode === 'login' ? '로그인' : '회원가입'}</h2>
             <form onSubmit={handleLogin} className="space-y-4">

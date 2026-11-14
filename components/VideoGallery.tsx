@@ -751,8 +751,8 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
       {/* Direct URL / YouTube Link Modal */}
       {showUrlModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-gray-800 border-0 md:border border-gray-700 rounded-none md:rounded-2xl max-w-none md:max-w-md w-full h-full md:h-auto flex flex-col justify-center px-3.5 py-5 md:p-6 shadow-2xl text-white overflow-y-auto">
             <h3 className="text-base font-bold text-gray-100 mb-1 flex items-center gap-2">
               <span>🔗</span> 동영상 링크(URL) 직접 등록
             </h3>
@@ -827,8 +827,8 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
       {/* In-App Delete Confirmation Modal */}
       {videoToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-gray-800 border-0 md:border border-gray-700 rounded-none md:rounded-2xl max-w-none md:max-w-sm w-full h-full md:h-auto flex flex-col justify-center px-3.5 py-5 md:p-6 shadow-2xl text-white overflow-y-auto">
             <div className="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

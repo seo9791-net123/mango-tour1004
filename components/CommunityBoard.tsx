@@ -548,8 +548,8 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
 
       {/* Password Prompt Modal */}
       {showPasswordPrompt && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl animate-scale-in">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-none md:rounded-2xl px-3.5 py-5 md:p-6 w-full max-w-none md:max-w-xs h-full md:h-auto flex flex-col justify-center shadow-2xl animate-scale-in">
             <div className="text-center mb-4">
               <span className="text-3xl">🔒</span>
               <h3 className="font-bold text-gray-800 mt-2">비공개 게시글</h3>
@@ -584,11 +584,11 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
 
       {/* Post Detail & Edit Modal */}
       {viewingPost && user && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white w-full max-w-3xl h-[80vh] rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white w-full max-w-none md:max-w-3xl h-full md:h-[80vh] rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
             
             {/* Left/Top: Content & Image */}
-            <div className="flex-1 overflow-y-auto bg-white p-5 md:p-6 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto bg-white px-3 py-4 md:p-6 scrollbar-hide">
                 <div className="flex justify-between items-start mb-4">
                      {isEditing && editForm ? (
                        <input 

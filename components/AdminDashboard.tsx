@@ -2562,11 +2562,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
             {/* Dedicated High-Priority Modal Window for Editing Package */}
             {editingPackage && (
-              <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
-                <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl border-2 border-gold-400 max-h-[92vh] flex flex-col overflow-hidden animate-scale-in my-auto">
+              <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 md:p-6 overflow-y-auto">
+                <div className="bg-white w-full max-w-none md:max-w-5xl rounded-none md:rounded-3xl shadow-2xl border-0 md:border-2 md:border-gold-400 h-full md:h-auto max-h-none md:max-h-[92vh] flex flex-col overflow-hidden animate-scale-in my-0 md:my-auto">
                   
                   {/* Modal Header */}
-                  <div className="bg-gradient-to-r from-deepgreen via-gray-900 to-deepgreen text-white p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gold-500/40">
+                  <div className="bg-gradient-to-r from-deepgreen via-gray-900 to-deepgreen text-white px-3 py-3 md:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gold-500/40">
                     <div className="flex items-center gap-3">
                       <span className="w-10 h-10 rounded-2xl bg-gold-500 text-white font-black flex items-center justify-center text-lg shadow shrink-0">
                         ⛳
@@ -2613,7 +2613,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                   </div>
 
                   {/* Modal Navigation Tabs */}
-                  <div className="bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-2.5 flex flex-wrap gap-2">
+                  <div className="bg-gray-50 border-b border-gray-200 px-2.5 md:px-6 py-2 flex flex-wrap gap-1.5 md:gap-2">
                     <button
                       onClick={() => setPackageModalTab('basic')}
                       className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ${
@@ -2647,7 +2647,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                   </div>
 
                   {/* Modal Body Container */}
-                  <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
+                  <div className="px-2.5 py-3 md:p-6 overflow-y-auto flex-1 space-y-6">
 
                     {/* TAB 1: BASIC INFO */}
                     {packageModalTab === 'basic' && (
@@ -4062,8 +4062,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
             {/* Modal: Add New Pool Item */}
             {showAddPoolModal && (
-              <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-                <div className="bg-white max-w-lg w-full rounded-3xl p-6 shadow-2xl border border-gold-400 space-y-4 animate-scale-in">
+              <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 overflow-y-auto">
+                <div className="bg-white max-w-none md:max-w-lg w-full rounded-none md:rounded-3xl h-full md:h-auto max-h-none md:max-h-[92vh] overflow-y-auto px-3 py-4 md:p-6 shadow-2xl border-0 md:border md:border-gold-400 space-y-4 animate-scale-in">
                   <div className="flex justify-between items-center border-b pb-3">
                     <h4 className="text-base font-black text-deepgreen flex items-center gap-2">
                       <span>➕</span> 새 맞춤 풀(Pool) 옵션 항목 등록
@@ -4290,11 +4290,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             {/* Modal: Icon Picker & Custom Image Upload */}
             {iconPickerTarget && (
               <div
-                className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+                className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 overflow-y-auto"
                 onClick={() => setIconPickerTarget(null)}
               >
                 <div
-                  className="bg-white max-w-md w-full rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl border border-emerald-200 space-y-4 animate-scale-in"
+                  className="bg-white max-w-none md:max-w-md w-full rounded-none md:rounded-3xl h-full md:h-auto overflow-y-auto px-3 py-4 md:p-6 shadow-2xl border-0 md:border md:border-emerald-200 space-y-4 animate-scale-in"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex justify-between items-center border-b pb-3 gap-2">
@@ -5156,8 +5156,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
             {/* 신규 회원 추가 모달 */}
             {showAddUserModal && (
-              <div className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-gray-100 overflow-hidden animate-scale-in p-6">
+              <div className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 animate-fade-in">
+                <div className="bg-white w-full max-w-none md:max-w-md h-full md:h-auto rounded-none md:rounded-3xl shadow-2xl border-0 md:border md:border-gray-100 overflow-y-auto animate-scale-in px-3.5 py-5 md:p-6 flex flex-col justify-center">
                   <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
                     <h4 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <span>👤</span> 신규 회원/관리자 계정 추가
@@ -5261,8 +5261,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
       {/* 0. General Product Delete Confirmation Modal */}
       {productToDelete && (
-        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-red-200 overflow-hidden animate-scale-in p-6 text-center space-y-4">
+        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-none md:max-w-md h-full md:h-auto rounded-none md:rounded-3xl shadow-2xl border-0 md:border md:border-red-200 overflow-y-auto animate-scale-in px-3.5 py-5 md:p-6 text-center space-y-4 flex flex-col justify-center">
             <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
               🛍️
             </div>
@@ -5311,8 +5311,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
       {/* 1. Custom Trip Package Delete Confirmation Modal */}
       {packageToDelete && (
-        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-red-200 overflow-hidden animate-scale-in p-6 text-center space-y-4">
+        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-none md:max-w-md h-full md:h-auto rounded-none md:rounded-3xl shadow-2xl border-0 md:border md:border-red-200 overflow-y-auto animate-scale-in px-3.5 py-5 md:p-6 text-center space-y-4 flex flex-col justify-center">
             <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
               🗑️
             </div>
@@ -5361,8 +5361,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
       {/* 2. Custom Trip Package Reset Confirmation Modal */}
       {showResetPackageModal && (
-        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-amber-200 overflow-hidden animate-scale-in p-6 text-center space-y-4">
+        <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 animate-fade-in">
+          <div className="bg-white w-full max-w-none md:max-w-md h-full md:h-auto rounded-none md:rounded-3xl shadow-2xl border-0 md:border md:border-amber-200 overflow-y-auto animate-scale-in px-3.5 py-5 md:p-6 text-center space-y-4 flex flex-col justify-center">
             <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-2xl mx-auto shadow-inner">
               🔄
             </div>
@@ -5400,8 +5400,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
       {/* 3. Popup Image URL Input Modal */}
       {showPopupUrlModal && (
-        <div className="fixed inset-0 z-[10005] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-in">
+        <div className="fixed inset-0 z-[10005] bg-black/70 backdrop-blur-sm flex items-center justify-center p-0 md:p-4 animate-fade-in">
+          <div className="bg-white rounded-none md:rounded-3xl px-3.5 py-5 md:p-6 max-w-none md:max-w-md w-full h-full md:h-auto overflow-y-auto shadow-2xl space-y-4 animate-scale-in flex flex-col justify-center">
             <div className="flex items-center justify-between">
               <h4 className="text-base font-black text-gray-900 flex items-center gap-2">
                 <span>🔗</span> 팝업 이미지 웹 URL 입력
@@ -5467,7 +5467,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
       {/* 4. Fullscreen Lightbox Modal for Notice Image */}
       {showPopupFullscreen && popup.image && (
         <div 
-          className="fixed inset-0 z-[10010] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in select-none"
+          className="fixed inset-0 z-[10010] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-0 md:p-4 animate-fade-in select-none"
           onClick={() => setShowPopupFullscreen(false)}
         >
           {/* Top Control Bar */}
@@ -5570,12 +5570,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
       {/* 5. Live Visitor Popup Preview Modal */}
       {showPopupLivePreview && (
         <div 
-          className="fixed inset-0 z-[10008] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[10008] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-0 md:p-4 animate-fade-in"
           onClick={() => setShowPopupLivePreview(false)}
         >
           {/* Header Banner */}
           <div 
-            className="mb-4 bg-gold-400 text-deepgreen px-5 py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-xl border border-gold-300"
+            className="mb-2 md:mb-4 bg-gold-400 text-deepgreen px-3 md:px-5 py-1.5 md:py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-xl border border-gold-300 mt-2 md:mt-0 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <span>📱</span> [실제 방문자 화면 미리보기] 모드
@@ -5585,7 +5585,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
           {/* Exact Visitor Popup Simulation */}
           <div 
-            className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl max-w-sm w-full animate-scale-in border border-white/30 relative"
+            className="bg-white rounded-none md:rounded-[2.5rem] overflow-hidden shadow-2xl max-w-none md:max-w-sm w-full flex-1 md:flex-initial animate-scale-in border-0 md:border md:border-white/30 relative overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close X */}

@@ -226,9 +226,9 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
 
       {/* Form Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pt-safe">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl transform transition-all animate-fade-in-up max-h-[90vh] flex flex-col pb-safe">
-            <div className="bg-deepgreen px-4 sm:px-5 py-3.5 flex justify-between items-center shrink-0">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-4 pt-safe">
+          <div className="bg-white rounded-none md:rounded-2xl w-full max-w-none md:max-w-xl overflow-hidden shadow-2xl transform transition-all animate-fade-in-up h-full md:h-auto max-h-none md:max-h-[90vh] flex flex-col pb-safe">
+            <div className="bg-deepgreen px-3 md:px-5 py-3 md:py-3.5 flex justify-between items-center shrink-0">
               <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                 <span>📝</span> 여행 취향 설정
               </h3>
@@ -240,7 +240,7 @@ const AITripPlanner: React.FC<Props> = ({ onPlanGenerated, onBack }) => {
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 bg-gray-50 overflow-y-auto flex-1">
+            <div className="px-3 py-3.5 md:p-6 bg-gray-50 overflow-y-auto flex-1">
               <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-1">

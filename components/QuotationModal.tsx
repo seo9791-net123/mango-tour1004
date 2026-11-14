@@ -209,11 +209,11 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 z-[10000] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe">
-      <div className="bg-gray-100 w-full max-w-4xl h-full sm:h-auto sm:max-h-[96vh] sm:rounded-3xl shadow-2xl relative flex flex-col overflow-hidden my-auto print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none">
+    <div className="fixed inset-0 bg-black/75 z-[10000] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe">
+      <div className="bg-gray-100 w-full max-w-none md:max-w-4xl h-full md:h-auto md:max-h-[96vh] rounded-none md:rounded-3xl shadow-2xl relative flex flex-col overflow-hidden my-auto print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none">
         
         {/* Top Control Bar inside Modal (no-print) */}
-        <div className="no-print bg-white px-3 sm:px-6 py-2.5 sm:py-3 border-b border-gray-200 flex items-center justify-between gap-2 shrink-0">
+        <div className="no-print bg-white px-2.5 md:px-6 py-2.5 md:py-3 border-b border-gray-200 flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <button
               type="button"
@@ -344,7 +344,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
         </div>
 
         {/* Scrollable Document Area */}
-        <div className="flex-1 overflow-y-auto p-0 sm:p-6 print:p-0 print:overflow-visible">
+        <div className="flex-1 overflow-y-auto p-0 md:p-6 print:p-0 print:overflow-visible">
           <A4QuotationDocument
             customerName={customerName}
             personCount={personCount}
