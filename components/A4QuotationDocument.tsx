@@ -17,6 +17,20 @@ export interface ItineraryDay {
   activities: Array<{ time?: string; desc: string }> | string[];
 }
 
+export interface ReservationNoticeData {
+  sourceType?: 'product' | 'diy';
+  productTitle?: string;
+  tripType?: 'golf' | 'tour' | 'hotel';
+  region?: string;
+  duration?: string;
+  golfCourses?: string[];
+  tourItems?: string[];
+  accommodation?: string;
+  vehicle?: string;
+  extraServices?: Array<{ name: string; included: boolean }>;
+  excludedItems?: string[];
+}
+
 export interface A4QuotationProps {
   customerName?: string;
   personCount?: number;
@@ -31,6 +45,7 @@ export interface A4QuotationProps {
   costItems?: CostItem[];
   itinerary?: ItineraryDay[];
   notes?: string;
+  reservationNotice?: ReservationNoticeData;
   onClose?: () => void;
   showControls?: boolean;
 }
@@ -49,6 +64,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   costItems = [],
   itinerary = [],
   notes,
+  reservationNotice,
   onClose,
   showControls = true,
 }) => {
@@ -213,13 +229,212 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   const finalTotalKRW = hasCostItems ? computedSelectedKRW : (totalPriceKRW || 0);
   const finalTotalUSD = hasCostItems ? computedSelectedUSD : (totalPriceUSD || 0);
 
+  // Dynamically compute [망고투어 예약 안내 사항] from reservationNotice + live selectedCostItems
+  const computedNotice = (() => {
+    const uncheckedCostItems = costItems.filter((item, idx) => !isCostItemSelected(item, idx));
+    const isFastTrackItem = (i: CostItem) =>
+      i.category.includes('패스트') ||
+      i.detail.includes('패스트트랙') ||
+      i.detail.includes('패스트 트랙') ||
+      i.category === 'VIP패스트트랙' ||
+      i.category === '공항 VIP 의전';
+    const isGuideItem = (i: CostItem) => i.category.includes('가이드');
+    const isGolfItem = (i: CostItem) => i.category.includes('골프');
+    const isTourItem = (i: CostItem) =>
+      (i.category.includes('투어') && !i.category.includes('차량')) ||
+      i.category.includes('관광') ||
+      i.category.includes('자유');
+    const isHotelItem = (i: CostItem) =>
+      i.category.includes('숙박') || i.category.includes('호텔') || i.category.includes('리조트') || i.category.includes('풀빌라');
+    const isVehicleItem = (i: CostItem) => i.category.includes('차량') || i.category.includes('리무진');
+    const isFlightItem = (i: CostItem) => i.category.includes('항공');
+    const isMassageItem = (i: CostItem) =>
+      i.category.includes('마사지') || i.category.includes('스파') || i.detail.includes('마사지');
+    const isMealItem = (i: CostItem) => i.category.includes('식사') || i.category.includes('만찬');
+    const isInsuranceItem = (i: CostItem) => i.category.includes('보험');
+
+    const golfCost = selectedCostItems.find(isGolfItem);
+    const tourCost = selectedCostItems.find(isTourItem);
+    const hotelCost = selectedCostItems.find(isHotelItem);
+    const vehicleCost = selectedCostItems.find(isVehicleItem);
+    const guideCost = selectedCostItems.find(isGuideItem);
+    const fastTrackCost = selectedCostItems.find(isFastTrackItem);
+    const massageCost = selectedCostItems.find(isMassageItem);
+    const mealCost = selectedCostItems.find(isMealItem);
+    const insuranceCost = selectedCostItems.find(isInsuranceItem);
+    const flightCost = selectedCostItems.find(isFlightItem);
+    const isFlightPaid = !!flightCost && ((flightCost.amountUSD ?? 0) > 0 || (flightCost.amountKRW ?? 0) > 0);
+
+    const golfCoursesList = reservationNotice?.golfCourses?.filter(Boolean) || [];
+    const tourItemsList = reservationNotice?.tourItems?.filter(Boolean) || [];
+    const isGolfTrip =
+      reservationNotice?.tripType === 'golf' ||
+      golfCoursesList.length > 0 ||
+      !!golfCost ||
+      costItems.some(isGolfItem);
+
+    const regionText = reservationNotice?.region || location;
+    const durationText = reservationNotice?.duration || duration;
+    const titleText = reservationNotice?.productTitle || `${regionText} ${durationText} 맞춤 여행`;
+
+    const extraServices = reservationNotice?.extraServices || [];
+    const hasExtraIncluded = (keyword: string) =>
+      extraServices.some((s) => s.name.includes(keyword) && s.included);
+
+    const guideIncluded = hasCostItems ? !!guideCost : hasExtraIncluded('가이드');
+    const fastTrackIncluded = hasCostItems ? !!fastTrackCost : hasExtraIncluded('패스트');
+    const massageIncluded = hasCostItems ? !!massageCost : (hasExtraIncluded('마사지') || hasExtraIncluded('스파'));
+    const hotelIncluded = hasCostItems ? !!hotelCost : !!reservationNotice?.accommodation;
+    const vehicleIncluded = hasCostItems ? !!vehicleCost : !!reservationNotice?.vehicle;
+
+    const activitySummary = isGolfTrip
+      ? golfCoursesList.length > 0
+        ? `골프 ${golfCoursesList.length}회 라운딩 (${golfCoursesList.join(' · ')})`
+        : golfCost
+          ? golfCost.detail
+          : '골프 일정 (미선택)'
+      : tourItemsList.length > 0
+        ? `투어/일정 (${tourItemsList.join(' · ')})`
+        : tourCost
+          ? tourCost.detail
+          : `${regionText} 자유·맞춤 일정`;
+
+    const accommodationSummary = hotelIncluded
+      ? reservationNotice?.accommodation || hotelCost?.detail || '1인 1실 단독 숙박'
+      : '숙박 미포함 (개별 예약)';
+
+    const vehicleSummary = vehicleIncluded
+      ? reservationNotice?.vehicle || vehicleCost?.detail || '전 일정 전용 차량'
+      : '전용 차량 미포함';
+
+    const includedList: string[] = [];
+    if (isFlightPaid && flightCost) {
+      includedList.push(`국제선 왕복 항공권 (${flightCost.detail})`);
+    }
+    if (golfCost || (!hasCostItems && isGolfTrip && golfCoursesList.length > 0)) {
+      includedList.push(
+        golfCoursesList.length > 0
+          ? `선택 골프장 그린피 (${golfCoursesList.join(', ')})`
+          : `골프 그린피 (${golfCost?.detail || '정규 라운딩'})`
+      );
+    }
+    if (tourCost || (!hasCostItems && !isGolfTrip && tourItemsList.length > 0)) {
+      includedList.push(
+        tourItemsList.length > 0
+          ? `선택 투어/관광 (${tourItemsList.join(', ')})`
+          : `투어/관광 (${tourCost?.detail})`
+      );
+    }
+    if (hotelIncluded) {
+      includedList.push(`숙박 (${accommodationSummary})`);
+    }
+    if (vehicleIncluded) {
+      includedList.push(`전용 차량 (${vehicleSummary})`);
+    }
+    if (guideIncluded) {
+      includedList.push(guideCost?.detail ? `가이드 (${guideCost.detail})` : '전 일정 한국어 전문 가이드 포함');
+    }
+    if (fastTrackIncluded) {
+      includedList.push('공항 VIP 패스트트랙 포함');
+    }
+    if (massageIncluded) {
+      includedList.push('스파 & 전신 마사지 케어 포함');
+    }
+    if (mealCost) {
+      includedList.push(`포함 식사 (${mealCost.detail})`);
+    }
+    if (insuranceCost) {
+      includedList.push('해외 여행자 안심 보험');
+    }
+    // Include any additional checked items (e.g., 지역 운영 수배비 등)
+    selectedCostItems.forEach((item) => {
+      if (
+        isFlightItem(item) ||
+        isGolfItem(item) ||
+        isTourItem(item) ||
+        isHotelItem(item) ||
+        isVehicleItem(item) ||
+        isGuideItem(item) ||
+        isFastTrackItem(item) ||
+        isMassageItem(item) ||
+        isMealItem(item) ||
+        isInsuranceItem(item)
+      ) {
+        return;
+      }
+      includedList.push(`${item.category} (${item.detail})`);
+    });
+
+    const excludedList: string[] = [];
+    if (!isFlightPaid) {
+      excludedList.push('왕복 항공권 (별도 발권 또는 요청 시 대행)');
+    }
+    if (!hotelIncluded) {
+      excludedList.push('숙박 (미선택/개별 예약)');
+    }
+    if (!vehicleIncluded) {
+      excludedList.push('전용 차량 (미선택)');
+    }
+    if (!guideIncluded) {
+      excludedList.push('한국어 전문 가이드 (미포함)');
+    }
+    if (!fastTrackIncluded) {
+      excludedList.push('공항 VIP 패스트트랙 (미포함 · 선택 추가 가능)');
+    }
+    if (hasCostItems && !insuranceCost) {
+      excludedList.push('여행자 보험 (미포함)');
+    } else if (!hasCostItems) {
+      excludedList.push('여행자 보험');
+    }
+
+    // Add any items explicitly unchecked in the cost table
+    uncheckedCostItems.forEach((item) => {
+      if (isFlightItem(item) || isHotelItem(item) || isVehicleItem(item) || isGuideItem(item) || isFastTrackItem(item) || isInsuranceItem(item)) {
+        return;
+      }
+      excludedList.push(`${item.category} (미선택)`);
+    });
+
+    // Add any extra excludedItems passed from DIY/product controls if not already noted
+    (reservationNotice?.excludedItems || []).forEach((exName) => {
+      const normalized = exName.trim();
+      if (!normalized) return;
+      const alreadyCovered = excludedList.some((entry) => entry.includes(normalized.split(' (')[0]));
+      if (!alreadyCovered) {
+        excludedList.push(`${normalized} (미포함)`);
+      }
+    });
+
+    if (isGolfTrip) {
+      excludedList.push('골프 캐디팁 및 운전기사 팁, 개인 매너팁, 포함 외 식사·음료 비용');
+    } else {
+      excludedList.push('운전기사 팁, 개인 매너팁, 포함 외 식사·음료 및 개인 경비');
+    }
+
+    return {
+      isGolfTrip,
+      titleText,
+      regionText,
+      durationText,
+      activitySummary,
+      accommodationSummary,
+      vehicleSummary,
+      includedText: includedList.length > 0 ? includedList.join(', ') : '선택된 포함 항목이 없습니다. (경비 내역에서 항목을 선택해주세요)',
+      excludedText: excludedList.join(', '),
+      openingLine: isGolfTrip
+        ? '본 견적은 실시간 골프장 및 호텔 현황에 기반하여 작성되었으며, 예약 시점에 따라 금액 변동이 있을 수 있습니다.'
+        : '본 견적은 실시간 현지 투어·차량 및 호텔 현황에 기반하여 작성되었으며, 예약 시점에 따라 금액 변동이 있을 수 있습니다.',
+    };
+  })();
+
   // Copy Quotation Summary Text
   const handleCopyText = async () => {
     let text = `[MANGO TOUR 여행 견적 및 일정 안내서]\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `👤 고객명: ${customerName} 고객님 (외 ${Math.max(0, personCount - 1)}인)\n`;
-    text += `📍 여행지: 베트남 ${location}\n`;
-    text += `📅 여행기간: ${formattedDateRange} (${duration})\n`;
+    text += `📌 선택 상품: ${computedNotice.titleText}\n`;
+    text += `📍 여행지: 베트남 ${computedNotice.regionText}\n`;
+    text += `📅 여행기간: ${formattedDateRange} (${computedNotice.durationText})\n`;
     text += `💰 총 견적 금액: $${finalTotalUSD.toLocaleString()} USD (${personCount}인 기준)\n`;
     text += `   (약 ₩ ${finalTotalKRW.toLocaleString()}원)\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -229,8 +444,9 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       text += `• [${item.category}] ${item.detail} (${item.quantity}): $${itemUSD.toLocaleString()} USD (약 ₩ ${item.amountKRW.toLocaleString()}원)\n`;
     });
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `■ 포함 사항: 선택 골프장 그린피, 전 일정 1인 객실 기준 숙박(1인 1실 단독 객실 & 조식 포함), 전 일정 단독 전용 리무진 밴, 선택 옵션(한국어 전문 가이드, 공항 VIP 패스트트랙 등)\n`;
-    text += `■ 불포함 사항: 왕복 항공권(별도 발권 또는 요청 시 대행), 운전기사 팁, 개인 매너팁 및 포함 외 식사/음료 비용, 여행자 보험\n`;
+    text += `■ 선택 구성 요약: ${computedNotice.activitySummary} | 숙박: ${computedNotice.accommodationSummary} | 차량: ${computedNotice.vehicleSummary}\n`;
+    text += `■ 포함 사항: ${computedNotice.includedText}\n`;
+    text += `■ 불포함 사항: ${computedNotice.excludedText}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `■ 담당자 연락처: ${managerContact}\n`;
     text += `💬 카카오톡 1:1 상담: https://open.kakao.com/o/gprQnKSi\n`;
@@ -720,9 +936,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           <div className="font-bold text-gray-900 mb-1 text-xs sm:text-[13px]">
             [망고투어 예약 안내 사항]
           </div>
-          <p>• 본 견적은 실시간 골프장 및 호텔 현황에 기반하여 작성되었으며, 예약 시점에 따라 금액 변동이 있을 수 있습니다.</p>
-          <p>• <strong>포함 사항:</strong> 선택 골프장 그린피, 전 일정 1인 객실 기준 숙박(1인 1실 단독 객실 & 조식 포함), 전 일정 단독 전용 리무진 밴, 선택 옵션(한국어 전문 가이드, 공항 VIP 패스트트랙 등)</p>
-          <p>• <strong>불포함 사항:</strong> 왕복 항공권(별도 발권 또는 요청 시 대행), 운전기사 팁, 개인 매너팁 및 포함 외 식사/음료 비용, 여행자 보험</p>
+          <p>• {computedNotice.openingLine}</p>
+          <p>• <strong>선택 상품 및 일정:</strong> {computedNotice.titleText} (베트남 {computedNotice.regionText} · {computedNotice.durationText})</p>
+          <p>• <strong>세부 구성:</strong> {computedNotice.activitySummary} / 숙박: {computedNotice.accommodationSummary} / 차량: {computedNotice.vehicleSummary}</p>
+          <p>• <strong>포함 사항:</strong> {computedNotice.includedText}</p>
+          <p>• <strong>불포함 사항:</strong> {computedNotice.excludedText}</p>
           {notes && (
             <p className="pt-1 text-deepgreen font-medium">
               • <strong>고객 요청사항:</strong> {notes}
@@ -910,9 +1128,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           <div style={{ fontWeight: 800, color: '#111827', fontSize: '12px', marginBottom: '6px' }}>
             [망고투어 예약 안내 사항]
           </div>
-          <div>• 본 견적은 실시간 골프장 및 호텔 현황에 기반하여 작성되었으며, 예약 시점에 따라 금액 변동이 있을 수 있습니다.</div>
-          <div>• <strong>포함 사항:</strong> 선택 골프장 그린피, 전 일정 1인 객실 기준 숙박(1인 1실 단독 객실 & 조식 포함), 전 일정 단독 전용 리무진 밴, 선택 옵션(한국어 전문 가이드, 공항 VIP 패스트트랙 등)</div>
-          <div>• <strong>불포함 사항:</strong> 왕복 항공권(별도 발권 또는 요청 시 대행), 운전기사 팁, 개인 매너팁 및 포함 외 식사/음료 비용, 여행자 보험</div>
+          <div>• {computedNotice.openingLine}</div>
+          <div>• <strong>선택 상품 및 일정:</strong> {computedNotice.titleText} (베트남 {computedNotice.regionText} · {computedNotice.durationText})</div>
+          <div>• <strong>세부 구성:</strong> {computedNotice.activitySummary} / 숙박: {computedNotice.accommodationSummary} / 차량: {computedNotice.vehicleSummary}</div>
+          <div>• <strong>포함 사항:</strong> {computedNotice.includedText}</div>
+          <div>• <strong>불포함 사항:</strong> {computedNotice.excludedText}</div>
           {notes && (
             <div style={{ color: '#004d40', fontWeight: 600, marginTop: '2px' }}>
               • <strong>고객 요청사항:</strong> {notes}

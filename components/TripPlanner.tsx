@@ -5,7 +5,8 @@ import { CustomTripPackage, PackageOptionItem, MasterOptionPool, Product } from 
 import { INITIAL_MASTER_OPTION_POOL } from '../constants';
 import BackButton from './BackButton';
 import { supabaseService } from '../services/supabaseService';
-import { A4QuotationDocument, CostItem, ItineraryDay } from './A4QuotationDocument';
+import { A4QuotationDocument, CostItem, ItineraryDay, ReservationNoticeData } from './A4QuotationDocument';
+import { getFreshImageUrl, isImageIconUrl } from '../utils/imageUtils';
 
 interface Props {
   packages?: CustomTripPackage[];
@@ -314,8 +315,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     return 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=1200';
   };
 
-  // Real-time DIY Estimated Price Calculator (Per person USD synced to AdminDashboard pools)
-  const calculateDIYEstimatedPrice = () => {
+  // Real-time DIY Estimated Price Breakdown (Synced to AdminDashboard pools)
+  // 차량 및 가이드는 팀(일정 일수) 기준 총액이며, 인원수를 절대 곱하지 않음
+  const getDIYPriceBreakdown = () => {
     const regionBase = selectedRegionItem?.baseFeeUSD || 0;
 
     let activityTotal = 0;
@@ -335,17 +337,38 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     const hotelTotal = diyNights * nightRate;
 
     const dayVehRate = selectedVehicleItem?.pricePerDayUSD ?? Math.max(15, 25 + (selectedVehicleItem?.priceDeltaUSD || 0));
-    const vehicleTotal = diyDays * dayVehRate;
+    const vehicleTotal = Math.round(diyDays * dayVehRate); // 일정(일수) 기준 1대 총액 (인원수 무관)
 
-    const extraTotal = diyExtraServices.reduce((sum, svc) => {
-      if (!diySelectedExtraIds.includes(svc.id)) return sum;
-      return sum + (svc.pricingUnit === 'per_day' ? svc.priceUSD * diyDays : svc.priceUSD);
-    }, 0);
+    let guideTotal = 0;
+    let nonGuideExtraPerPersonTotal = 0;
+    diyExtraServices.forEach((svc) => {
+      if (!diySelectedExtraIds.includes(svc.id)) return;
+      const isGuideSvc = svc.id === 'guide' || svc.name.includes('가이드');
+      const cost = svc.pricingUnit === 'per_day' ? svc.priceUSD * diyDays : svc.priceUSD;
+      if (isGuideSvc) {
+        guideTotal += Math.round(cost); // 일정(일수) 기준 1명 총액 (인원수 무관)
+      } else {
+        nonGuideExtraPerPersonTotal += Math.round(cost);
+      }
+    });
 
     const insuranceTotal = 15;
+    const perPersonOnlyUSD = Math.round(regionBase + activityTotal + hotelTotal + nonGuideExtraPerPersonTotal + insuranceTotal);
+    const teamFixedUSD = Math.round(vehicleTotal + guideTotal);
+    const groupTotalUSD = Math.round(perPersonOnlyUSD * Math.max(1, personCount) + teamFixedUSD);
+    const perPersonWithShareUSD = Math.round(groupTotalUSD / Math.max(1, personCount));
 
-    return Math.round(regionBase + activityTotal + hotelTotal + vehicleTotal + extraTotal + insuranceTotal);
+    return {
+      perPersonOnlyUSD,
+      vehicleTotal,
+      guideTotal,
+      teamFixedUSD,
+      groupTotalUSD,
+      perPersonWithShareUSD,
+    };
   };
+
+  const calculateDIYEstimatedPrice = () => getDIYPriceBreakdown().perPersonWithShareUSD;
 
   // Build DIY package dynamically & open into customizer (View 2)
   const handleCreateDIYPackage = () => {
@@ -363,7 +386,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     const vehicleTitle = selectedVehicleItem?.shortName
       ? `${selectedVehicleItem.shortName} (${selectedVehicleItem.name})`
       : (selectedVehicleItem?.name || '전용 차량');
-    const vehicleName = `전 일정 단독 ${vehicleTitle} (${days}일간 / 1일 $${dayVehRate}/인)`;
+    const vehicleName = `전 일정 단독 ${vehicleTitle} (${days}일간 / 1일 $${dayVehRate} · 일정 기준 총액)`;
 
     // Dynamic Itinerary Generation
     const itinerary = [];
@@ -488,7 +511,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       id: 'diy-opt-vehicle',
       category: 'vehicle',
       name: vehicleName,
-      description: `${selectedVehicleItem?.description || '전 일정 전용 기사 및 유류비 포함'} (1일 $${dayVehRate}/인 × ${days}일 = $${days * dayVehRate})`,
+      description: `${selectedVehicleItem?.description || '전 일정 전용 기사 및 유류비 포함'} (1일 $${dayVehRate} × ${days}일 = 총 $${days * dayVehRate} · 인원수 무관 1대 기준)`,
       priceUSD: days * dayVehRate,
       isDefaultIncluded: true,
       isRequired: false,
@@ -497,20 +520,27 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
     diyExtraServices.forEach(svc => {
       const isChecked = diySelectedExtraIds.includes(svc.id);
+      const isGuideSvc = svc.id === 'guide' || svc.name.includes('가이드');
       const svcPrice = svc.pricingUnit === 'per_day' ? svc.priceUSD * days : svc.priceUSD;
       const cat: PackageOptionItem['category'] =
-        svc.id === 'guide' ? 'guide' : svc.id === 'fasttrack' ? 'etc' : 'activity';
+        isGuideSvc ? 'guide' : svc.id === 'fasttrack' ? 'etc' : 'activity';
       options.push({
         id: svc.id === 'guide' ? 'diy-opt-guide' : svc.id === 'fasttrack' ? 'diy-opt-fasttrack' : `diy-opt-extra-${svc.id}`,
         category: cat,
-        name: svc.pricingUnit === 'per_day'
-          ? `${svc.name} (${days}일간 / 1일 $${svc.priceUSD})`
-          : `${svc.name} (1인 $${svc.priceUSD})`,
-        description: svc.description,
+        name: isGuideSvc
+          ? (svc.pricingUnit === 'per_day'
+              ? `${svc.name} (${days}일간 / 1일 $${svc.priceUSD} · 일정 기준 총액)`
+              : `${svc.name} (팀 총액 $${svc.priceUSD})`)
+          : svc.pricingUnit === 'per_day'
+            ? `${svc.name} (${days}일간 / 1일 $${svc.priceUSD})`
+            : `${svc.name} (1인 $${svc.priceUSD})`,
+        description: isGuideSvc
+          ? `${svc.description.replace(/\/인/g, '')} (1일 $${svc.priceUSD} × ${days}일 = 총 $${svcPrice} · 인원수 무관 1명 기준)`
+          : svc.description,
         priceUSD: svcPrice,
         isDefaultIncluded: isChecked,
         isRequired: false,
-        allowCustomSelection: svc.id === 'guide'
+        allowCustomSelection: isGuideSvc
       });
     });
 
@@ -721,27 +751,47 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     }
 
     if (customizingOption.category === 'vehicle') {
-      return pool.vehicles.map(v => ({
-        id: v.id,
-        name: v.name,
-        location: '호치민/붕따우/달랏',
-        type: 'vehicle',
-        priceDeltaUSD: v.priceDeltaUSD,
-        description: v.description,
-        badge: v.badge
-      }));
+      const baseTeamVeh = activePackage?.id.startsWith('diy-pkg-')
+        ? (customizingOption.priceUSD || 0)
+        : 100 * pkgTravelDays;
+      return pool.vehicles.map(v => {
+        const vehTotal = v.pricePerDayUSD !== undefined
+          ? Math.round(v.pricePerDayUSD * pkgTravelDays)
+          : Math.max(0, Math.round(baseTeamVeh + v.priceDeltaUSD));
+        return {
+          id: v.id,
+          name: `${v.name} (${pkgTravelDays}일 $${vehTotal})`,
+          location: '전 일정 단독 (팀 기준)',
+          type: 'vehicle',
+          priceDeltaUSD: vehTotal - Math.round(baseTeamVeh),
+          teamTotalUSD: vehTotal,
+          description: `${v.description} · 1일 $${v.pricePerDayUSD ?? Math.round(vehTotal / pkgTravelDays)} × ${pkgTravelDays}일 = 총 $${vehTotal} (인원수 무관)`,
+          badge: v.badge
+        };
+      });
     }
 
     if (customizingOption.category === 'guide') {
-      return pool.guides.map(g => ({
-        id: g.id,
-        name: g.name,
-        location: '전 지역',
-        type: 'guide',
-        priceDeltaUSD: g.priceDeltaUSD,
-        description: g.description,
-        badge: g.badge
-      }));
+      const baseTeamGuide = activePackage?.id.startsWith('diy-pkg-')
+        ? (customizingOption.priceUSD || 120 * pkgTravelDays)
+        : 120 * pkgTravelDays;
+      return pool.guides.map(g => {
+        const guideTotal = g.id === 'gui-3'
+          ? 0
+          : g.id === 'gui-2'
+            ? Math.round(150 * pkgTravelDays)
+            : Math.round(baseTeamGuide);
+        return {
+          id: g.id,
+          name: g.name,
+          location: '전 일정 (팀 기준)',
+          type: 'guide',
+          priceDeltaUSD: guideTotal - Math.round(baseTeamGuide),
+          teamTotalUSD: guideTotal,
+          description: `${g.description} (${pkgTravelDays}일 총 $${guideTotal} · 인원수 무관)`,
+          badge: g.badge
+        };
+      });
     }
 
     if (customizingOption.category === 'meal') {
@@ -826,22 +876,82 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     return hotelOpt?.name || '호치민 1군 고급 호텔 (4박/1인 객실 기준)';
   };
 
-  // Calculate prices matching QuotationModal standard (vehicle & guide scaled to group & travel schedule)
-  const pkgTravelDays = activePackage?.itinerary?.length || (activePackage?.duration?.includes('4박') ? 5 : 5);
-  const pkgVehicleCount = Math.max(1, Math.ceil(personCount / 7));
-  const pkgGuideCount = Math.max(1, Math.ceil(personCount / 16));
+  // Calculate travel days and team-based option total (Vehicle & Guide are NEVER multiplied by personCount)
+  const pkgTravelDays =
+    activePackage?.itinerary?.length ||
+    (activePackage?.duration?.match(/(\d+)\s*박/)
+      ? parseInt(activePackage.duration.match(/(\d+)\s*박/)![1], 10) + 1
+      : 5);
+
+  const getOptionGroupTotalUSD = (opt: PackageOptionItem): number => {
+    if (!activePackage) return 0;
+    const isDiyPkg = activePackage.id.startsWith('diy-pkg-');
+
+    // 1) 차량: 인원수 곱셈 절대 제외! 여행 일수(pkgTravelDays) 기준 차량 1대 총액
+    if (opt.category === 'vehicle') {
+      const customSel = customOptionSelections[opt.id];
+      if (customSel) {
+        const matchedPoolVeh = pool.vehicles.find(v => v.id === customSel.choiceId);
+        if (matchedPoolVeh && matchedPoolVeh.pricePerDayUSD !== undefined) {
+          return Math.max(0, Math.round(matchedPoolVeh.pricePerDayUSD * pkgTravelDays));
+        }
+        return Math.max(0, Math.round((isDiyPkg ? (opt.priceUSD || 0) : 100 * pkgTravelDays) + customSel.priceDelta));
+      }
+      if (isDiyPkg) {
+        return Math.max(0, Math.round(opt.priceUSD || 0)); // 이미 (1일 단가 × 여행 일수)
+      }
+      return Math.max(0, Math.round(100 * pkgTravelDays));
+    }
+
+    // 2) 가이드: 인원수 곱셈 절대 제외! 여행 일수(pkgTravelDays) 기준 가이드 1명 총액
+    if (opt.category === 'guide') {
+      const customSel = customOptionSelections[opt.id];
+      if (customSel) {
+        if (customSel.choiceId === 'gui-3' || customSel.name.includes('미포함')) {
+          return 0;
+        }
+        if (customSel.choiceId === 'gui-2') {
+          return Math.max(0, Math.round(150 * pkgTravelDays));
+        }
+        if (customSel.choiceId === 'gui-1') {
+          return Math.max(0, Math.round(isDiyPkg ? (opt.priceUSD || 120 * pkgTravelDays) : 120 * pkgTravelDays));
+        }
+        return Math.max(0, Math.round((isDiyPkg ? (opt.priceUSD || 0) : 120 * pkgTravelDays) + customSel.priceDelta));
+      }
+      if (isDiyPkg) {
+        return Math.max(0, Math.round(opt.priceUSD || 0)); // 이미 (1일 단가 × 여행 일수)
+      }
+      return Math.max(0, Math.round(120 * pkgTravelDays));
+    }
+
+    // 3) 인당 과금 항목 (항공, 골프, 투어, 숙박, 식사, 패스트트랙, 마사지, 보험 등)
+    return Math.max(0, Math.round(getOptionPrice(opt) * personCount));
+  };
 
   const currentTotalGroup = activePackage
     ? activePackage.options.reduce((sum, opt) => {
         if (!selectedOptionIds.has(opt.id)) return sum;
-        const isDiyPkg = activePackage.id.startsWith('diy-pkg-');
-        if (!isDiyPkg && opt.category === 'vehicle') {
-          return sum + (100 * pkgTravelDays * pkgVehicleCount);
+        return sum + getOptionGroupTotalUSD(opt);
+      }, 0)
+    : 0;
+
+  const currentTeamTotalUSD = activePackage
+    ? activePackage.options.reduce((sum, opt) => {
+        if (!selectedOptionIds.has(opt.id)) return sum;
+        if (opt.category === 'vehicle' || opt.category === 'guide') {
+          return sum + getOptionGroupTotalUSD(opt);
         }
-        if (!isDiyPkg && opt.category === 'guide') {
-          return sum + (120 * pkgTravelDays * pkgGuideCount);
+        return sum;
+      }, 0)
+    : 0;
+
+  const currentPerPersonOnlyTotalUSD = activePackage
+    ? activePackage.options.reduce((sum, opt) => {
+        if (!selectedOptionIds.has(opt.id)) return sum;
+        if (opt.category !== 'vehicle' && opt.category !== 'guide') {
+          return sum + getOptionPrice(opt);
         }
-        return sum + (getOptionPrice(opt) * personCount);
+        return sum;
       }, 0)
     : 0;
 
@@ -859,10 +969,15 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     const included = activePackage.options.filter(o => selectedOptionIds.has(o.id));
     const excluded = activePackage.options.filter(o => !selectedOptionIds.has(o.id));
 
-    let text = `[MANGO TOUR - ${activePackage.duration || '맞춤 일정'} 맞춤 골프 여행 견적 문의]\n`;
+    let text = `[MANGO TOUR - ${activePackage.duration || '맞춤 일정'} 맞춤 ${customGolfCourses.length > 0 ? '골프' : ''} 여행 견적 문의]\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `📌 상품명: ${activePackage.title}\n`;
-    text += `⛳ 선택 골프장 (${customGolfCourses.length}회 라운딩): ${customGolfCourses.join(' · ')}\n`;
+    if (customGolfCourses.length > 0) {
+      text += `⛳ 선택 골프장 (${customGolfCourses.length}회 라운딩): ${customGolfCourses.join(' · ')}\n`;
+    } else {
+      const tourOpt = activePackage.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
+      text += `🧳 선택 여행/투어: ${tourOpt ? getOptionDisplayName(tourOpt) : `${activePackage.location} ${activePackage.duration} 맞춤 여행`}\n`;
+    }
     text += `🏨 선택 숙박형태: ${getChosenAccommodationName()}\n`;
     text += `📍 여행 지역: ${activePackage.location} (${activePackage.duration || '맞춤 일정'})\n`;
     text += `📅 출발 희망일: ${departureDate || '미정'}\n`;
@@ -871,12 +986,15 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     if (customerContact) text += `📞 연락처/카카오ID: ${customerContact}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `💰 [예상 견적 금액]\n`;
-    text += `• 1인 예상 금액: $${currentTotalPerPerson.toLocaleString()} (약 ${(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)\n`;
+    text += `• 1인 예상 분담금: $${currentTotalPerPerson.toLocaleString()} (약 ${(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)\n`;
     text += `• 총 예상 견적 (${personCount}인): $${currentTotalGroup.toLocaleString()} (약 ${(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)\n`;
+    text += `  (※ 차량·가이드는 ${pkgTravelDays}일 일정 기준 팀 총액 $${currentTeamTotalUSD.toLocaleString()} 적용 / 인원수 무관)\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `✅ [선택/포함 항목 (${included.length}개)]\n`;
     included.forEach(item => {
-      text += ` • [${item.category}] ${getOptionDisplayName(item)} ($${getOptionPrice(item)})\n`;
+      const isTeam = item.category === 'vehicle' || item.category === 'guide';
+      const itemTotal = getOptionGroupTotalUSD(item);
+      text += ` • [${item.category}] ${getOptionDisplayName(item)} ($${itemTotal.toLocaleString()} / ${isTeam ? `${pkgTravelDays}일 일정 총액` : `${personCount}인 합계`})\n`;
     });
     if (excluded.length > 0) {
       text += `\n❌ [제외/미선택 항목 (${excluded.length}개)]\n`;
@@ -902,9 +1020,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
     activePackage.options.forEach(opt => {
       if (!selectedOptionIds.has(opt.id)) return;
-      const unitUSD = getOptionPrice(opt);
       const name = getOptionDisplayName(opt);
       const desc = getOptionDisplayDescription(opt);
+      const travelDays = pkgTravelDays;
 
       let catName = '기타 경비';
       let qty = `${personCount}인`;
@@ -912,6 +1030,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       if (opt.category === 'flight') {
         catName = '항공권 (국제선 왕복)';
         qty = `${personCount}인 왕복`;
+      } else if (opt.id === 'diy-opt-region') {
+        catName = '지역 운영/수배';
+        qty = `${personCount}인`;
+      } else if (opt.id === 'diy-opt-tour') {
+        catName = '투어/관광';
+        qty = `${personCount}인`;
       } else if (opt.category === 'hotel') {
         catName = '숙박 (1인 객실 기준)';
         qty = `${personCount}실 (${activePackage.duration || '4박'})`;
@@ -919,40 +1043,33 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         catName = '골프 라운딩 (18홀)';
         qty = `${customGolfCourses.length}회 라운딩 × ${personCount}인`;
       } else if (opt.category === 'vehicle') {
-        const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
-        const travelDays = activePackage.itinerary?.length || 5;
         catName = '전용 차량 & 기사';
-        qty = `${vehicleCount}대 (전일정 ${travelDays}일)`;
+        qty = `1대 (전일정 ${travelDays}일 · 일정 기준 총액)`;
       } else if (opt.category === 'guide') {
-        const guideCount = Math.max(1, Math.ceil(personCount / 16));
-        const travelDays = activePackage.itinerary?.length || 5;
         catName = '한국어 전담 가이드';
-        qty = `${guideCount}명 (전 일정 ${travelDays}일)`;
+        qty = `1명 (전일정 ${travelDays}일 · 일정 기준 총액)`;
       } else if (opt.name.includes('패스트 트랙') || opt.name.includes('패스트트랙') || opt.id.includes('fasttrack')) {
-        catName = '공항 VIP 의전';
+        catName = 'VIP패스트트랙';
         qty = `${personCount}인 (1인 $60)`;
       } else if (opt.category === 'meal') {
         const mealNights = activePackage.itinerary?.length ? activePackage.itinerary.length - 1 : 4;
         catName = '식사 및 만찬';
         qty = `${personCount}인 (석식 ${mealNights}회 / 1일 $50)`;
+      } else if (opt.name.includes('마사지') || opt.name.includes('스파')) {
+        catName = '스파 & 마사지';
+        qty = `${personCount}인`;
       } else if (opt.category === 'activity') {
-        catName = '스파 & 힐링 케어';
+        catName = '투어/액티비티';
+        qty = `${personCount}인`;
+      } else if (opt.id === 'diy-opt-insurance' || opt.name.includes('보험')) {
+        catName = '여행자 보험';
         qty = `${personCount}인`;
       } else if (opt.category === 'etc') {
-        catName = '여행자 안심 보험';
+        catName = '기타 옵션';
         qty = `${personCount}인`;
       }
 
-      const travelDays = activePackage.itinerary?.length || 5;
-      const isDiyPkg = activePackage.id.startsWith('diy-pkg-');
-      let totalItemUSD = unitUSD * personCount;
-      if (!isDiyPkg && opt.category === 'vehicle') {
-        const vehicleCount = Math.max(1, Math.ceil(personCount / 7));
-        totalItemUSD = 100 * travelDays * vehicleCount;
-      } else if (!isDiyPkg && opt.category === 'guide') {
-        const guideCount = Math.max(1, Math.ceil(personCount / 16));
-        totalItemUSD = 120 * travelDays * guideCount;
-      }
+      const totalItemUSD = getOptionGroupTotalUSD(opt);
 
       items.push({
         category: catName,
@@ -996,6 +1113,57 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         activities
       };
     });
+  };
+
+  // Build dynamic reservationNotice synced with active DIY / custom package selections
+  const getReservationNoticeData = (): ReservationNoticeData | undefined => {
+    if (!activePackage) return undefined;
+    const isGolfTrip = customGolfCourses.length > 0;
+    const hotelOpt = activePackage.options.find(o => o.category === 'hotel');
+    const vehicleOpt = activePackage.options.find(o => o.category === 'vehicle');
+    const tourOpt = activePackage.options.find(
+      o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파'))
+    );
+
+    const extraServices = activePackage.options
+      .filter(
+        o =>
+          o.category === 'guide' ||
+          o.name.includes('패스트') ||
+          o.id.includes('fasttrack') ||
+          o.name.includes('마사지') ||
+          o.name.includes('스파') ||
+          o.category === 'meal' ||
+          o.name.includes('보험')
+      )
+      .map(o => ({
+        name: getOptionDisplayName(o),
+        included: selectedOptionIds.has(o.id)
+      }));
+
+    const excludedItems = activePackage.options
+      .filter(o => !selectedOptionIds.has(o.id))
+      .map(o => getOptionDisplayName(o));
+
+    return {
+      sourceType: activePackage.id.startsWith('diy-pkg-') ? 'diy' : 'product',
+      productTitle: activePackage.title,
+      tripType: isGolfTrip ? 'golf' : 'tour',
+      region: activePackage.location,
+      duration: activePackage.duration,
+      golfCourses: isGolfTrip ? customGolfCourses : [],
+      tourItems: !isGolfTrip
+        ? [
+            tourOpt && selectedOptionIds.has(tourOpt.id)
+              ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '')
+              : `${activePackage.location} ${activePackage.duration} 자유·맞춤 여행`
+          ]
+        : [],
+      accommodation: hotelOpt && selectedOptionIds.has(hotelOpt.id) ? getChosenAccommodationName() : undefined,
+      vehicle: vehicleOpt && selectedOptionIds.has(vehicleOpt.id) ? getOptionDisplayName(vehicleOpt) : undefined,
+      extraServices,
+      excludedItems
+    };
   };
 
   // Image Capture via html2canvas (Captures the pristine A4 PDF Quotation Sheet)
@@ -1187,7 +1355,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       여행인원: `${personCount}명`,
       '1인_예상금액': `$${currentTotalPerPerson.toLocaleString()} (약 ${(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)`,
       '총_예상견적': `$${currentTotalGroup.toLocaleString()} (약 ${(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)`,
-      선택포함항목: included.map(i => `${getOptionDisplayName(i)} ($${getOptionPrice(i)})`).join(' / '),
+      선택포함항목: included.map(i => {
+        const isTeam = i.category === 'vehicle' || i.category === 'guide';
+        return isTeam
+          ? `${getOptionDisplayName(i)} (일정 총액 $${getOptionGroupTotalUSD(i)})`
+          : `${getOptionDisplayName(i)} (1인 $${getOptionPrice(i)})`;
+      }).join(' / '),
       제외항목: excluded.map(i => getOptionDisplayName(i)).join(' / ') || '없음',
       고객요청사항: customerNotes || '없음',
       접수일시: new Date().toLocaleString('ko-KR')
@@ -1339,7 +1512,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         }`}
                       >
                         <div className="flex items-center gap-1.5">
-                          <span className="text-lg md:text-xl">{reg.icon}</span>
+                          {isImageIconUrl(reg.icon) ? (
+                            <img src={getFreshImageUrl(reg.icon)} alt={reg.name} className="w-6 h-6 md:w-7 md:h-7 object-contain rounded shrink-0" />
+                          ) : (
+                            <span className="text-lg md:text-xl">{reg.icon}</span>
+                          )}
                           <span className="font-black text-sm md:text-base text-gray-900">{reg.name}</span>
                         </div>
                         <span className="text-[10px] md:text-xs text-gray-500 line-clamp-1">{reg.subtitle}</span>
@@ -1540,7 +1717,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       >
                         <div>
                           <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-lg md:text-xl">{item.icon}</span>
+                            {isImageIconUrl(item.icon) ? (
+                              <img src={getFreshImageUrl(item.icon)} alt={item.name} className="w-6 h-6 md:w-7 md:h-7 object-contain rounded shrink-0" />
+                            ) : (
+                              <span className="text-lg md:text-xl">{item.icon}</span>
+                            )}
                             <span className="text-[10px] md:text-xs font-extrabold text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200">
                               1박 ${item.pricePerNightUSD}
                             </span>
@@ -1567,7 +1748,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     <span>차량</span>
                   </h3>
                   <span className="text-xs md:text-sm font-bold text-deepgreen">
-                    전 일정 ({diyDays}일) 단독 전용
+                    전 일정 ({diyDays}일) 단독 전용 · 차량 1대 (인원 무관)
                   </span>
                 </div>
 
@@ -1575,6 +1756,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   {diyVehicles.map((item) => {
                     const isSelected = selectedVehicleItem?.id === item.id;
                     const dayRate = item.pricePerDayUSD ?? Math.max(15, 25 + (item.priceDeltaUSD || 0));
+                    const scheduleVehTotal = Math.round(dayRate * diyDays);
                     return (
                       <div
                         key={item.id}
@@ -1587,9 +1769,13 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       >
                         <div>
                           <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-lg md:text-xl">{item.icon || '🚐'}</span>
-                            <span className="text-[10px] md:text-xs font-extrabold text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200">
-                              1일 ${dayRate}/인
+                            {isImageIconUrl(item.icon) ? (
+                              <img src={getFreshImageUrl(item.icon)} alt={item.name} className="w-6 h-6 md:w-7 md:h-7 object-contain rounded shrink-0" />
+                            ) : (
+                              <span className="text-lg md:text-xl">{item.icon || '🚐'}</span>
+                            )}
+                            <span className="text-[10px] md:text-xs font-extrabold text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200 whitespace-nowrap">
+                              1일 ${dayRate} ({diyDays}일 ${scheduleVehTotal})
                             </span>
                           </div>
                           <div className="font-extrabold text-xs md:text-sm text-gray-900">
@@ -1621,7 +1807,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {diyExtraServices.map((svc) => {
                     const isChecked = diySelectedExtraIds.includes(svc.id);
-                    const unitText = svc.pricingUnit === 'per_day' ? `1일 $${svc.priceUSD}` : `1인 $${svc.priceUSD}`;
+                    const isGuideSvc = svc.id === 'guide' || svc.name.includes('가이드');
+                    const unitText = isGuideSvc
+                      ? (svc.pricingUnit === 'per_day' ? `1일 $${svc.priceUSD} (팀 기준)` : `팀 총 $${svc.priceUSD}`)
+                      : (svc.pricingUnit === 'per_day' ? `1일 $${svc.priceUSD}` : `1인 $${svc.priceUSD}`);
                     const appliedCost = svc.pricingUnit === 'per_day' ? svc.priceUSD * diyDays : svc.priceUSD;
                     return (
                       <div
@@ -1642,7 +1831,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           />
                           <div className="min-w-0">
                             <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
-                              <span>{svc.icon} {svc.name}</span>
+                              {isImageIconUrl(svc.icon) ? (
+                                <img src={getFreshImageUrl(svc.icon)} alt={svc.name} className="w-5 h-5 object-contain rounded shrink-0 inline-block" />
+                              ) : (
+                                <span>{svc.icon}</span>
+                              )}
+                              <span>{svc.name}</span>
                               <span className="text-[10px] md:text-xs text-emerald-800 bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-bold">
                                 {unitText}
                               </span>
@@ -1651,7 +1845,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           </div>
                         </div>
                         <span className={`text-xs md:text-sm font-extrabold shrink-0 whitespace-nowrap ${isChecked ? 'text-deepgreen' : 'text-gray-400'}`}>
-                          {isChecked ? `포함 ($${appliedCost})` : '미포함'}
+                          {isChecked ? (isGuideSvc ? `포함 (${diyDays}일 총 $${appliedCost})` : `포함 ($${appliedCost})`) : '미포함'}
                         </span>
                       </div>
                     );
@@ -1681,15 +1875,25 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     </p>
                   </div>
 
-                  <div className="text-left sm:text-right shrink-0">
-                    <span className="text-[10px] md:text-xs text-gold-300 block font-bold">1인 기준 실시간 예상 견적</span>
-                    <span className="text-xl sm:text-3xl md:text-4xl font-black text-gold-400">
-                      ${calculateDIYEstimatedPrice().toLocaleString()}
-                    </span>
-                    <span className="text-xs md:text-sm text-gray-300 block">
-                      (약 {(calculateDIYEstimatedPrice() * USD_TO_KRW).toLocaleString()}원 / 1인)
-                    </span>
-                  </div>
+                  {(() => {
+                    const bd = getDIYPriceBreakdown();
+                    return (
+                      <div className="text-left sm:text-right shrink-0">
+                        <span className="text-[10px] md:text-xs text-gold-300 block font-bold">
+                          1인당 예상 경비 ({personCount}인 기준 · 차량·가이드 일정 총액 합산)
+                        </span>
+                        <span className="text-xl sm:text-3xl md:text-4xl font-black text-gold-400">
+                          ${bd.perPersonWithShareUSD.toLocaleString()}
+                        </span>
+                        <span className="text-xs md:text-sm text-gray-200 block font-semibold">
+                          (1인 약 {(bd.perPersonWithShareUSD * USD_TO_KRW).toLocaleString()}원 · {personCount}인 총액 ${bd.groupTotalUSD.toLocaleString()})
+                        </span>
+                        <span className="text-[10px] md:text-xs text-emerald-300 block mt-0.5">
+                          1인 기본 ${bd.perPersonOnlyUSD.toLocaleString()} + 차량·가이드({diyDays}일 총액) ${bd.teamFixedUSD.toLocaleString()} (인원 무관)
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-1">
@@ -1956,8 +2160,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                       </span>
                                     )}
                                     {option.category === 'vehicle' && (
-                                      <span className="text-[10px] md:text-xs text-blue-900 font-bold bg-blue-100/80 border border-blue-300 px-1.5 py-0.5 rounded">
-                                        7인승 1대 1일 $100 기준
+                                      <span className="text-[10px] md:text-xs text-blue-900 font-bold bg-blue-100/80 border border-blue-300 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                        {pkgTravelDays}일 일정 총액 (1대 · 인원수 무관)
                                       </span>
                                     )}
                                     {option.category === 'hotel' && (
@@ -1966,8 +2170,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                       </span>
                                     )}
                                     {option.category === 'guide' && (
-                                      <span className="text-[10px] md:text-xs text-indigo-900 font-bold bg-indigo-100/80 border border-indigo-300 px-1.5 py-0.5 rounded">
-                                        1일 기준 $120
+                                      <span className="text-[10px] md:text-xs text-indigo-900 font-bold bg-indigo-100/80 border border-indigo-300 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                        {pkgTravelDays}일 일정 총액 (1명 · 인원수 무관)
                                       </span>
                                     )}
                                     {(option.category === 'activity' && option.name.includes('마사지')) && (
@@ -1990,12 +2194,22 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                               </div>
 
                               <div className="text-right whitespace-nowrap pl-2 shrink-0">
-                                <span className={`text-xs sm:text-sm md:text-base font-extrabold ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
-                                  ${effectivePrice.toLocaleString()}
-                                </span>
-                                <span className="block text-[9px] sm:text-[10px] md:text-xs text-gray-400 font-normal">
-                                  (약 {(effectivePrice * USD_TO_KRW).toLocaleString()}원)
-                                </span>
+                                {(() => {
+                                  const isTeamOpt = option.category === 'vehicle' || option.category === 'guide';
+                                  const shownUSD = isTeamOpt ? getOptionGroupTotalUSD(option) : effectivePrice;
+                                  return (
+                                    <>
+                                      <span className={`text-xs sm:text-sm md:text-base font-extrabold ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
+                                        ${shownUSD.toLocaleString()}
+                                      </span>
+                                      <span className="block text-[9px] sm:text-[10px] md:text-xs text-gray-400 font-normal">
+                                        {isTeamOpt
+                                          ? `${pkgTravelDays}일 일정 총액 (약 ${(shownUSD * USD_TO_KRW).toLocaleString()}원)`
+                                          : `1인 기준 (약 ${(shownUSD * USD_TO_KRW).toLocaleString()}원)`}
+                                      </span>
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
 
@@ -2124,16 +2338,22 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                                         <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200/60">
                                           <span className="text-[10px] md:text-xs font-bold text-gray-400">
-                                            {choice.type === 'pool_villa' ? '🏊 독채 풀빌라' : choice.type === 'hotel_5star' ? '⭐ 고급 호텔' : '기본 옵션'}
+                                            {choice.type === 'pool_villa' ? '🏊 독채 풀빌라' : choice.type === 'hotel_5star' ? '⭐ 고급 호텔' : (choice.type === 'vehicle' || choice.type === 'guide') ? `${pkgTravelDays}일 팀 기준` : '기본 옵션'}
                                           </span>
                                           <span className={`text-[11px] md:text-xs font-black ${
                                             choice.priceDeltaUSD === 0 ? 'text-gray-600' : choice.priceDeltaUSD > 0 ? 'text-emerald-700' : 'text-blue-600'
                                           }`}>
-                                            {choice.priceDeltaUSD === 0 
-                                              ? '기본가 ($0)' 
-                                              : choice.priceDeltaUSD > 0 
-                                              ? `+1인 $${choice.priceDeltaUSD}` 
-                                              : `-1인 $${Math.abs(choice.priceDeltaUSD)}`}
+                                            {choice.type === 'vehicle' || choice.type === 'guide'
+                                              ? (choice.priceDeltaUSD === 0
+                                                  ? `기본 총액 ($${choice.teamTotalUSD ?? 0})`
+                                                  : choice.priceDeltaUSD > 0
+                                                  ? `총 $${choice.teamTotalUSD ?? 0} (+$${choice.priceDeltaUSD} / 팀)`
+                                                  : `총 $${choice.teamTotalUSD ?? 0} (-$${Math.abs(choice.priceDeltaUSD)} / 팀)`)
+                                              : (choice.priceDeltaUSD === 0 
+                                                  ? '기본가 ($0)' 
+                                                  : choice.priceDeltaUSD > 0 
+                                                  ? `+1인 $${choice.priceDeltaUSD}` 
+                                                  : `-1인 $${Math.abs(choice.priceDeltaUSD)}`)}
                                           </span>
                                         </div>
                                       </div>
@@ -2236,7 +2456,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         ) : (
                           <>
                             <span className="text-gold-300 font-semibold block mb-0.5">🧳 선택 여행 일정:</span>
-                            <span className="text-white font-medium line-clamp-1">{activePackage.location} {activePackage.duration} 맞춤 여행</span>
+                            <span className="text-white font-medium line-clamp-1">
+                              {(() => {
+                                const tourOpt = activePackage.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
+                                return tourOpt ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '') : `${activePackage.location} ${activePackage.duration} 맞춤 여행`;
+                              })()}
+                            </span>
                           </>
                         )}
                       </div>
@@ -2248,12 +2473,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1">
                       <div>
-                        <span className="text-[10px] sm:text-[11px] md:text-xs text-gray-300 block">1인 기준 예상 견적</span>
+                        <span className="text-[10px] sm:text-[11px] md:text-xs text-gray-300 block">1인당 예상 경비 ({personCount}인 기준 · 차량/가이드 분할 포함)</span>
                         <div className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight">
                           ${currentTotalPerPerson.toLocaleString()} <span className="text-xs md:text-sm font-semibold">USD</span>
                         </div>
                         <div className="text-[10px] sm:text-[11px] md:text-xs text-gold-300 font-normal">
-                          (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)
+                          (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원 / 1인)
                         </div>
                       </div>
                       <div className="text-left sm:text-right">
@@ -2262,7 +2487,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-bold">USD</span>
                         </div>
                         <div className="text-[10px] sm:text-[11px] md:text-xs text-gray-300 font-normal">
-                          (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
+                          (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원 · 일정 기준 차량/가이드 ${currentTeamTotalUSD.toLocaleString()})
                         </div>
                       </div>
                     </div>
@@ -2415,32 +2640,44 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </div>
                     </div>
                     <div className="text-[11px] md:text-xs text-gray-700 space-y-2">
-                      <div className="flex items-start gap-1.5">
-                        <span className="font-bold text-gray-900 shrink-0 md:text-xs mt-0.5">⛳ 골프:</span>
-                        <div className="flex-1 flex flex-wrap gap-1.5">
-                          {(() => {
-                            const { rounds } = getDateMatchedGolfBreakdown();
-                            return rounds.map((r, i) => (
-                              <span
-                                key={i}
-                                className={`text-[10px] md:text-xs px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 shadow-2xs ${
-                                  r.isWeekend 
-                                    ? 'bg-amber-50 text-amber-950 border-amber-300' 
-                                    : 'bg-emerald-50 text-emerald-950 border-emerald-300'
-                                }`}
-                              >
-                                <span>{r.dateStr}</span>
-                                <span className="font-extrabold">{r.courseName.split(' ')[0]}</span>
-                                <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
-                                  r.isWeekend ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900'
-                                }`}>
-                                  ${r.appliedUSD}
+                      {customGolfCourses.length > 0 ? (
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-bold text-gray-900 shrink-0 md:text-xs mt-0.5">⛳ 골프:</span>
+                          <div className="flex-1 flex flex-wrap gap-1.5">
+                            {(() => {
+                              const { rounds } = getDateMatchedGolfBreakdown();
+                              return rounds.map((r, i) => (
+                                <span
+                                  key={i}
+                                  className={`text-[10px] md:text-xs px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 shadow-2xs ${
+                                    r.isWeekend 
+                                      ? 'bg-amber-50 text-amber-950 border-amber-300' 
+                                      : 'bg-emerald-50 text-emerald-950 border-emerald-300'
+                                  }`}
+                                >
+                                  <span>{r.dateStr}</span>
+                                  <span className="font-extrabold">{r.courseName.split(' ')[0]}</span>
+                                  <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
+                                    r.isWeekend ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900'
+                                  }`}>
+                                    ${r.appliedUSD}
+                                  </span>
                                 </span>
-                              </span>
-                            ));
-                          })()}
+                              ));
+                            })()}
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex items-start gap-1.5">
+                          <span className="font-bold text-gray-900 shrink-0 md:text-xs">🧳 투어:</span>
+                          <span className="text-gray-700 font-bold bg-white px-1.5 py-0.5 rounded border border-emerald-200 text-[10px] md:text-xs">
+                            {(() => {
+                              const tourOpt = activePackage?.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
+                              return tourOpt ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '') : `${activePackage?.location || diyLocation} 맞춤 여행`;
+                            })()}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-start gap-1.5">
                         <span className="font-bold text-gray-900 shrink-0 md:text-xs">🏨 숙소:</span>
                         <span className="text-gray-700 font-bold bg-white px-1.5 py-0.5 rounded border border-emerald-200 text-[10px] md:text-xs">
@@ -2460,8 +2697,21 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       <span>제외된 항목</span>
                       <span className="font-bold text-red-500">{activePackage.options.length - selectedOptionIds.size}개 항목</span>
                     </div>
+                    <div className="flex justify-between text-gray-600 pt-1 border-t border-gray-200/70">
+                      <span>1인 기준 항목 ({personCount}인 × ${currentPerPersonOnlyTotalUSD.toLocaleString()})</span>
+                      <span className="font-bold text-gray-800">${(currentPerPersonOnlyTotalUSD * personCount).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-600">
+                      <span>차량·가이드 ({pkgTravelDays}일 일정 기준 총액 · 인원 무관)</span>
+                      <span className="font-bold text-deepgreen">${currentTeamTotalUSD.toLocaleString()}</span>
+                    </div>
                     <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
-                      <span className="font-black text-gray-900 md:text-base">총 그룹 예상 견적 ({personCount}인)</span>
+                      <div>
+                        <span className="font-black text-gray-900 md:text-base block">총 그룹 예상 견적 ({personCount}인)</span>
+                        <span className="text-[10px] md:text-xs text-emerald-700 font-bold">
+                          1인당 약 ${currentTotalPerPerson.toLocaleString()} (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)
+                        </span>
+                      </div>
                       <div className="text-right">
                         <div className="text-lg md:text-2xl font-black text-deepgreen tracking-tight">
                           ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-bold">USD</span>
@@ -2855,18 +3105,35 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   </div>
                 </div>
 
-                {/* 1. Golf Courses List */}
+                {/* 1. Golf Courses or Tour Items List */}
                 <div className="text-xs md:text-sm space-y-1">
-                  <span className="font-bold text-gray-800 flex items-center gap-1 text-[11px] md:text-xs">
-                    <span>⛳</span> 선택 라운딩 골프장 목록:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5 pl-0.5">
-                    {(customGolfCourses.length > 0 ? customGolfCourses : diyGolfCourses.slice(0, diyRounds)).map((course, idx) => (
-                      <span key={idx} className="bg-white px-2 py-1 md:px-2.5 md:py-1 rounded-lg border border-emerald-200 text-[10px] sm:text-[11px] md:text-xs font-bold text-emerald-900 shadow-2xs">
-                        {idx + 1}R: {course}
+                  {(activePackage ? customGolfCourses.length > 0 : diyActivityMode === 'golf') ? (
+                    <>
+                      <span className="font-bold text-gray-800 flex items-center gap-1 text-[11px] md:text-xs">
+                        <span>⛳</span> 선택 라운딩 골프장 목록:
                       </span>
-                    ))}
-                  </div>
+                      <div className="flex flex-wrap gap-1.5 pl-0.5">
+                        {(customGolfCourses.length > 0 ? customGolfCourses : diyGolfCourses.slice(0, diyRounds)).map((course, idx) => (
+                          <span key={idx} className="bg-white px-2 py-1 md:px-2.5 md:py-1 rounded-lg border border-emerald-200 text-[10px] sm:text-[11px] md:text-xs font-bold text-emerald-900 shadow-2xs">
+                            {idx + 1}R: {course}
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-bold text-gray-800 flex items-center gap-1 text-[11px] md:text-xs">
+                        <span>🧳</span> 선택 여행/투어 일정:
+                      </span>
+                      <div className="pl-0.5 text-gray-700 text-xs md:text-sm font-semibold">
+                        {(() => {
+                          const tourOpt = activePackage?.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
+                          if (tourOpt) return getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '');
+                          return selectedTourItems.map(t => t.name).join(' · ') || '자유 여행';
+                        })()}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* 2. Accommodation & Vehicle */}
@@ -2892,19 +3159,23 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                   <div className="max-h-40 md:max-h-52 overflow-y-auto space-y-1 pr-1 bg-white/90 p-2.5 md:p-3 rounded-xl border border-emerald-100 shadow-inner">
                     {activePackage ? (
-                      activePackage.options.filter(o => selectedOptionIds.has(o.id)).map((opt) => (
-                        <div key={opt.id} className="flex justify-between items-center text-xs md:text-sm py-1 border-b border-gray-100 last:border-none">
-                          <div className="flex items-center gap-1.5 text-gray-800 font-medium truncate mr-2 min-w-0">
-                            <span className="text-[9px] md:text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0 font-bold">
-                              {opt.name.includes('패스트 트랙') ? '패스트트랙' : opt.category === 'hotel' ? '숙박(1인실)' : opt.category === 'vehicle' ? '차량' : opt.category === 'guide' ? '가이드' : opt.category === 'meal' ? '식사' : opt.category === 'golf' ? '골프' : '옵션'}
+                      activePackage.options.filter(o => selectedOptionIds.has(o.id)).map((opt) => {
+                        const isTeam = opt.category === 'vehicle' || opt.category === 'guide';
+                        const itemTotal = getOptionGroupTotalUSD(opt);
+                        return (
+                          <div key={opt.id} className="flex justify-between items-center text-xs md:text-sm py-1 border-b border-gray-100 last:border-none">
+                            <div className="flex items-center gap-1.5 text-gray-800 font-medium truncate mr-2 min-w-0">
+                              <span className="text-[9px] md:text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0 font-bold">
+                                {opt.name.includes('패스트 트랙') ? '패스트트랙' : opt.category === 'hotel' ? '숙박(1인실)' : opt.category === 'vehicle' ? '차량' : opt.category === 'guide' ? '가이드' : opt.category === 'meal' ? '식사' : opt.category === 'golf' ? '골프' : '옵션'}
+                              </span>
+                              <span className="truncate">{getOptionDisplayName(opt)}</span>
+                            </div>
+                            <span className="font-bold text-deepgreen text-xs md:text-sm shrink-0 whitespace-nowrap">
+                              ${itemTotal.toLocaleString()} <span className="text-[10px] text-gray-400 font-medium">({isTeam ? `${pkgTravelDays}일 총액` : `${personCount}인`})</span>
                             </span>
-                            <span className="truncate">{getOptionDisplayName(opt)}</span>
                           </div>
-                          <span className="font-bold text-deepgreen text-xs md:text-sm shrink-0">
-                            ${getOptionPrice(opt)}
-                          </span>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="text-xs md:text-sm text-gray-600 space-y-1">
                         <div>• 전 일정 단독 차량: {selectedVehicleItem?.shortName || selectedVehicleItem?.name}</div>
@@ -3568,9 +3839,15 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     )}
                   </div>
                   <div className="text-right shrink-0 pl-3">
-                    <span className="text-[10px] md:text-xs text-gold-300 block font-bold">1인 기준 차액</span>
+                    <span className="text-[10px] md:text-xs text-gold-300 block font-bold">
+                      {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                        ? `${pkgTravelDays}일 일정 총액 (인원 무관)`
+                        : '1인 기준 차액'}
+                    </span>
                     <span className="text-base md:text-lg font-black text-white">
-                      {customOptionSelections[customizingOption.id]
+                      {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                        ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()} (팀 총액)`
+                        : customOptionSelections[customizingOption.id]
                         ? (customOptionSelections[customizingOption.id].priceDelta === 0 
                             ? '기본 포함 ($0)' 
                             : customOptionSelections[customizingOption.id].priceDelta > 0 
@@ -3733,7 +4010,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                         <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-gray-100">
                           <div>
-                            <span className="text-[10px] md:text-xs text-gray-400 block font-medium">1인 기준 차액</span>
+                            <span className="text-[10px] md:text-xs text-gray-400 block font-medium">
+                              {choice.type === 'vehicle' || choice.type === 'guide'
+                                ? `${pkgTravelDays}일 일정 총액 (팀 기준)`
+                                : '1인 기준 차액'}
+                            </span>
                             <span className={`text-xs md:text-sm font-black ${
                               choice.priceDeltaUSD === 0 
                                 ? 'text-gray-600' 
@@ -3741,7 +4022,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                 ? 'text-emerald-700' 
                                 : 'text-blue-600'
                             }`}>
-                              {choice.priceDeltaUSD === 0 
+                              {choice.type === 'vehicle' || choice.type === 'guide'
+                                ? `$${(choice as any).teamTotalUSD ?? 0} (${choice.priceDeltaUSD === 0 ? '기본' : choice.priceDeltaUSD > 0 ? `+$${choice.priceDeltaUSD}` : `-$${Math.abs(choice.priceDeltaUSD)}`})`
+                                : choice.priceDeltaUSD === 0 
                                 ? '기본 포함 ($0)' 
                                 : choice.priceDeltaUSD > 0 
                                 ? `+$${choice.priceDeltaUSD}/인` 
@@ -3789,7 +4072,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             <div className="px-3.5 py-3 sm:px-0 sm:py-0 sm:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-md sm:shadow-none">
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <div>
-                  <span className="text-[10px] md:text-xs text-gray-400 block">선택 옵션 변경 차액 (1인 기준)</span>
+                  <span className="text-[10px] md:text-xs text-gray-400 block">
+                    {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                      ? `선택 옵션 ${pkgTravelDays}일 총액 (인원수 무관 · 팀 기준)`
+                      : '선택 옵션 변경 차액 (1인 기준)'}
+                  </span>
                   <span className={`text-sm md:text-base font-black ${
                     !customOptionSelections[customizingOption.id] || customOptionSelections[customizingOption.id].priceDelta === 0
                       ? 'text-gray-700'
@@ -3797,7 +4084,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       ? 'text-emerald-700'
                       : 'text-blue-600'
                   }`}>
-                    {customOptionSelections[customizingOption.id]
+                    {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                      ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()} (${pkgTravelDays}일 일정 총액)`
+                      : customOptionSelections[customizingOption.id]
                       ? (customOptionSelections[customizingOption.id].priceDelta === 0 
                           ? '기본 패키지 포함 동일 ($0)' 
                           : customOptionSelections[customizingOption.id].priceDelta > 0 
@@ -4254,6 +4543,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             costItems={getA4CostItems()}
             itinerary={getA4ItineraryDays()}
             notes={customerNotes}
+            reservationNotice={getReservationNoticeData()}
             showControls={false}
           />
         </div>

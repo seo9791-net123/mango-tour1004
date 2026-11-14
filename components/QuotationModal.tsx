@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
-import A4QuotationDocument, { CostItem, ItineraryDay } from './A4QuotationDocument';
+import A4QuotationDocument, { CostItem, ItineraryDay, ReservationNoticeData } from './A4QuotationDocument';
 
 import { getTravelDays, calculateCostItemTotal } from '../utils/costBreakdownUtils';
 
@@ -159,6 +159,55 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
     }),
   }));
 
+  // Build dynamic reservationNotice synced with selected recommended product & toggles
+  const extractedGolfCourses = (() => {
+    if (product.type !== 'golf') return [] as string[];
+    const found = new Set<string>();
+    const scanText = [
+      product.title,
+      product.description,
+      ...(product.itinerary || []).flatMap(d => d.activities)
+    ].join(' ');
+    const matches = scanText.match(/([가-힣a-zA-Z0-9&\-\.]+\s*(?:[가-힣a-zA-Z0-9&\-\.]+\s*)?CC)/g);
+    if (matches) {
+      matches.forEach(m => {
+        const cleaned = m.trim().replace(/^[\+\-\·\s]+/, '');
+        if (cleaned.length >= 3 && cleaned.length <= 35) found.add(cleaned);
+      });
+    }
+    if (found.size === 0) {
+      const golfCost = costItems.find(i => i.category.includes('골프'));
+      if (golfCost?.detail) found.add(golfCost.detail);
+      else found.add(product.title);
+    }
+    return Array.from(found);
+  })();
+
+  const extractedTourItems = (() => {
+    if (product.type === 'golf') return [] as string[];
+    const tourCost = costItems.find(i => (i.category.includes('투어') && !i.category.includes('차량')) || i.category.includes('관광'));
+    return [tourCost?.detail || `${product.title}${product.description ? ` (${product.description})` : ''}`];
+  })();
+
+  const hotelCostItem = costItems.find(i => i.category.includes('숙박') || i.category.includes('호텔') || i.category.includes('리조트') || i.category.includes('풀빌라'));
+  const vehicleCostItem = costItems.find(i => i.category.includes('차량') || i.category.includes('리무진'));
+
+  const reservationNotice: ReservationNoticeData = {
+    sourceType: 'product',
+    productTitle: product.title,
+    tripType: product.type,
+    region: product.location,
+    duration: product.duration,
+    golfCourses: extractedGolfCourses,
+    tourItems: extractedTourItems,
+    accommodation: hotelCostItem?.detail || `${product.location} 고급 호텔/리조트 (1인 1실 기준)`,
+    vehicle: vehicleCostItem?.detail || '전 일정 단독 전용 차량',
+    extraServices: [
+      { name: '한국어 전문 가이드', included: includeGuide },
+      { name: '공항 VIP 패스트트랙', included: includeFastTrack },
+    ],
+  };
+
   return (
     <div className="fixed inset-0 bg-black/75 z-[10000] flex items-center justify-center p-0 sm:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe">
       <div className="bg-gray-100 w-full max-w-4xl h-full sm:h-auto sm:max-h-[96vh] sm:rounded-3xl shadow-2xl relative flex flex-col overflow-hidden my-auto print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none">
@@ -308,7 +357,8 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
             totalPriceUSD={groupTotalUSD}
             costItems={costItems}
             itinerary={itineraryDays}
-            notes={`숙박: 1인 객실 기준 (1인 1실 단독 투숙) | 패스트트랙: ${includeFastTrack ? '포함 ($60)' : '선택 가능 ($60)'} | 가이드: ${includeGuide ? '1일 $120 포함' : '제외'}`}
+            notes={`선택 상품: ${product.title} | 패스트트랙: ${includeFastTrack ? '포함 ($60/인)' : '미포함 (선택 가능)'} | 가이드: ${includeGuide ? '포함 (1일 $120)' : '미포함'}`}
+            reservationNotice={reservationNotice}
             onClose={onClose}
             showControls={true}
           />

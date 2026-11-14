@@ -17,7 +17,7 @@ import { fetchGoogleSheetData } from '../services/googleSheetService';
 import { uploadFile, setCloudinaryConfig } from '../services/uploadService';
 import { supabaseService } from '../services/supabaseService';
 import { isSupabaseConfigured, updateSupabaseCredentials } from '../services/supabaseClient';
-import { compressImage, getFreshImageUrl } from '../utils/imageUtils';
+import { compressImage, getFreshImageUrl, isImageIconUrl } from '../utils/imageUtils';
 import BackButton from './BackButton';
 import { getTravelDays, getItemPricingType, calculateCostItemTotal } from '../utils/costBreakdownUtils';
 
@@ -103,6 +103,16 @@ const AdminDashboard: React.FC<Props> = ({
     description: '',
     badge: ''
   });
+
+  // Icon Picker Modal State (for Region, HotelTier, Vehicle, Extra)
+  const [iconPickerTarget, setIconPickerTarget] = useState<{
+    mode: 'pool' | 'newPoolItem';
+    category: 'region' | 'hotelTier' | 'vehicle' | 'extra';
+    id?: string;
+    label: string;
+    currentIcon: string;
+  } | null>(null);
+  const [iconCustomInput, setIconCustomInput] = useState('');
   
   const heroFileInputRef = useRef<HTMLInputElement>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -819,6 +829,36 @@ const AdminDashboard: React.FC<Props> = ({
       console.warn("Storage error", e);
     }
     showToast('💾 변경사항이 저장되었습니다.');
+  };
+
+  const ICON_PRESETS_BY_CATEGORY: Record<'region' | 'hotelTier' | 'vehicle' | 'extra', string[]> = {
+    region: ['🏙️', '🌊', '🏜️', '🏝️', '🌲', '🌴', '⛳', '🏌️', '🏖️', '⛰️', '🌅', '🌄', '🌇', '🌃', '⛱️', '🌺', '🥥', '🍍', '🦩', '🛥️', '✈️', '🏰', '🎡', '🪷', '🏯'],
+    hotelTier: ['⭐', '🏨', '🏡', '🏢', '🏖️', '🏰', '🛏️', '🌴', '🏊', '✨', '💎', '👑'],
+    vehicle: ['🚐', '🚙', '🚗', '🚌', '🚎', '🚖', '🚘', '🏎️', '✈️', '🛥️', '🚁'],
+    extra: ['👨‍💼', '⚡', '💆', '✨', '🎁', '🍽️', '🥂', '⛳', '🛡️', '🎫', '📸', '🧳', '🎧']
+  };
+
+  const openIconPicker = (
+    mode: 'pool' | 'newPoolItem',
+    category: 'region' | 'hotelTier' | 'vehicle' | 'extra',
+    id: string | undefined,
+    label: string,
+    currentIcon: string
+  ) => {
+    setIconCustomInput(currentIcon || '');
+    setIconPickerTarget({ mode, category, id, label, currentIcon });
+  };
+
+  const applyPickedIcon = (newIconValue: string) => {
+    if (!iconPickerTarget) return;
+    const cleaned = newIconValue.trim();
+    if (!cleaned) return;
+    if (iconPickerTarget.mode === 'newPoolItem') {
+      setNewPoolItem(prev => ({ ...prev, icon: cleaned }));
+    } else if (iconPickerTarget.id) {
+      handleUpdateMasterOptionPoolItem(iconPickerTarget.category, iconPickerTarget.id, 'icon', cleaned);
+    }
+    setIconPickerTarget(null);
   };
 
   const handleDeleteMasterOptionPoolItem = (
@@ -3161,22 +3201,40 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <div key={reg.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3 flex flex-col justify-between">
                           <div className="space-y-2.5">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-2xl">{reg.icon}</span>
-                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                              <button
+                                type="button"
+                                onClick={() => openIconPicker('pool', 'region', reg.id, reg.name || '지역', reg.icon || '🌴')}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-400 transition cursor-pointer group"
+                                title="클릭하여 아이콘 변경"
+                              >
+                                {isImageIconUrl(reg.icon) ? (
+                                  <img src={getFreshImageUrl(reg.icon)} alt={reg.name} className="w-7 h-7 object-contain rounded-md shrink-0" />
+                                ) : (
+                                  <span className="text-2xl leading-none">{reg.icon || '🌴'}</span>
+                                )}
+                                <span className="text-[10px] font-bold text-gray-500 group-hover:text-deepgreen whitespace-nowrap">아이콘 변경</span>
+                              </button>
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded whitespace-nowrap">
                                 기본 추가금 ${reg.baseFeeUSD || 0}
                               </span>
                             </div>
-                            <div className="grid grid-cols-4 gap-2">
-                              <div>
+                            <div className="grid grid-cols-12 gap-2 items-end">
+                              <div className="col-span-5 sm:col-span-5">
                                 <label className="text-[10px] font-bold text-gray-400 block mb-0.5">아이콘</label>
-                                <input
-                                  type="text"
-                                  value={reg.icon}
-                                  onChange={(e) => handleUpdateMasterOptionPoolItem('region', reg.id, 'icon', e.target.value)}
-                                  className="w-full p-1.5 bg-gray-50 border rounded-lg text-sm text-center outline-none"
-                                />
+                                <button
+                                  type="button"
+                                  onClick={() => openIconPicker('pool', 'region', reg.id, reg.name || '지역', reg.icon || '🌴')}
+                                  className="w-full h-9 px-2 bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-400 rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer group"
+                                >
+                                  {isImageIconUrl(reg.icon) ? (
+                                    <img src={getFreshImageUrl(reg.icon)} alt={reg.name} className="w-5 h-5 object-contain rounded shrink-0" />
+                                  ) : (
+                                    <span className="text-base leading-none">{reg.icon || '🌴'}</span>
+                                  )}
+                                  <span className="text-[11px] font-bold text-deepgreen group-hover:text-emerald-700 whitespace-nowrap">변경</span>
+                                </button>
                               </div>
-                              <div className="col-span-3">
+                              <div className="col-span-7 sm:col-span-7">
                                 <label className="text-[10px] font-bold text-gray-400 block mb-0.5">지역명</label>
                                 <input
                                   type="text"
@@ -3508,9 +3566,21 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         {(masterOptionPool.accommodationTiers || INITIAL_MASTER_OPTION_POOL.accommodationTiers || []).map((tier) => (
                           <div key={tier.id} className="bg-white p-4 rounded-2xl border-2 border-emerald-200/80 shadow-sm space-y-2.5 flex flex-col justify-between">
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xl">{tier.icon}</span>
-                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                              <div className="flex items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => openIconPicker('pool', 'hotelTier', tier.id, tier.name || '숙박', tier.icon || '🏨')}
+                                  className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-400 transition cursor-pointer group"
+                                  title="클릭하여 아이콘 변경"
+                                >
+                                  {isImageIconUrl(tier.icon) ? (
+                                    <img src={getFreshImageUrl(tier.icon)} alt={tier.name} className="w-6 h-6 object-contain rounded shrink-0" />
+                                  ) : (
+                                    <span className="text-xl leading-none">{tier.icon || '🏨'}</span>
+                                  )}
+                                  <span className="text-[10px] font-bold text-gray-500 group-hover:text-deepgreen whitespace-nowrap">변경</span>
+                                </button>
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded whitespace-nowrap">
                                   1박 ${tier.pricePerNightUSD}
                                 </span>
                               </div>
@@ -3705,9 +3775,21 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <div key={item.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition space-y-2.5 flex flex-col justify-between">
                           <div className="space-y-2">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xl">{item.icon || '🚐'}</span>
-                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
-                                1일 ${item.pricePerDayUSD ?? 25}/인
+                              <button
+                                type="button"
+                                onClick={() => openIconPicker('pool', 'vehicle', item.id, item.shortName || item.name || '차량', item.icon || '🚐')}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-400 transition cursor-pointer group"
+                                title="클릭하여 아이콘 변경"
+                              >
+                                {isImageIconUrl(item.icon) ? (
+                                  <img src={getFreshImageUrl(item.icon)} alt={item.name} className="w-6 h-6 object-contain rounded shrink-0" />
+                                ) : (
+                                  <span className="text-xl leading-none">{item.icon || '🚐'}</span>
+                                )}
+                                <span className="text-[10px] font-bold text-gray-500 group-hover:text-deepgreen whitespace-nowrap">변경</span>
+                              </button>
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded whitespace-nowrap">
+                                1일 ${item.pricePerDayUSD ?? 25} (팀/일)
                               </span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
@@ -3733,7 +3815,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1일 단가($/인)</label>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1일 단가($/일·팀)</label>
                                 <input
                                   type="number"
                                   value={item.pricePerDayUSD ?? 25}
@@ -3813,8 +3895,20 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <div key={svc.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-2.5 flex flex-col justify-between">
                           <div className="space-y-2">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xl">{svc.icon}</span>
-                              <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded">
+                              <button
+                                type="button"
+                                onClick={() => openIconPicker('pool', 'extra', svc.id, svc.name || '부가서비스', svc.icon || '✨')}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-400 transition cursor-pointer group"
+                                title="클릭하여 아이콘 변경"
+                              >
+                                {isImageIconUrl(svc.icon) ? (
+                                  <img src={getFreshImageUrl(svc.icon)} alt={svc.name} className="w-6 h-6 object-contain rounded shrink-0" />
+                                ) : (
+                                  <span className="text-xl leading-none">{svc.icon || '✨'}</span>
+                                )}
+                                <span className="text-[10px] font-bold text-gray-500 group-hover:text-purple-700 whitespace-nowrap">변경</span>
+                              </button>
+                              <span className="px-2 py-0.5 bg-purple-100 text-purple-800 text-[10px] font-bold rounded whitespace-nowrap">
                                 {svc.pricingUnit === 'per_day' ? `1일 $${svc.priceUSD}` : `1인 $${svc.priceUSD}`}
                               </span>
                             </div>
@@ -4021,26 +4115,43 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                       />
                     </div>
 
-                    {newPoolItem.category === 'vehicle' && (
+                    {(newPoolItem.category === 'region' || newPoolItem.category === 'hotelTier' || newPoolItem.category === 'vehicle' || newPoolItem.category === 'extra') && (
                       <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="font-bold text-gray-700 block mb-1">버튼 단축명</label>
-                          <input
-                            type="text"
-                            placeholder="예: 7인승, 9인승"
-                            value={newPoolItem.shortName || ''}
-                            onChange={(e) => setNewPoolItem({ ...newPoolItem, shortName: e.target.value })}
-                            className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="font-bold text-gray-700 block mb-1">아이콘 이모지</label>
-                          <input
-                            type="text"
-                            value={newPoolItem.icon || '🚐'}
-                            onChange={(e) => setNewPoolItem({ ...newPoolItem, icon: e.target.value })}
-                            className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none text-center"
-                          />
+                        {newPoolItem.category === 'vehicle' && (
+                          <div>
+                            <label className="font-bold text-gray-700 block mb-1">버튼 단축명</label>
+                            <input
+                              type="text"
+                              placeholder="예: 7인승, 9인승"
+                              value={newPoolItem.shortName || ''}
+                              onChange={(e) => setNewPoolItem({ ...newPoolItem, shortName: e.target.value })}
+                              className="w-full p-2.5 bg-white border border-gray-300 rounded-xl font-bold outline-none"
+                            />
+                          </div>
+                        )}
+                        <div className={newPoolItem.category === 'vehicle' ? '' : 'col-span-2'}>
+                          <label className="font-bold text-gray-700 block mb-1">아이콘 선택 / 이미지 업로드</label>
+                          <button
+                            type="button"
+                            onClick={() => openIconPicker(
+                              'newPoolItem',
+                              newPoolItem.category as 'region' | 'hotelTier' | 'vehicle' | 'extra',
+                              undefined,
+                              newPoolItem.name || '새 항목',
+                              newPoolItem.icon || '🌴'
+                            )}
+                            className="w-full p-2.5 bg-gray-50 hover:bg-emerald-50 border border-gray-300 hover:border-emerald-400 rounded-xl font-bold flex items-center justify-between transition cursor-pointer"
+                          >
+                            <span className="flex items-center gap-2">
+                              {isImageIconUrl(newPoolItem.icon) ? (
+                                <img src={getFreshImageUrl(newPoolItem.icon)} alt="아이콘" className="w-6 h-6 object-contain rounded" />
+                              ) : (
+                                <span className="text-lg leading-none">{newPoolItem.icon || '🌴'}</span>
+                              )}
+                              <span className="text-gray-600 text-xs">현재 선택된 아이콘</span>
+                            </span>
+                            <span className="text-deepgreen text-xs font-extrabold whitespace-nowrap">아이콘 변경 &gt;</span>
+                          </button>
                         </div>
                       </div>
                     )}
@@ -4110,7 +4221,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <div>
                           <label className="font-bold text-gray-700 block mb-1">
                             {newPoolItem.category === 'hotelTier' ? '1박 단가 ($ USD)' :
-                             newPoolItem.category === 'vehicle' ? '1일 1인 단가 ($ USD)' :
+                             newPoolItem.category === 'vehicle' ? '1일 단가 ($ USD · 팀 기준)' :
                              newPoolItem.category === 'golf' ? '1회 라운딩 단가 ($ USD)' :
                              '단가 ($ USD)'}
                           </label>
@@ -4172,6 +4283,108 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                       </button>
                     </div>
                   </form>
+                </div>
+              </div>
+            )}
+
+            {/* Modal: Icon Picker & Custom Image Upload */}
+            {iconPickerTarget && (
+              <div
+                className="fixed inset-0 z-[10000] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+                onClick={() => setIconPickerTarget(null)}
+              >
+                <div
+                  className="bg-white max-w-md w-full rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl border border-emerald-200 space-y-4 animate-scale-in"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-between items-center border-b pb-3 gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+                        {isImageIconUrl(iconPickerTarget.currentIcon) ? (
+                          <img src={getFreshImageUrl(iconPickerTarget.currentIcon)} alt="" className="w-7 h-7 object-contain rounded" />
+                        ) : (
+                          <span className="text-2xl leading-none">{iconPickerTarget.currentIcon || '🌴'}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm sm:text-base font-black text-deepgreen truncate">
+                          {iconPickerTarget.label} 아이콘 변경
+                        </h4>
+                        <p className="text-[11px] text-gray-500">이모지를 클릭하거나 이미지 아이콘을 업로드하세요.</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIconPickerTarget(null)}
+                      className="text-gray-400 hover:text-gray-700 font-bold text-lg px-2 py-1 shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Preset Icon Grid */}
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-500 block mb-2">추천 아이콘 (클릭 시 즉시 적용)</label>
+                    <div className="grid grid-cols-6 sm:grid-cols-7 gap-2 max-h-52 overflow-y-auto p-1">
+                      {ICON_PRESETS_BY_CATEGORY[iconPickerTarget.category].map((emoji) => {
+                        const isCurrent = iconPickerTarget.currentIcon === emoji;
+                        return (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => applyPickedIcon(emoji)}
+                            className={`h-11 rounded-xl border text-2xl flex items-center justify-center transition cursor-pointer ${
+                              isCurrent
+                                ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-300 shadow-xs'
+                                : 'bg-gray-50 hover:bg-emerald-50 border-gray-200 hover:border-emerald-300'
+                            }`}
+                          >
+                            {emoji}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Image File Upload */}
+                  <div className="pt-2 border-t border-gray-100 space-y-2">
+                    <label className="text-[11px] font-bold text-gray-500 block">직접 이미지 아이콘 업로드</label>
+                    <label className="w-full py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition whitespace-nowrap">
+                      <span>🖼️</span>
+                      <span>내 기기에서 이미지 선택 (PNG / JPG / WebP)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          handleFileUpload(e, (url) => {
+                            applyPickedIcon(url);
+                          });
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Custom Emoji or Image URL Input */}
+                  <div className="pt-2 border-t border-gray-100 space-y-2">
+                    <label className="text-[11px] font-bold text-gray-500 block">직접 입력 (이모지 또는 이미지 URL)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={iconCustomInput}
+                        onChange={(e) => setIconCustomInput(e.target.value)}
+                        placeholder="이모지 붙여넣기 또는 https://... 이미지 주소"
+                        className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs sm:text-sm outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => applyPickedIcon(iconCustomInput)}
+                        className="px-4 py-2 bg-deepgreen hover:bg-gold-600 text-white text-xs font-bold rounded-xl transition whitespace-nowrap shrink-0"
+                      >
+                        적용
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

@@ -109,3 +109,19 @@ export const getFreshImageUrl = (
   const separator = trimmed.includes('?') ? '&' : '?';
   return `${trimmed}${separator}t=${ts}`;
 };
+
+/**
+ * 아이콘 문자열이 이미지 URL(http, https, /, data:image, blob:)인지 판별합니다.
+ */
+export const isImageIconUrl = (icon?: string | null): boolean => {
+  if (!icon || typeof icon !== 'string') return false;
+  const trimmed = icon.trim();
+  return (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('data:image') ||
+    trimmed.startsWith('blob:')
+  );
+};
+

@@ -1527,14 +1527,14 @@ export const INITIAL_MASTER_OPTION_POOL: MasterOptionPool = {
   ],
 
   extraServices: [
-    { id: 'guide', name: '가이드', priceUSD: 30, pricingUnit: 'per_day', description: '한국어 전문 가이드 전 일정 동행 올케어 (1일 $30/인)', icon: '👨‍💼', badge: '전 일정 통역', defaultSelected: true },
+    { id: 'guide', name: '가이드', priceUSD: 30, pricingUnit: 'per_day', description: '한국어 전문 가이드 전 일정 동행 올케어 (1일 $30 · 팀 기준)', icon: '👨‍💼', badge: '전 일정 통역', defaultSelected: true },
     { id: 'fasttrack', name: '패스트 트랙', priceUSD: 60, pricingUnit: 'per_person', description: '공항 VIP 전용 입국 심사 초고속 패스 (1인 $60)', icon: '🛫', badge: 'VIP 의전', defaultSelected: false },
     { id: 'massage', name: '마사지', priceUSD: 50, pricingUnit: 'per_person', description: '피로 회복 VIP 전신 힐링 마사지 90분 (1인 $50)', icon: '💆', badge: '힐링 스파', defaultSelected: true },
   ],
 
   guides: [
-    { id: 'gui-1', name: '베테랑 한국어 가이드 전 일정 동행 (5일간 / 1일 기준 $120)', priceDeltaUSD: 0, description: '골프장 체크인/티타임 조율, 시내 관광 및 맛집/야경 전담 밀착 케어 (가이드 1일 $120 × 5일 = $600, 4인 기준 1인 $150)', badge: '1일 $120' },
-    { id: 'gui-2', name: 'VIP 비즈니스 의전 전문 가이드 (동시통역 가능 / 1일 기준 $150)', priceDeltaUSD: 30, description: '전문 비즈니스 통역 및 VIP 단독 의전, 만찬 미팅 케어 (1일 기준 $150)', badge: 'VIP 통역' },
+    { id: 'gui-1', name: '베테랑 한국어 가이드 전 일정 동행 (5일간 / 1일 기준 $120)', priceDeltaUSD: 0, description: '골프장 체크인/티타임 조율, 시내 관광 및 맛집/야경 전담 밀착 케어 (가이드 1일 $120 × 여행 일수 · 인원수 무관 팀 기준)', badge: '1일 $120' },
+    { id: 'gui-2', name: 'VIP 비즈니스 의전 전문 가이드 (동시통역 가능 / 1일 기준 $150)', priceDeltaUSD: 30, description: '전문 비즈니스 통역 및 VIP 단독 의전, 만찬 미팅 케어 (가이드 1일 $150 × 여행 일수 · 인원수 무관 팀 기준)', badge: 'VIP 통역' },
     { id: 'gui-3', name: '가이드 미포함 (전용 차량 기사만 배정)', priceDeltaUSD: -150, description: '가이드 없이 기사만 배정되어 일행끼리 자유롭게 골프와 일정을 즐기는 코스', badge: '가이드 제외' },
   ],
 
