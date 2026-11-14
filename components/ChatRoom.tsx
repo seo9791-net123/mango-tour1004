@@ -255,27 +255,30 @@ const ChatRoom: React.FC<Props> = ({
 
   return (
     <>
-      {/* Desktop: Floating Back button positioned directly beside the chat window */}
-      <div className="hidden md:block fixed bottom-6 right-[420px] z-[10001] animate-fade-in no-print">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex items-center gap-2 px-4 py-3 bg-white text-gray-800 hover:text-deepgreen rounded-2xl shadow-2xl border border-gray-200 font-bold text-xs transition-all duration-200 active:scale-95 hover:shadow-xl hover:-translate-x-1 group cursor-pointer"
-          title="채팅창 닫고 뒤로 가기"
-        >
-          <div className="w-6 h-6 rounded-lg bg-gray-100 group-hover:bg-deepgreen group-hover:text-white flex items-center justify-center transition">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-            </svg>
+      {/* Desktop Container-Aligned Wrapper (Mobile remains full-screen inset-0) */}
+      <div className="fixed inset-0 md:inset-x-0 md:top-auto md:bottom-6 z-[10000] md:pointer-events-none no-print">
+        <div className="h-full md:h-auto md:max-w-7xl md:mx-auto md:px-4 md:flex md:items-end md:justify-end md:gap-3">
+          {/* Desktop: Floating Back button positioned directly beside the chat window */}
+          <div className="hidden md:block pointer-events-auto shrink-0 animate-fade-in">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-2 px-4 py-3 bg-white text-gray-800 hover:text-deepgreen rounded-2xl shadow-2xl border border-gray-200 font-bold text-xs transition-all duration-200 active:scale-95 hover:shadow-xl hover:-translate-x-1 group cursor-pointer"
+              title="채팅창 닫고 뒤로 가기"
+            >
+              <div className="w-6 h-6 rounded-lg bg-gray-100 group-hover:bg-deepgreen group-hover:text-white flex items-center justify-center transition">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </div>
+              <span className="font-bold">뒤로 가기</span>
+            </button>
           </div>
-          <span className="font-bold">뒤로 가기</span>
-        </button>
-      </div>
 
-      <div 
-        className="fixed inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-[400px] md:h-[620px] md:max-h-[85vh] bg-[#f2f6f6] z-[10000] flex flex-col overflow-hidden md:rounded-3xl md:shadow-2xl md:border md:border-gray-200/90 animate-fade-in no-print"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-      >
+          <div 
+            className="pointer-events-auto w-full h-full md:w-[400px] md:h-[620px] md:max-h-[85vh] bg-[#f2f6f6] flex flex-col overflow-hidden md:rounded-3xl md:shadow-2xl md:border md:border-gray-200/90 animate-fade-in"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
         {/* Header */}
         <div className="bg-deepgreen text-white px-2.5 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center shadow-md shrink-0 z-10 gap-1">
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
@@ -486,6 +489,8 @@ const ChatRoom: React.FC<Props> = ({
             </form>
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {/* 10 Notification Sound Themes Selector Modal */}

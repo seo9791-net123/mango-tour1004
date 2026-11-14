@@ -1198,35 +1198,35 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="bg-gray-800 text-gray-400 py-6 text-center text-xs no-print">
-         <div className="max-w-7xl mx-auto px-3 sm:px-4">
-           <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
-             <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
-               Kakao: <span className="font-bold">MANGO TOUR</span>
-             </a>
-           </p>
-           <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
-             <button 
-               type="button"
-               onClick={() => navigateTo('privacy')} 
-               className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
-             >
-               개인정보처리방침
-             </button>
-             <span className="text-gray-600">|</span>
-             <button 
-               type="button"
-               onClick={() => navigateTo('terms')} 
-               className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
-             >
-               이용약관
-             </button>
-             <span className="text-gray-600">|</span>
-             <span className="whitespace-nowrap">대표자: 김일선</span>
-           </div>
-           <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
-         </div>
-      </footer>
+      <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 pt-2 sm:pt-4 no-print">
+        <footer className="bg-gray-800 text-gray-400 py-6 px-3 sm:px-6 text-center text-xs rounded-none sm:rounded-t-2xl md:rounded-t-3xl shadow-md">
+          <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
+            <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
+              Kakao: <span className="font-bold">MANGO TOUR</span>
+            </a>
+          </p>
+          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
+            <button 
+              type="button"
+              onClick={() => navigateTo('privacy')} 
+              className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
+            >
+              개인정보처리방침
+            </button>
+            <span className="text-gray-600">|</span>
+            <button 
+              type="button"
+              onClick={() => navigateTo('terms')} 
+              className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
+            >
+              이용약관
+            </button>
+            <span className="text-gray-600">|</span>
+            <span className="whitespace-nowrap">대표자: 김일선</span>
+          </div>
+          <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
+        </footer>
+      </div>
 
       {/* Real-time Chat Notification Toast */}
       {incomingChatToast && !isChatOpen && (
@@ -1247,42 +1247,32 @@ const App: React.FC = () => {
         onResetUnread={() => setUnreadChatCount(0)}
       />
 
-      {/* Desktop Floating Chat Trigger & Back Button */}
-      <div className="hidden md:flex fixed bottom-6 right-6 z-[9990] items-center gap-2 no-print">
-        {isChatOpen && (
-          <button
-            type="button"
-            onClick={() => setIsChatOpen(false)}
-            className="flex items-center gap-1.5 px-4 py-3 bg-white text-gray-700 hover:text-deepgreen rounded-full shadow-2xl border border-gray-200 font-bold text-xs transition-all duration-200 active:scale-95 hover:shadow-lg cursor-pointer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>뒤로 가기</span>
-          </button>
-        )}
-        {!isChatOpen && (
-          <button
-            type="button"
-            onClick={() => {
-              setIsChatOpen(true);
-              setUnreadChatCount(0);
-              setIncomingChatToast(null);
-            }}
-            className="relative flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white rounded-full shadow-2xl font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-105 group cursor-pointer"
-          >
-            <span className="text-base group-hover:scale-110 transition-transform">💬</span>
-            <span>실시간 채팅</span>
-            {unreadChatCount > 0 ? (
-              <span className="flex items-center gap-1 bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-md animate-bounce ring-2 ring-white">
-                {unreadChatCount > 9 ? '9+' : unreadChatCount}
-              </span>
-            ) : (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            )}
-          </button>
-        )}
-      </div>
+      {/* Desktop Floating Chat Trigger (Aligned inside max-w-7xl container right edge) */}
+      {!isChatOpen && (
+        <div className="hidden md:block fixed inset-x-0 bottom-6 z-[9990] pointer-events-none no-print">
+          <div className="max-w-7xl mx-auto px-4 flex justify-end items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsChatOpen(true);
+                setUnreadChatCount(0);
+                setIncomingChatToast(null);
+              }}
+              className="pointer-events-auto relative flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white rounded-full shadow-2xl font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-105 group cursor-pointer"
+            >
+              <span className="text-base group-hover:scale-110 transition-transform">💬</span>
+              <span>실시간 채팅</span>
+              {unreadChatCount > 0 ? (
+                <span className="flex items-center gap-1 bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-md animate-bounce ring-2 ring-white">
+                  {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                </span>
+              ) : (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       <BottomNav 
         currentPage={currentPage} 

@@ -43,11 +43,13 @@ const ChatNotificationToast: React.FC<Props> = ({ message, onOpenChat, onDismiss
   const activeSound = CHAT_SOUND_THEMES.find(t => t.id === getChatSoundTheme()) || CHAT_SOUND_THEMES[0];
 
   return (
-    <div 
-      className="fixed top-4 left-4 right-4 md:left-auto md:right-6 md:top-6 z-[10005] max-w-sm md:w-[380px] mx-auto animate-bounce-in no-print"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
+    <div className="fixed top-4 md:top-6 inset-x-0 z-[10005] pointer-events-none no-print">
+      <div className="max-w-7xl mx-auto px-4 flex justify-center md:justify-end">
+        <div 
+          className="pointer-events-auto w-full max-w-sm md:w-[380px] animate-bounce-in"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
       <div 
         onClick={onOpenChat}
         className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-gold-400/80 p-3.5 sm:p-4 text-gray-800 transition-all duration-200 hover:shadow-gold-500/20 hover:scale-[1.02] cursor-pointer relative overflow-hidden"
@@ -121,6 +123,8 @@ const ChatNotificationToast: React.FC<Props> = ({ message, onOpenChat, onDismiss
             style={{ width: `${progress}%` }}
           />
         </div>
+        </div>
+      </div>
       </div>
     </div>
   );

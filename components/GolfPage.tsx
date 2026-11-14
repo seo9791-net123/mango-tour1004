@@ -93,26 +93,28 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <section className="py-5 sm:py-8 bg-gray-900 text-white">
-         <div className="max-w-7xl mx-auto px-0 sm:px-4 grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 items-center">
-            <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-none sm:rounded-3xl shadow-xl opacity-90" alt="Golf Service" />
-            <div className="space-y-3 xs:space-y-4 px-2.5 sm:px-0">
-               <h3 className="text-lg xs:text-xl font-black text-gold-400 uppercase tracking-tight">MANGO TOUR만의 특별한 골프 케어</h3>
-               <ul className="space-y-2.5 text-xs xs:text-sm font-normal text-gray-300">
-                  <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 전일정 전용 차량 및 전문 매니저 동행</li>
-                  <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 골프장 티업 타임 우선 배정 권한</li>
-                  <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 라운딩 후 최고급 스파 및 석식 예약</li>
-                  <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 단체 행사 및 대회 기획 지원</li>
-               </ul>
-               <button 
-                 onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
-                 className="w-full sm:w-auto bg-gold-500 text-white px-6 py-3 rounded-xl font-bold text-xs xs:text-sm shadow-md hover:bg-gold-600 active:scale-95 transition whitespace-nowrap"
-               >
-                 골프 투어 맞춤 견적 신청
-               </button>
-            </div>
-         </div>
-      </section>
+      <div className="bg-white py-3 sm:py-6">
+        <div className="max-w-7xl mx-auto px-0 sm:px-4">
+          <section className="py-5 sm:p-6 md:p-8 bg-gray-900 text-white rounded-none sm:rounded-2xl md:rounded-3xl shadow-md grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 items-center overflow-hidden">
+             <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-none sm:rounded-2xl shadow-xl opacity-90" alt="Golf Service" />
+             <div className="space-y-3 xs:space-y-4 px-2.5 sm:px-0">
+                <h3 className="text-lg xs:text-xl font-black text-gold-400 uppercase tracking-tight">MANGO TOUR만의 특별한 골프 케어</h3>
+                <ul className="space-y-2.5 text-xs xs:text-sm font-normal text-gray-300">
+                   <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 전일정 전용 차량 및 전문 매니저 동행</li>
+                   <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 골프장 티업 타임 우선 배정 권한</li>
+                   <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 라운딩 후 최고급 스파 및 석식 예약</li>
+                   <li className="flex items-center gap-2"><span className="text-gold-400 font-bold">✓</span> 단체 행사 및 대회 기획 지원</li>
+                </ul>
+                <button 
+                  onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
+                  className="w-full sm:w-auto bg-gold-500 text-white px-6 py-3 rounded-xl font-bold text-xs xs:text-sm shadow-md hover:bg-gold-600 active:scale-95 transition whitespace-nowrap"
+                >
+                  골프 투어 맞춤 견적 신청
+                </button>
+             </div>
+          </section>
+        </div>
+      </div>
 
       {isSliderOpen && content.slides && (
         <SliderPopup slides={content.slides} onClose={() => setIsSliderOpen(false)} />

@@ -404,8 +404,9 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   };
 
   return (
-    <section className={`py-4 sm:py-6 bg-gray-900 text-white ${onBack ? 'min-h-screen' : ''} pb-20 md:pb-0`}>
-      <div className="max-w-7xl mx-auto px-0 sm:px-4">
+    <div className={`bg-white ${onBack ? 'min-h-screen' : ''} pb-20 md:pb-2`}>
+      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4">
+        <section className="py-4 sm:py-7 px-0 sm:px-6 md:px-8 bg-gray-900 text-white rounded-none sm:rounded-2xl md:rounded-3xl shadow-xl min-h-[600px]">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-4 px-2.5 sm:px-0">
           <div className="flex items-center gap-3">
@@ -747,6 +748,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
               })
           )}
         </div>
+        </section>
       </div>
 
       {/* Direct URL / YouTube Link Modal */}
@@ -882,7 +884,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 };
 
