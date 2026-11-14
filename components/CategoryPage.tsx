@@ -176,12 +176,6 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
                   ({selectedDuration} 일정)
                 </span>
               </h2>
-              <span className="text-[11px] xs:text-xs font-medium text-gray-500 tabular-nums">
-                골프 {filteredProducts.filter((p) => p.type === 'golf').length} · 관광 {filteredProducts.filter((p) => p.type === 'tour').length}
-                {filteredProducts.some((p) => p.type === 'hotel')
-                  ? ` · 호텔/빌라 ${filteredProducts.filter((p) => p.type === 'hotel').length}`
-                  : ''}
-              </span>
             </div>
           )}
         </div>
