@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getFreshImageUrl } from '../utils/imageUtils';
 
@@ -20,8 +19,8 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
 
   if (images.length === 0) {
     return (
-      <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4 pb-1 sm:pb-2">
-        <div className="w-full h-[210px] xs:h-[240px] sm:h-[300px] md:h-[360px] lg:h-[400px] bg-black rounded-none sm:rounded-2xl md:rounded-3xl flex items-center justify-center text-white shadow-md">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-3 pb-1 sm:pb-2">
+        <div className="w-full h-[210px] xs:h-[240px] sm:h-[300px] md:h-[360px] lg:h-[400px] bg-gray-900 rounded-[20px] flex items-center justify-center text-white shadow-sm">
           이미지가 없습니다.
         </div>
       </div>
@@ -29,8 +28,8 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4 pb-1 sm:pb-2">
-      <div className="relative w-full h-[210px] xs:h-[240px] sm:h-[300px] md:h-[360px] lg:h-[400px] overflow-hidden bg-black select-none rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-3 pb-1 sm:pb-2">
+      <div className="relative w-full h-[210px] xs:h-[240px] sm:h-[300px] md:h-[360px] lg:h-[400px] overflow-hidden bg-gray-900 select-none rounded-[20px] shadow-sm">
         {images.map((img, index) => (
           <div
             key={index}
@@ -42,24 +41,28 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
             <img
               src={getFreshImageUrl(img)}
               alt={`Slide ${index}`}
-              className="w-full h-full object-cover object-center opacity-75"
+              className="w-full h-full object-cover object-center opacity-80"
             />
           </div>
         ))}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-gradient-to-t from-black/70 via-black/30 to-black/40 px-4 py-4 text-center">
-          <span className="text-[10px] xs:text-xs font-bold tracking-[0.25em] text-gold-400 uppercase mb-1 drop-shadow">VIETNAM PREMIUM TRAVEL</span>
-          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black mb-1.5 xs:mb-2 drop-shadow-xl text-white tracking-tight">
-            MANGO <span className="text-gold-400">TOUR</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-gradient-to-t from-black/75 via-black/30 to-black/35 px-4 py-4 text-center">
+          <span className="text-[10px] xs:text-xs font-bold tracking-[0.22em] text-emerald-300 uppercase mb-1">
+            VIETNAM PREMIUM TRAVEL
+          </span>
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold mb-1.5 xs:mb-2 text-white tracking-tight">
+            MANGO TOUR
           </h1>
-          <p className="text-xs xs:text-sm sm:text-base md:text-lg font-medium drop-shadow-md mb-3 xs:mb-4 text-gray-200 break-keep max-w-md">
+          <p className="text-xs xs:text-sm sm:text-base md:text-lg font-medium mb-3.5 xs:mb-4 text-white/90 break-keep max-w-md">
             베트남 명문 골프 & 럭셔리 맞춤 투어
           </p>
           {onActionClick && (
             <button 
+              type="button"
               onClick={onActionClick}
-              className="px-5 xs:px-6 py-2 xs:py-2.5 bg-gold-500 hover:bg-gold-600 text-white rounded-full font-bold text-xs xs:text-sm transition-all duration-200 shadow-[0_4px_20px_rgba(212,175,55,0.4)] active:scale-95 flex items-center gap-1.5 whitespace-nowrap"
+              className="px-5 xs:px-6 py-2.5 xs:py-3 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-full font-bold text-xs xs:text-sm transition-all duration-200 shadow-lg active:scale-95 flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
             >
-              <span>✨</span> 나만의 여행 만들기 <span className="text-xs">→</span>
+              <span>나만의 여행 만들기</span>
+              <span className="text-xs">→</span>
             </button>
           )}
         </div>
@@ -70,9 +73,10 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
             {images.map((_, idx) => (
               <button
                 key={idx}
+                type="button"
                 onClick={() => setCurrentIndex(idx)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === currentIndex ? 'w-6 bg-gold-400' : 'w-1.5 bg-white/50'
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  idx === currentIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/45'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
               />

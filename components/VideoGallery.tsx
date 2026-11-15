@@ -404,17 +404,17 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   };
 
   return (
-    <div className={`bg-white ${onBack ? 'min-h-screen' : ''} pb-20 md:pb-2`}>
-      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4">
-        <section className="py-4 sm:py-7 px-0 sm:px-6 md:px-8 bg-gray-900 text-white rounded-none sm:rounded-2xl md:rounded-3xl shadow-xl min-h-[600px]">
+    <div className={`bg-[#F2F2F7] ${onBack ? 'min-h-screen' : ''} pb-20 md:pb-6`}>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-3 sm:pt-4">
+        <section className="p-4 sm:p-6 md:p-8 bg-gray-900 text-white rounded-[20px] shadow-sm min-h-[600px]">
         {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-4 px-2.5 sm:px-0">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-4">
           <div className="flex items-center gap-3">
             {onBack && (
               <BackButton onClick={handleInternalBack} variant="dark" label={showUrlModal || videoToDelete || editingId ? '목록으로' : '뒤로가기'} />
             )}
             <div>
-              <h2 className="text-xl font-bold text-gold-400">동영상</h2>
+              <h2 className="text-xl font-bold text-white tracking-tight">동영상</h2>
               <p className="text-gray-400 text-xs mt-1">
                 {isAdmin ? '모든 스마트폰 및 PC에서 부드럽게 재생되는 고화질 현장 영상 관리' : '망고투어의 다채로운 베트남 현장 영상을 생생하게 확인해보세요.'}
               </p>
@@ -498,15 +498,15 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
         )}
 
         {/* Category Filter */}
-        <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide px-2.5 sm:px-0">
+        <div className="flex gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
           {(['골프', '여행', '먹거리', '기타'] as const).map((cat) => (
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 whitespace-nowrap shrink-0 active:scale-95 cursor-pointer ${
                 filterCategory === cat 
-                ? 'bg-gold-500 text-white shadow-lg' 
-                : 'bg-gray-800 text-gray-400 hover:text-white border border-gray-700'
+                ? 'bg-[#0A7E54] text-white' 
+                : 'bg-gray-800 text-gray-300 hover:text-white'
               }`}
             >
               {cat}
@@ -515,9 +515,9 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
         </div>
 
         {/* Video Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {videos.filter(v => (v.category || '기타') === filterCategory).length === 0 ? (
-            <div className="col-span-full py-20 text-center border-y sm:border-2 border-dashed border-gray-700 rounded-none sm:rounded-2xl text-gray-500">
+            <div className="col-span-full py-20 text-center bg-gray-800/50 rounded-2xl text-gray-400">
                <span className="text-4xl block mb-4">📹</span>
                <p>{filterCategory} 카테고리에 영상이 없습니다.</p>
                <p className="text-xs mt-1">첫 번째 영상을 업로드하거나 링크를 등록해보세요!</p>
@@ -533,7 +533,7 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
                 const hasError = Boolean(failedVideos[video.id]);
 
                 return (
-                  <div key={video.id} className={`group bg-gray-800 rounded-none sm:rounded-xl overflow-hidden shadow-xl border-y sm:border transition-all duration-300 ${editingId === video.id ? 'border-gold-500 ring-2 ring-gold-500/20' : 'border-gray-700'}`}>
+                  <div key={video.id} className={`group bg-gray-800 rounded-2xl overflow-hidden shadow-sm transition-all duration-300 ${editingId === video.id ? 'ring-2 ring-[#0A7E54]' : ''}`}>
                     <div className="aspect-video bg-black relative">
                       {isYT ? (
                         <iframe
@@ -753,10 +753,11 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
       {/* Direct URL / YouTube Link Modal */}
       {showUrlModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-gray-800 border-0 md:border border-gray-700 rounded-none md:rounded-2xl max-w-none md:max-w-md w-full h-full md:h-auto flex flex-col justify-center px-3.5 py-5 md:p-6 shadow-2xl text-white overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/55 backdrop-blur-sm animate-fade-in">
+          <div className="bg-gray-800 rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-md w-full max-h-[90vh] flex flex-col justify-center px-5 py-6 md:p-6 shadow-2xl text-white overflow-y-auto animate-ios-sheet-up">
+            <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-3 md:hidden"></div>
             <h3 className="text-base font-bold text-gray-100 mb-1 flex items-center gap-2">
-              <span>🔗</span> 동영상 링크(URL) 직접 등록
+              <span>동영상 링크(URL) 직접 등록</span>
             </h3>
             <p className="text-xs text-gray-400 mb-4">
               유튜브 링크(일반 영상/Shorts) 또는 MP4 웹 동영상 링크를 직접 등록할 수 있습니다.
@@ -829,8 +830,9 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
 
       {/* In-App Delete Confirmation Modal */}
       {videoToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-gray-800 border-0 md:border border-gray-700 rounded-none md:rounded-2xl max-w-none md:max-w-sm w-full h-full md:h-auto flex flex-col justify-center px-3.5 py-5 md:p-6 shadow-2xl text-white overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/55 backdrop-blur-sm animate-fade-in">
+          <div className="bg-gray-800 rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-sm w-full max-h-[90vh] flex flex-col justify-center px-5 py-6 md:p-6 shadow-2xl text-white overflow-y-auto animate-ios-sheet-up">
+            <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mb-3 md:hidden"></div>
             <div className="w-12 h-12 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

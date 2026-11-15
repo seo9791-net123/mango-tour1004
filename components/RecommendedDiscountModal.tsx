@@ -65,59 +65,58 @@ export const RecommendedDiscountCard: React.FC<CardProps> = ({
 
   return (
     <div
-      className="w-full bg-white rounded-[16px] shadow-[0_24px_60px_rgba(0,0,0,0.45)] border border-gold-300/40 overflow-hidden flex flex-col text-left"
+      className="w-full bg-white rounded-[20px] shadow-2xl overflow-hidden flex flex-col text-left"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Top Hero Header Band (Badge + Discount Rate + Product Title) */}
-      <div className="bg-gradient-to-br from-deepgreen via-[#044a34] to-[#01291c] px-5 pt-5 pb-4 text-white relative">
+      <div className="bg-[#0A7E54] px-5 pt-5 pb-4 text-white relative">
         <button
           type="button"
           onClick={onClose}
           aria-label="팝업 닫기"
-          className="absolute top-3.5 right-3.5 w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 text-white/90 flex items-center justify-center text-xs font-bold transition cursor-pointer"
+          className="absolute top-3.5 right-3.5 w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center text-xs font-bold transition active:scale-90 cursor-pointer"
         >
           ✕
         </button>
 
         {data.badgeText?.trim() && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-gold-400 to-amber-300 text-deepgreen font-black text-xs sm:text-[13px] tracking-wide shadow-md">
-            <span>🔥</span>
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#0A7E54] font-bold text-xs tracking-tight">
             <span>{data.badgeText}</span>
           </div>
         )}
 
         {data.discountRate?.trim() && (
           <div className="mt-2.5 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-[34px] font-black tracking-tight text-amber-300 drop-shadow-sm leading-none">
+            <span className="text-3xl sm:text-[34px] font-black tracking-tight text-white leading-none">
               {data.discountRate}
             </span>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-200/90">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-100">
               SPECIAL OFFER
             </span>
           </div>
         )}
 
-        <h3 className="mt-2 text-lg sm:text-[19px] font-extrabold text-white leading-snug break-keep pr-4">
+        <h3 className="mt-2 text-lg sm:text-[19px] font-extrabold tracking-tight text-white leading-snug break-keep pr-4">
           {data.productTitle || '추천 특가 할인 상품'}
         </h3>
       </div>
 
       {/* Body: Pricing + Benefits + Deadline */}
-      <div className="p-4 sm:p-5 space-y-3 bg-white">
+      <div className="p-5 space-y-3 bg-white">
         {/* Price Comparison Card */}
         {(data.originalPrice?.trim() || data.discountPrice?.trim()) && (
-          <div className="bg-amber-50/75 border border-amber-200/80 rounded-xl px-4 py-3 text-center">
+          <div className="bg-[#ECFDF5] rounded-2xl px-4 py-3 text-center">
             {data.originalPrice?.trim() && (
-              <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm text-gray-500 font-semibold">
+              <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm text-[#8E8E93] font-medium">
                 <span>정상가</span>
-                <span className="line-through text-gray-400 tabular-nums">{data.originalPrice}</span>
-                <span className="text-amber-600 font-bold">→</span>
+                <span className="line-through tabular-nums">{data.originalPrice}</span>
+                <span className="text-[#0A7E54] font-bold">→</span>
               </div>
             )}
             {data.discountPrice?.trim() && (
               <div className="mt-0.5 flex items-baseline justify-center gap-1.5">
-                <span className="text-xs font-extrabold text-red-600 uppercase tracking-wide">할인가</span>
-                <span className="text-2xl sm:text-[28px] font-black text-red-600 tracking-tight tabular-nums leading-tight">
+                <span className="text-xs font-bold text-[#0A7E54]">할인가</span>
+                <span className="text-2xl sm:text-[28px] font-black text-[#0A7E54] tracking-tight tabular-nums leading-tight">
                   {data.discountPrice}
                 </span>
               </div>
@@ -127,12 +126,11 @@ export const RecommendedDiscountCard: React.FC<CardProps> = ({
 
         {/* Benefit / Option Summary */}
         {data.benefitSummary?.trim() && (
-          <div className="bg-gray-50 border border-gray-200/80 rounded-xl p-3.5">
-            <div className="text-[11px] font-extrabold text-deepgreen uppercase tracking-wider mb-1 flex items-center gap-1">
-              <span>✨</span>
-              <span>포함 혜택 및 옵션</span>
+          <div className="bg-[#F2F2F7] rounded-2xl p-3.5">
+            <div className="text-[11px] font-bold text-[#0A7E54] mb-1">
+              포함 혜택 및 옵션
             </div>
-            <p className="text-xs sm:text-[13px] font-semibold text-gray-800 leading-relaxed whitespace-pre-line break-keep">
+            <p className="text-xs sm:text-[13px] font-medium text-[#3A3A3C] leading-relaxed whitespace-pre-line break-keep">
               {data.benefitSummary}
             </p>
           </div>
@@ -140,8 +138,7 @@ export const RecommendedDiscountCard: React.FC<CardProps> = ({
 
         {/* Deadline */}
         {data.deadline?.trim() && (
-          <div className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-bold text-deepgreen bg-emerald-50 border border-emerald-200/70 rounded-lg py-2 px-3 text-center">
-            <span>⏰</span>
+          <div className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-semibold text-[#0A7E54] bg-[#ECFDF5] rounded-xl py-2 px-3 text-center">
             <span className="break-keep">{data.deadline}</span>
           </div>
         )}
@@ -152,7 +149,7 @@ export const RecommendedDiscountCard: React.FC<CardProps> = ({
             <button
               type="button"
               onClick={handleDetailAction}
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-deepgreen to-emerald-800 hover:from-emerald-900 hover:to-deepgreen text-white font-black text-sm sm:text-[15px] rounded-xl shadow-lg shadow-deepgreen/25 transition transform active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-3.5 px-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold text-sm sm:text-[15px] rounded-2xl shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>특가 상품 자세히 보기</span>
               <span>→</span>
@@ -163,7 +160,7 @@ export const RecommendedDiscountCard: React.FC<CardProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleDetailAction}
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-deepgreen to-emerald-800 hover:from-emerald-900 hover:to-deepgreen text-white font-black text-sm sm:text-[15px] rounded-xl shadow-lg shadow-deepgreen/25 transition transform active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-3.5 px-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold text-sm sm:text-[15px] rounded-2xl shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>특가 상품 자세히 보기</span>
               <span>→</span>
@@ -174,14 +171,14 @@ export const RecommendedDiscountCard: React.FC<CardProps> = ({
             <button
               type="button"
               onClick={onHideToday}
-              className="py-2.5 px-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition active:scale-95 cursor-pointer whitespace-nowrap"
+              className="py-2.5 px-2 text-xs font-semibold text-[#3A3A3C] bg-[#F2F2F7] hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               오늘 하루 보지 않기
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="py-2.5 px-2 text-xs font-bold text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition active:scale-95 cursor-pointer whitespace-nowrap"
+              className="py-2.5 px-2 text-xs font-semibold text-[#8E8E93] bg-[#F2F2F7]/70 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               닫기
             </button>

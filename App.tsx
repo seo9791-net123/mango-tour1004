@@ -1091,81 +1091,76 @@ const App: React.FC = () => {
 
   if (!isDataLoaded) {
     return (
-      <div className="min-h-screen bg-deepgreen flex flex-col items-center justify-center text-white p-8 text-center relative overflow-hidden">
-        {/* Atmospheric Background */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,#c5a028_0%,transparent_70%)] opacity-20 blur-3xl"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_80%,#004d40_0%,transparent_50%)] opacity-40 blur-3xl"></div>
-        </div>
-        
-        <div className="relative z-10">
-          <div className="w-20 h-20 border-4 border-gold-400 border-t-transparent rounded-full animate-spin mb-8 mx-auto shadow-[0_0_30px_rgba(197,160,40,0.3)]"></div>
-          <h2 className="text-3xl font-black mb-3 tracking-tight animate-pulse">설레는 여행 준비 중!</h2>
-          <p className="text-sm opacity-70 font-medium tracking-widest uppercase">MANGO TOUR IS PREPARING YOUR TRIP</p>
-        </div>
+      <div className="min-h-screen bg-[#F2F2F7] flex flex-col items-center justify-center text-[#3A3A3C] p-8 text-center">
+        <div className="w-14 h-14 border-[3.5px] border-[#0A7E54] border-t-transparent rounded-full animate-spin mb-6"></div>
+        <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 mb-2">설레는 여행 준비 중</h2>
+        <p className="text-xs font-semibold tracking-widest uppercase text-[#8E8E93]">MANGO TOUR</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full">
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 no-print" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+    <div className="min-h-screen bg-[#F2F2F7] text-[#3A3A3C] flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-black/[0.06] no-print" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
           {/* Logo */}
-          <button onClick={() => navigateTo('home', null)} className="flex items-center gap-2 active:scale-95 transition-transform shrink-0">
-             <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gold-500 rounded-full flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-sm">M</div>
-             <h1 className="text-base sm:text-lg font-black text-deepgreen tracking-tight uppercase whitespace-nowrap">MANGO TOUR</h1>
+          <button type="button" onClick={() => navigateTo('home', null)} className="flex items-center gap-2 active:scale-95 transition-transform duration-200 shrink-0 cursor-pointer">
+             <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#0A7E54] rounded-[10px] flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-xs">M</div>
+             <h1 className="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight uppercase whitespace-nowrap">MANGO TOUR</h1>
           </button>
           
           {/* Right Navigation & Status */}
           <nav className="flex items-center gap-1.5 sm:gap-2">
             {isAdmin && (
               <button 
+                type="button"
                 onClick={() => navigateTo(currentPage === 'home' ? 'admin' : 'home', null)}
-                className={`px-2.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 shrink-0 shadow-sm ${
-                  currentPage === 'admin' ? 'bg-deepgreen text-white' : 'bg-gray-100 text-deepgreen hover:bg-gray-200'
+                className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-200 active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer ${
+                  currentPage === 'admin' ? 'bg-[#0A7E54] text-white' : 'bg-[#F2F2F7] text-[#0A7E54] hover:bg-[#ECFDF5]'
                 }`}
               >
-                <span>{currentPage === 'home' ? '⚙️' : '🏠'}</span>
                 <span className="whitespace-nowrap">{currentPage === 'home' ? '관리자' : '메인'}</span>
               </button>
             )}
 
             {isAdmin && (
-              <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+              <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${
                 isLocalMode 
-                  ? 'bg-orange-50 text-orange-600 border-orange-200' 
-                  : 'bg-green-50 text-green-600 border-green-200'
+                  ? 'bg-orange-50 text-orange-600' 
+                  : 'bg-[#ECFDF5] text-[#0A7E54]'
               }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${isLocalMode ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></span>
+                <span className={`w-1.5 h-1.5 rounded-full ${isLocalMode ? 'bg-orange-500 animate-pulse' : 'bg-[#0A7E54]'}`}></span>
                 {isLocalMode ? 'LOCAL' : 'SYNC'}
               </div>
             )}
 
             {user ? (
-              <div className="flex items-center gap-1.5 sm:gap-2.5 bg-gray-50/80 px-2 py-1 rounded-xl border border-gray-200/60">
-                <span className="text-xs text-gray-800 font-bold whitespace-nowrap max-w-[85px] sm:max-w-[140px] truncate">
+              <div className="flex items-center gap-2 bg-[#F2F2F7]/90 px-3 py-1.5 rounded-full">
+                <span className="text-xs text-gray-900 font-semibold whitespace-nowrap max-w-[85px] sm:max-w-[140px] truncate">
                   {user.nickname}
                 </span>
-                <span className="text-gray-300 text-[10px]">|</span>
+                <span className="text-[#8E8E93] text-[10px]">|</span>
                 <button 
+                  type="button"
                   onClick={handleLogout} 
-                  className="text-xs text-gray-500 hover:text-red-500 transition font-medium whitespace-nowrap active:scale-95"
+                  className="text-xs text-[#8E8E93] hover:text-red-500 transition-colors font-medium whitespace-nowrap active:scale-95 cursor-pointer"
                 >
                   로그아웃
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="flex items-center gap-1.5">
                 <button 
+                  type="button"
                   onClick={() => { setShowAuthModal(true); setAuthMode('login'); }} 
-                  className="px-3 py-1.5 bg-gold-500 text-white rounded-xl text-xs font-bold hover:bg-gold-600 transition active:scale-95 shadow-sm whitespace-nowrap"
+                  className="px-3.5 py-1.5 bg-[#0A7E54] text-white rounded-full text-xs font-semibold hover:bg-[#086945] transition-all duration-200 active:scale-95 whitespace-nowrap cursor-pointer"
                 >
                   로그인
                 </button>
                 <button 
+                  type="button"
                   onClick={() => { setShowAuthModal(true); setAuthMode('signup'); }} 
-                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-200 transition active:scale-95 whitespace-nowrap"
+                  className="px-3.5 py-1.5 bg-[#F2F2F7] text-[#3A3A3C] rounded-full text-xs font-semibold hover:bg-gray-200 transition-all duration-200 active:scale-95 whitespace-nowrap cursor-pointer"
                 >
                   회원가입
                 </button>
@@ -1304,16 +1299,16 @@ const App: React.FC = () => {
                 setUnreadChatCount(0);
                 setIncomingChatToast(null);
               }}
-              className="pointer-events-auto relative flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-deepgreen to-teal-800 hover:from-teal-900 hover:to-deepgreen text-white rounded-full shadow-2xl font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-105 group cursor-pointer"
+              className="pointer-events-auto relative flex items-center gap-2 px-5 py-3.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-full shadow-lg font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-[1.03] group cursor-pointer"
             >
-              <span className="text-base group-hover:scale-110 transition-transform">💬</span>
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
               <span>실시간 채팅</span>
-              {unreadChatCount > 0 ? (
-                <span className="flex items-center gap-1 bg-red-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-md animate-bounce ring-2 ring-white">
+              {unreadChatCount > 0 && (
+                <span className="flex items-center gap-1 bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm ring-2 ring-white tabular-nums">
                   {unreadChatCount > 9 ? '9+' : unreadChatCount}
                 </span>
-              ) : (
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               )}
             </button>
           </div>
@@ -1338,8 +1333,8 @@ const App: React.FC = () => {
 
       {/* Popup Notification */}
       {showPopup && popup.isActive && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl w-[80%] md:w-full md:max-w-sm max-h-[80vh] md:max-h-[90vh] h-auto flex flex-col animate-scale-in border border-white/20 overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-[20px] overflow-hidden shadow-2xl w-[80%] md:w-full md:max-w-sm max-h-[80vh] md:max-h-[90vh] h-auto flex flex-col animate-scale-in overflow-y-auto">
             {popup.image && (
               <div className={`relative shrink-0 overflow-hidden bg-gray-950 flex items-center justify-center ${
                 popup.imageHeight === 'compact' ? 'h-36 md:h-48' :
@@ -1348,14 +1343,12 @@ const App: React.FC = () => {
                 popup.imageHeight === 'medium' ? 'h-48 md:h-64' :
                 'aspect-video w-full'
               }`}>
-                {/* Ambient Blurred Backdrop */}
                 <img
                   src={getFreshImageUrl(popup.image)}
                   alt=""
                   aria-hidden="true"
                   className="absolute inset-0 w-full h-full object-cover filter blur-2xl opacity-45 scale-125 pointer-events-none"
                 />
-                {/* Foreground Notice Image */}
                 <img
                   src={getFreshImageUrl(popup.image)}
                   className={`relative z-10 max-h-full max-w-full duration-300 ${
@@ -1365,22 +1358,24 @@ const App: React.FC = () => {
                 />
               </div>
             )}
-            <div className="p-4 md:p-8 space-y-3 md:space-y-4">
-              {!popup.image && <h3 className="text-deepgreen font-bold text-lg md:text-xl">{popup.title}</h3>}
-              <p className="text-gray-600 text-xs md:text-sm leading-relaxed whitespace-pre-line">{popup.content}</p>
+            <div className="p-5 md:p-6 space-y-3 md:space-y-4">
+              {!popup.image && <h3 className="text-gray-900 font-bold tracking-tight text-lg md:text-xl">{popup.title}</h3>}
+              <p className="text-[#3A3A3C] text-xs md:text-sm leading-relaxed whitespace-pre-line">{popup.content}</p>
               
-              <div className="pt-2 md:pt-4 flex flex-col gap-2">
+              <div className="pt-2 flex flex-col gap-2">
                 {popup.link && (
                   <button 
+                    type="button"
                     onClick={() => { window.open(popup.link, '_blank'); setShowPopup(false); sessionStorage.setItem('mango_popup_closed', 'true'); }}
-                    className="w-full py-3 md:py-4 bg-deepgreen text-white rounded-xl md:rounded-2xl font-bold text-sm md:text-base shadow-lg hover:bg-gold-600 transition transform active:scale-95"
+                    className="w-full py-3.5 bg-[#0A7E54] text-white rounded-2xl font-bold text-sm md:text-base shadow-sm hover:bg-[#086945] transition-all duration-200 active:scale-95 cursor-pointer"
                   >
                     자세히 보기
                   </button>
                 )}
                 <button 
+                  type="button"
                   onClick={() => { setShowPopup(false); sessionStorage.setItem('mango_popup_closed', 'true'); }}
-                  className="w-full py-3 md:py-4 bg-gray-100 text-gray-500 rounded-xl md:rounded-2xl font-bold text-sm md:text-base hover:bg-gray-200 transition"
+                  className="w-full py-3 bg-[#F2F2F7] text-[#3A3A3C] rounded-2xl font-semibold text-sm md:text-base hover:bg-gray-200 transition-all duration-200 active:scale-95 cursor-pointer"
                 >
                   닫기
                 </button>
@@ -1395,30 +1390,31 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-stretch md:items-center justify-center z-[10000] px-0 md:px-4 backdrop-blur-sm animate-fade-in pt-0">
-          <div className="bg-white rounded-none md:rounded-2xl px-3.5 py-6 md:p-8 w-full max-w-none md:max-w-md h-full md:h-auto flex flex-col justify-center shadow-2xl relative transform transition-all animate-fade-in-up overflow-y-auto">
-            <button onClick={() => { setShowAuthModal(false); resetAuthFields(); }} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 font-bold text-xl">✕</button>
-            <h2 className="text-2xl font-bold text-center mb-6 text-deepgreen">{authMode === 'login' ? '로그인' : '회원가입'}</h2>
+        <div className="fixed inset-0 bg-black/40 flex items-end md:items-center justify-center z-[10000] p-0 md:px-4 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-t-3xl md:rounded-[20px] px-5 pt-2 pb-7 md:p-8 w-full md:max-w-md max-h-[90vh] flex flex-col justify-center shadow-2xl relative animate-ios-sheet-up overflow-y-auto">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 md:hidden shrink-0" />
+            <button type="button" onClick={() => { setShowAuthModal(false); resetAuthFields(); }} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#F2F2F7] text-[#8E8E93] hover:text-gray-900 font-bold text-sm flex items-center justify-center cursor-pointer transition active:scale-90">✕</button>
+            <h2 className="text-2xl font-extrabold tracking-tight text-center mb-6 text-gray-900">{authMode === 'login' ? '로그인' : '회원가입'}</h2>
             <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">ID</label>
-                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500" placeholder="아이디를 입력하세요" required />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#8E8E93] ml-1">아이디</label>
+                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="아이디를 입력하세요" required />
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Password</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500" placeholder="비밀번호를 입력하세요" required />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-[#8E8E93] ml-1">비밀번호</label>
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="비밀번호를 입력하세요" required />
               </div>
               {authMode === 'signup' && (
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nickname</label>
-                  <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500" placeholder="사용하실 닉네임을 입력하세요" required />
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#8E8E93] ml-1">닉네임</label>
+                  <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="사용하실 닉네임을 입력하세요" required />
                 </div>
               )}
-              <button type="submit" className="w-full bg-gold-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 hover:bg-gold-600 mt-2 cursor-pointer">
+              <button type="submit" className="w-full bg-[#0A7E54] text-white font-bold py-3.5 rounded-2xl shadow-sm transition-all duration-200 active:scale-95 hover:bg-[#086945] mt-2 cursor-pointer">
                 {authMode === 'login' ? '로그인' : '가입 완료하기'}
               </button>
               {authMode === 'signup' && (
-                <p className="text-[11px] text-gray-500 text-center pt-1">
+                <p className="text-[11px] text-[#8E8E93] text-center pt-1">
                   가입 시 망고투어{' '}
                   <button
                     type="button"
@@ -1426,7 +1422,7 @@ const App: React.FC = () => {
                       setShowAuthModal(false);
                       navigateTo('terms');
                     }}
-                    className="text-gold-600 underline font-bold cursor-pointer"
+                    className="text-[#0A7E54] underline font-semibold cursor-pointer"
                   >
                     이용약관
                   </button>
@@ -1437,7 +1433,7 @@ const App: React.FC = () => {
                       setShowAuthModal(false);
                       navigateTo('privacy');
                     }}
-                    className="text-gold-600 underline font-bold cursor-pointer"
+                    className="text-[#0A7E54] underline font-semibold cursor-pointer"
                   >
                     개인정보처리방침
                   </button>
@@ -1445,16 +1441,16 @@ const App: React.FC = () => {
                 </p>
               )}
             </form>
-            <div className="mt-8 text-center border-t pt-6">
+            <div className="mt-6 text-center border-t border-black/[0.06] pt-5">
               {authMode === 'login' ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[#8E8E93]">
                   아직 회원이 아니신가요?{' '}
-                  <button onClick={() => setAuthMode('signup')} className="text-gold-600 font-bold hover:underline">회원가입 하기</button>
+                  <button type="button" onClick={() => setAuthMode('signup')} className="text-[#0A7E54] font-bold hover:underline cursor-pointer">회원가입 하기</button>
                 </p>
               ) : (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[#8E8E93]">
                   이미 계정이 있으신가요?{' '}
-                  <button onClick={() => setAuthMode('login')} className="text-gold-600 font-bold hover:underline">로그인 하기</button>
+                  <button type="button" onClick={() => setAuthMode('login')} className="text-[#0A7E54] font-bold hover:underline cursor-pointer">로그인 하기</button>
                 </p>
               )}
             </div>

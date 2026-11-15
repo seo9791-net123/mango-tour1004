@@ -281,33 +281,33 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 text-black font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0`}>
+    <div className={`min-h-screen bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0`}>
       {/* Sticky Subpage Hero Banner */}
       {onBack ? (
         <div
-          className="sticky z-20 w-full bg-gray-50 pb-2 sm:pb-3"
+          className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
           style={{ top: 'var(--site-header-height, 45px)' }}
         >
-          <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-3">
-            <section className="relative h-[140px] sm:h-[156px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3">
+            <section className="relative h-[140px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-[20px] shadow-sm">
               <div className="absolute inset-0 z-0">
                 <img 
                   src={getFreshImageUrl("https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80")} 
                   alt="Community Hero" 
                   className="w-full h-full object-cover object-center opacity-60" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/25"></div>
               </div>
               
-              <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 md:top-4 md:left-4 z-50">
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
                 <BackButton onClick={handleTopBack} variant="hero" label={viewingPost || isAdding ? '목록으로' : '뒤로가기'} />
               </div>
 
               <div className="relative z-10 text-center px-4 pt-4 sm:pt-2 md:pt-0">
-                <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black text-white drop-shadow-2xl mb-0.5 sm:mb-1 uppercase tracking-tight break-keep">
+                <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow mb-0.5 sm:mb-1 uppercase tracking-tight break-keep">
                   커뮤니티 & 여행 후기
                 </h1>
-                <p className="text-[10px] xs:text-[11px] md:text-sm font-bold tracking-[0.2em] sm:tracking-[0.25em] text-gold-400 uppercase break-keep">
+                <p className="text-[10px] xs:text-[11px] md:text-sm font-semibold tracking-[0.2em] text-emerald-300 uppercase break-keep">
                   MEMBER STORIES & REVIEWS
                 </p>
               </div>
@@ -316,17 +316,16 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
         </div>
       ) : null}
 
-      <section className="pt-1 pb-5 sm:pt-3 sm:pb-8 bg-gray-50 text-black">
-        <div className="max-w-7xl mx-auto px-0 sm:px-4">
+      <section className="pt-2 pb-6 sm:pt-3 sm:pb-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 space-y-4">
           
-          {/* Action Bar (Header or Title Bar) */}
-          <div className="flex flex-row justify-between items-center mb-3 sm:mb-7 gap-3 bg-white p-3.5 sm:p-5 rounded-none sm:rounded-2xl border-y sm:border border-gray-200/80 shadow-sm">
+          {/* Action Bar */}
+          <div className="flex flex-row justify-between items-center gap-3 bg-white p-4 sm:p-5 rounded-[20px] shadow-sm">
             <div className="min-w-0 flex-1">
-              <h2 className="text-base sm:text-lg md:text-xl font-black text-deepgreen tracking-tight flex items-center gap-1.5 truncate">
-                <span>💬</span>
-                <span>생생한 여행 이야기</span>
+              <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 tracking-tight truncate">
+                생생한 여행 이야기
               </h2>
-              <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 font-medium mt-0.5 break-keep">
+              <p className="text-xs md:text-sm text-[#8E8E93] font-normal mt-0.5 break-keep">
                 회원님들의 실제 여행 사진과 꿀팁을 확인하고 자유롭게 소통해보세요.
               </p>
             </div>
@@ -339,17 +338,16 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                   setIsAdding(true);
                 }
               }}
-              className="bg-gold-500 hover:bg-gold-600 text-white px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold transition shadow-sm flex items-center gap-1.5 text-xs sm:text-sm md:text-sm shrink-0 active:scale-95 whitespace-nowrap"
+              className="bg-[#0A7E54] hover:bg-[#086945] text-white px-4 sm:px-5 py-2.5 rounded-2xl font-semibold transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm shrink-0 active:scale-95 whitespace-nowrap cursor-pointer"
             >
-              <span>✏️</span>
               <span>글쓰기</span>
             </button>
           </div>
 
         {/* Write Post Form */}
         {isAdding && (
-          <div className="bg-white p-3.5 sm:p-6 rounded-none sm:rounded-xl shadow-lg mb-4 sm:mb-8 border-y sm:border border-gold-200 animate-fade-in-up">
-            <h3 className="font-bold text-sm md:text-base mb-3 text-deepgreen">새 글 작성</h3>
+          <div className="bg-white p-5 sm:p-6 rounded-[20px] shadow-sm animate-fade-in-up">
+            <h3 className="font-bold text-sm md:text-base mb-3 text-gray-900">새 글 작성</h3>
             <div className="space-y-3">
                 <input
                   className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none text-xs md:text-sm"
@@ -429,18 +427,18 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
           </div>
         )}
 
-        {/* Post List Row Layout (줄 형태 게시판) */}
-        <div className="bg-white rounded-none sm:rounded-2xl border-y sm:border border-gray-200/90 shadow-sm overflow-hidden">
+        {/* Post List Row Layout */}
+        <div className="bg-white rounded-[20px] shadow-sm overflow-hidden">
           {posts.length === 0 ? (
-            <div className="py-20 text-center text-gray-400">
+            <div className="py-20 text-center text-[#8E8E93]">
               <span className="text-4xl block mb-3">💬</span>
-              <p className="text-base font-bold text-gray-700">등록된 게시글이 없습니다.</p>
-              <p className="text-xs text-gray-400 mt-1">첫 번째 여행 이야기나 후기를 남겨보세요!</p>
+              <p className="text-base font-bold text-gray-900">등록된 게시글이 없습니다.</p>
+              <p className="text-xs text-[#8E8E93] mt-1">첫 번째 여행 이야기나 후기를 남겨보세요!</p>
             </div>
           ) : (
             <>
               {/* Desktop Table Header */}
-              <div className="hidden md:grid grid-cols-12 px-6 py-4 bg-gray-50/90 text-xs md:text-sm font-bold text-gray-600 border-b border-gray-200/90 select-none">
+              <div className="hidden md:grid grid-cols-12 px-6 py-4 bg-[#F2F2F7]/60 text-xs md:text-sm font-semibold text-[#8E8E93] border-b border-black/[0.06] select-none">
                 <div className="col-span-1 text-center">번호</div>
                 <div className="col-span-7">제목</div>
                 <div className="col-span-2 text-center">작성자</div>
@@ -555,16 +553,23 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
 
       {/* Password Prompt Modal */}
       {showPasswordPrompt && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-none md:rounded-2xl px-3.5 py-5 md:p-6 w-full max-w-none md:max-w-xs h-full md:h-auto flex flex-col justify-center shadow-2xl animate-scale-in">
+        <div
+          className="fixed inset-0 bg-black/55 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm animate-fade-in"
+          onClick={() => setShowPasswordPrompt(null)}
+        >
+          <div
+            className="bg-white rounded-t-3xl md:rounded-[20px] px-5 py-6 md:p-6 w-full max-w-none md:max-w-xs shadow-2xl animate-ios-sheet-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 md:hidden"></div>
             <div className="text-center mb-4">
               <span className="text-3xl">🔒</span>
-              <h3 className="font-bold text-gray-800 mt-2">비공개 게시글</h3>
-              <p className="text-[10px] text-gray-500 mt-1">작성자 또는 관리자만 볼 수 있습니다.<br/>비밀번호를 입력해주세요.</p>
+              <h3 className="font-bold text-gray-900 mt-2">비공개 게시글</h3>
+              <p className="text-xs text-[#8E8E93] mt-1">작성자 또는 관리자만 볼 수 있습니다.<br/>비밀번호를 입력해주세요.</p>
             </div>
             <input 
               type="password"
-              className="w-full border border-gray-300 p-3 rounded-xl outline-none focus:ring-2 focus:ring-gold-500 text-center mb-4"
+              className="w-full bg-[#F2F2F7] p-3.5 rounded-xl outline-none focus:ring-2 focus:ring-[#0A7E54]/30 focus:bg-white text-center mb-4 transition"
               placeholder="비밀번호"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
@@ -574,13 +579,13 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
             <div className="flex gap-2">
               <button 
                 onClick={() => setShowPasswordPrompt(null)}
-                className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200"
+                className="flex-1 py-3 bg-[#F2F2F7] text-[#3A3A3C] rounded-2xl font-semibold text-xs hover:bg-gray-200 transition-all duration-200 active:scale-95 cursor-pointer"
               >
                 취소
               </button>
               <button 
                 onClick={handlePasswordSubmit}
-                className="flex-1 py-3 bg-gold-500 text-white rounded-xl font-bold text-xs hover:bg-gold-600 shadow-md"
+                className="flex-1 py-3 bg-[#0A7E54] text-white rounded-2xl font-semibold text-xs hover:bg-[#086945] transition-all duration-200 active:scale-95 cursor-pointer"
               >
                 확인
               </button>
@@ -591,11 +596,18 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
 
       {/* Post Detail & Edit Modal */}
       {viewingPost && user && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white w-full max-w-none md:max-w-3xl h-full md:h-[80vh] rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        <div
+          className="fixed inset-0 bg-black/55 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm animate-fade-in"
+          onClick={() => setViewingPost(null)}
+        >
+          <div
+            className="bg-white w-full max-w-none md:max-w-3xl max-h-[90vh] md:h-[80vh] rounded-t-3xl md:rounded-[20px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-ios-sheet-up"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Left/Top: Content & Image */}
-            <div className="flex-1 overflow-y-auto bg-white px-3 py-4 md:p-6 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto bg-white px-4 py-4 md:p-6 scrollbar-hide">
+              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3 md:hidden"></div>
                 <div className="flex justify-between items-start mb-4">
                      {isEditing && editForm ? (
                        <input 

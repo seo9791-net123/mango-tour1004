@@ -1499,54 +1499,51 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 select-text font-sans antialiased text-gray-900 tracking-tight break-keep w-full max-w-full overflow-x-clip">
+    <div className="min-h-screen bg-[#F2F2F7] pb-28 select-text font-sans antialiased text-[#3A3A3C] tracking-tight break-keep w-full max-w-full overflow-x-clip">
       {/* Toast Notification */}
       {copyToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gray-900/95 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md border border-gold-500/30">
-          <span>✨</span>
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-full shadow-lg text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md">
           <span>{copyToast}</span>
         </div>
       )}
 
       {/* Sticky Hero Header */}
       <div
-        className="sticky z-20 w-full bg-gray-50 pb-2 sm:pb-3"
+        className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
         style={{ top: 'var(--site-header-height, 45px)' }}
       >
-        <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-3 w-full">
-          <div className="bg-gradient-to-br from-deepgreen via-[#00382e] to-emerald-950 text-white relative overflow-hidden rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
-            <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_30%,#c5a028_0%,transparent_70%)] pointer-events-none"></div>
-            <div className="px-3.5 sm:px-6 md:px-8 py-3 sm:py-4 md:py-7 relative z-10 w-full min-h-[132px] sm:min-h-[144px] md:min-h-0 flex flex-col justify-center">
-              <div className="flex items-center justify-between gap-2 mb-2 md:mb-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 w-full">
+          <div className="bg-[#0A7E54] text-white relative overflow-hidden rounded-[20px] shadow-sm">
+            <div className="px-5 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 relative z-10 w-full flex flex-col justify-center">
+              <div className="flex items-center justify-between gap-2 mb-2 md:mb-3">
                 <BackButton 
                   onClick={handleTopBack}
                   variant="hero"
                   label={activePackage ? '목록으로 돌아가기' : '뒤로가기'}
                 />
-                <div className="md:hidden inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gold-500/20 border border-gold-400/30 text-gold-300 text-[10px] sm:text-xs font-semibold whitespace-nowrap">
-                  <span>🏆</span> 맞춤 플래너
-                </div>
+                <span className="md:hidden text-[11px] font-semibold text-emerald-100 whitespace-nowrap">
+                  맞춤 플래너
+                </span>
               </div>
               
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 md:gap-4">
                 <div>
-                  <div className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold-500/20 border border-gold-400/30 text-gold-300 text-xs md:text-sm font-semibold mb-1.5">
-                    <span>🏆</span> 베트남 골프 · 여행 맞춤 플래너
-                  </div>
-                  <h1 className="text-lg xs:text-xl sm:text-2xl md:text-4xl font-extrabold text-white tracking-tight leading-tight line-clamp-1 md:line-clamp-none">
+                  <span className="hidden md:inline-block text-xs font-semibold text-emerald-100 mb-1">
+                    베트남 골프 · 여행 맞춤 플래너
+                  </span>
+                  <h1 className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight line-clamp-1 md:line-clamp-none">
                     {activePackage ? activePackage.title : '골프 / 투어 내 맘대로 여행 만들기'}
                   </h1>
-                  <p className="text-gray-300 text-[11px] sm:text-xs md:text-base mt-1 md:mt-1.5 max-w-2xl leading-snug md:leading-relaxed font-normal line-clamp-1 md:line-clamp-none">
+                  <p className="text-emerald-100/90 text-xs md:text-sm mt-1 max-w-2xl leading-snug font-normal line-clamp-1 md:line-clamp-none">
                     {activePackage 
                       ? activePackage.subtitle 
-                      : '원하시는 지역 선택, 여행기간, 숙박, 차량 등 선택하고 맞춤 견적서가 실시간으로 자동 완성됩니다'}
+                      : '원하시는 지역, 기간, 숙박, 차량을 선택하면 실시간 맞춤 견적서가 완성됩니다.'}
                   </p>
                 </div>
 
                 {!activePackage && (
-                  <div className="hidden md:flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 text-xs md:text-sm font-medium text-gray-200 self-start md:self-auto">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>1:1 DIY 맞춤 자유 설계 지원</span>
+                  <div className="hidden md:flex items-center gap-2 bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-full text-xs font-semibold text-white self-start md:self-auto shrink-0">
+                    <span>1:1 DIY 맞춤 자유 설계</span>
                   </div>
                 )}
               </div>
@@ -1555,26 +1552,26 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         </div>
       </div>
 
-      {/* Main Container - Edge-to-edge on mobile, max-w-7xl containerized on desktop */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 pb-2 sm:pt-2 sm:pb-6 w-full">
+      {/* Main Container */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-1 pb-4 sm:pt-2 sm:pb-6 w-full">
         
         {/* ================= VIEW 1: 6-STEP DIY CUSTOM TRIP BUILDER ================= */}
         {!activePackage && (
-          <div className="px-0 sm:px-0">
-            <div className="space-y-4 sm:space-y-6">
-              {/* 1. 여행 지역 선택 (5 Regions - Concise Buttons) */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
-                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
-                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">1</span>
+          <div>
+            <div className="space-y-4 sm:space-y-5">
+              {/* 1. 여행 지역 선택 */}
+              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] gap-2">
+                  <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
+                    <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">1</span>
                     <span>여행 지역 선택</span>
                   </h3>
-                  <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 whitespace-nowrap shrink-0">
-                    선택: {diyLocation}
+                  <span className="text-xs md:text-sm font-semibold text-[#0A7E54] bg-[#ECFDF5] px-3 py-1 rounded-full whitespace-nowrap shrink-0">
+                    {diyLocation}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
                   {diyRegions.map((reg) => {
                     const isSelected = diyLocation === reg.name;
                     return (
@@ -1582,10 +1579,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         key={reg.id}
                         type="button"
                         onClick={() => handleDIYLocationChange(reg.name)}
-                        className={`p-3 md:p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        className={`p-3.5 md:p-4 rounded-2xl text-center transition-all duration-200 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer ${
                           isSelected
-                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-md scale-[1.02]'
-                            : 'bg-gray-50/70 hover:bg-gray-100 border-gray-200'
+                            ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54] shadow-xs'
+                            : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                         }`}
                       >
                         <div className="flex items-center gap-1.5">
@@ -1594,10 +1591,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           ) : (
                             <span className="text-lg md:text-xl">{reg.icon}</span>
                           )}
-                          <span className="font-black text-sm md:text-base text-gray-900">{reg.name}</span>
+                          <span className="font-bold text-sm md:text-base text-gray-900 tracking-tight">{reg.name}</span>
                         </div>
-                        <span className="text-[10px] md:text-xs text-gray-500 line-clamp-1">{reg.subtitle}</span>
-                        <span className={`text-[10px] font-bold mt-0.5 ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
+                        <span className="text-[11px] md:text-xs text-[#8E8E93] line-clamp-1">{reg.subtitle}</span>
+                        <span className={`text-[11px] font-semibold mt-0.5 ${isSelected ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
                           {isSelected ? '✓ 선택됨' : '선택'}
                         </span>
                       </button>
@@ -1606,53 +1603,53 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 </div>
               </div>
 
-              {/* 2. 여행 일정 (Single Select Box -> Opens 3박4일 ~ 6박7일 Modal) */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">2</span>
+              {/* 2. 여행 일정 */}
+              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] gap-2">
+                  <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5">
+                    <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">2</span>
                     <span>여행 일정</span>
                   </h3>
-                  <span className="text-[11px] sm:text-xs text-gray-400 font-medium">3박 4일 ~ 6박 7일 선택</span>
+                  <span className="text-xs text-[#8E8E93] font-medium">3박 4일 ~ 6박 7일</span>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowScheduleModal(true)}
-                  className="w-full p-3.5 md:p-4 rounded-2xl border-2 border-emerald-500/80 bg-emerald-50/40 hover:bg-emerald-50 transition flex items-center justify-between gap-3 cursor-pointer shadow-xs"
+                  className="w-full p-4 md:p-4.5 rounded-2xl bg-[#ECFDF5] hover:bg-emerald-100/70 transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer"
                 >
                   <div className="flex items-center gap-3 text-left">
-                    <span className="w-10 h-10 rounded-xl bg-deepgreen text-white flex items-center justify-center text-lg shadow-xs shrink-0">
+                    <span className="w-10 h-10 rounded-xl bg-[#0A7E54] text-white flex items-center justify-center text-lg shrink-0">
                       📅
                     </span>
                     <div>
-                      <span className="text-[10px] md:text-xs font-bold text-emerald-700 block">선택된 여행 기간</span>
-                      <span className="text-base md:text-lg font-black text-gray-900">
+                      <span className="text-xs font-semibold text-[#0A7E54] block">선택된 여행 기간</span>
+                      <span className="text-base md:text-lg font-extrabold text-gray-900 tracking-tight">
                         {diyNights}박 {diyDays}일
                       </span>
                     </div>
                   </div>
-                  <span className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-xs md:text-sm font-extrabold text-deepgreen shadow-2xs flex items-center gap-1 shrink-0 whitespace-nowrap">
+                  <span className="px-3.5 py-2 rounded-xl bg-white text-xs md:text-sm font-bold text-[#0A7E54] shadow-2xs flex items-center gap-1 shrink-0 whitespace-nowrap">
                     <span>기간 선택</span>
                     <span>▾</span>
                   </span>
                 </button>
               </div>
 
-              {/* 3. 골프, 여행 선택 (Conditional Popup Buttons) */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3.5">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
+              {/* 3. 골프, 여행 선택 */}
+              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
+                <div className="flex justify-between items-start sm:items-center pb-3 border-b border-black/[0.06] gap-2">
                   <div className="min-w-0">
-                    <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
-                      <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">3</span>
+                    <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
+                      <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">3</span>
                       <span>골프, 여행 선택</span>
                     </h3>
-                    <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-[#8E8E93] mt-1">
                       버튼을 클릭하면 {diyLocation} ({diyNights}박 {diyDays}일) 기준 맞춤 팝업이 열립니다.
                     </p>
                   </div>
-                  <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 whitespace-nowrap shrink-0">
-                    {diyActivityMode === 'golf' ? '⛳ 골프 선택됨' : '🧳 여행 선택됨'}
+                  <span className="text-xs md:text-sm font-semibold text-[#0A7E54] bg-[#ECFDF5] px-3 py-1 rounded-full whitespace-nowrap shrink-0">
+                    {diyActivityMode === 'golf' ? '골프 선택됨' : '여행 선택됨'}
                   </span>
                 </div>
 
@@ -1665,27 +1662,27 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       setShowAllCoursesInGolfModal(false);
                       setShowActivityModal('golf');
                     }}
-                    className={`p-4 md:p-5 rounded-2xl border-2 text-left transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer ${
+                    className={`p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer ${
                       diyActivityMode === 'golf'
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-md'
-                        : 'bg-gray-50/70 hover:bg-gray-100 border-gray-200'
+                        ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                        : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 md:gap-3">
-                      <span className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-deepgreen text-white text-xl md:text-2xl flex items-center justify-center shadow-sm shrink-0">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-10 h-10 md:w-11 md:h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
+                        diyActivityMode === 'golf' ? 'bg-[#0A7E54] text-white' : 'bg-white text-gray-900 shadow-2xs'
+                      }`}>
                         ⛳
                       </span>
                       <div>
-                        <div className="font-black text-base md:text-lg text-gray-900">골프</div>
-                        <div className="text-[11px] md:text-xs text-gray-500">
-                          {diyLocation} 골프장 선택 ({diyRounds}회)
+                        <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight">골프</div>
+                        <div className="text-xs text-[#8E8E93]">
+                          {diyLocation} 골프장 ({diyRounds}회)
                         </div>
                       </div>
                     </div>
-                    <span className={`self-end sm:self-center px-2.5 py-1 rounded-xl text-[11px] md:text-xs font-extrabold border whitespace-nowrap shrink-0 ${
-                      diyActivityMode === 'golf'
-                        ? 'bg-white text-deepgreen border-emerald-300'
-                        : 'bg-white text-gray-500 border-gray-200'
+                    <span className={`self-end sm:self-center px-3 py-1.5 rounded-xl text-xs font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
+                      diyActivityMode === 'golf' ? 'text-[#0A7E54]' : 'text-[#3A3A3C]'
                     }`}>
                       골프장 선택 ▾
                     </span>
@@ -1698,27 +1695,27 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       setDiyActivityMode('tour');
                       setShowActivityModal('tour');
                     }}
-                    className={`p-3.5 sm:p-4 md:p-5 rounded-2xl border-2 text-left transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 cursor-pointer ${
+                    className={`p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer ${
                       diyActivityMode === 'tour'
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-md'
-                        : 'bg-gray-50/70 hover:bg-gray-100 border-gray-200'
+                        ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                        : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 md:gap-3">
-                      <span className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-amber-500 text-white text-xl md:text-2xl flex items-center justify-center shadow-sm shrink-0">
+                    <div className="flex items-center gap-3">
+                      <span className={`w-10 h-10 md:w-11 md:h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
+                        diyActivityMode === 'tour' ? 'bg-[#0A7E54] text-white' : 'bg-white text-gray-900 shadow-2xs'
+                      }`}>
                         🧳
                       </span>
                       <div>
-                        <div className="font-black text-base md:text-lg text-gray-900">여행</div>
-                        <div className="text-[11px] md:text-xs text-gray-500">
-                          자유 여행 또는 {diyLocation} 관광 상품
+                        <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight">여행</div>
+                        <div className="text-xs text-[#8E8E93]">
+                          자유 · {diyLocation} 관광
                         </div>
                       </div>
                     </div>
-                    <span className={`self-end sm:self-center px-2.5 py-1 rounded-xl text-[11px] md:text-xs font-extrabold border whitespace-nowrap shrink-0 ${
-                      diyActivityMode === 'tour'
-                        ? 'bg-white text-deepgreen border-emerald-300'
-                        : 'bg-white text-gray-500 border-gray-200'
+                    <span className={`self-end sm:self-center px-3 py-1.5 rounded-xl text-xs font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
+                      diyActivityMode === 'tour' ? 'text-[#0A7E54]' : 'text-[#3A3A3C]'
                     }`}>
                       상품 선택 ▾
                     </span>
@@ -1726,13 +1723,13 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 </div>
 
                 {/* Current Active Golf / Tour Summary Strip */}
-                <div className="p-3 md:p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="p-3.5 md:p-4 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   {diyActivityMode === 'golf' ? (
                     <>
                       <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                        <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">⛳ 배정 골프장 ({diyRounds}회):</span>
+                        <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">배정 골프장 ({diyRounds}회)</span>
                         {diyGolfCourses.slice(0, diyRounds).map((c, idx) => (
-                          <span key={idx} className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-gray-800 whitespace-nowrap">
+                          <span key={idx} className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#3A3A3C] shadow-2xs whitespace-nowrap">
                             {idx + 1}R {c.split(' ')[0]}
                           </span>
                         ))}
@@ -1740,17 +1737,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       <button
                         type="button"
                         onClick={() => setShowActivityModal('golf')}
-                        className="self-start sm:self-auto px-3 py-1 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap"
+                        className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
                       >
-                        코스/회차 변경 ✏️
+                        코스/회차 변경
                       </button>
                     </>
                   ) : (
                     <>
                       <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                        <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">🧳 선택 여행 구성:</span>
+                        <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 여행 구성</span>
                         {selectedTourItems.map((t) => (
-                          <span key={t.id} className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-gray-800 whitespace-nowrap">
+                          <span key={t.id} className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#3A3A3C] shadow-2xs whitespace-nowrap">
                             {t.name} {t.priceUSD > 0 ? `($${t.priceUSD})` : '(자유일정)'}
                           </span>
                         ))}
@@ -1758,43 +1755,43 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       <button
                         type="button"
                         onClick={() => setShowActivityModal('tour')}
-                        className="self-start sm:self-auto px-3 py-1 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap"
+                        className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
                       >
-                        여행 상품 변경 ✏️
+                        여행 상품 변경
                       </button>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* 4. 숙박 (Popup Selector matching Step 3 Pattern) */}
+              {/* 4. 숙박 */}
               {(() => {
                 const hotelNightRate = selectedHotelTier?.pricePerNightUSD ?? 90;
                 const hotelTotalUSD = Math.round(hotelNightRate * diyNights);
                 return (
-                  <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3.5">
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
+                  <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start sm:items-center pb-3 border-b border-black/[0.06] gap-2">
                       <div className="min-w-0">
-                        <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
-                          <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">4</span>
+                        <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
+                          <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">4</span>
                           <span>숙박</span>
                         </h3>
-                        <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                        <p className="text-xs text-[#8E8E93] mt-1">
                           버튼을 클릭하면 선택된 여행 기간({diyNights}박 기준 · 1인 1실) 맞춤 숙박 팝업이 열립니다.
                         </p>
                       </div>
-                      <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 whitespace-nowrap shrink-0">
-                        {selectedHotelTier?.name || '고급 호텔'} 선택됨
+                      <span className="text-xs md:text-sm font-semibold text-[#0A7E54] bg-[#ECFDF5] px-3 py-1 rounded-full whitespace-nowrap shrink-0">
+                        {selectedHotelTier?.name || '고급 호텔'}
                       </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setShowHotelModal(true)}
-                      className="w-full p-4 md:p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100/60 ring-2 ring-emerald-400/50 text-left transition-all flex items-center justify-between gap-3 cursor-pointer shadow-sm"
+                      className="w-full p-4 md:p-5 rounded-2xl bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20 text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-deepgreen text-white text-xl md:text-2xl flex items-center justify-center shadow-sm shrink-0">
+                        <span className="w-11 h-11 rounded-xl bg-[#0A7E54] text-white text-xl flex items-center justify-center shrink-0">
                           {isImageIconUrl(selectedHotelTier?.icon) ? (
                             <img src={getFreshImageUrl(selectedHotelTier?.icon || '')} alt={selectedHotelTier?.name || '숙박'} className="w-7 h-7 object-contain rounded" />
                           ) : (
@@ -1802,74 +1799,74 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           )}
                         </span>
                         <div className="min-w-0">
-                          <div className="font-black text-base md:text-lg text-gray-900 truncate">
+                          <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
                             {selectedHotelTier?.name || '고급 호텔'}
                           </div>
-                          <div className="text-[11px] md:text-xs text-gray-600 line-clamp-1 mt-0.5">
+                          <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
                             {diyNights}박 기준 · 1인 1실 · {selectedHotelTier?.description || '엄선된 숙박 옵션'}
                           </div>
                         </div>
                       </div>
-                      <span className="px-3 py-1.5 rounded-xl text-xs md:text-sm font-extrabold bg-white text-deepgreen border border-emerald-300 shadow-2xs whitespace-nowrap shrink-0">
+                      <span className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-white text-[#0A7E54] shadow-2xs whitespace-nowrap shrink-0">
                         숙박 선택 ▾
                       </span>
                     </button>
 
                     {/* Selected Hotel Summary Strip */}
-                    <div className="p-3 md:p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                        <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">🏨 선택 숙박:</span>
-                        <span className="px-2.5 py-0.5 bg-white rounded-lg border border-emerald-200 text-xs md:text-sm font-extrabold text-gray-900 whitespace-nowrap">
+                        <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 숙박</span>
+                        <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-2xs whitespace-nowrap">
                           {selectedHotelTier?.name || '고급 호텔'}
                         </span>
-                        <span className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-emerald-700 tabular-nums whitespace-nowrap">
+                        <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#0A7E54] tabular-nums shadow-2xs whitespace-nowrap">
                           1박 ${hotelNightRate.toLocaleString()}
                         </span>
-                        <span className="px-2 py-0.5 bg-deepgreen text-white rounded-lg text-[11px] md:text-xs font-black tabular-nums whitespace-nowrap">
+                        <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
                           {diyNights}박 총 ${hotelTotalUSD.toLocaleString()}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setShowHotelModal(true)}
-                        className="self-start sm:self-auto px-3 py-1.5 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap transition"
+                        className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
                       >
-                        숙박 변경 ✏️
+                        숙박 변경
                       </button>
                     </div>
                   </div>
                 );
               })()}
 
-              {/* 5. 차량 (Popup Selector matching Steps 3 & 4 Pattern) */}
+              {/* 5. 차량 */}
               {(() => {
                 const vehDayRate = selectedVehicleItem?.pricePerDayUSD ?? Math.max(15, 25 + (selectedVehicleItem?.priceDeltaUSD || 0));
                 const vehTotalUSD = Math.round(vehDayRate * diyDays);
                 const vehDisplayName = selectedVehicleItem?.shortName || selectedVehicleItem?.name || '9인승';
                 return (
-                  <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3.5">
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
+                  <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start sm:items-center pb-3 border-b border-black/[0.06] gap-2">
                       <div className="min-w-0">
-                        <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
-                          <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">5</span>
+                        <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
+                          <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">5</span>
                           <span>차량</span>
                         </h3>
-                        <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                        <p className="text-xs text-[#8E8E93] mt-1">
                           버튼을 클릭하면 전 일정({diyDays}일) 단독 전용 차량 선택 팝업이 열립니다.
                         </p>
                       </div>
-                      <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 whitespace-nowrap shrink-0">
-                        {vehDisplayName} 선택됨
+                      <span className="text-xs md:text-sm font-semibold text-[#0A7E54] bg-[#ECFDF5] px-3 py-1 rounded-full whitespace-nowrap shrink-0">
+                        {vehDisplayName}
                       </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setShowVehicleModal(true)}
-                      className="w-full p-4 md:p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100/60 ring-2 ring-emerald-400/50 text-left transition-all flex items-center justify-between gap-3 cursor-pointer shadow-sm"
+                      className="w-full p-4 md:p-5 rounded-2xl bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20 text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-deepgreen text-white text-xl md:text-2xl flex items-center justify-center shadow-sm shrink-0">
+                        <span className="w-11 h-11 rounded-xl bg-[#0A7E54] text-white text-xl flex items-center justify-center shrink-0">
                           {isImageIconUrl(selectedVehicleItem?.icon) ? (
                             <img src={getFreshImageUrl(selectedVehicleItem?.icon || '')} alt={vehDisplayName} className="w-7 h-7 object-contain rounded" />
                           ) : (
@@ -1877,39 +1874,39 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           )}
                         </span>
                         <div className="min-w-0">
-                          <div className="font-black text-base md:text-lg text-gray-900 truncate">
+                          <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
                             {vehDisplayName}
                           </div>
-                          <div className="text-[11px] md:text-xs text-gray-600 line-clamp-1 mt-0.5">
+                          <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
                             전 일정({diyDays}일) 단독 전용 · 차량 1대 (인원 무관) · {selectedVehicleItem?.description || ''}
                           </div>
                         </div>
                       </div>
-                      <span className="px-3 py-1.5 rounded-xl text-xs md:text-sm font-extrabold bg-white text-deepgreen border border-emerald-300 shadow-2xs whitespace-nowrap shrink-0">
+                      <span className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-white text-[#0A7E54] shadow-2xs whitespace-nowrap shrink-0">
                         차량 선택 ▾
                       </span>
                     </button>
 
                     {/* Selected Vehicle Summary Strip */}
-                    <div className="p-3 md:p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                        <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">🚐 선택 차량:</span>
-                        <span className="px-2.5 py-0.5 bg-white rounded-lg border border-emerald-200 text-xs md:text-sm font-extrabold text-gray-900 whitespace-nowrap">
+                        <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 차량</span>
+                        <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-2xs whitespace-nowrap">
                           {vehDisplayName}
                         </span>
-                        <span className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-emerald-700 tabular-nums whitespace-nowrap">
+                        <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#0A7E54] tabular-nums shadow-2xs whitespace-nowrap">
                           1일 ${vehDayRate.toLocaleString()}
                         </span>
-                        <span className="px-2 py-0.5 bg-deepgreen text-white rounded-lg text-[11px] md:text-xs font-black tabular-nums whitespace-nowrap">
+                        <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
                           {diyDays}일 총 ${vehTotalUSD.toLocaleString()} (인원 무관)
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setShowVehicleModal(true)}
-                        className="self-start sm:self-auto px-3 py-1.5 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap transition"
+                        className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
                       >
-                        차량 변경 ✏️
+                        차량 변경
                       </button>
                     </div>
                   </div>
@@ -1917,16 +1914,16 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               })()}
 
               {/* 6. 기타 (Multi-select 2x2 Grid: 가이드, 패스트 트랙, 마사지, 저녁식사) */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
-                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
-                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">6</span>
+              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] gap-2">
+                  <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
+                    <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">6</span>
                     <span>기타</span>
                   </h3>
-                  <span className="text-[11px] sm:text-xs text-gray-500 font-medium text-right">복수 선택 가능 (가이드 · 패스트 트랙 · 마사지 · 저녁식사)</span>
+                  <span className="text-xs text-[#8E8E93] font-medium text-right">복수 선택 가능</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {diyExtraServices.map((svc) => {
                     const isChecked = diySelectedExtraIds.includes(svc.id);
                     const isGuideSvc = svc.id === 'guide' || svc.name.includes('가이드');
@@ -1938,36 +1935,36 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       <div
                         key={svc.id}
                         onClick={() => handleToggleExtraService(svc.id)}
-                        className={`p-3.5 md:p-4 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-2 ${
+                        className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-2.5 ${
                           isChecked
-                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/70 shadow-xs'
-                            : 'bg-gray-50 border-gray-200 opacity-75 hover:opacity-100'
+                            ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                            : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                         }`}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex items-center gap-3 min-w-0">
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => {}}
-                            className="w-4 h-4 md:w-5 md:h-5 rounded text-deepgreen accent-deepgreen cursor-pointer shrink-0"
+                            className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                           />
                           <div className="min-w-0">
-                            <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
+                            <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
                               {isImageIconUrl(svc.icon) ? (
                                 <img src={getFreshImageUrl(svc.icon)} alt={svc.name} className="w-5 h-5 object-contain rounded shrink-0 inline-block" />
                               ) : (
                                 <span>{svc.icon}</span>
                               )}
                               <span>{svc.name}</span>
-                              <span className="text-[10px] md:text-xs text-emerald-800 bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-bold">
+                              <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
                                 {unitText}
                               </span>
                             </div>
-                            <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-1">{svc.description}</div>
+                            <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">{svc.description}</div>
                           </div>
                         </div>
-                        <span className={`text-xs md:text-sm font-extrabold shrink-0 whitespace-nowrap ${isChecked ? 'text-deepgreen' : 'text-gray-400'}`}>
-                          {isChecked ? (isGuideSvc ? `포함 (${diyDays}일 총 $${appliedCost})` : `포함 ($${appliedCost})`) : '미포함'}
+                        <span className={`text-xs md:text-sm font-bold shrink-0 whitespace-nowrap ${isChecked ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
+                          {isChecked ? (isGuideSvc ? `포함 ($${appliedCost})` : `포함 ($${appliedCost})`) : '미포함'}
                         </span>
                       </div>
                     );
@@ -1979,54 +1976,54 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       setActiveDinnerDay(1);
                       setShowDinnerModal(true);
                     }}
-                    className={`p-3.5 md:p-4 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-2 ${
+                    className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-2.5 ${
                       dinnerCount > 0
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/70 shadow-xs'
-                        : 'bg-gray-50 border-gray-200 opacity-85 hover:opacity-100 hover:border-emerald-300'
+                        ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                        : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-3 min-w-0">
                       <input
                         type="checkbox"
                         checked={dinnerCount > 0}
                         onChange={() => {}}
-                        className="w-4 h-4 md:w-5 md:h-5 rounded text-deepgreen accent-deepgreen cursor-pointer shrink-0"
+                        className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                       />
                       <div className="min-w-0">
-                        <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
+                        <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
                           <span>🍽️</span>
                           <span>저녁식사</span>
-                          <span className="text-[10px] md:text-xs text-emerald-800 bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-bold">
+                          <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
                             {dinnerCount > 0 ? '변경 ▾' : '식사 선택 ▾'}
                           </span>
                         </div>
-                        <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-1">
+                        <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
                           {dinnerCount > 0
                             ? selectedDinnerEntries.map(e => `${e.day}일차 ${e.menu.name}`).join(' · ')
                             : `${diyLocation} 지역 대표 메뉴 중 일자별 선택`}
                         </div>
                       </div>
                     </div>
-                    <span className={`text-xs md:text-sm font-extrabold shrink-0 whitespace-nowrap ${dinnerCount > 0 ? 'text-deepgreen' : 'text-gray-400'}`}>
-                      {dinnerCount > 0 ? `선택됨 (${dinnerCount}회 · 총 $${dinnerPerPersonTotal.toLocaleString()})` : '미포함'}
+                    <span className={`text-xs md:text-sm font-bold shrink-0 whitespace-nowrap ${dinnerCount > 0 ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
+                      {dinnerCount > 0 ? `선택 (${dinnerCount}회 · $${dinnerPerPersonTotal.toLocaleString()})` : '미포함'}
                     </span>
                   </div>
                 </div>
 
                 {/* Selected Dinner Summary Strip */}
                 {dinnerCount > 0 && (
-                  <div className="p-3 md:p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                      <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">🍽️ 선택 저녁식사:</span>
+                      <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 저녁식사</span>
                       {selectedDinnerEntries.map(({ day, menu }) => (
                         <span
                           key={day}
-                          className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-gray-800 whitespace-nowrap"
+                          className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#3A3A3C] shadow-2xs whitespace-nowrap"
                         >
                           {day}일차 · {menu.name} (${menu.priceUSD})
                         </span>
                       ))}
-                      <span className="px-2 py-0.5 bg-deepgreen text-white rounded-lg text-[11px] md:text-xs font-black tabular-nums whitespace-nowrap">
+                      <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
                         1인 ${dinnerPerPersonTotal.toLocaleString()} ({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})
                       </span>
                     </div>
@@ -2036,30 +2033,30 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         setActiveDinnerDay(1);
                         setShowDinnerModal(true);
                       }}
-                      className="self-start sm:self-auto px-3 py-1.5 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap transition"
+                      className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
                     >
-                      식사 변경 ✏️
+                      식사 변경
                     </button>
                   </div>
                 )}
               </div>
 
               {/* Bottom Real-Time Price Preview & Package Generation Action Box */}
-              <div className="bg-gradient-to-br from-gray-900 via-deepgreen to-emerald-950 text-white rounded-none sm:rounded-3xl p-4 sm:p-7 md:p-8 border-y sm:border border-gold-500/40 shadow-xl space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-white/15">
+              <div className="bg-[#0A7E54] text-white rounded-[20px] p-5 sm:p-7 md:p-8 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-white/15">
                   <div>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-full bg-gold-500 text-white text-[10px] md:text-xs font-black">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <span className="px-2.5 py-0.5 rounded-full bg-white text-[#0A7E54] text-xs font-bold">
                         {diyLocation}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full bg-white/20 text-emerald-300 text-[10px] md:text-xs font-bold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-white/15 text-white text-xs font-semibold">
                         {diyNights}박 {diyDays}일 · {diyActivityMode === 'golf' ? `${diyRounds}회 (${diyRounds * 18}홀)` : '여행 맞춤'}
                       </span>
                     </div>
-                    <h3 className="text-base sm:text-xl md:text-2xl font-black text-white">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-extrabold text-white tracking-tight">
                       [고객 맞춤 DIY] {diyLocation} {diyNights}박 {diyDays}일 {diyActivityMode === 'golf' ? '명문 골프 투어' : '맞춤 여행'}
                     </h3>
-                    <p className="text-xs md:text-sm text-gray-300 mt-0.5">
+                    <p className="text-xs md:text-sm text-emerald-100/90 mt-1">
                       {diyActivityMode === 'golf'
                         ? `${diyGolfCourses.slice(0, diyRounds).join(' · ')} 라운딩 & 맞춤 구성`
                         : `${selectedTourItems.map(t => t.name).join(' · ') || '자유 여행'} & ${selectedHotelTier?.name || '숙박'} · ${selectedVehicleItem?.shortName || selectedVehicleItem?.name || '전용 차량'}`}
@@ -2070,17 +2067,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     const bd = getDIYPriceBreakdown();
                     return (
                       <div className="text-left sm:text-right shrink-0">
-                        <span className="text-[10px] md:text-xs text-gold-300 block font-bold">
-                          1인당 예상 경비 ({personCount}인 기준 · 차량·가이드 일정 총액 합산)
+                        <span className="text-xs text-emerald-100 block font-medium">
+                          1인당 예상 경비 ({personCount}인 기준 · 차량·가이드 포함)
                         </span>
-                        <span className="text-xl sm:text-3xl md:text-4xl font-black text-gold-400">
+                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight">
                           ${bd.perPersonWithShareUSD.toLocaleString()}
                         </span>
-                        <span className="text-xs md:text-sm text-gray-200 block font-semibold">
+                        <span className="text-xs md:text-sm text-emerald-100 block font-semibold">
                           (1인 약 {(bd.perPersonWithShareUSD * USD_TO_KRW).toLocaleString()}원 · {personCount}인 총액 ${bd.groupTotalUSD.toLocaleString()})
                         </span>
-                        <span className="text-[10px] md:text-xs text-emerald-300 block mt-0.5">
-                          1인 기본 ${bd.perPersonOnlyUSD.toLocaleString()} + 차량·가이드({diyDays}일 총액) ${bd.teamFixedUSD.toLocaleString()} (인원 무관)
+                        <span className="text-[11px] text-emerald-200/80 block mt-0.5">
+                          1인 기본 ${bd.perPersonOnlyUSD.toLocaleString()} + 차량·가이드({diyDays}일) ${bd.teamFixedUSD.toLocaleString()}
                         </span>
                       </div>
                     );
@@ -2088,16 +2085,16 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-1">
-                  <div className="text-xs md:text-sm text-gray-300 leading-snug w-full sm:w-auto">
-                    💡 아래 버튼을 누르시면 <strong>상세 견적서 화면</strong>으로 이동하여 항목별 세부 조율, 일정표 확인, 카카오톡 상담 및 고해상도 견적서 이미지 캡처가 가능합니다.
+                  <div className="text-xs md:text-sm text-emerald-100/90 leading-snug w-full sm:w-auto">
+                    상세 견적서 화면으로 이동해 항목별 세부 조율, 일정표 확인, 카톡 상담 및 견적서 저장이 가능합니다.
                   </div>
 
                   <button
                     type="button"
                     onClick={handleCreateDIYPackage}
-                    className="w-full sm:w-auto px-6 py-4 md:px-8 md:py-4.5 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white rounded-2xl font-black text-sm sm:text-base md:text-lg shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-4 bg-white hover:bg-[#ECFDF5] text-[#0A7E54] rounded-2xl font-extrabold text-sm sm:text-base shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                   >
-                    <span>✨ 나만의 맞춤 견적서 생성 & 세부 조율하기</span>
+                    <span>맞춤 견적서 생성 & 세부 조율</span>
                     <span>→</span>
                   </button>
                 </div>
@@ -2110,73 +2107,66 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
         {/* ================= VIEW 2: ACTIVE PACKAGE CUSTOMIZER ================= */}
         {activePackage && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 w-full max-w-full min-w-0">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 w-full max-w-full min-w-0">
             
-            {/* Left Column (7 cols): Options & Itinerary (Capturable Quotation Card) */}
-            <div className="lg:col-span-7 space-y-3 sm:space-y-6 w-full max-w-full min-w-0">
+            {/* Left Column (7 cols): Options & Itinerary */}
+            <div className="lg:col-span-7 space-y-4 sm:space-y-5 w-full max-w-full min-w-0">
               
-              {/* Capturable Card Wrapper - Edge-to-edge on mobile with zero side margins */}
+              {/* Capturable Card Wrapper */}
               <div 
                 ref={quotationCardRef} 
-                className="bg-white rounded-none sm:rounded-3xl px-0 py-3.5 sm:p-7 border-y sm:border border-gray-200/90 shadow-sm sm:shadow-md space-y-3.5 sm:space-y-5 relative w-full max-w-full"
+                className="bg-white rounded-[20px] p-5 sm:p-7 shadow-sm space-y-4 sm:space-y-5 relative w-full max-w-full"
               >
                 {/* Brand Watermark on Image */}
-                <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-gray-100 px-3.5 sm:px-0">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="text-lg sm:text-xl md:text-2xl">🥭</span>
-                    <span className="font-extrabold text-xs sm:text-sm md:text-base tracking-wider text-deepgreen">MANGO TOUR 맞춤 골프 견적서</span>
+                <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-[#0A7E54] text-white flex items-center justify-center font-black text-xs">M</span>
+                    <span className="font-bold text-xs sm:text-sm md:text-base tracking-tight text-[#0A7E54]">MANGO TOUR 맞춤 견적서</span>
                   </div>
-                  <div className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-gray-400">
-                    발급일시: {new Date().toLocaleDateString('ko-KR')}
+                  <div className="text-[11px] md:text-xs font-medium text-[#8E8E93]">
+                    발급일: {new Date().toLocaleDateString('ko-KR')}
                   </div>
                 </div>
 
                 {/* Package Summary Card */}
-                <div className="px-3.5 sm:px-0">
+                <div className="px-1 sm:px-0">
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center justify-between pb-2.5 sm:pb-3">
                     <div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 flex-wrap">
-                        <span className="px-2 py-0.5 rounded-full bg-deepgreen text-white text-[10px] sm:text-[11px] md:text-xs font-semibold whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#0A7E54] text-white text-[11px] sm:text-xs font-semibold whitespace-nowrap">
                           📍 {activePackage.location}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-gold-500 text-white text-[10px] sm:text-[11px] md:text-xs font-semibold shadow-sm whitespace-nowrap">
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#0A7E54] text-[11px] sm:text-xs font-semibold whitespace-nowrap">
                           ⏱️ {activePackage.duration}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[10px] sm:text-[11px] md:text-xs font-bold border border-blue-200 whitespace-nowrap">
-                          🏨 1인 객실 기준 (1인 1실)
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 text-[10px] sm:text-[11px] md:text-xs font-bold border border-amber-300 whitespace-nowrap">
-                          🛫 VIP 패스트트랙 ($60) 선택
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-900 text-[10px] sm:text-[11px] md:text-xs font-bold border border-indigo-200 whitespace-nowrap">
-                          👨‍💼 가이드 (1일 $120)
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#F2F2F7] text-[#3A3A3C] text-[11px] sm:text-xs font-semibold whitespace-nowrap">
+                          1인 1실 기준 · 가이드/패스트트랙 선택
                         </span>
                       </div>
-                      <h2 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-gray-900 leading-snug tracking-tight">{activePackage.title}</h2>
-                      <p className="text-xs sm:text-sm md:text-base text-gray-500 mt-1 leading-relaxed font-normal">{activePackage.summary || activePackage.subtitle}</p>
+                      <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 leading-snug tracking-tight">{activePackage.title}</h2>
+                      <p className="text-xs sm:text-sm md:text-base text-[#8E8E93] mt-1 leading-relaxed font-normal">{activePackage.summary || activePackage.subtitle}</p>
                     </div>
                   </div>
 
                   {/* Golf Course or Tour Summary Chips */}
                   {customGolfCourses.length > 0 ? (
-                    <div className="mt-2.5 pt-2.5 border-t border-gray-100">
-                      <div className="text-xs md:text-sm font-bold text-gray-700 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="mt-2.5 pt-3 border-t border-black/[0.06]">
+                      <div className="text-xs md:text-sm font-bold text-gray-900 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="whitespace-nowrap">⛳ 라운딩 코스 안내</span>
-                          <span className="text-[10px] md:text-xs font-normal text-gray-400 whitespace-nowrap">({customGolfCourses.length}개소)</span>
+                          <span className="text-[11px] md:text-xs font-normal text-[#8E8E93] whitespace-nowrap">({customGolfCourses.length}개소)</span>
                           {isGolfCoursesModified && (
-                            <span className="px-2 py-0.5 bg-gold-100 text-gold-800 rounded-full text-[10px] md:text-xs font-semibold border border-gold-300 whitespace-nowrap">
-                              ✨ 맞춤 코스 설정됨
+                            <span className="px-2 py-0.5 bg-[#ECFDF5] text-[#0A7E54] rounded-full text-[11px] md:text-xs font-semibold whitespace-nowrap">
+                              맞춤 설정됨
                             </span>
                           )}
                         </div>
                         <button
                           type="button"
                           onClick={() => setShowGolfModal(true)}
-                          className="self-start sm:self-auto px-2.5 sm:px-3 md:px-3.5 py-1.5 bg-gradient-to-r from-deepgreen to-emerald-700 hover:from-emerald-700 hover:to-deepgreen text-white text-[11px] sm:text-xs md:text-sm font-bold rounded-xl shadow transition flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap"
+                          className="self-start sm:self-auto px-3.5 py-1.5 bg-[#0A7E54] hover:bg-[#086945] text-white text-[11px] sm:text-xs md:text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap"
                         >
-                          <span>⚙️</span>
-                          <span>일정별 골프장 직접 변경/선택</span>
+                          <span>일정별 골프장 변경</span>
                         </button>
                       </div>
                       <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -2184,25 +2174,24 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <span 
                             key={i} 
                             onClick={() => setShowGolfModal(true)}
-                            className="px-2.5 py-1 sm:py-1.5 md:px-3 md:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold border border-emerald-200 flex items-center gap-1.5 cursor-pointer transition shadow-xs"
+                            className="px-3 py-1.5 bg-[#ECFDF5] hover:bg-emerald-100/80 text-[#0A7E54] rounded-xl text-[11px] sm:text-xs md:text-sm font-semibold flex items-center gap-1.5 cursor-pointer transition-all duration-200 active:scale-95"
                             title="클릭하여 골프장 변경"
                           >
-                            <span className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full bg-emerald-600 text-white text-[9px] md:text-[10px] flex items-center justify-center font-bold">
+                            <span className="w-4 h-4 rounded-full bg-[#0A7E54] text-white text-[10px] flex items-center justify-center font-bold">
                               {i + 1}
                             </span>
                             <span>{c}</span>
-                            <span className="text-emerald-500 text-[10px] md:text-xs">✏️</span>
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-2.5 pt-2.5 border-t border-gray-100">
-                      <div className="text-xs md:text-sm font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                    <div className="mt-2.5 pt-3 border-t border-black/[0.06]">
+                      <div className="text-xs md:text-sm font-bold text-gray-900 mb-1.5 flex items-center gap-1.5">
                         <span>🧳 선택 여행 구성</span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 rounded-xl text-xs md:text-sm font-semibold border border-emerald-200">
+                        <span className="px-3 py-1.5 bg-[#ECFDF5] text-[#0A7E54] rounded-xl text-xs md:text-sm font-semibold">
                           {activePackage.subtitle}
                         </span>
                       </div>
@@ -2210,45 +2199,43 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   )}
                 </div>
 
-                {/* Tabs: Options Customizer vs Itinerary */}
-                <div className="px-3.5 sm:px-0">
-                  <div className="bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner grid grid-cols-2 gap-2">
+                {/* iOS Segmented Control Tabs */}
+                <div className="px-1 sm:px-0">
+                  <div className="bg-[#F2F2F7] p-1 rounded-2xl grid grid-cols-2 gap-1.5">
                     <button
                       type="button"
                       onClick={() => setViewTab('options')}
-                      className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                      className={`py-2.5 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                         viewTab === 'options'
-                          ? 'bg-deepgreen text-white shadow-md border border-deepgreen font-black scale-[1.01]'
-                          : 'bg-white text-gray-700 hover:text-deepgreen hover:bg-emerald-50/60 border border-gray-200/90 shadow-xs font-bold hover:border-emerald-300'
+                          ? 'bg-white text-[#0A7E54] shadow-sm font-bold'
+                          : 'text-[#8E8E93] hover:text-gray-900 font-semibold'
                       }`}
                     >
-                      <span className="text-sm sm:text-base">✓</span>
                       <span className="truncate">맞춤 항목 선택</span>
-                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
                         viewTab === 'options'
-                          ? 'bg-white/20 text-white font-black'
-                          : 'bg-emerald-100 text-deepgreen border border-emerald-200 font-bold'
+                          ? 'bg-[#ECFDF5] text-[#0A7E54] font-bold'
+                          : 'bg-gray-200/80 text-[#3A3A3C] font-semibold'
                       }`}>
-                        {selectedOptionIds.size}/{activePackage.options.length}개
+                        {selectedOptionIds.size}/{activePackage.options.length}
                       </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setViewTab('itinerary')}
-                      className={`py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                      className={`py-2.5 px-2 sm:px-4 rounded-xl text-xs sm:text-sm md:text-base transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                         viewTab === 'itinerary'
-                          ? 'bg-deepgreen text-white shadow-md border border-deepgreen font-black scale-[1.01]'
-                          : 'bg-white text-gray-700 hover:text-deepgreen hover:bg-emerald-50/60 border border-gray-200/90 shadow-xs font-bold hover:border-emerald-300'
+                          ? 'bg-white text-[#0A7E54] shadow-sm font-bold'
+                          : 'text-[#8E8E93] hover:text-gray-900 font-semibold'
                       }`}
                     >
-                      <span className="text-sm sm:text-base">📅</span>
                       <span className="truncate">{activePackage.duration || '4박 5일'} 정규 일정표</span>
-                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs shrink-0 ${
                         viewTab === 'itinerary'
-                          ? 'bg-white/20 text-white font-black'
-                          : 'bg-emerald-100 text-deepgreen border border-emerald-200 font-bold'
+                          ? 'bg-[#ECFDF5] text-[#0A7E54] font-bold'
+                          : 'bg-gray-200/80 text-[#3A3A3C] font-semibold'
                       }`}>
-                        상세일정
+                        일정
                       </span>
                     </button>
                   </div>
@@ -2256,20 +2243,20 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                 {/* TAB 1: Checkable Options List */}
                 {viewTab === 'options' && (
-                  <div className="space-y-2.5 sm:space-y-4 pt-1">
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-100 px-3.5 sm:px-0">
+                  <div className="space-y-3 pt-1">
+                    <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.06] px-1 sm:px-0">
                       <div>
-                        <h3 className="font-bold text-xs sm:text-base md:text-lg text-gray-900 tracking-tight">맞춤 항목 체크리스트 & 직접 변경</h3>
-                        <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 font-normal mt-0.5 leading-relaxed">필요 없는 항목은 체크를 해제하고, 세부 내용(골프장·호텔·풀빌라·차량 등)을 직접 변경해보세요.</p>
+                        <h3 className="font-bold text-sm sm:text-base md:text-lg text-gray-900 tracking-tight">맞춤 항목 체크리스트 & 변경</h3>
+                        <p className="text-[11px] sm:text-xs md:text-sm text-[#8E8E93] font-normal mt-0.5 leading-relaxed">필요 없는 항목은 해제하고 세부 구성을 변경해보세요.</p>
                       </div>
-                      <div className="text-right whitespace-nowrap">
+                      <div className="text-right whitespace-nowrap shrink-0">
                         <button
                           type="button"
                           onClick={() => {
                             const allIds = new Set(activePackage.options.map(o => o.id));
                             setSelectedOptionIds(allIds);
                           }}
-                          className="text-[11px] md:text-xs text-deepgreen font-bold hover:underline mr-2 cursor-pointer"
+                          className="text-xs text-[#0A7E54] font-semibold hover:underline mr-2.5 cursor-pointer"
                         >
                           전체 선택
                         </button>
@@ -2279,15 +2266,15 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                             const reqIds = new Set(activePackage.options.filter(o => o.isRequired).map(o => o.id));
                             setSelectedOptionIds(reqIds);
                           }}
-                          className="text-[11px] md:text-xs text-gray-400 font-bold hover:underline cursor-pointer"
+                          className="text-xs text-[#8E8E93] font-semibold hover:underline cursor-pointer"
                         >
-                          필수만 선택
+                          필수만
                         </button>
                       </div>
                     </div>
 
                     {/* Options List */}
-                    <div className="space-y-2 sm:space-y-3">
+                    <div className="space-y-2.5">
                       {activePackage.options.map(option => {
                         const isSelected = selectedOptionIds.has(option.id);
                         const displayName = getOptionDisplayName(option);
@@ -2296,7 +2283,6 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         const isCustomized = !!customOptionSelections[option.id] || (option.category === 'golf' && isGolfCoursesModified);
                         const isExpanded = expandedOptionId === option.id;
 
-                        // Customizable choices list for this category
                         const choices = option.category === 'hotel' 
                           ? getAvailableAccommodations()
                           : option.category === 'vehicle' 
@@ -2312,75 +2298,49 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         return (
                           <div
                             key={option.id}
-                            className={`rounded-none sm:rounded-2xl border-x-0 border-y sm:border transition-all ${
+                            className={`rounded-2xl transition-all duration-200 ${
                               isSelected
-                                ? isFastTrack 
-                                  ? 'bg-amber-50/70 border-amber-400 shadow-xs'
-                                  : 'bg-emerald-50/40 border-emerald-300 shadow-xs'
-                                : isFastTrack
-                                ? 'bg-amber-50/20 border-amber-200/60 opacity-80 hover:opacity-100'
-                                : 'bg-gray-50/60 border-gray-200/80 opacity-60 hover:opacity-100'
+                                ? 'bg-[#ECFDF5] ring-1 ring-[#0A7E54]/30'
+                                : 'bg-[#F2F2F7] opacity-65 hover:opacity-100'
                             }`}
                           >
                             <div 
                               onClick={() => handleToggleOption(option)}
-                              className="px-3.5 py-3 sm:p-4 md:p-5 cursor-pointer flex items-start justify-between gap-2.5 sm:gap-3 w-full min-w-0"
+                              className="p-3.5 sm:p-4 cursor-pointer flex items-start justify-between gap-2.5 w-full min-w-0"
                             >
-                              <div className="flex items-start gap-2.5 sm:gap-3 md:gap-3.5 min-w-0 flex-1">
+                              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   disabled={option.isRequired}
                                   onChange={() => {}}
-                                  className="mt-0.5 sm:mt-1 w-4 h-4 sm:w-5 sm:h-5 md:w-5.5 md:h-5.5 rounded-md text-deepgreen accent-deepgreen cursor-pointer shrink-0"
+                                  className="mt-0.5 sm:mt-1 w-4 h-4 sm:w-5 sm:h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                                    <span className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[10px] md:text-xs font-semibold border ${badge.bg}`}>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold bg-white text-[#0A7E54]">
                                       {badge.label}
                                     </span>
-                                    <span className={`text-xs sm:text-sm md:text-base font-bold tracking-tight ${isSelected ? 'text-gray-900' : 'text-gray-400 line-through'}`}>
+                                    <span className={`text-xs sm:text-sm md:text-base font-bold tracking-tight ${isSelected ? 'text-gray-900' : 'text-[#8E8E93] line-through'}`}>
                                       {displayName}
                                     </span>
                                     {option.isRequired && (
-                                      <span className="text-[10px] md:text-xs text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded">필수</span>
-                                    )}
-                                    {isFastTrack && (
-                                      <span className="text-[10px] md:text-xs text-amber-900 font-extrabold bg-amber-200/80 border border-amber-400 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                        <span>⚡</span> 1인당 $60 선택 추가
-                                      </span>
-                                    )}
-                                    {option.category === 'vehicle' && (
-                                      <span className="text-[10px] md:text-xs text-blue-900 font-bold bg-blue-100/80 border border-blue-300 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                        {pkgTravelDays}일 일정 총액 (1대 · 인원수 무관)
-                                      </span>
-                                    )}
-                                    {option.category === 'hotel' && (
-                                      <span className="text-[10px] md:text-xs text-blue-900 font-bold bg-blue-100/80 border border-blue-300 px-1.5 py-0.5 rounded">
-                                        1인 1실 단독 투숙
-                                      </span>
-                                    )}
-                                    {option.category === 'guide' && (
-                                      <span className="text-[10px] md:text-xs text-indigo-900 font-bold bg-indigo-100/80 border border-indigo-300 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                        {pkgTravelDays}일 일정 총액 (1명 · 인원수 무관)
-                                      </span>
-                                    )}
-                                    {(option.category === 'activity' && option.name.includes('마사지')) && (
-                                      <span className="text-[10px] md:text-xs text-emerald-950 font-bold bg-emerald-100/80 border border-emerald-300 px-1.5 py-0.5 rounded">
-                                        기본 선택 포함 ($50)
-                                      </span>
-                                    )}
-                                    {option.category === 'meal' && (
-                                      <span className="text-[10px] md:text-xs text-orange-950 font-bold bg-orange-100/80 border border-orange-300 px-1.5 py-0.5 rounded">
-                                        1인 1일 $50 기준 (4일 $200 선택 가능)
-                                      </span>
+                                      <span className="text-[10px] text-[#0A7E54] font-bold bg-white/80 px-1.5 py-0.5 rounded-md">필수</span>
                                     )}
                                     {isCustomized && (
-                                      <span className="text-[10px] md:text-xs text-gold-800 font-semibold bg-gold-100 border border-gold-300 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                                        <span>✨</span> 맞춤 선택됨
+                                      <span className="text-[10px] text-[#0A7E54] font-semibold bg-white px-2 py-0.5 rounded-full">
+                                        맞춤 변경
                                       </span>
                                     )}
                                   </div>
+                                  <p className="text-[11px] text-[#8E8E93] mt-1 font-normal">
+                                    {isFastTrack ? '1인당 $60 선택 추가' :
+                                     option.category === 'vehicle' ? `${pkgTravelDays}일 일정 총액 (1대 · 인원 무관)` :
+                                     option.category === 'hotel' ? '1인 1실 단독 투숙' :
+                                     option.category === 'guide' ? `${pkgTravelDays}일 일정 총액 (1명 · 인원 무관)` :
+                                     (option.category === 'activity' && option.name.includes('마사지')) ? '기본 선택 포함 ($50)' :
+                                     option.category === 'meal' ? '1인 1일 $50 기준 선택 가능' : ''}
+                                  </p>
                                 </div>
                               </div>
 
@@ -2390,13 +2350,13 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                   const shownUSD = isTeamOpt ? getOptionGroupTotalUSD(option) : effectivePrice;
                                   return (
                                     <>
-                                      <span className={`text-xs sm:text-sm md:text-base font-extrabold ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
+                                      <span className={`text-sm md:text-base font-extrabold tabular-nums ${isSelected ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
                                         ${shownUSD.toLocaleString()}
                                       </span>
-                                      <span className="block text-[9px] sm:text-[10px] md:text-xs text-gray-400 font-normal">
+                                      <span className="block text-[10px] md:text-xs text-[#8E8E93] font-normal">
                                         {isTeamOpt
-                                          ? `${pkgTravelDays}일 일정 총액 (약 ${(shownUSD * USD_TO_KRW).toLocaleString()}원)`
-                                          : `1인 기준 (약 ${(shownUSD * USD_TO_KRW).toLocaleString()}원)`}
+                                          ? `${pkgTravelDays}일 총액`
+                                          : `1인 (약 ${(shownUSD * USD_TO_KRW).toLocaleString()}원)`}
                                       </span>
                                     </>
                                   );
@@ -2404,10 +2364,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                               </div>
                             </div>
 
-                            {/* Customization Action Buttons & Quick Selector */}
-                            <div className="px-3.5 sm:px-4 md:px-5 pb-2.5 sm:pb-3 md:pb-3.5 pt-0 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 border-t border-gray-100/60 mt-1 min-w-0 w-full">
-                              {/* Left: Button to change content directly */}
-                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+                            {/* Customization Action Buttons */}
+                            <div className="px-3.5 sm:px-4 pb-3 pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-black/[0.05] min-w-0 w-full">
+                              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                                 {option.category === 'golf' ? (
                                   <button
                                     type="button"
@@ -2415,11 +2374,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                       e.stopPropagation();
                                       setShowGolfModal(true);
                                     }}
-                                    className="px-2.5 sm:px-3 md:px-3.5 py-1 sm:py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] md:text-xs font-semibold transition flex items-center gap-1 shadow-xs active:scale-95 cursor-pointer"
+                                    className="px-3 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-[11px] md:text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                                   >
-                                    <span>⛳</span>
-                                    <span>라운딩 골프장 직접 변경/선택</span>
-                                    <span className="text-[9px] md:text-[10px] bg-deepgreen text-white px-1.5 py-0.2 rounded font-bold">팝업창</span>
+                                    <span>골프장 변경 ▾</span>
                                   </button>
                                 ) : ['hotel', 'vehicle', 'guide', 'meal', 'activity'].includes(option.category) || option.allowCustomSelection ? (
                                   <button
@@ -2430,21 +2387,19 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                       setOptionModalFilter('전체');
                                       setOptionModalTypeFilter('전체');
                                     }}
-                                    className="px-2.5 sm:px-3 md:px-3.5 py-1 sm:py-1.5 bg-gold-50 hover:bg-gold-100 text-gold-950 border border-gold-300 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] md:text-xs font-semibold transition flex items-center gap-1 shadow-xs active:scale-95 cursor-pointer"
+                                    className="px-3 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-[11px] md:text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                                   >
-                                    <span>⚙️</span>
                                     <span>
                                       {option.category === 'hotel' 
-                                        ? '숙박 형태 직접 변경 (호텔/풀빌라)' 
+                                        ? '숙박 형태 변경 ▾' 
                                         : option.category === 'vehicle' 
-                                        ? '차량 옵션 직접 변경' 
+                                        ? '차량 옵션 변경 ▾' 
                                         : option.category === 'guide' 
-                                        ? '가이드 옵션 직접 변경' 
+                                        ? '가이드 옵션 변경 ▾' 
                                         : option.category === 'meal'
-                                        ? '식사 구성 직접 변경'
-                                        : `${option.name.slice(0, 10)} 직접 변경`}
+                                        ? '식사 구성 변경 ▾'
+                                        : `${option.name.slice(0, 10)} 변경 ▾`}
                                     </span>
-                                    <span className="text-[9px] md:text-[10px] bg-deepgreen text-white px-1.5 py-0.2 rounded font-bold">팝업창</span>
                                   </button>
                                 ) : null}
 
@@ -2459,28 +2414,26 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                         return next;
                                       });
                                     }}
-                                    className="text-[10px] md:text-xs text-gray-400 hover:text-red-500 underline cursor-pointer"
+                                    className="text-[11px] text-[#8E8E93] hover:text-red-500 underline cursor-pointer"
                                   >
-                                    기본값 복원
+                                    초기화
                                   </button>
                                 )}
                               </div>
 
-                              {/* Right: Quick indicator */}
-                              <div className="text-[10px] md:text-xs text-gray-400 font-medium truncate max-w-full">
-                                {option.category === 'golf' && `현재: ${customGolfCourses.map(c => c.split(' ')[0]).join(' · ')}`}
-                                {option.category === 'hotel' && `현재: ${customOptionSelections[option.id]?.name || '기본 고급 호텔'}`}
+                              <div className="text-[11px] md:text-xs text-[#8E8E93] font-medium truncate max-w-full">
+                                {option.category === 'golf' && `${customGolfCourses.map(c => c.split(' ')[0]).join(' · ')}`}
+                                {option.category === 'hotel' && `${customOptionSelections[option.id]?.name || '기본 고급 호텔'}`}
                               </div>
                             </div>
 
-                            {/* INLINE EXPANDED DRAWER FOR DIRECT CUSTOMIZATION */}
                             {isExpanded && ['hotel', 'vehicle', 'guide', 'meal'].includes(option.category) && (
-                              <div className="p-4 md:p-5 bg-white/95 rounded-b-2xl border-t border-emerald-200/80 space-y-2.5 animate-fade-in">
-                                <div className="flex justify-between items-center pb-1 border-b border-gray-100">
-                                  <span className="text-xs md:text-sm font-black text-deepgreen">
-                                    {option.category === 'hotel' ? '🏨 고객 선호 숙박 형태 선택' : '선택 가능한 옵션 목록'}
+                              <div className="p-4 bg-white rounded-b-2xl border-t border-black/[0.06] space-y-2.5 animate-fade-in">
+                                <div className="flex justify-between items-center pb-1 border-b border-black/[0.05]">
+                                  <span className="text-xs md:text-sm font-bold text-[#0A7E54]">
+                                    {option.category === 'hotel' ? '선호 숙박 형태 선택' : '선택 가능한 옵션'}
                                   </span>
-                                  <span className="text-[10px] md:text-xs text-gray-400">클릭 즉시 견적과 일정에 적용됩니다</span>
+                                  <span className="text-[11px] text-[#8E8E93]">즉시 적용</span>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -2502,44 +2455,43 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                               badge: choice.badge
                                             }
                                           }));
-                                          // Ensure option is selected in checklist
                                           if (!selectedOptionIds.has(option.id)) {
                                             setSelectedOptionIds(prev => new Set(prev).add(option.id));
                                           }
                                         }}
-                                        className={`p-3 md:p-3.5 rounded-xl border text-xs md:text-sm cursor-pointer transition flex flex-col justify-between ${
+                                        className={`p-3 rounded-2xl text-xs md:text-sm cursor-pointer transition-all duration-200 flex flex-col justify-between active:scale-[0.98] ${
                                           isChoiceActive
-                                            ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-300 shadow-sm'
-                                            : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+                                            ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                                            : 'bg-[#F2F2F7] hover:bg-gray-200/70'
                                         }`}
                                       >
                                         <div>
                                           <div className="flex items-center justify-between gap-1 mb-1">
                                             <span className="font-bold text-gray-900 line-clamp-1">{choice.name}</span>
                                             {choice.badge && (
-                                              <span className="px-1.5 py-0.5 bg-gold-100 text-gold-800 rounded text-[9px] md:text-[10px] font-bold shrink-0">
+                                              <span className="px-1.5 py-0.5 bg-white text-[#0A7E54] rounded text-[10px] font-semibold shrink-0">
                                                 {choice.badge}
                                               </span>
                                             )}
                                           </div>
                                           {choice.description && (
-                                            <p className="text-[10px] md:text-xs text-gray-500 leading-snug line-clamp-2">{choice.description}</p>
+                                            <p className="text-[11px] text-[#8E8E93] leading-snug line-clamp-2">{choice.description}</p>
                                           )}
                                         </div>
 
-                                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-200/60">
-                                          <span className="text-[10px] md:text-xs font-bold text-gray-400">
-                                            {choice.type === 'pool_villa' ? '🏊 독채 풀빌라' : choice.type === 'hotel_5star' ? '⭐ 고급 호텔' : (choice.type === 'vehicle' || choice.type === 'guide') ? `${pkgTravelDays}일 팀 기준` : '기본 옵션'}
+                                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-black/[0.06]">
+                                          <span className="text-[11px] font-semibold text-[#8E8E93]">
+                                            {choice.type === 'pool_villa' ? '독채 풀빌라' : choice.type === 'hotel_5star' ? '고급 호텔' : (choice.type === 'vehicle' || choice.type === 'guide') ? `${pkgTravelDays}일 팀 기준` : '기본 옵션'}
                                           </span>
-                                          <span className={`text-[11px] md:text-xs font-black ${
-                                            choice.priceDeltaUSD === 0 ? 'text-gray-600' : choice.priceDeltaUSD > 0 ? 'text-emerald-700' : 'text-blue-600'
+                                          <span className={`text-xs font-bold ${
+                                            choice.priceDeltaUSD === 0 ? 'text-[#3A3A3C]' : choice.priceDeltaUSD > 0 ? 'text-[#0A7E54]' : 'text-[#0A7E54]'
                                           }`}>
                                             {choice.type === 'vehicle' || choice.type === 'guide'
                                               ? (choice.priceDeltaUSD === 0
-                                                  ? `기본 총액 ($${choice.teamTotalUSD ?? 0})`
+                                                  ? `기본 ($${choice.teamTotalUSD ?? 0})`
                                                   : choice.priceDeltaUSD > 0
-                                                  ? `총 $${choice.teamTotalUSD ?? 0} (+$${choice.priceDeltaUSD} / 팀)`
-                                                  : `총 $${choice.teamTotalUSD ?? 0} (-$${Math.abs(choice.priceDeltaUSD)} / 팀)`)
+                                                  ? `총 $${choice.teamTotalUSD ?? 0} (+$${choice.priceDeltaUSD})`
+                                                  : `총 $${choice.teamTotalUSD ?? 0} (-$${Math.abs(choice.priceDeltaUSD)})`)
                                               : (choice.priceDeltaUSD === 0 
                                                   ? '기본가 ($0)' 
                                                   : choice.priceDeltaUSD > 0 
@@ -2563,24 +2515,23 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                 {/* TAB 2: Itinerary Timeline */}
                 {viewTab === 'itinerary' && (
-                  <div className="space-y-4 pt-1 px-3.5 sm:px-0">
-                    <div className="flex justify-between items-center">
+                  <div className="space-y-4 pt-1 px-1 sm:px-0">
+                    <div className="flex justify-between items-center gap-2">
                       <div>
-                        <h3 className="font-black text-base md:text-xl text-gray-900">📅 4박 5일 정규 일정표</h3>
-                        <p className="text-xs md:text-sm text-gray-500 mt-0.5">선택하신 라운딩 골프장과 숙박 형태가 반영된 세부 일정입니다.</p>
+                        <h3 className="font-bold text-base md:text-xl text-gray-900 tracking-tight">4박 5일 정규 일정표</h3>
+                        <p className="text-xs md:text-sm text-[#8E8E93] mt-0.5">선택하신 골프장과 숙박 형태가 반영됩니다.</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setShowGolfModal(true)}
-                        className="px-3 py-1.5 md:px-4 md:py-2 bg-deepgreen text-white text-xs md:text-sm font-bold rounded-xl shadow hover:bg-gold-600 transition cursor-pointer"
+                        className="px-3.5 py-2 bg-[#0A7E54] text-white text-xs md:text-sm font-semibold rounded-xl hover:bg-[#086945] transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
                       >
-                        ⛳ 일정별 골프장 변경
+                        골프장 변경
                       </button>
                     </div>
 
                     <div className="space-y-3">
                       {activePackage.itinerary?.map((item) => {
-                        // Dynamically update course title or activity based on customGolfCourses
                         let dayTitle = item.title;
                         const roundIdx = item.day >= 2 ? item.day - 2 : 0;
                         if (customGolfCourses[roundIdx] && (item.title.includes('CC') || item.title.includes('골프') || item.title.includes('라운딩'))) {
@@ -2589,27 +2540,27 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                         return (
                           <div key={item.day} className="flex gap-3 md:gap-4 items-start">
-                            <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-deepgreen text-white font-black text-xs md:text-sm flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-[#0A7E54] text-white font-bold text-xs md:text-sm flex items-center justify-center flex-shrink-0">
                               D{item.day}
                             </div>
-                            <div className="bg-gray-50 rounded-2xl p-3.5 md:p-4.5 flex-grow border border-gray-100">
-                              <h4 className="text-xs sm:text-sm md:text-base font-black text-gray-900 mb-1 flex items-center justify-between">
+                            <div className="bg-[#F2F2F7] rounded-2xl p-3.5 md:p-4 flex-grow">
+                              <h4 className="text-xs sm:text-sm md:text-base font-bold text-gray-900 mb-1.5 flex items-center justify-between gap-2">
                                 <span>{dayTitle}</span>
                                 {item.day >= 2 && customGolfCourses[roundIdx] && (
-                                  <span className="text-[10px] md:text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold">
+                                  <span className="text-[11px] md:text-xs bg-[#ECFDF5] text-[#0A7E54] px-2.5 py-0.5 rounded-full font-semibold shrink-0">
                                     {customGolfCourses[roundIdx]}
                                   </span>
                                 )}
                               </h4>
-                              <ul className="space-y-1 md:space-y-1.5">
+                              <ul className="space-y-1">
                                 {item.activities.map((act, aIdx) => {
                                   let actText = act;
                                   if (customGolfCourses[roundIdx] && act.includes('CC') && (act.includes('라운딩') || act.includes('이동'))) {
                                     actText = act.replace(/[가-힣a-zA-Z0-9\s]+CC/g, customGolfCourses[roundIdx].split(' ')[0] + ' CC');
                                   }
                                   return (
-                                    <li key={aIdx} className="text-xs md:text-sm text-gray-600 flex items-start gap-1.5 leading-relaxed">
-                                      <span className="text-gold-500 mt-0.5">•</span>
+                                    <li key={aIdx} className="text-xs md:text-sm text-[#3A3A3C] flex items-start gap-1.5 leading-relaxed">
+                                      <span className="text-[#0A7E54] mt-0.5">•</span>
                                       <span>{actText}</span>
                                     </li>
                                   );
@@ -2623,31 +2574,30 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   </div>
                 )}
 
-                {/* Official Quotation Summary Footer (Included in Captured Screenshot) */}
-                <div className="pt-3 sm:pt-4 md:pt-5 mt-3 sm:mt-4 md:mt-5 border-t-2 border-dashed border-gray-200 space-y-3 px-3.5 sm:px-0">
-                  <div className="bg-gradient-to-br from-gray-900 to-deepgreen text-white p-3.5 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl shadow-inner">
-                    <div className="flex flex-wrap justify-between items-center gap-1.5 sm:gap-2 mb-2 pb-2 border-b border-white/15 text-[11px] sm:text-xs md:text-sm">
-                      <div className="flex items-center gap-2.5 sm:gap-3">
-                        <span className="text-gray-300">📅 출발일: <strong className="text-gold-300">{departureDate || '미정'}</strong></span>
-                        <span className="text-gray-300">👥 인원: <strong className="text-gold-300">{personCount}명</strong></span>
+                {/* Official Quotation Summary Footer */}
+                <div className="pt-4 mt-4 border-t border-black/[0.06] space-y-3 px-1 sm:px-0">
+                  <div className="bg-[#0A7E54] text-white p-4 sm:p-6 rounded-2xl">
+                    <div className="flex flex-wrap justify-between items-center gap-2 mb-2.5 pb-2.5 border-b border-white/15 text-xs md:text-sm">
+                      <div className="flex items-center gap-3">
+                        <span className="text-emerald-100">출발일 <strong className="text-white">{departureDate || '미정'}</strong></span>
+                        <span className="text-emerald-100">인원 <strong className="text-white">{personCount}명</strong></span>
                       </div>
-                      <div className="text-[10px] sm:text-[11px] md:text-xs text-emerald-300 font-semibold">
-                        선택 포함: {selectedOptionIds.size}개 | 제외: {activePackage.options.length - selectedOptionIds.size}개
+                      <div className="text-[11px] md:text-xs text-emerald-100 font-semibold">
+                        포함 {selectedOptionIds.size}개 · 제외 {activePackage.options.length - selectedOptionIds.size}개
                       </div>
                     </div>
 
-                    {/* Customer Custom Selection Summary Badges in Captured Card */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 my-2 py-2 border-y border-white/10 text-[10px] sm:text-[11px] md:text-xs">
-                      <div className="bg-white/10 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2.5 py-2.5 border-b border-white/15 text-[11px] md:text-xs">
+                      <div className="bg-white/10 p-2.5 sm:p-3 rounded-xl">
                         {customGolfCourses.length > 0 ? (
                           <>
-                            <span className="text-gold-300 font-semibold block mb-0.5">⛳ 선택 골프장 ({customGolfCourses.length}회 라운딩):</span>
-                            <span className="text-white font-medium line-clamp-1">{customGolfCourses.join(' · ')}</span>
+                            <span className="text-emerald-100 font-semibold block mb-0.5">선택 골프장 ({customGolfCourses.length}회)</span>
+                            <span className="text-white font-semibold line-clamp-1">{customGolfCourses.join(' · ')}</span>
                           </>
                         ) : (
                           <>
-                            <span className="text-gold-300 font-semibold block mb-0.5">🧳 선택 여행 일정:</span>
-                            <span className="text-white font-medium line-clamp-1">
+                            <span className="text-emerald-100 font-semibold block mb-0.5">선택 여행 일정</span>
+                            <span className="text-white font-semibold line-clamp-1">
                               {(() => {
                                 const tourOpt = activePackage.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
                                 return tourOpt ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '') : `${activePackage.location} ${activePackage.duration} 맞춤 여행`;
@@ -2656,45 +2606,45 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           </>
                         )}
                       </div>
-                      <div className="bg-white/10 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl">
-                        <span className="text-gold-300 font-semibold block mb-0.5">🏨 선택 숙박 형태:</span>
-                        <span className="text-white font-medium line-clamp-1">{getChosenAccommodationName()}</span>
+                      <div className="bg-white/10 p-2.5 sm:p-3 rounded-xl">
+                        <span className="text-emerald-100 font-semibold block mb-0.5">선택 숙박 형태</span>
+                        <span className="text-white font-semibold line-clamp-1">{getChosenAccommodationName()}</span>
                       </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-1">
                       <div>
-                        <span className="text-[10px] sm:text-[11px] md:text-xs text-gray-300 block">1인당 예상 경비 ({personCount}인 기준 · 차량/가이드 분할 포함)</span>
-                        <div className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight">
-                          ${currentTotalPerPerson.toLocaleString()} <span className="text-xs md:text-sm font-semibold">USD</span>
+                        <span className="text-[11px] md:text-xs text-emerald-100 block">1인당 예상 경비 ({personCount}인 기준)</span>
+                        <div className="text-lg sm:text-xl font-bold text-white tracking-tight tabular-nums">
+                          ${currentTotalPerPerson.toLocaleString()} <span className="text-xs font-semibold">USD</span>
                         </div>
-                        <div className="text-[10px] sm:text-[11px] md:text-xs text-gold-300 font-normal">
+                        <div className="text-[11px] md:text-xs text-emerald-100 font-normal">
                           (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원 / 1인)
                         </div>
                       </div>
                       <div className="text-left sm:text-right">
-                        <span className="text-[10px] sm:text-[11px] md:text-xs text-gold-300 block font-semibold">총 {personCount}인 예상 견적 합계</span>
-                        <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-gold-400 tracking-tight">
-                          ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-bold">USD</span>
+                        <span className="text-[11px] md:text-xs text-emerald-100 block font-semibold">총 {personCount}인 예상 견적 합계</span>
+                        <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight tabular-nums">
+                          ${currentTotalGroup.toLocaleString()} <span className="text-xs font-bold">USD</span>
                         </div>
-                        <div className="text-[10px] sm:text-[11px] md:text-xs text-gray-300 font-normal">
-                          (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원 · 일정 기준 차량/가이드 ${currentTeamTotalUSD.toLocaleString()})
+                        <div className="text-[11px] md:text-xs text-emerald-100 font-normal">
+                          (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
                         </div>
                       </div>
                     </div>
 
                     {customerNotes && (
-                      <div className="mt-2.5 pt-2 border-t border-white/10 text-[10px] sm:text-[11px] md:text-xs text-gray-300 break-keep">
-                        <span className="text-gold-300 font-semibold">📝 추가 요청사항: </span>
+                      <div className="mt-2.5 pt-2 border-t border-white/15 text-[11px] md:text-xs text-emerald-100 break-keep">
+                        <span className="text-white font-semibold">요청사항: </span>
                         <span>{customerNotes}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Official Inquiry Channels Footer */}
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 px-1 sm:px-2 text-[10px] sm:text-[11px] md:text-xs text-gray-500 font-normal w-full overflow-hidden">
-                    <div className="truncate max-w-full">💬 카카오톡 1:1 상담: <strong className="text-deepgreen font-semibold break-all">open.kakao.com/o/gprQnKSi</strong></div>
-                    <div className="truncate max-w-full">📧 이메일 문의 접수: <strong className="text-deepgreen font-semibold break-all">seo9791@gmail.com</strong></div>
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 px-1 text-[11px] md:text-xs text-[#8E8E93] font-normal w-full overflow-hidden">
+                    <div className="truncate max-w-full">카카오톡 상담: <strong className="text-[#0A7E54] font-semibold break-all">open.kakao.com/o/gprQnKSi</strong></div>
+                    <div className="truncate max-w-full">이메일 문의: <strong className="text-[#0A7E54] font-semibold break-all">seo9791@gmail.com</strong></div>
                   </div>
                 </div>
 
@@ -2704,20 +2654,20 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
 
             {/* Right Column (5 cols): Real-Time Price Calculator & Inquiry Action Panel */}
-            <div className="lg:col-span-5 space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
+            <div className="lg:col-span-5 space-y-4 sm:space-y-5 w-full max-w-full min-w-0">
               
-              {/* Sticky Calculator Box - Edge-to-edge on mobile */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-3.5 sm:p-6 md:p-7 border-y sm:border-2 border-gold-400/50 shadow-sm sm:shadow-xl space-y-4 sm:space-y-5 sm:sticky sm:top-20 w-full max-w-full">
+              {/* Sticky Calculator Box */}
+              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4 sm:space-y-5 sm:sticky sm:top-20 w-full max-w-full">
                 
-                <div className="bg-gradient-to-r from-deepgreen to-[#004d40] text-white p-3.5 sm:p-4 md:p-5 rounded-xl sm:rounded-2xl text-center shadow-xs">
-                  <div className="text-[10px] sm:text-[11px] md:text-xs text-gold-300 font-bold uppercase tracking-wider">실시간 맞춤 견적 계산기</div>
+                <div className="bg-[#0A7E54] text-white p-4 sm:p-5 rounded-2xl text-center">
+                  <div className="text-[11px] sm:text-xs text-emerald-100 font-semibold tracking-wide">실시간 맞춤 견적 계산기</div>
                   <div className="mt-1">
-                    <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+                    <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight tabular-nums">
                       ${currentTotalPerPerson.toLocaleString()}
                     </span>
-                    <span className="text-xs md:text-sm text-gray-300 font-normal ml-1">/ 1인 기준</span>
+                    <span className="text-xs md:text-sm text-emerald-100 font-normal ml-1">/ 1인 기준</span>
                   </div>
-                  <div className="text-[11px] sm:text-xs md:text-sm text-gold-300 font-normal mt-0.5">
+                  <div className="text-xs sm:text-sm text-emerald-100 font-medium mt-0.5">
                     (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)
                   </div>
                 </div>
@@ -2800,20 +2750,18 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   </div>
 
                   {/* Tailored Trip Summary in Sticky Card */}
-                  <div className="p-3.5 md:p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200/90 space-y-2">
-                    <div className="flex items-center justify-between text-xs md:text-sm font-black text-deepgreen">
-                      <span className="flex items-center gap-1">
-                        <span>✨</span> 나만의 맞춤 구성 요약
-                      </span>
-                      <div className="flex items-center gap-1.5">
+                  <div className="p-3.5 md:p-4 bg-[#ECFDF5] rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between text-xs md:text-sm font-bold text-[#0A7E54]">
+                      <span>맞춤 구성 요약</span>
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => setShowGolfModal(true)}
-                          className="text-[10px] md:text-xs text-gold-700 hover:text-gold-900 underline font-bold cursor-pointer"
+                          className="text-[11px] md:text-xs text-[#0A7E54] hover:underline font-semibold cursor-pointer"
                         >
-                          골프장 ⛳
+                          골프장 변경
                         </button>
-                        <span className="text-gray-300">•</span>
+                        <span className="text-gray-300">·</span>
                         <button
                           type="button"
                           onClick={() => {
@@ -2824,33 +2772,27 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                               setOptionModalTypeFilter('전체');
                             }
                           }}
-                          className="text-[10px] md:text-xs text-deepgreen hover:underline font-bold cursor-pointer"
+                          className="text-[11px] md:text-xs text-[#0A7E54] hover:underline font-semibold cursor-pointer"
                         >
-                          숙소 🏨
+                          숙소 변경
                         </button>
                       </div>
                     </div>
-                    <div className="text-[11px] md:text-xs text-gray-700 space-y-2">
+                    <div className="text-[11px] md:text-xs text-[#3A3A3C] space-y-2">
                       {customGolfCourses.length > 0 ? (
                         <div className="flex items-start gap-1.5">
-                          <span className="font-bold text-gray-900 shrink-0 md:text-xs mt-0.5">⛳ 골프:</span>
+                          <span className="font-semibold text-gray-900 shrink-0 mt-0.5">골프</span>
                           <div className="flex-1 flex flex-wrap gap-1.5">
                             {(() => {
                               const { rounds } = getDateMatchedGolfBreakdown();
                               return rounds.map((r, i) => (
                                 <span
                                   key={i}
-                                  className={`text-[10px] md:text-xs px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 shadow-2xs ${
-                                    r.isWeekend 
-                                      ? 'bg-amber-50 text-amber-950 border-amber-300' 
-                                      : 'bg-emerald-50 text-emerald-950 border-emerald-300'
-                                  }`}
+                                  className="text-[11px] px-2 py-0.5 rounded-lg bg-white text-[#3A3A3C] font-semibold flex items-center gap-1"
                                 >
                                   <span>{r.dateStr}</span>
-                                  <span className="font-extrabold">{r.courseName.split(' ')[0]}</span>
-                                  <span className={`text-[9px] px-1 py-0.2 rounded font-black ${
-                                    r.isWeekend ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900'
-                                  }`}>
+                                  <span className="font-bold text-gray-900">{r.courseName.split(' ')[0]}</span>
+                                  <span className="text-[10px] text-[#0A7E54] font-bold">
                                     ${r.appliedUSD}
                                   </span>
                                 </span>
@@ -2860,8 +2802,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         </div>
                       ) : (
                         <div className="flex items-start gap-1.5">
-                          <span className="font-bold text-gray-900 shrink-0 md:text-xs">🧳 투어:</span>
-                          <span className="text-gray-700 font-bold bg-white px-1.5 py-0.5 rounded border border-emerald-200 text-[10px] md:text-xs">
+                          <span className="font-semibold text-gray-900 shrink-0">투어</span>
+                          <span className="text-[#3A3A3C] font-semibold bg-white px-2 py-0.5 rounded-lg text-[11px]">
                             {(() => {
                               const tourOpt = activePackage?.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
                               return tourOpt ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '') : `${activePackage?.location || diyLocation} 맞춤 여행`;
@@ -2870,8 +2812,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         </div>
                       )}
                       <div className="flex items-start gap-1.5">
-                        <span className="font-bold text-gray-900 shrink-0 md:text-xs">🏨 숙소:</span>
-                        <span className="text-gray-700 font-bold bg-white px-1.5 py-0.5 rounded border border-emerald-200 text-[10px] md:text-xs">
+                        <span className="font-semibold text-gray-900 shrink-0">숙소</span>
+                        <span className="text-[#3A3A3C] font-semibold bg-white px-2 py-0.5 rounded-lg text-[11px]">
                           {getChosenAccommodationName()}
                         </span>
                       </div>
@@ -2879,35 +2821,35 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   </div>
 
                   {/* Summary Breakdown */}
-                  <div className="p-3.5 md:p-4 bg-gray-50 rounded-2xl space-y-2 border border-gray-100 text-xs md:text-sm">
-                    <div className="flex justify-between text-gray-600">
+                  <div className="p-3.5 md:p-4 bg-[#F2F2F7] rounded-2xl space-y-2 text-xs md:text-sm">
+                    <div className="flex justify-between text-[#3A3A3C]">
                       <span>선택된 포함 항목</span>
-                      <span className="font-bold text-deepgreen">{selectedOptionIds.size}개 항목</span>
+                      <span className="font-bold text-[#0A7E54]">{selectedOptionIds.size}개</span>
                     </div>
-                    <div className="flex justify-between text-gray-600">
+                    <div className="flex justify-between text-[#8E8E93]">
                       <span>제외된 항목</span>
-                      <span className="font-bold text-red-500">{activePackage.options.length - selectedOptionIds.size}개 항목</span>
+                      <span className="font-semibold">{activePackage.options.length - selectedOptionIds.size}개</span>
                     </div>
-                    <div className="flex justify-between text-gray-600 pt-1 border-t border-gray-200/70">
+                    <div className="flex justify-between text-[#3A3A3C] pt-1.5 border-t border-black/[0.06]">
                       <span>1인 기준 항목 ({personCount}인 × ${currentPerPersonOnlyTotalUSD.toLocaleString()})</span>
-                      <span className="font-bold text-gray-800">${(currentPerPersonOnlyTotalUSD * personCount).toLocaleString()}</span>
+                      <span className="font-bold text-gray-900 tabular-nums">${(currentPerPersonOnlyTotalUSD * personCount).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-gray-600">
-                      <span>차량·가이드 ({pkgTravelDays}일 일정 기준 총액 · 인원 무관)</span>
-                      <span className="font-bold text-deepgreen">${currentTeamTotalUSD.toLocaleString()}</span>
+                    <div className="flex justify-between text-[#3A3A3C]">
+                      <span>차량·가이드 ({pkgTravelDays}일 총액 · 인원 무관)</span>
+                      <span className="font-bold text-[#0A7E54] tabular-nums">${currentTeamTotalUSD.toLocaleString()}</span>
                     </div>
-                    <div className="pt-2 border-t border-gray-200 flex justify-between items-center">
+                    <div className="pt-2 border-t border-black/[0.08] flex justify-between items-center">
                       <div>
-                        <span className="font-black text-gray-900 md:text-base block">총 그룹 예상 견적 ({personCount}인)</span>
-                        <span className="text-[10px] md:text-xs text-emerald-700 font-bold">
-                          1인당 약 ${currentTotalPerPerson.toLocaleString()} (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)
+                        <span className="font-bold text-gray-900 md:text-base block">총 그룹 예상 견적 ({personCount}인)</span>
+                        <span className="text-[11px] md:text-xs text-[#0A7E54] font-semibold">
+                          1인 약 ${currentTotalPerPerson.toLocaleString()} (약 {(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)
                         </span>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg md:text-2xl font-black text-deepgreen tracking-tight">
-                          ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-bold">USD</span>
+                        <div className="text-lg md:text-2xl font-extrabold text-[#0A7E54] tracking-tight tabular-nums">
+                          ${currentTotalGroup.toLocaleString()} <span className="text-xs font-bold">USD</span>
                         </div>
-                        <div className="text-[10px] md:text-xs text-gray-500 font-medium">
+                        <div className="text-[11px] md:text-xs text-[#8E8E93] font-normal">
                           (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
                         </div>
                       </div>
@@ -2915,22 +2857,22 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   </div>
 
                   {/* Brand & Phone Footer in Quotation Card */}
-                  <div className="pt-2 text-[10px] md:text-xs text-gray-400 border-t border-gray-100 flex items-center justify-between">
+                  <div className="pt-2 text-[11px] md:text-xs text-[#8E8E93] border-t border-black/[0.06] flex items-center justify-between">
                     <span>MANGO TOUR GOLF & TRAVEL</span>
-                    <span className="font-bold text-gray-600">
-                      TEL: +84 37 720 4451
+                    <span className="font-semibold text-[#3A3A3C]">
+                      +84 37 720 4451
                     </span>
                   </div>
                 </div>
 
                 {/* Primary Action Buttons */}
-                <div className="space-y-2 sm:space-y-2.5 pt-1 sm:pt-2">
+                <div className="space-y-2.5 pt-1 sm:pt-2">
                   {/* Kakao button with automatic capture */}
                   <button
                     type="button"
                     onClick={handleKakaoInquiry}
                     disabled={isCapturing}
-                    className="w-full py-3.5 sm:py-4 md:py-4.5 bg-[#FEE500] text-[#191919] font-bold rounded-xl sm:rounded-2xl hover:bg-[#FDD835] transition shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm md:text-base tracking-tight active:scale-95 disabled:opacity-75 cursor-pointer"
+                    className="w-full py-3.5 sm:py-4 bg-[#FEE500] text-[#191919] font-bold rounded-2xl hover:bg-[#FDD835] transition-all duration-200 flex items-center justify-center gap-2 text-xs sm:text-sm md:text-base tracking-tight active:scale-95 disabled:opacity-75 cursor-pointer"
                   >
                     <span>{isCapturing ? '⏳' : '💬'}</span>
                     <span>{isCapturing ? '견적서 캡처 생성 중...' : '카카오톡으로 즉시 견적 문의하기'}</span>
@@ -2940,7 +2882,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   <button
                     type="button"
                     onClick={handleOpenOnlineInquiry}
-                    className="w-full py-3 sm:py-3.5 md:py-4 bg-deepgreen text-white font-bold rounded-xl sm:rounded-2xl hover:bg-[#00382e] transition shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm md:text-base tracking-tight active:scale-95 cursor-pointer"
+                    className="w-full py-3.5 sm:py-4 bg-[#0A7E54] text-white font-bold rounded-2xl hover:bg-[#086945] transition-all duration-200 flex items-center justify-center gap-2 text-xs sm:text-sm md:text-base tracking-tight active:scale-95 cursor-pointer"
                   >
                     <span>📧</span>
                     <span>1:1 온라인 신청 (이메일 발송)</span>
@@ -2952,7 +2894,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       type="button"
                       onClick={handleSaveQuoteImage}
                       disabled={isCapturing}
-                      className="py-2.5 sm:py-3 md:py-3.5 bg-gold-50 text-gold-950 border border-gold-300 font-semibold rounded-lg sm:rounded-xl hover:bg-gold-100 transition text-[11px] sm:text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                      className="py-3 bg-[#ECFDF5] text-[#0A7E54] font-semibold rounded-2xl hover:bg-emerald-100/80 transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                     >
                       <span>📸</span>
                       <span>견적서 캡처 저장</span>
@@ -2960,7 +2902,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     <button
                       type="button"
                       onClick={handleCopyQuote}
-                      className="py-2.5 sm:py-3 md:py-3.5 bg-gray-100 text-gray-700 font-semibold rounded-lg sm:rounded-xl hover:bg-gray-200 transition text-[11px] sm:text-xs md:text-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                      className="py-3 bg-[#F2F2F7] text-[#3A3A3C] font-semibold rounded-2xl hover:bg-gray-200 transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                     >
                       <span>📋</span>
                       <span>견적서 텍스트 복사</span>
@@ -2981,38 +2923,42 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       </div>
 
-      {/* ================= MODAL 1: 1:1 ONLINE INQUIRY MODAL (EMAIL TO seo9791@gmail.com) ================= */}
+      {/* ================= MODAL 1: 1:1 ONLINE INQUIRY MODAL ================= */}
       {showInquiryModal && (
         <div 
-          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
           style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+          onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
         >
           <div 
-            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-lg w-full max-w-full h-full md:h-auto max-h-none md:max-h-[92vh] relative shadow-2xl animate-scale-in flex flex-col overflow-hidden box-border"
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-lg w-full max-w-full max-h-[90vh] relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden box-border"
             style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header with Back Button (Edge-to-edge pinned on top) */}
-            <div className="flex items-center justify-between px-3 py-2.5 md:px-6 md:py-3.5 border-b border-gray-100 bg-white sticky top-0 z-30 shrink-0">
+            {/* Mobile Drag Handle */}
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0"></div>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-black/[0.06] bg-white/90 backdrop-blur-md sticky top-0 z-30 shrink-0">
               <button
                 type="button"
                 onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-full transition-all duration-200 active:scale-95 cursor-pointer"
                 aria-label="뒤로 가기"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>뒤로 가기</span>
+                <span>닫기</span>
               </button>
               
               <div className="text-center">
-                <span className="font-extrabold text-sm sm:text-base md:text-lg text-deepgreen">1:1 온라인 맞춤 견적 신청</span>
+                <span className="font-bold text-sm sm:text-base md:text-lg text-gray-900 tracking-tight">1:1 온라인 맞춤 견적 신청</span>
               </div>
 
               <button
                 type="button"
                 onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition-all duration-200 active:scale-95 cursor-pointer"
                 aria-label="닫기"
               >
                 ✕
@@ -3023,137 +2969,130 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               <form onSubmit={handleSubmitOnlineInquiry} className="flex-1 flex flex-col overflow-hidden">
                 {/* Scrollable Form Body */}
                 <div 
-                  className="flex-1 overflow-y-auto px-3 py-3 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
+                  className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
                   style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-black rounded-md shrink-0">이메일 공식 접수</span>
-                    <span className="text-xs md:text-sm text-gray-400 break-all font-semibold">seo9791@gmail.com</span>
+                    <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] md:text-xs font-semibold rounded-full shrink-0">이메일 공식 접수</span>
+                    <span className="text-xs text-[#8E8E93] break-all font-medium">seo9791@gmail.com</span>
                   </div>
-                  <h3 className="text-lg sm:text-xl md:text-2xl font-black text-deepgreen">골프 투어 견적서 이메일 발송</h3>
-                  <p className="text-xs md:text-sm text-gray-500 break-keep">작성하신 예약 정보와 맞춤 견적서가 담당 매니저 이메일로 즉시 발송됩니다.</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">맞춤 견적서 이메일 발송</h3>
+                  <p className="text-xs md:text-sm text-[#8E8E93] break-keep">작성하신 예약 정보와 맞춤 견적서가 담당 매니저에게 즉시 발송됩니다.</p>
 
-                  {/* Captured Screenshot Preview Thumbnail (A4 PDF Form) */}
                   {capturedImageUrl && (
-                    <div className="p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-200 w-full max-w-full overflow-hidden box-border">
-                      <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1">
-                        <span className="text-[11px] md:text-xs font-bold text-gray-800 flex items-center gap-1">
-                          <span>📄</span> 첨부되는 정식 A4 견적서 (PDF 양식) 미리보기
-                        </span>
-                        <div className="flex items-center gap-2">
+                    <div className="p-3.5 bg-[#F2F2F7] rounded-2xl w-full max-w-full overflow-hidden box-border">
+                      <div className="flex justify-between items-center mb-2 flex-wrap gap-1">
+                        <span className="text-[11px] md:text-xs font-bold text-gray-900">정식 A4 견적서 미리보기</span>
+                        <div className="flex items-center gap-2.5">
                           <button
                             type="button"
                             onClick={() => handleDownloadPDF(capturedImageUrl)}
-                            className="text-[10px] md:text-xs text-gold-700 font-bold hover:underline cursor-pointer"
+                            className="text-[11px] text-[#0A7E54] font-semibold hover:underline cursor-pointer"
                           >
-                            📄 PDF 다운로드
+                            PDF 다운로드
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDownloadImage(capturedImageUrl)}
-                            className="text-[10px] md:text-xs text-deepgreen font-bold hover:underline cursor-pointer"
+                            className="text-[11px] text-[#3A3A3C] font-semibold hover:underline cursor-pointer"
                           >
-                            📥 이미지 저장
+                            이미지 저장
                           </button>
                         </div>
                       </div>
-                      <div className="max-h-48 md:max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner p-1">
+                      <div className="max-h-48 md:max-h-60 overflow-y-auto rounded-xl bg-white p-1">
                         <img src={capturedImageUrl} alt="A4 Quotation Preview" className="w-full object-top" />
                       </div>
                     </div>
                   )}
 
                   <div className="w-full max-w-full">
-                    <label className="font-bold text-gray-700 block mb-1 md:text-sm">예약자 성함 / 대표자명 *</label>
+                    <label className="font-semibold text-[#3A3A3C] block mb-1.5 text-xs md:text-sm">예약자 성함 / 대표자명 *</label>
                     <input
                       type="text"
                       required
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="홍길동"
-                      className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
+                      className="w-full max-w-full box-border p-3 md:p-3.5 bg-[#F2F2F7] rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#0A7E54]/30 focus:bg-white transition text-sm md:text-base"
                     />
                   </div>
 
                   <div className="w-full max-w-full">
-                    <label className="font-bold text-gray-700 block mb-1 md:text-sm">연락처 또는 카카오톡 ID *</label>
+                    <label className="font-semibold text-[#3A3A3C] block mb-1.5 text-xs md:text-sm">연락처 또는 카카오톡 ID *</label>
                     <input
                       type="text"
                       required
                       value={customerContact}
                       onChange={(e) => setCustomerContact(e.target.value)}
                       placeholder="010-1234-5678 또는 카카오톡ID"
-                      className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
+                      className="w-full max-w-full box-border p-3 md:p-3.5 bg-[#F2F2F7] rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#0A7E54]/30 focus:bg-white transition text-sm md:text-base"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 w-full max-w-full box-border">
                     <div className="min-w-0">
-                      <label className="font-bold text-gray-700 block mb-1 md:text-sm">인원 수</label>
+                      <label className="font-semibold text-[#3A3A3C] block mb-1.5 text-xs md:text-sm">인원 수</label>
                       <input
                         type="number"
                         min="1"
                         value={personCount}
                         onChange={(e) => setPersonCount(parseInt(e.target.value) || 1)}
-                        className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
+                        className="w-full max-w-full box-border p-3 md:p-3.5 bg-[#F2F2F7] rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#0A7E54]/30 focus:bg-white transition text-sm md:text-base"
                       />
                     </div>
                     <div className="min-w-0">
-                      <label className="font-bold text-gray-700 block mb-1 md:text-sm">출발 희망일</label>
+                      <label className="font-semibold text-[#3A3A3C] block mb-1.5 text-xs md:text-sm">출발 희망일</label>
                       <input
                         type="date"
                         value={departureDate}
                         onChange={(e) => setDepartureDate(e.target.value)}
-                        className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
+                        className="w-full max-w-full box-border p-3 md:p-3.5 bg-[#F2F2F7] rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#0A7E54]/30 focus:bg-white transition text-sm md:text-base"
                       />
                     </div>
                   </div>
 
                   <div className="w-full max-w-full">
-                    <label className="font-bold text-gray-700 block mb-1 md:text-sm">추가 요청사항 (선택)</label>
+                    <label className="font-semibold text-[#3A3A3C] block mb-1.5 text-xs md:text-sm">추가 요청사항 (선택)</label>
                     <textarea
                       rows={2}
                       value={customerNotes}
                       onChange={(e) => setCustomerNotes(e.target.value)}
                       placeholder="티타임 시간대, 선호 호텔 유형, 클럽 렌탈 여부 등"
-                      className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white resize-none text-sm md:text-base"
+                      className="w-full max-w-full box-border p-3 md:p-3.5 bg-[#F2F2F7] rounded-xl font-medium outline-none focus:ring-2 focus:ring-[#0A7E54]/30 focus:bg-white transition resize-none text-sm md:text-base"
                     />
                   </div>
 
-                  <div className="p-3.5 md:p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center w-full max-w-full box-border">
+                  <div className="p-3.5 md:p-4 bg-[#ECFDF5] rounded-2xl flex justify-between items-center w-full max-w-full box-border">
                     <div className="min-w-0 mr-2">
-                      <span className="text-[10px] md:text-xs text-emerald-700 block font-semibold">총 {personCount}인 예상 견적</span>
-                      <div className="font-black text-emerald-900 text-base sm:text-lg md:text-xl tracking-tight">
-                        ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-semibold">USD</span>
+                      <span className="text-[11px] md:text-xs text-[#0A7E54] block font-semibold">총 {personCount}인 예상 견적</span>
+                      <div className="font-extrabold text-[#0A7E54] text-base sm:text-lg md:text-xl tracking-tight tabular-nums">
+                        ${currentTotalGroup.toLocaleString()} <span className="text-xs font-semibold">USD</span>
                       </div>
-                      <div className="text-[11px] md:text-xs text-emerald-700 font-medium">
+                      <div className="text-[11px] text-[#3A3A3C] font-medium">
                         (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
                       </div>
                     </div>
-                    <div className="text-[10px] md:text-xs text-emerald-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
+                    <div className="text-[11px] text-[#0A7E54] font-semibold bg-white px-2.5 py-1 rounded-full shrink-0">
                       선택 {selectedOptionIds.size}개
                     </div>
                   </div>
                 </div>
 
-                {/* Sticky Pinned Bottom Action Bar - Email Submit Button ALWAYS VISIBLE */}
+                {/* Sticky Pinned Bottom Action Bar */}
                 <div 
-                  className="bg-white/95 backdrop-blur-md px-3 py-2.5 md:px-7 md:py-4 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] shrink-0 z-30"
+                  className="bg-white/90 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 border-t border-black/[0.06] shrink-0 z-30"
                   style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
                 >
                   <button
                     type="submit"
                     disabled={isSubmittingEmail}
-                    className="w-full py-4 md:py-4.5 bg-deepgreen hover:bg-[#00382e] text-white font-black rounded-2xl shadow-xl text-sm sm:text-base md:text-lg active:scale-95 disabled:opacity-75 flex items-center justify-center gap-2 cursor-pointer transition"
+                    className="w-full py-3.5 md:py-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-2xl text-sm sm:text-base active:scale-95 disabled:opacity-75 flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
                   >
-                    <span>{isSubmittingEmail ? '⏳' : '🚀'}</span>
-                    <span className="font-extrabold tracking-tight">
-                      {isSubmittingEmail ? '이메일(seo9791@gmail.com) 전송 중...' : '1:1 온라인 견적 신청서 발송하기 (이메일 전송)'}
+                    <span className="font-bold tracking-tight">
+                      {isSubmittingEmail ? '이메일 전송 중...' : '1:1 온라인 견적 신청서 발송하기'}
                     </span>
                   </button>
-                  <p className="text-[10px] md:text-xs text-gray-400 text-center mt-1.5">
-                    버튼을 누르시면 담당 매니저(seo9791@gmail.com)에게 실시간으로 견적서가 발송됩니다.
-                  </p>
                 </div>
               </form>
             ) : (
@@ -3230,30 +3169,34 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       {/* ================= MODAL 2: KAKAOTALK CONSULTATION & SCREENSHOT SHARING MODAL ================= */}
       {showKakaoModal && (
         <div 
-          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-x-hidden overflow-y-auto overscroll-x-none font-sans break-keep"
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-x-hidden overflow-y-auto overscroll-x-none font-sans break-keep"
           style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none', WebkitOverflowScrolling: 'touch' }}
+          onClick={() => setShowKakaoModal(false)}
         >
           <div 
-            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-xl w-full max-w-full h-full md:h-auto max-h-none md:max-h-[92vh] px-3 py-3 md:p-7 relative shadow-2xl animate-scale-in m-0 md:my-8 overflow-x-hidden overflow-y-auto box-border"
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-xl w-full max-w-full max-h-[90vh] px-4 py-4 md:p-6 relative shadow-2xl animate-ios-sheet-up m-0 md:my-6 overflow-x-hidden overflow-y-auto box-border"
             style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none', WebkitOverflowScrolling: 'touch' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header with Back Button */}
-            <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100">
+            {/* Mobile Drag Handle */}
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3 md:hidden"></div>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-black/[0.06]">
               <button
                 type="button"
                 onClick={() => setShowKakaoModal(false)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-full transition-all duration-200 active:scale-95 cursor-pointer"
                 aria-label="뒤로 가기"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>뒤로 가기</span>
+                <span>닫기</span>
               </button>
               <button
                 type="button"
                 onClick={() => setShowKakaoModal(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition-all duration-200 active:scale-95 cursor-pointer"
                 aria-label="닫기"
               >
                 ✕
@@ -3481,38 +3424,42 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         </div>
       )}
 
-      {/* ================= MODAL 3: QUOTATION CAPTURE & SAVE MODAL (SAME FORM AS 1:1 ONLINE INQUIRY) ================= */}
+      {/* ================= MODAL 3: QUOTATION CAPTURE & SAVE MODAL ================= */}
       {showImagePreviewModal && (
         <div 
-          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
           style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+          onClick={() => setShowImagePreviewModal(false)}
         >
           <div 
-            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-lg w-full max-w-full h-full md:h-auto max-h-none md:max-h-[92vh] relative shadow-2xl animate-scale-in flex flex-col overflow-hidden box-border"
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-lg w-full max-w-full max-h-[90vh] relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden box-border"
             style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header with Back Button (Edge-to-edge pinned on top) */}
-            <div className="flex items-center justify-between px-3 py-2.5 md:px-6 md:py-3.5 border-b border-gray-100 bg-white sticky top-0 z-30 shrink-0">
+            {/* Mobile Drag Handle */}
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0"></div>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-black/[0.06] bg-white/90 backdrop-blur-md sticky top-0 z-30 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowImagePreviewModal(false)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-full transition-all duration-200 active:scale-95 cursor-pointer"
                 aria-label="뒤로 가기"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>뒤로 가기</span>
+                <span>닫기</span>
               </button>
               
               <div className="text-center">
-                <span className="font-extrabold text-sm sm:text-base md:text-lg text-deepgreen">정식 견적서 캡처 및 저장</span>
+                <span className="font-bold text-sm sm:text-base md:text-lg text-gray-900 tracking-tight">정식 견적서 캡처 및 저장</span>
               </div>
 
               <button
                 type="button"
                 onClick={() => setShowImagePreviewModal(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition-all duration-200 active:scale-95 cursor-pointer"
                 aria-label="닫기"
               >
                 ✕
@@ -3687,40 +3634,47 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 4: INTERACTIVE DAY-BY-DAY GOLF COURSE PICKER MODAL ================= */}
       {showGolfModal && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-3xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-7 relative shadow-2xl animate-scale-in m-0 md:my-6 flex flex-col overflow-hidden">
-            
-            {/* Modal Header - Edge-to-edge pinned on mobile */}
-            <div className="flex items-start justify-between px-3 py-2.5 md:px-0 md:py-0 md:pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep"
+          onClick={() => setShowGolfModal(false)}
+        >
+          <div
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-3xl w-full max-h-[90vh] p-0 md:p-6 relative shadow-2xl animate-ios-sheet-up m-0 md:my-6 flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile Drag Handle */}
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0"></div>
+            {/* Modal Header */}
+            <div className="flex items-start justify-between px-4 py-3 md:px-0 md:py-0 md:pb-4 border-b border-black/[0.06] bg-white sticky top-0 z-10">
               <div>
-                <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">나만의 일정 설계</span>
-                  <span className="text-[11px] sm:text-xs md:text-sm text-gray-400">선택 즉시 견적 및 4박5일 일정표 동시 반영</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] font-semibold rounded-full">일정별 골프장</span>
+                  <span className="text-[11px] sm:text-xs text-[#8E8E93]">선택 즉시 견적 반영</span>
                 </div>
-                <h3 className="text-base sm:text-xl md:text-2xl font-extrabold text-deepgreen flex items-center gap-1.5 sm:gap-2">
-                  <span>⛳</span> 일정별 골프장 직접 변경 & 선택
+                <h3 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 tracking-tight">
+                  일정별 골프장 변경 및 선택
                 </h3>
-                <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
-                  각 라운딩 일자별로 원하시는 골프장을 직접 지정하세요. 호치민, 붕따우, 달랏 등 명문 골프장 풀에서 자유롭게 변경 가능합니다.
+                <p className="text-xs md:text-sm text-[#8E8E93] mt-0.5 leading-snug">
+                  라운딩 회차별로 원하시는 골프장을 선택하세요.
                 </p>
               </div>
               <button
                 onClick={() => setShowGolfModal(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition shrink-0 ml-2 cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition-all duration-200 active:scale-95 shrink-0 ml-2 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            {/* Scrollable Content Body - Edge-to-edge padding on mobile */}
-            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 space-y-4 py-3 md:py-5">
+            {/* Scrollable Content Body */}
+            <div className="overflow-y-auto flex-1 px-4 md:px-0 space-y-4 py-4">
 
               {/* Step 1: Select Round / Day to Modify */}
               <div>
-                <label className="text-xs md:text-sm font-black text-gray-800 block mb-2 flex items-center justify-between">
-                  <span>1️⃣ 변경할 라운딩 회차 선택 (클릭하여 해당 날짜의 코스 변경)</span>
-                  <span className="text-[10px] md:text-xs text-emerald-700 font-bold">
-                    현재 수정 대상: {activeRoundIndex + 1}회차 ({activeRoundIndex + 2}일차)
+                <label className="text-xs md:text-sm font-bold text-gray-900 block mb-2 flex items-center justify-between">
+                  <span>1. 변경할 라운딩 회차 선택</span>
+                  <span className="text-xs text-[#0A7E54] font-semibold">
+                    {activeRoundIndex + 1}회차 ({activeRoundIndex + 2}일차)
                   </span>
                 </label>
 
@@ -3732,31 +3686,28 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         key={rIdx}
                         type="button"
                         onClick={() => setActiveRoundIndex(rIdx)}
-                        className={`p-3 md:p-3.5 rounded-2xl border text-left transition relative flex flex-col justify-between cursor-pointer ${
+                        className={`p-3 rounded-2xl text-left transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-95 ${
                           isCurrentActive
-                            ? 'bg-deepgreen text-white border-deepgreen shadow-md ring-2 ring-emerald-400/40'
-                            : 'bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-800'
+                            ? 'bg-[#0A7E54] text-white shadow-sm'
+                            : 'bg-[#F2F2F7] hover:bg-gray-200/70 text-gray-900'
                         }`}
                       >
                         <div>
                           <div className="flex items-center justify-between mb-1">
-                            <span className={`text-[10px] md:text-xs font-black px-1.5 py-0.5 rounded ${
-                              isCurrentActive ? 'bg-white/20 text-gold-300' : 'bg-gray-200 text-gray-700'
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isCurrentActive ? 'bg-white/20 text-white' : 'bg-white text-[#3A3A3C]'
                             }`}>
-                              Day {rIdx + 2} • {rIdx + 1}회차
+                              Day {rIdx + 2} · {rIdx + 1}R
                             </span>
-                            {isCurrentActive && (
-                              <span className="text-[10px] md:text-xs text-gold-300 font-bold">선택 중 ✏️</span>
-                            )}
                           </div>
                           <div className={`font-bold text-xs md:text-sm line-clamp-1 ${isCurrentActive ? 'text-white' : 'text-gray-900'}`}>
                             {courseName}
                           </div>
                         </div>
-                        <div className={`text-[10px] md:text-xs mt-2 pt-1 border-t ${
-                          isCurrentActive ? 'border-white/20 text-emerald-200' : 'border-gray-200 text-gray-400'
+                        <div className={`text-[10px] mt-1.5 ${
+                          isCurrentActive ? 'text-emerald-100' : 'text-[#8E8E93]'
                         }`}>
-                          클릭하여 코스 변경
+                          {isCurrentActive ? '변경 중' : '터치하여 선택'}
                         </div>
                       </button>
                     );
@@ -3766,8 +3717,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
               {/* Step 2: Location Filter Tabs */}
               <div>
-                <label className="text-xs md:text-sm font-black text-gray-800 block mb-2">
-                  2️⃣ 지역 필터 선택 ({golfLocationFilter})
+                <label className="text-xs md:text-sm font-bold text-gray-900 block mb-2">
+                  2. 지역 필터 ({golfLocationFilter})
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {['전체', '호치민', '붕따우', '달랏'].map((loc) => {
@@ -3780,15 +3731,15 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         key={loc}
                         type="button"
                         onClick={() => setGolfLocationFilter(loc)}
-                        className={`px-3 py-1.5 md:px-4 md:py-2 rounded-xl text-xs md:text-sm font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs md:text-sm font-semibold transition-all duration-200 flex items-center gap-1.5 cursor-pointer active:scale-95 ${
                           isActive
-                            ? 'bg-deepgreen text-white shadow-sm'
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                            ? 'bg-[#0A7E54] text-white'
+                            : 'bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C]'
                         }`}
                       >
                         <span>{loc}</span>
-                        <span className={`text-[10px] md:text-xs px-1.5 py-0.2 rounded-full ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
+                        <span className={`text-[11px] px-1.5 rounded-full ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-white text-[#8E8E93]'
                         }`}>
                           {count}
                         </span>
@@ -3801,11 +3752,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               {/* Step 3: Golf Course Selection Cards */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs md:text-sm font-black text-gray-800">
-                    3️⃣ {activeRoundIndex + 1}회차 라운딩에 배정할 골프장 선택 (클릭 즉시 적용)
+                  <label className="text-xs md:text-sm font-bold text-gray-900">
+                    3. {activeRoundIndex + 1}회차 골프장 선택
                   </label>
-                  <span className="text-[10px] md:text-xs text-gray-400">
-                    {getAvailableGolfCourses().length}개 골프장 이용 가능
+                  <span className="text-xs text-[#8E8E93]">
+                    {getAvailableGolfCourses().length}개
                   </span>
                 </div>
 
@@ -3825,51 +3776,45 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           setCustomGolfCourses(updated);
                           showToast(`⛳ ${activeRoundIndex + 1}회차 코스가 '${course.name.split(' ')[0]}'으로 변경되었습니다.`);
                         }}
-                        className={`p-3.5 md:p-4 rounded-2xl border text-xs md:text-sm cursor-pointer transition flex flex-col justify-between ${
+                        className={`p-3.5 md:p-4 rounded-2xl text-xs md:text-sm cursor-pointer transition-all duration-200 flex flex-col justify-between active:scale-[0.98] ${
                           isAssignedToActiveRound
-                            ? 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-400 shadow-md'
-                            : 'bg-white hover:bg-gray-50 border-gray-200'
+                            ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                            : 'bg-[#F2F2F7] hover:bg-gray-200/70'
                         }`}
                       >
                         <div>
                           <div className="flex items-center justify-between gap-1 mb-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-[10px] md:text-xs font-bold rounded">
+                              <span className="px-2 py-0.5 bg-white text-[#3A3A3C] text-[10px] md:text-xs font-semibold rounded-full">
                                 {course.location}
                               </span>
-                              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded">
+                              <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] md:text-xs font-semibold rounded-full">
                                 {course.holes}
                               </span>
                             </div>
                             {course.badge && (
-                              <span className="px-1.5 py-0.5 bg-gold-100 text-gold-800 text-[10px] md:text-xs font-bold rounded">
+                              <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-semibold rounded-full">
                                 {course.badge}
                               </span>
                             )}
                           </div>
 
-                          <h4 className="font-black text-sm md:text-base text-gray-900 mt-1">
+                          <h4 className="font-bold text-sm md:text-base text-gray-900 mt-1">
                             {course.name}
                           </h4>
                           {course.description && (
-                            <p className="text-[11px] md:text-xs text-gray-500 leading-snug mt-1 line-clamp-2">
+                            <p className="text-[11px] md:text-xs text-[#8E8E93] leading-snug mt-1 line-clamp-2">
                               {course.description}
                             </p>
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-gray-100">
+                        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-black/[0.06]">
                           <div>
-                            <span className="text-[10px] md:text-xs text-gray-400 block font-medium">1인 기준 차액</span>
-                            <span className={`text-xs md:text-sm font-black ${
-                              course.priceDeltaUSD === 0 
-                                ? 'text-gray-600' 
-                                : course.priceDeltaUSD > 0 
-                                ? 'text-emerald-700' 
-                                : 'text-blue-600'
-                            }`}>
+                            <span className="text-[10px] text-[#8E8E93] block">1인 차액</span>
+                            <span className="text-xs md:text-sm font-bold text-[#0A7E54]">
                               {course.priceDeltaUSD === 0 
-                                ? '기본 코스 ($0)' 
+                                ? '기본 ($0)' 
                                 : course.priceDeltaUSD > 0 
                                 ? `+$${course.priceDeltaUSD}/인` 
                                 : `-$${Math.abs(course.priceDeltaUSD)}/인`}
@@ -3878,27 +3823,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                           <div className="flex items-center gap-1.5">
                             {assignedRounds.length > 0 && (
-                              <span className="text-[10px] md:text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-lg font-bold">
-                                {assignedRounds.join(', ')}회차 배정됨
+                              <span className="text-[10px] bg-white text-[#0A7E54] px-2 py-1 rounded-full font-semibold">
+                                {assignedRounds.join(', ')}R
                               </span>
                             )}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const updated = [...customGolfCourses];
-                                updated[activeRoundIndex] = course.name;
-                                setCustomGolfCourses(updated);
-                                showToast(`⛳ ${activeRoundIndex + 1}회차 코스가 '${course.name.split(' ')[0]}'으로 변경되었습니다.`);
-                              }}
-                              className={`px-3 py-1.5 md:px-3.5 md:py-2 rounded-xl font-bold text-xs md:text-sm transition cursor-pointer ${
-                                isAssignedToActiveRound
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-gray-100 hover:bg-deepgreen hover:text-white text-gray-700'
-                              }`}
-                            >
-                              {isAssignedToActiveRound ? '✓ 선택됨' : '이 코스로 배정'}
-                            </button>
+                            <span className={`px-3 py-1.5 rounded-xl font-semibold text-xs transition ${
+                              isAssignedToActiveRound
+                                ? 'bg-[#0A7E54] text-white'
+                                : 'bg-white text-[#3A3A3C]'
+                            }`}>
+                              {isAssignedToActiveRound ? '✓ 선택됨' : '선택'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -3909,16 +3844,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
             </div>
 
-            {/* Modal Footer - Edge-to-edge pinned on mobile */}
-            <div className="px-3 py-2.5 md:px-0 md:py-0 md:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col md:flex-row justify-between items-center gap-3 shadow-md md:shadow-none">
-              <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Modal Footer */}
+            <div className="px-4 py-3 md:px-0 md:py-0 md:pt-4 border-t border-black/[0.06] bg-white/90 backdrop-blur-md sticky bottom-0 z-10 flex flex-col md:flex-row justify-between items-center gap-3 shrink-0" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}>
+              <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
                 <div>
-                  <span className="text-[10px] md:text-xs text-gray-400 block">골프장 총 변경 차액 (1인 기준)</span>
-                  <span className={`text-sm md:text-base font-black ${
-                    getGolfDeltaTotal() === 0 ? 'text-gray-700' : getGolfDeltaTotal() > 0 ? 'text-emerald-700' : 'text-blue-600'
-                  }`}>
+                  <span className="text-[11px] text-[#8E8E93] block">골프장 변경 차액 (1인 기준)</span>
+                  <span className="text-sm md:text-base font-bold text-[#0A7E54]">
                     {getGolfDeltaTotal() === 0 
-                      ? '기본 패키지 코스 동일 ($0)' 
+                      ? '기본 코스 ($0)' 
                       : getGolfDeltaTotal() > 0 
                       ? `+$${getGolfDeltaTotal()} / 1인` 
                       : `-$${Math.abs(getGolfDeltaTotal())} / 1인`}
@@ -3934,359 +3867,270 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         showToast('🔄 기본 추천 골프장 코스로 초기화되었습니다.');
                       }
                     }}
-                    className="px-2.5 py-1.5 md:px-3 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs md:text-sm font-bold rounded-xl transition cursor-pointer"
+                    className="px-3 py-1.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-xl transition cursor-pointer"
                   >
-                    기본 코스로 복원
+                    기본 복원
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={() => setShowGolfModal(false)}
-                  className="flex-1 sm:flex-initial px-5 py-3 md:px-6 md:py-3.5 bg-deepgreen text-white font-black text-xs sm:text-sm md:text-base rounded-2xl hover:bg-[#00382e] transition shadow-md active:scale-95 cursor-pointer"
-                >
-                  선택 완료 및 견적 적용 ✓
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowGolfModal(false)}
+                className="w-full md:w-auto px-6 py-3 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold text-sm md:text-base rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer"
+              >
+                선택 완료
+              </button>
             </div>
 
           </div>
         </div>
       )}
 
-      {/* ================= MODAL 5: DEDICATED CUSTOM OPTION POPUP MODAL (HOTEL, VEHICLE, GUIDE, MEAL, ETC.) ================= */}
+      {/* ================= MODAL 5: DEDICATED CUSTOM OPTION POPUP MODAL ================= */}
       {customizingOption && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-3xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-7 relative shadow-2xl animate-scale-in m-0 md:my-6 flex flex-col overflow-hidden">
-            
-            {/* Modal Header - Edge-to-edge pinned on mobile */}
-            <div className="flex items-start justify-between px-3 py-2.5 md:px-0 md:py-0 md:pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep"
+          onClick={() => setCustomizingOption(null)}
+        >
+          <div
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-3xl w-full max-h-[90vh] p-0 md:p-6 relative shadow-2xl animate-ios-sheet-up m-0 md:my-6 flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile Drag Handle */}
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0"></div>
+            {/* Modal Header */}
+            <div className="flex items-start justify-between px-4 py-3 md:px-0 md:py-0 md:pb-4 border-b border-black/[0.06] bg-white sticky top-0 z-10">
               <div>
-                <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">나만의 일정 설계</span>
-                  <span className="text-[11px] sm:text-xs md:text-sm text-gray-400">선택 즉시 견적 및 4박5일 일정표 동시 반영</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] font-semibold rounded-full">세부 옵션 변경</span>
+                  <span className="text-[11px] sm:text-xs text-[#8E8E93]">선택 즉시 견적 반영</span>
                 </div>
-                <h3 className="text-base sm:text-xl md:text-2xl font-extrabold text-deepgreen flex items-center gap-1.5 sm:gap-2">
-                  <span>
-                    {customizingOption.category === 'hotel' ? '🏨' :
-                     customizingOption.category === 'vehicle' ? '🚐' :
-                     customizingOption.category === 'guide' ? '🧑‍💼' :
-                     customizingOption.category === 'meal' ? '🍽️' : '✨'}
-                  </span>
-                  <span>
-                    {customizingOption.category === 'hotel' ? '숙박 형태 직접 변경 & 선택 (호텔 / 풀빌라 / 싱글룸)' :
-                     customizingOption.category === 'vehicle' ? '전용 차량 옵션 직접 변경 & 선택 (VIP 리무진 / 전용 밴)' :
-                     customizingOption.category === 'guide' ? '전담 가이드 옵션 직접 변경 & 선택 (한국어 가이드 / VIP 의전)' :
-                     customizingOption.category === 'meal' ? '식사 구성 직접 변경 & 선택 (씨푸드 만찬 / 로컬 미식 / 자유식)' :
-                     `${customizingOption.name} 직접 변경 & 선택`}
-                  </span>
+                <h3 className="text-base sm:text-xl md:text-2xl font-bold text-gray-900 tracking-tight">
+                  {customizingOption.category === 'hotel' ? '숙박 형태 변경 및 선택' :
+                   customizingOption.category === 'vehicle' ? '전용 차량 옵션 변경' :
+                   customizingOption.category === 'guide' ? '전담 가이드 옵션 변경' :
+                   customizingOption.category === 'meal' ? '식사 구성 변경' :
+                   `${customizingOption.name} 변경`}
                 </h3>
-                <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 mt-0.5 leading-snug">
-                  {customizingOption.category === 'hotel' ? '고객님의 여행 스타일과 일정에 맞춰 고급 호텔, 단독 프라이빗 풀빌라, 싱글룸(1인 1실) 등을 자유롭게 선택하세요.' :
-                   customizingOption.category === 'vehicle' ? '여행 인원수와 탑승 스타일에 최적화된 VIP 리무진 밴, 16인승 밴, 대형 버스 등 최적의 전용 차량을 선택할 수 있습니다.' :
-                   customizingOption.category === 'guide' ? '한국어 전문 가이드의 밀착 의전 케어 또는 일정 간섭 없는 드라이버 온리 자유 일정을 선택할 수 있습니다.' :
-                   customizingOption.category === 'meal' ? '전 일정 최고급 씨푸드 바베큐 만찬, 로컬 숨은 미식 탐방, 또는 자유 식사 중 원하는 플랜을 선택하세요.' :
-                   '원하시는 상세 옵션을 선택하시면 견적과 일정이 즉시 실시간으로 반영됩니다.'}
-                </p>
               </div>
               <button
                 onClick={() => setCustomizingOption(null)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition shrink-0 ml-2"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition-all duration-200 active:scale-95 shrink-0 ml-2 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            {/* Scrollable Content Body - Edge-to-edge padding on mobile */}
-            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 space-y-4 py-3 md:py-4">
+            {/* Scrollable Content Body */}
+            <div className="overflow-y-auto flex-1 px-4 md:px-0 space-y-4 py-4">
 
               {/* Step 1: Current Selection Status Card */}
-              <div>
-                <label className="text-xs md:text-sm font-black text-gray-800 block mb-2 flex items-center justify-between">
-                  <span>1️⃣ 현재 적용 중인 옵션 상태 확인</span>
-                  <span className="text-[10px] md:text-xs text-emerald-700 font-bold">
-                    카테고리: {customizingOption.category === 'hotel' ? '숙박' : customizingOption.category === 'vehicle' ? '차량' : customizingOption.category === 'guide' ? '가이드' : customizingOption.category === 'meal' ? '식사' : '맞춤 옵션'}
+              <div className="p-3.5 bg-[#0A7E54] text-white rounded-2xl flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/20 text-white">
+                      현재 선택됨
+                    </span>
+                  </div>
+                  <div className="font-bold text-sm md:text-base text-white">
+                    {customOptionSelections[customizingOption.id]?.name || customizingOption.name}
+                  </div>
+                </div>
+                <div className="text-right shrink-0 pl-3">
+                  <span className="text-[11px] text-emerald-100 block">
+                    {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                      ? `${pkgTravelDays}일 총액`
+                      : '1인 차액'}
                   </span>
-                </label>
-
-                <div className="p-3.5 bg-deepgreen text-white rounded-2xl shadow-sm border border-emerald-500/30 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] md:text-xs font-black px-2 py-0.5 rounded bg-white/20 text-gold-300">
-                        현재 선택됨
-                      </span>
-                      {customOptionSelections[customizingOption.id]?.badge && (
-                        <span className="text-[10px] md:text-xs font-bold text-emerald-200">
-                          {customOptionSelections[customizingOption.id].badge}
-                        </span>
-                      )}
-                    </div>
-                    <div className="font-bold text-sm md:text-base text-white">
-                      {customOptionSelections[customizingOption.id]?.name || customizingOption.name}
-                    </div>
-                    {customOptionSelections[customizingOption.id]?.description && (
-                      <p className="text-[11px] md:text-xs text-gray-300 mt-0.5 line-clamp-1">
-                        {customOptionSelections[customizingOption.id].description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right shrink-0 pl-3">
-                    <span className="text-[10px] md:text-xs text-gold-300 block font-bold">
-                      {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
-                        ? `${pkgTravelDays}일 일정 총액 (인원 무관)`
-                        : '1인 기준 차액'}
-                    </span>
-                    <span className="text-base md:text-lg font-black text-white">
-                      {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
-                        ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()} (팀 총액)`
-                        : customOptionSelections[customizingOption.id]
-                        ? (customOptionSelections[customizingOption.id].priceDelta === 0 
-                            ? '기본 포함 ($0)' 
-                            : customOptionSelections[customizingOption.id].priceDelta > 0 
-                            ? `+$${customOptionSelections[customizingOption.id].priceDelta}` 
-                            : `-$${Math.abs(customOptionSelections[customizingOption.id].priceDelta)}`)
-                        : '기본 포함 ($0)'}
-                    </span>
-                  </div>
+                  <span className="text-base md:text-lg font-bold text-white tabular-nums">
+                    {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                      ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()}`
+                      : customOptionSelections[customizingOption.id]
+                      ? (customOptionSelections[customizingOption.id].priceDelta === 0 
+                          ? '기본 ($0)' 
+                          : customOptionSelections[customizingOption.id].priceDelta > 0 
+                          ? `+$${customOptionSelections[customizingOption.id].priceDelta}` 
+                          : `-$${Math.abs(customOptionSelections[customizingOption.id].priceDelta)}`)
+                      : '기본 ($0)'}
+                  </span>
                 </div>
               </div>
 
-              {/* Step 2: Filters (Region / Type for Hotel or Subcategories) */}
+              {/* Step 2: Filters */}
               {customizingOption.category === 'hotel' && (
-                <div className="space-y-2">
-                  <div>
-                    <label className="text-xs md:text-sm font-black text-gray-800 block mb-1.5">
-                      2️⃣ 지역 필터 선택 ({optionModalFilter})
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['전체', '호치민', '붕따우', '달랏'].map((loc) => {
-                        const count = loc === '전체' 
-                          ? pool.accommodations.length 
-                          : pool.accommodations.filter(a => a.location === loc || a.location.includes(loc)).length;
-                        const isActive = optionModalFilter === loc;
-                        return (
-                          <button
-                            key={loc}
-                            type="button"
-                            onClick={() => setOptionModalFilter(loc)}
-                            className={`px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center gap-1.5 ${
-                              isActive
-                                ? 'bg-deepgreen text-white shadow-sm'
-                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                            }`}
-                          >
-                            <span>{loc}</span>
-                            <span className={`text-[10px] md:text-xs px-1.5 py-0.2 rounded-full ${
-                              isActive ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
-                            }`}>
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                <div className="space-y-2.5">
+                  <div className="flex flex-wrap gap-1.5">
+                    {['전체', '호치민', '붕따우', '달랏'].map((loc) => {
+                      const count = loc === '전체' 
+                        ? pool.accommodations.length 
+                        : pool.accommodations.filter(a => a.location === loc || a.location.includes(loc)).length;
+                      const isActive = optionModalFilter === loc;
+                      return (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => setOptionModalFilter(loc)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1 cursor-pointer active:scale-95 ${
+                            isActive
+                              ? 'bg-[#0A7E54] text-white'
+                              : 'bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C]'
+                          }`}
+                        >
+                          <span>{loc}</span>
+                          <span className={`text-[10px] px-1.5 rounded-full ${
+                            isActive ? 'bg-white/20 text-white' : 'bg-white text-[#8E8E93]'
+                          }`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  {/* Accommodation Type Subfilter */}
-                  <div className="pt-1">
-                    <label className="text-xs md:text-sm font-black text-gray-800 block mb-1.5">
-                      숙박 형태 필터
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { id: '전체', label: '전체 형태' },
-                        { id: 'hotel_5star', label: '⭐ 고급 호텔' },
-                        { id: 'pool_villa', label: '🏊 프라이빗 독채 풀빌라' },
-                        { id: 'hotel_4star', label: '🏬 4성급 부티크 호텔' },
-                        { id: 'resort', label: '🏖️ 특급 리조트' },
-                      ].map((t) => {
-                        const isActive = optionModalTypeFilter === t.id;
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => setOptionModalTypeFilter(t.id)}
-                            className={`px-2.5 py-1 rounded-lg text-xs md:text-sm font-bold transition ${
-                              isActive 
-                                ? 'bg-gold-500 text-white shadow-xs' 
-                                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-                            }`}
-                          >
-                            {t.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: '전체', label: '전체 형태' },
+                      { id: 'hotel_5star', label: '고급 호텔' },
+                      { id: 'pool_villa', label: '독채 풀빌라' },
+                      { id: 'hotel_4star', label: '4성급 호텔' },
+                      { id: 'resort', label: '특급 리조트' },
+                    ].map((t) => {
+                      const isActive = optionModalTypeFilter === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setOptionModalTypeFilter(t.id)}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-95 ${
+                            isActive 
+                              ? 'bg-[#ECFDF5] text-[#0A7E54] ring-1 ring-[#0A7E54]/40' 
+                              : 'bg-[#F2F2F7] text-[#3A3A3C] hover:bg-gray-200'
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
               {/* Step 3: Choice Selection Cards Grid */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs md:text-sm font-black text-gray-800">
-                    3️⃣ 배정할 옵션 선택 (클릭 즉시 적용)
-                  </label>
-                  <span className="text-[10px] md:text-xs text-gray-400">
-                    {getModalChoicesForCustomizingOption().length}개 옵션 이용 가능
-                  </span>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {getModalChoicesForCustomizingOption().map((choice) => {
+                  const currentSelection = customOptionSelections[customizingOption.id];
+                  const isSelected = currentSelection 
+                    ? currentSelection.choiceId === choice.id 
+                    : (choice.priceDeltaUSD === 0 && choice.badge?.includes('기본'));
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {getModalChoicesForCustomizingOption().map((choice) => {
-                    const currentSelection = customOptionSelections[customizingOption.id];
-                    const isSelected = currentSelection 
-                      ? currentSelection.choiceId === choice.id 
-                      : (choice.priceDeltaUSD === 0 && choice.badge?.includes('기본'));
-
-                    return (
-                      <div
-                        key={choice.id}
-                        onClick={() => {
-                          setCustomOptionSelections(prev => ({
-                            ...prev,
-                            [customizingOption.id]: {
-                              choiceId: choice.id,
-                              name: choice.name,
-                              priceDelta: choice.priceDeltaUSD,
-                              description: choice.description,
-                              badge: choice.badge
-                            }
-                          }));
-                          // Automatically ensure checklist item is checked
-                          if (!selectedOptionIds.has(customizingOption.id)) {
-                            setSelectedOptionIds(prev => new Set(prev).add(customizingOption.id));
+                  return (
+                    <div
+                      key={choice.id}
+                      onClick={() => {
+                        setCustomOptionSelections(prev => ({
+                          ...prev,
+                          [customizingOption.id]: {
+                            choiceId: choice.id,
+                            name: choice.name,
+                            priceDelta: choice.priceDeltaUSD,
+                            description: choice.description,
+                            badge: choice.badge
                           }
-                          showToast(`✨ ${choice.name.split(' ')[0]} 옵션이 선택되었습니다.`);
-                        }}
-                        className={`p-3.5 rounded-2xl border text-xs cursor-pointer transition flex flex-col justify-between ${
-                          isSelected
-                            ? 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-400 shadow-md'
-                            : 'bg-white hover:bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            <div className="flex items-center gap-1.5">
-                              {choice.location && (
-                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-[10px] md:text-xs font-bold rounded">
-                                  {choice.location}
-                                </span>
-                              )}
-                              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded">
-                                {choice.type === 'pool_villa' ? '🏊 독채 풀빌라' :
-                                 choice.type === 'hotel_5star' ? '⭐ 고급 호텔' :
-                                 choice.type === 'hotel_4star' ? '🏬 4성급' :
-                                 choice.type === 'resort' ? '🏖️ 리조트' :
-                                 choice.type === 'vehicle' ? '🚐 전용 차량' :
-                                 choice.type === 'guide' ? '🧑‍💼 가이드' :
-                                 choice.type === 'meal' ? '🍽️ 식사' : '맞춤 선택'}
-                              </span>
-                            </div>
-                            {choice.badge && (
-                              <span className="px-1.5 py-0.5 bg-gold-100 text-gold-800 text-[10px] md:text-xs font-bold rounded">
-                                {choice.badge}
+                        }));
+                        if (!selectedOptionIds.has(customizingOption.id)) {
+                          setSelectedOptionIds(prev => new Set(prev).add(customizingOption.id));
+                        }
+                        showToast(`✨ ${choice.name.split(' ')[0]} 옵션이 선택되었습니다.`);
+                      }}
+                      className={`p-3.5 rounded-2xl text-xs cursor-pointer transition-all duration-200 flex flex-col justify-between active:scale-[0.98] ${
+                        isSelected
+                          ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                          : 'bg-[#F2F2F7] hover:bg-gray-200/70'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <div className="flex items-center gap-1.5">
+                            {choice.location && (
+                              <span className="px-2 py-0.5 bg-white text-[#3A3A3C] text-[10px] font-semibold rounded-full">
+                                {choice.location}
                               </span>
                             )}
+                            <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-semibold rounded-full">
+                              {choice.type === 'pool_villa' ? '독채 풀빌라' :
+                               choice.type === 'hotel_5star' ? '고급 호텔' :
+                               choice.type === 'hotel_4star' ? '4성급' :
+                               choice.type === 'resort' ? '리조트' :
+                               choice.type === 'vehicle' ? '전용 차량' :
+                               choice.type === 'guide' ? '가이드' :
+                               choice.type === 'meal' ? '식사' : '맞춤 선택'}
+                            </span>
                           </div>
-
-                          <h4 className="font-black text-sm md:text-base text-gray-900 mt-1">
-                            {choice.name}
-                          </h4>
-                          {choice.description && (
-                            <p className="text-[11px] md:text-xs text-gray-500 leading-snug mt-1 line-clamp-2">
-                              {choice.description}
-                            </p>
+                          {choice.badge && (
+                            <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-semibold rounded-full">
+                              {choice.badge}
+                            </span>
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-gray-100">
-                          <div>
-                            <span className="text-[10px] md:text-xs text-gray-400 block font-medium">
-                              {choice.type === 'vehicle' || choice.type === 'guide'
-                                ? `${pkgTravelDays}일 일정 총액 (팀 기준)`
-                                : '1인 기준 차액'}
-                            </span>
-                            <span className={`text-xs md:text-sm font-black ${
-                              choice.priceDeltaUSD === 0 
-                                ? 'text-gray-600' 
-                                : choice.priceDeltaUSD > 0 
-                                ? 'text-emerald-700' 
-                                : 'text-blue-600'
-                            }`}>
-                              {choice.type === 'vehicle' || choice.type === 'guide'
-                                ? `$${(choice as any).teamTotalUSD ?? 0} (${choice.priceDeltaUSD === 0 ? '기본' : choice.priceDeltaUSD > 0 ? `+$${choice.priceDeltaUSD}` : `-$${Math.abs(choice.priceDeltaUSD)}`})`
-                                : choice.priceDeltaUSD === 0 
-                                ? '기본 포함 ($0)' 
-                                : choice.priceDeltaUSD > 0 
-                                ? `+$${choice.priceDeltaUSD}/인` 
-                                : `-$${Math.abs(choice.priceDeltaUSD)}/인`}
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCustomOptionSelections(prev => ({
-                                ...prev,
-                                [customizingOption.id]: {
-                                  choiceId: choice.id,
-                                  name: choice.name,
-                                  priceDelta: choice.priceDeltaUSD,
-                                  description: choice.description,
-                                  badge: choice.badge
-                                }
-                              }));
-                              if (!selectedOptionIds.has(customizingOption.id)) {
-                                setSelectedOptionIds(prev => new Set(prev).add(customizingOption.id));
-                              }
-                              showToast(`✨ ${choice.name.split(' ')[0]} 옵션이 선택되었습니다.`);
-                            }}
-                            className={`px-3 py-1.5 rounded-xl font-bold text-xs md:text-sm transition ${
-                              isSelected
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-gray-100 hover:bg-deepgreen hover:text-white text-gray-700'
-                            }`}
-                          >
-                            {isSelected ? '✓ 선택됨' : '이 옵션으로 선택'}
-                          </button>
-                        </div>
+                        <h4 className="font-bold text-sm md:text-base text-gray-900 mt-1">
+                          {choice.name}
+                        </h4>
+                        {choice.description && (
+                          <p className="text-[11px] md:text-xs text-[#8E8E93] leading-snug mt-1 line-clamp-2">
+                            {choice.description}
+                          </p>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-black/[0.06]">
+                        <div>
+                          <span className="text-xs md:text-sm font-bold text-[#0A7E54]">
+                            {choice.type === 'vehicle' || choice.type === 'guide'
+                              ? `$${(choice as any).teamTotalUSD ?? 0} (${choice.priceDeltaUSD === 0 ? '기본' : choice.priceDeltaUSD > 0 ? `+$${choice.priceDeltaUSD}` : `-$${Math.abs(choice.priceDeltaUSD)}`})`
+                              : choice.priceDeltaUSD === 0 
+                              ? '기본 ($0)' 
+                              : choice.priceDeltaUSD > 0 
+                              ? `+$${choice.priceDeltaUSD}/인` 
+                              : `-$${Math.abs(choice.priceDeltaUSD)}/인`}
+                          </span>
+                        </div>
+
+                        <span className={`px-3 py-1 rounded-xl font-semibold text-xs ${
+                          isSelected
+                            ? 'bg-[#0A7E54] text-white'
+                            : 'bg-white text-[#3A3A3C]'
+                        }`}>
+                          {isSelected ? '✓ 선택됨' : '선택'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
             </div>
 
-            {/* Modal Footer - Edge-to-edge pinned on mobile */}
-            <div className="px-3 py-2.5 md:px-0 md:py-0 md:pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col md:flex-row justify-between items-center gap-3 shadow-md md:shadow-none">
-              <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Modal Footer */}
+            <div className="px-4 py-3 md:px-0 md:py-0 md:pt-4 border-t border-black/[0.06] bg-white/90 backdrop-blur-md sticky bottom-0 z-10 flex flex-col md:flex-row justify-between items-center gap-3 shrink-0" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}>
+              <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
                 <div>
-                  <span className="text-[10px] md:text-xs text-gray-400 block">
+                  <span className="text-[11px] text-[#8E8E93] block">
                     {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
-                      ? `선택 옵션 ${pkgTravelDays}일 총액 (인원수 무관 · 팀 기준)`
-                      : '선택 옵션 변경 차액 (1인 기준)'}
+                      ? `${pkgTravelDays}일 총액 (팀 기준)`
+                      : '변경 차액 (1인 기준)'}
                   </span>
-                  <span className={`text-sm md:text-base font-black ${
-                    !customOptionSelections[customizingOption.id] || customOptionSelections[customizingOption.id].priceDelta === 0
-                      ? 'text-gray-700'
-                      : customOptionSelections[customizingOption.id].priceDelta > 0
-                      ? 'text-emerald-700'
-                      : 'text-blue-600'
-                  }`}>
+                  <span className="text-sm md:text-base font-bold text-[#0A7E54]">
                     {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
-                      ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()} (${pkgTravelDays}일 일정 총액)`
+                      ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()} (${pkgTravelDays}일 총액)`
                       : customOptionSelections[customizingOption.id]
                       ? (customOptionSelections[customizingOption.id].priceDelta === 0 
-                          ? '기본 패키지 포함 동일 ($0)' 
+                          ? '기본 동일 ($0)' 
                           : customOptionSelections[customizingOption.id].priceDelta > 0 
                           ? `+$${customOptionSelections[customizingOption.id].priceDelta} / 1인` 
                           : `-$${Math.abs(customOptionSelections[customizingOption.id].priceDelta)} / 1인`)
-                      : '기본 패키지 포함 동일 ($0)'}
+                      : '기본 동일 ($0)'}
                   </span>
                 </div>
 
@@ -4301,22 +4145,20 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       });
                       showToast('🔄 기본 추천 옵션으로 복원되었습니다.');
                     }}
-                    className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs md:text-sm font-bold rounded-xl transition"
+                    className="px-3 py-1.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-xl transition cursor-pointer"
                   >
-                    기본값으로 복원
+                    기본값 복원
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 w-full md:w-auto">
-                <button
-                  type="button"
-                  onClick={() => setCustomizingOption(null)}
-                  className="flex-1 md:flex-initial px-5 py-3 bg-deepgreen text-white font-black text-xs sm:text-sm md:text-base rounded-2xl hover:bg-[#00382e] transition shadow-md active:scale-95"
-                >
-                  선택 완료 및 견적 적용 ✓
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setCustomizingOption(null)}
+                className="w-full md:w-auto px-6 py-3 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold text-sm md:text-base rounded-2xl transition-all duration-200 active:scale-95 cursor-pointer"
+              >
+                선택 완료
+              </button>
             </div>
 
           </div>
@@ -4325,27 +4167,35 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 6: DIY COURSE SELECTOR MODAL ================= */}
       {diyChangingRoundIndex !== null && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in m-0 md:my-6 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:py-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep"
+          onClick={() => setDiyChangingRoundIndex(null)}
+        >
+          <div
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-2xl w-full max-h-[90vh] p-0 md:p-6 relative shadow-2xl animate-ios-sheet-up m-0 md:my-6 flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile Drag Handle */}
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0"></div>
+            <div className="flex items-center justify-between px-4 py-3 md:px-0 md:py-0 md:pb-3 border-b border-black/[0.06] bg-white sticky top-0 z-10">
               <div>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
-                  {diyChangingRoundIndex + 1}회차 ({diyChangingRoundIndex + 2}일차) 코스 지정
+                <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] font-semibold rounded-full">
+                  {diyChangingRoundIndex + 1}회차 ({diyChangingRoundIndex + 2}일차)
                 </span>
-                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
-                  ⛳ 라운딩할 골프장을 선택하세요
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 tracking-tight mt-1">
+                  라운딩할 골프장을 선택하세요
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setDiyChangingRoundIndex(null)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition-all duration-200 active:scale-95 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 space-y-2 md:max-h-[65vh]">
+            <div className="overflow-y-auto flex-1 px-4 md:px-0 py-3 space-y-2.5 md:max-h-[65vh]">
               {pool.golfCourses.map((course) => {
                 const isSelected = diyGolfCourses[diyChangingRoundIndex] === course.name;
                 return (
@@ -4358,52 +4208,42 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       setDiyChangingRoundIndex(null);
                       showToast(`⛳ ${course.name.split(' ')[0]} 코스로 변경되었습니다.`);
                     }}
-                    className={`p-3 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-3 ${
+                    className={`p-3.5 rounded-2xl cursor-pointer transition-all duration-200 flex items-center justify-between gap-3 active:scale-[0.98] ${
                       isSelected
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-xs'
-                        : 'bg-white hover:bg-gray-50 border-gray-200'
+                        ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                        : 'bg-[#F2F2F7] hover:bg-gray-200/70'
                     }`}
                   >
                     <div>
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] md:text-xs font-bold rounded">
-                          📍 {course.location}
+                        <span className="px-2 py-0.5 bg-white text-[#3A3A3C] text-[10px] font-semibold rounded-full">
+                          {course.location}
                         </span>
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded">
+                        <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-semibold rounded-full">
                           {course.holes}홀
                         </span>
-                        {course.badge && (
-                          <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] md:text-xs font-bold rounded">
-                            {course.badge}
-                          </span>
-                        )}
                       </div>
-                      <h4 className="font-extrabold text-sm md:text-base text-gray-900">{course.name}</h4>
-                      <p className="text-[11px] md:text-xs text-gray-500 mt-0.5 line-clamp-1">{course.description}</p>
+                      <h4 className="font-bold text-sm md:text-base text-gray-900">{course.name}</h4>
+                      <p className="text-[11px] md:text-xs text-[#8E8E93] mt-0.5 line-clamp-1">{course.description}</p>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <button
-                        type="button"
-                        className={`px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold transition cursor-pointer ${
-                          isSelected
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-deepgreen hover:text-white'
-                        }`}
-                      >
-                        {isSelected ? '✓ 선택됨' : '이 코스로 선택'}
-                      </button>
-                    </div>
+                    <span className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 ${
+                      isSelected
+                        ? 'bg-[#0A7E54] text-white'
+                        : 'bg-white text-[#3A3A3C]'
+                    }`}>
+                      {isSelected ? '✓ 선택됨' : '선택'}
+                    </span>
                   </div>
                 );
               })}
             </div>
 
-            <div className="px-3 py-2.5 md:px-0 md:py-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 text-right">
+            <div className="px-4 py-3 md:px-0 md:py-0 md:pt-3 border-t border-black/[0.06] bg-white sticky bottom-0 z-10 text-right shrink-0" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}>
               <button
                 type="button"
                 onClick={() => setDiyChangingRoundIndex(null)}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs md:text-sm font-bold transition cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] rounded-2xl text-xs md:text-sm font-semibold transition-all duration-200 active:scale-95 cursor-pointer"
               >
                 닫기
               </button>
@@ -4414,17 +4254,24 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 7: DIY STEP 2 SCHEDULE PICKER MODAL (3박4일 ~ 6박7일) ================= */}
       {showScheduleModal && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in font-sans break-keep">
-          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-md w-full h-full md:h-auto px-3 py-4 md:p-6 shadow-2xl animate-scale-in space-y-4 overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+        <div
+          className="fixed inset-0 bg-black/40 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-xs animate-fade-in font-sans break-keep"
+          onClick={() => setShowScheduleModal(false)}
+        >
+          <div
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-md w-full max-h-[90vh] px-5 pt-2 pb-6 md:p-6 shadow-2xl animate-ios-sheet-up space-y-4 overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-1 md:hidden shrink-0" />
+            <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
               <div>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md">STEP 2 · 일정 선택</span>
-                <h3 className="text-lg font-black text-deepgreen mt-1">📅 여행 일정을 선택해 주세요</h3>
+                <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] font-bold rounded-full">STEP 2 · 일정 선택</span>
+                <h3 className="text-lg font-extrabold tracking-tight text-gray-900 mt-1">📅 여행 일정을 선택해 주세요</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowScheduleModal(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-sm w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] transition active:scale-90 cursor-pointer"
               >
                 ✕
               </button>
@@ -4443,18 +4290,18 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     key={opt.nights}
                     type="button"
                     onClick={() => handleSelectSchedule(opt.nights, opt.rounds)}
-                    className={`p-4 rounded-2xl border-2 text-left transition flex items-center justify-between gap-3 cursor-pointer ${
+                    className={`p-4 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer ${
                       isSelected
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/50 shadow-sm'
-                        : 'bg-gray-50 hover:bg-emerald-50/40 border-gray-200'
+                        ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                        : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
                     <div>
-                      <div className="font-black text-base text-gray-900">{opt.label}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{opt.desc}</div>
+                      <div className="font-bold text-base text-gray-900 tracking-tight">{opt.label}</div>
+                      <div className="text-xs text-[#8E8E93] mt-0.5">{opt.desc}</div>
                     </div>
-                    <span className={`px-3 py-1 rounded-xl text-xs font-extrabold ${
-                      isSelected ? 'bg-deepgreen text-white' : 'bg-white text-gray-600 border border-gray-200'
+                    <span className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 ${
+                      isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
                     }`}>
                       {isSelected ? '✓ 선택됨' : '선택'}
                     </span>
@@ -4468,48 +4315,55 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* ================= MODAL 8: DIY STEP 3 CONDITIONAL POPUP (골프 / 여행) ================= */}
       {showActivityModal === 'golf' && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div
+          className="fixed inset-0 bg-black/40 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-xs animate-fade-in overflow-hidden font-sans break-keep"
+          onClick={() => setShowActivityModal(null)}
+        >
+          <div
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-2xl w-full max-h-[90vh] p-0 md:p-6 relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0" />
+            <div className="flex items-center justify-between px-5 py-3 md:px-0 md:pt-0 md:pb-3 border-b border-black/[0.06] bg-white sticky top-0 z-10">
               <div>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
+                <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] font-bold rounded-full">
                   {diyLocation} · {diyNights}박 {diyDays}일 맞춤 골프장 선택
                 </span>
-                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
+                <h3 className="text-base sm:text-lg md:text-xl font-extrabold tracking-tight text-gray-900 mt-1">
                   ⛳ 라운딩 횟수 및 골프장을 선택하세요
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowActivityModal(null)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-sm w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] transition active:scale-90 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 md:py-4 space-y-4">
+            <div className="overflow-y-auto flex-1 px-5 md:px-0 py-4 space-y-4">
               {/* Round count selector */}
-              <div className="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-200 flex items-center justify-between">
+              <div className="p-4 bg-[#ECFDF5] rounded-2xl flex items-center justify-between">
                 <div>
-                  <span className="text-xs md:text-sm font-black text-gray-900 block">총 라운딩 횟수 ({diyNights}박 {diyDays}일 기준)</span>
-                  <span className="text-[11px] text-gray-500">최대 {diyDays}회까지 선택 가능 · {diyRounds * 18}홀</span>
+                  <span className="text-xs md:text-sm font-bold text-gray-900 block">총 라운딩 횟수 ({diyNights}박 {diyDays}일 기준)</span>
+                  <span className="text-[11px] text-[#8E8E93]">최대 {diyDays}회까지 선택 가능 · {diyRounds * 18}홀</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => handleDIYRoundsChange(diyRounds - 1)}
                     disabled={diyRounds <= 1}
-                    className="w-9 h-9 rounded-xl bg-white border border-gray-300 font-black text-gray-800 disabled:opacity-40 cursor-pointer"
+                    className="w-9 h-9 rounded-xl bg-white font-bold text-gray-800 shadow-2xs disabled:opacity-40 transition active:scale-90 cursor-pointer"
                   >
                     -
                   </button>
-                  <span className="w-14 text-center font-black text-base text-deepgreen">{diyRounds}회</span>
+                  <span className="w-12 text-center font-extrabold text-base text-[#0A7E54] tabular-nums">{diyRounds}회</span>
                   <button
                     type="button"
                     onClick={() => handleDIYRoundsChange(diyRounds + 1)}
                     disabled={diyRounds >= diyDays}
-                    className="w-9 h-9 rounded-xl bg-white border border-gray-300 font-black text-gray-800 disabled:opacity-40 cursor-pointer"
+                    className="w-9 h-9 rounded-xl bg-white font-bold text-gray-800 shadow-2xs disabled:opacity-40 transition active:scale-90 cursor-pointer"
                   >
                     +
                   </button>
@@ -4519,11 +4373,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               {/* Round selector tabs */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-gray-700">1) 변경할 회차를 먼저 클릭하세요</span>
+                  <span className="text-xs font-bold text-[#3A3A3C]">1) 변경할 회차를 먼저 클릭하세요</span>
                   <button
                     type="button"
                     onClick={() => setShowAllCoursesInGolfModal(prev => !prev)}
-                    className="text-[11px] font-bold text-deepgreen underline cursor-pointer"
+                    className="text-xs font-semibold text-[#0A7E54] hover:underline cursor-pointer"
                   >
                     {showAllCoursesInGolfModal ? `${diyLocation} 골프장만 보기` : '타 지역 골프장도 함께 보기'}
                   </button>
@@ -4537,19 +4391,19 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         key={idx}
                         type="button"
                         onClick={() => setActiveRoundIndex(idx)}
-                        className={`p-3 rounded-xl border text-left transition flex items-center justify-between gap-2 cursor-pointer ${
+                        className={`p-3.5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-2 cursor-pointer ${
                           isFocused
-                            ? 'bg-deepgreen text-white border-deepgreen shadow-md'
-                            : 'bg-gray-50 hover:bg-gray-100 text-gray-800 border-gray-200'
+                            ? 'bg-[#0A7E54] text-white shadow-sm'
+                            : 'bg-[#F2F2F7] hover:bg-[#ECFDF5] text-gray-900'
                         }`}
                       >
                         <div className="min-w-0">
-                          <span className={`text-[10px] font-bold block ${isFocused ? 'text-gold-300' : 'text-emerald-700'}`}>
+                          <span className={`text-[11px] font-semibold block ${isFocused ? 'text-emerald-100' : 'text-[#0A7E54]'}`}>
                             {idx + 1}회차 ({idx + 2}일차)
                           </span>
-                          <span className="font-extrabold text-xs md:text-sm truncate block">{cName}</span>
+                          <span className="font-bold text-xs md:text-sm truncate block">{cName}</span>
                         </div>
-                        <span className={`text-xs font-black shrink-0 ${isFocused ? 'text-gold-300' : 'text-deepgreen'}`}>
+                        <span className={`text-xs font-extrabold tabular-nums shrink-0 ${isFocused ? 'text-white' : 'text-[#0A7E54]'}`}>
                           ${rate.weekdayUSD}
                         </span>
                       </button>
@@ -4560,10 +4414,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
               {/* Regional Course Pool */}
               <div className="space-y-2">
-                <span className="text-xs font-extrabold text-gray-700 block">
+                <span className="text-xs font-bold text-[#3A3A3C] block">
                   2) {activeRoundIndex + 1}회차에 배정할 골프장 선택
                 </span>
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {(showAllCoursesInGolfModal ? pool.golfCourses : getRegionalGolfCourses(diyLocation)).map((course) => {
                     const isSelected = diyGolfCourses[activeRoundIndex] === course.name;
                     const price = resolveSingleCourseUSD(course.name, false).weekdayUSD;
@@ -4576,33 +4430,30 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           setDiyGolfCourses(updated);
                           showToast(`⛳ ${activeRoundIndex + 1}회차: ${course.name.split(' ')[0]} 선택`);
                         }}
-                        className={`p-3 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-3 ${
+                        className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 ${
                           isSelected
-                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-xs'
-                            : 'bg-white hover:bg-gray-50 border-gray-200'
+                            ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                            : 'bg-[#F2F2F7]/70 hover:bg-[#ECFDF5]/60'
                         }`}
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-[10px] font-bold rounded">
-                              📍 {course.location}
-                            </span>
-                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
-                              {course.holes}홀
+                            <span className="text-[11px] font-semibold text-[#8E8E93]">
+                              {course.location} · {course.holes}홀
                             </span>
                             {course.badge && (
-                              <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                              <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-bold rounded-full shadow-2xs">
                                 {course.badge}
                               </span>
                             )}
                           </div>
-                          <h4 className="font-extrabold text-sm text-gray-900">{course.name}</h4>
-                          <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{course.description}</p>
+                          <h4 className="font-bold text-sm text-gray-900 tracking-tight">{course.name}</h4>
+                          <p className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">{course.description}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-xs font-black text-deepgreen mb-1">${price}</div>
-                          <span className={`inline-block px-2.5 py-1 rounded-xl text-[11px] font-bold ${
-                            isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                          <div className="text-xs font-extrabold text-[#0A7E54] tabular-nums mb-1">${price}</div>
+                          <span className={`inline-block px-3 py-1 rounded-xl text-[11px] font-bold ${
+                            isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
                           }`}>
                             {isSelected ? '✓ 선택됨' : '선택'}
                           </span>
@@ -4614,11 +4465,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               </div>
             </div>
 
-            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex justify-end gap-2">
+            <div
+              className="px-5 py-3 md:px-0 md:pb-0 md:pt-3 border-t border-black/[0.06] bg-white sticky bottom-0 z-10 flex justify-end gap-2"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+            >
               <button
                 type="button"
                 onClick={() => setShowActivityModal(null)}
-                className="w-full md:w-auto px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer"
+                className="w-full md:w-auto px-6 py-3.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-2xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 cursor-pointer"
               >
                 선택 완료 & 적용 ✓
               </button>
@@ -4628,62 +4482,67 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       )}
 
       {showActivityModal === 'tour' && (
-        <div className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep">
-          <div className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div
+          className="fixed inset-0 bg-black/40 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-xs animate-fade-in overflow-hidden font-sans break-keep"
+          onClick={() => setShowActivityModal(null)}
+        >
+          <div
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-2xl w-full max-h-[90vh] p-0 md:p-6 relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0" />
+            <div className="flex items-center justify-between px-5 py-3 md:px-0 md:pt-0 md:pb-3 border-b border-black/[0.06] bg-white sticky top-0 z-10">
               <div>
-                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] md:text-xs font-bold rounded-md">
+                <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] font-bold rounded-full">
                   {diyLocation} · {diyNights}박 {diyDays}일 여행 상품 선택
                 </span>
-                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
+                <h3 className="text-base sm:text-lg md:text-xl font-extrabold tracking-tight text-gray-900 mt-1">
                   🧳 자유 여행 또는 추천 관광 상품을 선택하세요
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowActivityModal(null)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-sm w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] transition active:scale-90 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 md:py-4 space-y-2.5">
+            <div className="overflow-y-auto flex-1 px-5 md:px-0 py-4 space-y-2.5">
               {activeRegionTourOptions.map((item) => {
                 const isSelected = diySelectedTourIds.includes(item.id);
                 return (
                   <div
                     key={item.id}
                     onClick={() => handleToggleTourOption(item.id, item.isFreeTravel)}
-                    className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between gap-3 ${
+                    className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/50 shadow-xs'
-                        : 'bg-white hover:bg-gray-50 border-gray-200'
+                        ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                        : 'bg-[#F2F2F7]/70 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                          item.isFreeTravel ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {item.isFreeTravel ? '✨ 자유 일정' : `📍 ${item.location}`}
+                        <span className="text-[11px] font-semibold text-[#8E8E93]">
+                          {item.isFreeTravel ? '자유 일정' : item.location}
                         </span>
                         {item.badge && (
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                          <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-bold rounded-full shadow-2xs">
                             {item.badge}
                           </span>
                         )}
                       </div>
-                      <h4 className="font-extrabold text-sm md:text-base text-gray-900">{item.name}</h4>
-                      <p className="text-[11px] md:text-xs text-gray-500 mt-0.5">{item.description}</p>
+                      <h4 className="font-bold text-sm md:text-base text-gray-900 tracking-tight">{item.name}</h4>
+                      <p className="text-xs text-[#8E8E93] mt-0.5">{item.description}</p>
                     </div>
 
                     <div className="text-right shrink-0">
-                      <div className="text-sm font-black text-deepgreen mb-1">
+                      <div className="text-sm font-extrabold text-[#0A7E54] tabular-nums mb-1">
                         {item.priceUSD > 0 ? `$${item.priceUSD}/인` : '자유 ($0)'}
                       </div>
                       <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
-                        isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                        isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
                       }`}>
                         {isSelected ? '✓ 선택됨' : '선택'}
                       </span>
@@ -4693,14 +4552,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               })}
             </div>
 
-            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3">
-              <div className="text-xs text-gray-500 font-medium">
-                자유 여행 또는 {diyLocation} 지역 상품을 복수 선택할 수 있습니다.
+            <div
+              className="px-5 py-3 md:px-0 md:pb-0 md:pt-3 border-t border-black/[0.06] bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+            >
+              <div className="text-xs text-[#8E8E93] font-medium">
+                자유 여행 또는 {diyLocation} 상품을 복수 선택할 수 있습니다.
               </div>
               <button
                 type="button"
                 onClick={() => setShowActivityModal(null)}
-                className="px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
+                className="px-6 py-3.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-2xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
               >
                 선택 완료 & 적용 ✓
               </button>
@@ -4712,32 +4574,33 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       {/* ================= MODAL 9: DIY STEP 4 HOTEL SELECTION MODAL ================= */}
       {showHotelModal && (
         <div
-          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep"
+          className="fixed inset-0 bg-black/40 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-xs animate-fade-in overflow-hidden font-sans break-keep"
           onClick={() => setShowHotelModal(false)}
         >
           <div
-            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden"
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-2xl w-full max-h-[90vh] p-0 md:p-6 relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0" />
+            <div className="flex items-center justify-between px-5 py-3 md:px-0 md:pt-0 md:pb-3 border-b border-black/[0.06] bg-white sticky top-0 z-10">
               <div>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
+                <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] font-bold rounded-full">
                   STEP 4 · {diyNights}박 기준 · 1인 1실
                 </span>
-                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
+                <h3 className="text-base sm:text-lg md:text-xl font-extrabold tracking-tight text-gray-900 mt-1">
                   🏨 숙박 형태를 선택하세요
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowHotelModal(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-sm w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] transition active:scale-90 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 md:py-4 space-y-2.5">
+            <div className="overflow-y-auto flex-1 px-5 md:px-0 py-4 space-y-2.5">
               {diyAccommodations.map((item) => {
                 const isSelected = selectedHotelTier?.id === item.id;
                 const nightRate = item.pricePerNightUSD ?? 90;
@@ -4750,14 +4613,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       setShowHotelModal(false);
                       showToast(`🏨 '${item.name}' 숙박이 선택되었습니다.`);
                     }}
-                    className={`p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between gap-3 ${
+                    className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/50 shadow-sm'
-                        : 'bg-white hover:bg-gray-50 border-gray-200'
+                        ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                        : 'bg-[#F2F2F7]/70 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-2xl shrink-0">
+                      <span className="w-11 h-11 rounded-xl bg-white flex items-center justify-center text-2xl shrink-0 shadow-2xs">
                         {isImageIconUrl(item.icon) ? (
                           <img src={getFreshImageUrl(item.icon)} alt={item.name} className="w-7 h-7 object-contain rounded" />
                         ) : (
@@ -4766,26 +4629,26 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="font-extrabold text-sm md:text-base text-gray-900">{item.name}</h4>
+                          <h4 className="font-bold text-sm md:text-base text-gray-900 tracking-tight">{item.name}</h4>
                           {item.badge && (
-                            <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                            <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-bold rounded-full shadow-2xs">
                               {item.badge}
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] md:text-xs text-gray-500 mt-0.5 leading-snug">{item.description}</p>
+                        <p className="text-xs text-[#8E8E93] mt-0.5 leading-snug">{item.description}</p>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0 space-y-1">
-                      <div className="text-xs md:text-sm font-black text-deepgreen tabular-nums">
+                      <div className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums">
                         1박 ${nightRate.toLocaleString()}
                       </div>
-                      <div className="text-[10px] md:text-[11px] font-bold text-gray-500 tabular-nums">
+                      <div className="text-[11px] font-medium text-[#8E8E93] tabular-nums">
                         ({diyNights}박 ${totalHotelCost.toLocaleString()})
                       </div>
                       <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
-                        isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                        isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
                       }`}>
                         {isSelected ? '✓ 선택됨' : '선택'}
                       </span>
@@ -4795,14 +4658,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               })}
             </div>
 
-            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3">
-              <div className="text-xs text-gray-500 font-medium">
-                1인 1실 기준이며 {diyNights}박 일정 요금이 견적서에 자동 반영됩니다.
+            <div
+              className="px-5 py-3 md:px-0 md:pb-0 md:pt-3 border-t border-black/[0.06] bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+            >
+              <div className="text-xs text-[#8E8E93] font-medium">
+                1인 1실 기준 · {diyNights}박 일정 요금 자동 반영
               </div>
               <button
                 type="button"
                 onClick={() => setShowHotelModal(false)}
-                className="px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
+                className="px-6 py-3.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-2xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
               >
                 선택 완료 & 적용 ✓
               </button>
@@ -4814,32 +4680,33 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       {/* ================= MODAL 10: DIY STEP 5 VEHICLE SELECTION MODAL ================= */}
       {showVehicleModal && (
         <div
-          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep"
+          className="fixed inset-0 bg-black/40 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-xs animate-fade-in overflow-hidden font-sans break-keep"
           onClick={() => setShowVehicleModal(false)}
         >
           <div
-            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden"
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-2xl w-full max-h-[90vh] p-0 md:p-6 relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0" />
+            <div className="flex items-center justify-between px-5 py-3 md:px-0 md:pt-0 md:pb-3 border-b border-black/[0.06] bg-white sticky top-0 z-10">
               <div>
-                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
-                  STEP 5 · 전 일정 ({diyDays}일) 단독 전용 · 차량 1대 (인원 무관)
+                <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] font-bold rounded-full">
+                  STEP 5 · 전 일정 ({diyDays}일) 단독 전용 · 차량 1대
                 </span>
-                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
+                <h3 className="text-base sm:text-lg md:text-xl font-extrabold tracking-tight text-gray-900 mt-1">
                   🚐 전용 차량을 선택하세요
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowVehicleModal(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-sm w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] transition active:scale-90 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 md:py-4 space-y-2.5">
+            <div className="overflow-y-auto flex-1 px-5 md:px-0 py-4 space-y-2.5">
               {diyVehicles.map((item) => {
                 const isSelected = selectedVehicleItem?.id === item.id;
                 const dayRate = item.pricePerDayUSD ?? Math.max(15, 25 + (item.priceDeltaUSD || 0));
@@ -4853,14 +4720,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       setShowVehicleModal(false);
                       showToast(`🚐 '${displayName}' 차량이 선택되었습니다.`);
                     }}
-                    className={`p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between gap-3 ${
+                    className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 ${
                       isSelected
-                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/50 shadow-sm'
-                        : 'bg-white hover:bg-gray-50 border-gray-200'
+                        ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                        : 'bg-[#F2F2F7]/70 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-2xl shrink-0">
+                      <span className="w-11 h-11 rounded-xl bg-white flex items-center justify-center text-2xl shrink-0 shadow-2xs">
                         {isImageIconUrl(item.icon) ? (
                           <img src={getFreshImageUrl(item.icon)} alt={displayName} className="w-7 h-7 object-contain rounded" />
                         ) : (
@@ -4869,29 +4736,29 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="font-extrabold text-sm md:text-base text-gray-900">{displayName}</h4>
+                          <h4 className="font-bold text-sm md:text-base text-gray-900 tracking-tight">{displayName}</h4>
                           {item.name !== displayName && (
-                            <span className="text-[11px] font-semibold text-gray-500">{item.name}</span>
+                            <span className="text-[11px] font-medium text-[#8E8E93]">{item.name}</span>
                           )}
                           {item.badge && (
-                            <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                            <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-bold rounded-full shadow-2xs">
                               {item.badge}
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] md:text-xs text-gray-500 mt-0.5 leading-snug">{item.description}</p>
+                        <p className="text-xs text-[#8E8E93] mt-0.5 leading-snug">{item.description}</p>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0 space-y-1">
-                      <div className="text-xs md:text-sm font-black text-deepgreen tabular-nums">
+                      <div className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums">
                         1일 ${dayRate.toLocaleString()}
                       </div>
-                      <div className="text-[10px] md:text-[11px] font-bold text-gray-500 tabular-nums">
+                      <div className="text-[11px] font-medium text-[#8E8E93] tabular-nums">
                         ({diyDays}일 ${scheduleVehTotal.toLocaleString()})
                       </div>
                       <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
-                        isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                        isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
                       }`}>
                         {isSelected ? '✓ 선택됨' : '선택'}
                       </span>
@@ -4901,14 +4768,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               })}
             </div>
 
-            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3">
-              <div className="text-xs text-gray-500 font-medium">
-                전용 차량 1대 · 기사/유류비 포함 (인원 무관 · {diyDays}일 총액 적용)
+            <div
+              className="px-5 py-3 md:px-0 md:pb-0 md:pt-3 border-t border-black/[0.06] bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+            >
+              <div className="text-xs text-[#8E8E93] font-medium">
+                전용 차량 1대 · 기사/유류비 포함 ({diyDays}일 총액)
               </div>
               <button
                 type="button"
                 onClick={() => setShowVehicleModal(false)}
-                className="px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
+                className="px-6 py-3.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-2xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
               >
                 선택 완료 & 적용 ✓
               </button>
@@ -4920,44 +4790,45 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       {/* ================= MODAL 11: DIY STEP 6 DINNER SELECTION MODAL ================= */}
       {showDinnerModal && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-0 md:p-4 backdrop-blur-xs"
+          className="fixed inset-0 bg-black/40 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-xs animate-fade-in overflow-hidden font-sans break-keep"
           onClick={() => setShowDinnerModal(false)}
         >
           <div
-            className="bg-white rounded-none md:rounded-3xl p-0 md:p-6 max-w-2xl w-full h-full md:h-auto max-h-screen md:max-h-[90vh] shadow-2xl border-0 md:border border-gray-200 flex flex-col justify-between overflow-hidden"
+            className="bg-white rounded-t-3xl md:rounded-[20px] p-0 md:p-6 max-w-2xl w-full max-h-[90vh] shadow-2xl animate-ios-sheet-up flex flex-col justify-between overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0" />
             {/* Header */}
-            <div className="px-4 py-3 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10 flex justify-between items-start gap-3">
+            <div className="px-5 py-3 md:px-0 md:pt-0 md:pb-3 border-b border-black/[0.06] bg-white sticky top-0 z-10 flex justify-between items-start gap-3">
               <div>
-                <span className="text-[11px] md:text-xs font-extrabold text-deepgreen bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 inline-block mb-1">
+                <span className="text-[11px] font-bold text-[#0A7E54] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full inline-block mb-1">
                   STEP 6 · {diyLocation} · {diyNights}박 {diyDays}일 저녁식사
                 </span>
-                <h3 className="text-lg md:text-xl font-black text-gray-900">
+                <h3 className="text-lg md:text-xl font-extrabold tracking-tight text-gray-900">
                   🍽️ 일자별 저녁식사 선택
                 </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-[#8E8E93] mt-0.5">
                   선택된 여행 지역과 일정에 맞춰 일자별 저녁식사를 선택해 주세요. (미선택 시 미포함)
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowDinnerModal(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold flex items-center justify-center shrink-0 cursor-pointer"
+                className="w-8 h-8 rounded-full bg-[#F2F2F7] text-[#8E8E93] hover:text-gray-900 font-bold text-sm flex items-center justify-center shrink-0 transition active:scale-90 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             {/* Body */}
-            <div className="overflow-y-auto flex-1 px-3 py-3 md:px-0 md:py-4 space-y-3">
+            <div className="overflow-y-auto flex-1 px-5 py-4 md:px-0 space-y-3.5">
               {/* Day Tabs (1일차 ~ diyNights일차) */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 px-0.5">
-                  <span>일정별 저녁 선택 (마지막 귀국일 제외 {diyNights}일간)</span>
-                  <span className="text-deepgreen">{activeDinnerDay}일차 저녁 편집 중</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold text-[#8E8E93] px-0.5">
+                  <span>일정별 저녁 선택 ({diyNights}일간)</span>
+                  <span className="text-[#0A7E54] font-bold">{activeDinnerDay}일차 저녁 편집 중</span>
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {Array.from({ length: diyNights }, (_, idx) => idx + 1).map(dayNum => {
                     const pickedId = diyDinnerSelections[dayNum];
                     const pickedMenu = activeRegionDinnerMenus.find(m => m.id === pickedId);
@@ -4967,21 +4838,21 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         key={dayNum}
                         type="button"
                         onClick={() => setActiveDinnerDay(dayNum)}
-                        className={`p-2 rounded-xl border text-left transition cursor-pointer ${
+                        className={`p-2.5 rounded-2xl text-left transition-all duration-200 active:scale-95 cursor-pointer ${
                           isActive
-                            ? 'bg-deepgreen text-white border-deepgreen shadow-sm'
+                            ? 'bg-[#0A7E54] text-white shadow-sm'
                             : pickedMenu
-                              ? 'bg-emerald-50 text-emerald-900 border-emerald-400'
-                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-300'
+                              ? 'bg-[#ECFDF5] text-gray-900 ring-1 ring-[#0A7E54]/30'
+                              : 'bg-[#F2F2F7] text-[#3A3A3C] hover:bg-[#ECFDF5]/60'
                         }`}
                       >
-                        <div className={`text-[11px] font-black ${isActive ? 'text-gold-300' : 'text-gray-500'}`}>
+                        <div className={`text-[11px] font-bold ${isActive ? 'text-emerald-100' : 'text-[#8E8E93]'}`}>
                           {dayNum}일차 저녁
                         </div>
-                        <div className="text-xs font-extrabold truncate mt-0.5">
+                        <div className="text-xs font-bold truncate mt-0.5">
                           {pickedMenu ? pickedMenu.name : '미포함'}
                         </div>
-                        <div className={`text-[10px] font-bold tabular-nums ${isActive ? 'text-emerald-200' : pickedMenu ? 'text-deepgreen' : 'text-gray-400'}`}>
+                        <div className={`text-[10px] font-semibold tabular-nums ${isActive ? 'text-white/90' : pickedMenu ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
                           {pickedMenu ? `$${pickedMenu.priceUSD}/인` : '선택 안함'}
                         </div>
                       </button>
@@ -5003,29 +4874,29 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         return next;
                       });
                     }}
-                    className={`p-3 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-3 ${
+                    className={`p-3.5 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 ${
                       isNoneSelected
-                        ? 'bg-gray-100 border-gray-400 ring-2 ring-gray-300/70 shadow-xs'
-                        : 'bg-white border-gray-200 hover:border-gray-300'
+                        ? 'bg-[#F2F2F7] ring-2 ring-[#3A3A3C]/30'
+                        : 'bg-[#F2F2F7]/60 hover:bg-[#F2F2F7]'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-9 h-9 rounded-xl bg-gray-100 text-lg flex items-center justify-center shrink-0 border border-gray-200">
+                      <span className="w-9 h-9 rounded-xl bg-white text-base flex items-center justify-center shrink-0 shadow-2xs">
                         ➖
                       </span>
                       <div>
-                        <div className="font-extrabold text-sm text-gray-900">
+                        <div className="font-bold text-sm text-gray-900">
                           {activeDinnerDay}일차 선택 안함 (미포함)
                         </div>
-                        <div className="text-[11px] text-gray-500">
-                          해당 일차는 자유 석식으로 진행하며 추가 비용이 발생하지 않습니다.
+                        <div className="text-xs text-[#8E8E93]">
+                          자유 석식으로 진행하며 추가 비용이 발생하지 않습니다.
                         </div>
                       </div>
                     </div>
                     <span className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 ${
-                      isNoneSelected ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600'
+                      isNoneSelected ? 'bg-[#3A3A3C] text-white' : 'bg-white text-[#8E8E93] shadow-2xs'
                     }`}>
-                      {isNoneSelected ? '✓ 미포함' : '미포함 선택'}
+                      {isNoneSelected ? '✓ 미포함' : '미포함'}
                     </span>
                   </div>
                 );
@@ -5051,35 +4922,35 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           };
                         });
                       }}
-                      className={`p-3.5 rounded-2xl border cursor-pointer transition flex flex-col justify-between gap-2.5 ${
+                      className={`p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex flex-col justify-between gap-2.5 ${
                         isSelected
-                          ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/70 shadow-sm'
-                          : 'bg-white border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/20'
+                          ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                          : 'bg-[#F2F2F7]/70 hover:bg-[#ECFDF5]/60'
                       }`}
                     >
                       <div className="space-y-1">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="font-extrabold text-sm text-gray-900">{menu.name}</h4>
+                            <h4 className="font-bold text-sm text-gray-900 tracking-tight">{menu.name}</h4>
                             {menu.badge && (
-                              <span className="px-1.5 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                              <span className="px-2 py-0.5 bg-white text-[#0A7E54] text-[10px] font-bold rounded-full shadow-2xs">
                                 {menu.badge}
                               </span>
                             )}
                           </div>
-                          <span className="text-xs md:text-sm font-black text-deepgreen tabular-nums shrink-0">
+                          <span className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums shrink-0">
                             1인 ${menu.priceUSD}
                           </span>
                         </div>
-                        <p className="text-[11px] text-gray-500 leading-snug">{menu.description}</p>
+                        <p className="text-xs text-[#8E8E93] leading-snug">{menu.description}</p>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-gray-100/80">
-                        <span className="text-[10px] text-gray-400 font-semibold">
-                          {isSelected ? '클릭 시 선택 해제 (미포함)' : `${activeDinnerDay}일차 저녁 적용`}
+                      <div className="flex items-center justify-between pt-2 border-t border-black/[0.06]">
+                        <span className="text-[11px] text-[#8E8E93] font-medium">
+                          {isSelected ? '클릭 시 선택 해제' : `${activeDinnerDay}일차 저녁 적용`}
                         </span>
-                        <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
-                          isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                        <span className={`px-3 py-1 rounded-xl text-xs font-bold ${
+                          isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
                         }`}>
                           {isSelected ? '✓ 선택됨' : '선택'}
                         </span>
@@ -5091,23 +4962,26 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             </div>
 
             {/* Footer */}
-            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div
+              className="px-5 py-3 md:px-0 md:pb-0 md:pt-3 border-t border-black/[0.06] bg-white sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+            >
               <div className="flex items-center justify-between sm:justify-start gap-3">
-                <div className="text-xs text-gray-600 font-medium">
+                <div className="text-xs text-[#3A3A3C] font-medium">
                   {dinnerCount > 0 ? (
                     <>
-                      선택 <strong className="text-deepgreen">{dinnerCount}회</strong> · 1인 총 <strong className="text-deepgreen tabular-nums">${dinnerPerPersonTotal.toLocaleString()}</strong>{' '}
-                      <span className="text-[11px] text-gray-400">({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})</span>
+                      선택 <strong className="text-[#0A7E54]">{dinnerCount}회</strong> · 1인 총 <strong className="text-[#0A7E54] tabular-nums">${dinnerPerPersonTotal.toLocaleString()}</strong>{' '}
+                      <span className="text-[11px] text-[#8E8E93]">({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})</span>
                     </>
                   ) : (
-                    <span>선택된 저녁식사 없음 (미포함)</span>
+                    <span className="text-[#8E8E93]">선택된 저녁식사 없음 (미포함)</span>
                   )}
                 </div>
                 {dinnerCount > 0 && (
                   <button
                     type="button"
                     onClick={() => setDiyDinnerSelections({})}
-                    className="text-[11px] font-bold text-gray-500 hover:text-red-600 underline cursor-pointer shrink-0"
+                    className="text-[11px] font-semibold text-[#8E8E93] hover:text-red-500 underline cursor-pointer shrink-0"
                   >
                     전체 미포함
                   </button>
@@ -5116,7 +4990,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               <button
                 type="button"
                 onClick={() => setShowDinnerModal(false)}
-                className="w-full sm:w-auto px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
+                className="w-full sm:w-auto px-6 py-3.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-2xl text-sm font-bold shadow-sm transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
               >
                 선택 완료 & 적용 ✓
               </button>

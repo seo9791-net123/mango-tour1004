@@ -137,10 +137,10 @@ const CategoryPage: React.FC<Props> = ({
   };
 
   return (
-    <div className="py-3 sm:py-6 bg-gray-50 min-h-[600px] animate-fade-in pb-safe md:pb-0">
-      <div className="max-w-7xl mx-auto px-0 sm:px-4">
-        {/* Header: BackButton + Duration Icon Boxes (3박5일, 4박6일, 5박7일) + Title */}
-        <div className="flex flex-col gap-3 mb-4 sm:mb-5 px-2.5 sm:px-0">
+    <div className="py-4 sm:py-6 bg-[#F2F2F7] min-h-[600px] animate-fade-in pb-safe md:pb-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4">
+        {/* Header: BackButton + Duration Segmented Tabs + Title */}
+        <div className="flex flex-col gap-3 mb-4 sm:mb-5">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <BackButton
               onClick={selectedDetail ? () => setSelectedDetail(null) : onBack}
@@ -164,22 +164,22 @@ const CategoryPage: React.FC<Props> = ({
                       role="tab"
                       aria-selected={isActive}
                       onClick={() => setSelectedDuration(opt.key)}
-                      className={`group relative flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 xs:px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border transition-all duration-200 whitespace-nowrap shrink-0 active:scale-95 ${
+                      className={`group relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl transition-all duration-200 whitespace-nowrap shrink-0 active:scale-95 cursor-pointer shadow-sm ${
                         isActive
-                          ? 'bg-gradient-to-br from-deepgreen via-emerald-900 to-deepgreen text-white border-gold-400 shadow-md ring-2 ring-gold-400/35'
-                          : 'bg-white text-gray-700 border-gray-200 hover:border-gold-400 hover:bg-amber-50/40 shadow-xs'
+                          ? 'bg-[#0A7E54] text-white'
+                          : 'bg-white text-[#3A3A3C] hover:bg-[#ECFDF5]'
                       }`}
                     >
                       <span
-                        className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        className={`w-6 h-6 sm:w-7 sm:h-7 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                           isActive
-                            ? 'bg-white/15 border border-gold-400/40'
-                            : 'bg-emerald-50 border border-emerald-100 group-hover:bg-amber-50'
+                            ? 'bg-white/15 text-white'
+                            : 'bg-[#ECFDF5] text-[#0A7E54]'
                         }`}
                       >
                         <DurationIcon optionKey={opt.key} active={isActive} />
                       </span>
-                      <span className={`text-xs sm:text-sm font-extrabold tracking-tight leading-none ${isActive ? 'text-white' : 'text-gray-900'}`}>
+                      <span className={`text-xs sm:text-sm font-bold tracking-tight leading-none ${isActive ? 'text-white' : 'text-gray-900'}`}>
                         {opt.label}
                       </span>
                     </button>
@@ -187,10 +187,10 @@ const CategoryPage: React.FC<Props> = ({
                 })}
               </div>
             ) : (
-              <h2 className="text-lg xs:text-xl font-bold text-deepgreen">
+              <h2 className="text-lg xs:text-xl font-extrabold tracking-tight text-gray-900">
                 {category}
-                <span className="text-xs font-normal text-gray-500 ml-1.5 xs:ml-2 tabular-nums">
-                  ({filteredProducts.length}개의 상품)
+                <span className="text-xs font-medium text-[#8E8E93] ml-1.5 xs:ml-2 tabular-nums">
+                  ({filteredProducts.length}개)
                 </span>
               </h2>
             )}
@@ -198,10 +198,10 @@ const CategoryPage: React.FC<Props> = ({
 
           {isRecommendedCategory && (
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-              <h2 className="text-base xs:text-lg sm:text-xl font-extrabold text-deepgreen flex items-center gap-2">
+              <h2 className="text-base xs:text-lg sm:text-xl font-extrabold tracking-tight text-gray-900 flex items-center gap-2">
                 <span>{category}</span>
-                <span className="text-xs sm:text-sm font-semibold text-gray-500">
-                  ({selectedDuration} 일정)
+                <span className="text-xs sm:text-sm font-semibold text-[#0A7E54] bg-[#ECFDF5] px-2.5 py-0.5 rounded-full">
+                  {selectedDuration} 일정
                 </span>
               </h2>
             </div>
@@ -209,15 +209,15 @@ const CategoryPage: React.FC<Props> = ({
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 xs:py-16 text-gray-400 bg-white rounded-none sm:rounded-2xl border-y sm:border border-gray-200 shadow-sm px-4 text-center">
+          <div className="flex flex-col items-center justify-center py-14 xs:py-16 text-[#8E8E93] bg-white rounded-[20px] shadow-sm px-5 text-center">
             <span className="text-3xl mb-3">⛳️</span>
-            <p className="text-sm font-bold text-gray-600">해당 조건에 등록된 상품이 없습니다.</p>
-            <p className="text-xs text-gray-400 mt-1">다른 일정을 선택하시거나 카카오톡 채널로 맞춤 견적을 문의해 주세요.</p>
+            <p className="text-sm font-bold text-gray-900">해당 조건에 등록된 상품이 없습니다.</p>
+            <p className="text-xs text-[#8E8E93] mt-1">다른 일정을 선택하시거나 카카오톡 채널로 맞춤 견적을 문의해 주세요.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
             {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white rounded-none sm:rounded-2xl shadow-sm overflow-hidden group hover:shadow-md transition duration-300 border-y sm:border border-gray-100 flex flex-col">
+              <div key={product.id} className="bg-white rounded-[20px] shadow-sm overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col">
                 <div className="relative h-44 xs:h-48 overflow-hidden bg-gray-100">
                   <img 
                     src={getFreshImageUrl(product.image)} 
@@ -233,35 +233,39 @@ const CategoryPage: React.FC<Props> = ({
                     }}
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                   />
-                  <div className="absolute top-2.5 right-2.5 bg-black/65 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                  <div className="absolute top-3 right-3 bg-black/55 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap">
                     {product.duration}
                   </div>
                 </div>
-                <div className="p-3.5 sm:p-4 flex flex-col flex-1">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-[11px] xs:text-[12px] text-gold-600 font-extrabold uppercase tracking-wide whitespace-nowrap">{product.location}</span>
-                    <span className={`text-[11px] font-bold whitespace-nowrap ${product.type === 'golf' ? 'text-emerald-700' : product.type === 'tour' ? 'text-sky-700' : 'text-amber-700'}`}>
+                <div className="p-4 sm:p-5 flex flex-col flex-1">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-xs text-[#0A7E54] font-bold tracking-tight whitespace-nowrap">{product.location}</span>
+                    <span className="text-[11px] font-semibold text-[#8E8E93] whitespace-nowrap">
                       {product.type === 'golf' ? '골프' : product.type === 'tour' ? '관광' : '호텔&빌라'}
                     </span>
                   </div>
-                  <h3 className="font-bold text-base xs:text-lg mb-1.5 text-gray-900 line-clamp-2 leading-snug">{product.title}</h3>
-                  <p className="text-gray-600 text-xs xs:text-sm font-medium mb-3 line-clamp-2 leading-relaxed flex-1">{product.description}</p>
+                  <h3 className="font-bold tracking-tight text-base xs:text-lg mb-1.5 text-gray-900 line-clamp-2 leading-snug">{product.title}</h3>
+                  <p className="text-[#3A3A3C] text-xs xs:text-sm font-normal mb-3.5 line-clamp-2 leading-relaxed flex-1">{product.description}</p>
                   
-                  <div className="flex flex-col gap-2 mt-auto border-t border-gray-100 pt-3">
+                  <div className="flex flex-col gap-2.5 mt-auto border-t border-black/[0.06] pt-3.5">
                     <div className="flex justify-between items-center gap-2">
-                      <span className="font-black text-base xs:text-lg text-red-600 tabular-nums whitespace-nowrap">${product.price.toLocaleString()} <span className="text-xs font-bold text-gray-500">USD~</span></span>
+                      <span className="font-extrabold text-base xs:text-lg text-[#0A7E54] tabular-nums whitespace-nowrap">
+                        ${product.price.toLocaleString()} <span className="text-xs font-semibold text-[#8E8E93]">USD~</span>
+                      </span>
                       <button 
+                        type="button"
                         onClick={() => handlePreviewClick(product)}
-                        className="text-gold-600 font-bold text-xs xs:text-sm hover:underline py-1 whitespace-nowrap shrink-0"
+                        className="text-[#3A3A3C] hover:text-[#0A7E54] font-semibold text-xs xs:text-sm hover:underline py-1 whitespace-nowrap shrink-0 cursor-pointer"
                       >
-                        상세보기 +
+                        상세보기
                       </button>
                     </div>
                     <button 
+                      type="button"
                       onClick={() => onProductClick(product.id)}
-                      className="w-full bg-deepgreen text-white py-2.5 xs:py-3 rounded-xl text-xs xs:text-sm font-bold hover:bg-opacity-90 active:scale-95 transition flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"
+                      className="w-full bg-[#0A7E54] text-white py-3 rounded-2xl text-xs xs:text-sm font-bold hover:bg-[#086945] active:scale-95 transition-all duration-200 flex items-center justify-center gap-1 whitespace-nowrap cursor-pointer"
                     >
-                      견적보기 <span>↗</span>
+                      견적보기 <span>→</span>
                     </button>
                   </div>
                 </div>

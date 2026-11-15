@@ -11,65 +11,60 @@ interface Props {
 
 const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
   return (
-    <div className="min-h-screen bg-white text-black font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
+    <div className="min-h-screen bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
       {/* Sticky Compact Hero */}
       <div
-        className="sticky z-20 w-full bg-[#f8f9fa] pb-2 sm:pb-3"
+        className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
         style={{ top: 'var(--site-header-height, 45px)' }}
       >
-        <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-3">
-          <section className="relative h-[140px] sm:h-[156px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3">
+          <section className="relative h-[140px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-[20px] shadow-sm">
             <div className="absolute inset-0 z-0">
               <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-60" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/25"></div>
             </div>
             
-            <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 md:top-4 md:left-4 z-50">
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
               <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
             </div>
 
             <div className="relative z-10 text-center px-4 pt-4 sm:pt-2 md:pt-0">
-               <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black tracking-wide text-gold-400 drop-shadow-2xl mb-0.5 sm:mb-1 uppercase">{content.heroTitle}</h1>
-               <p className="text-[10px] tracking-[0.3em] sm:tracking-[0.4em] text-white uppercase font-bold opacity-90">{content.heroSubtitle}</p>
+               <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold tracking-wide text-white drop-shadow mb-0.5 sm:mb-1 uppercase">{content.heroTitle}</h1>
+               <p className="text-[10px] tracking-[0.3em] text-emerald-300 uppercase font-semibold">{content.heroSubtitle}</p>
             </div>
           </section>
         </div>
       </div>
 
-      <section className="pt-3 pb-5 sm:pt-5 sm:pb-8 bg-[#f8f9fa] text-black">
-        <div className="max-w-7xl mx-auto px-0 sm:px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 items-center mb-5 sm:mb-8">
-             <div className="space-y-3 px-2.5 sm:px-0">
-                <h2 className="text-xl xs:text-2xl md:text-3xl font-black text-deepgreen uppercase leading-tight tracking-tight whitespace-pre-line">{content.introTitle}</h2>
-                <div className="h-1 w-12 xs:w-16 bg-gold-500 rounded-full"></div>
-                <p className="text-sm xs:text-base md:text-lg leading-relaxed font-medium text-gray-700 whitespace-pre-line">{content.introText}</p>
-             </div>
-             <div className="relative group">
-                <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-none sm:rounded-3xl shadow-lg group-hover:scale-[1.02] transition duration-500" alt="Intro" />
-             </div>
-          </div>
-
-          <PageSectionList sections={content.sections} />
+      <section className="pt-2 pb-6 sm:pt-3 sm:pb-8 max-w-7xl mx-auto px-3 sm:px-4 space-y-4 sm:space-y-5">
+        <div className="bg-white rounded-[20px] shadow-sm p-5 sm:p-6 md:p-7 grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 items-center">
+           <div className="space-y-3">
+              <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-gray-900 uppercase leading-tight tracking-tight whitespace-pre-line">{content.introTitle}</h2>
+              <p className="text-sm xs:text-base md:text-lg leading-relaxed font-normal text-[#3A3A3C] whitespace-pre-line">{content.introText}</p>
+           </div>
+           <div className="relative group">
+              <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />
+           </div>
         </div>
-      </section>
 
-      <section className="py-5 sm:py-8 bg-white">
-         <div className="max-w-7xl mx-auto px-0 sm:px-4">
-            <div className="text-center mb-5 sm:mb-6 px-2.5 sm:px-0">
-               <h3 className="text-gold-600 font-extrabold tracking-widest text-[10px] xs:text-xs mb-0.5 uppercase">GALLERY</h3>
-               <h2 className="text-xl xs:text-2xl font-black uppercase text-deepgreen">비즈니스 VIP 갤러리</h2>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-3.5">
-               {content.galleryImages.map((img, idx) => (
-                  <div key={idx} className="group relative overflow-hidden rounded-none sm:rounded-xl shadow-sm h-32 xs:h-36 sm:h-40 bg-gray-100">
-                     <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Gallery ${idx}`} />
-                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2.5">
-                        <p className="text-white font-bold text-[10px] uppercase">VIP Service {idx + 1}</p>
-                     </div>
-                  </div>
-               ))}
-            </div>
-         </div>
+        <PageSectionList sections={content.sections} />
+
+        <div className="bg-white rounded-[20px] shadow-sm p-5 sm:p-6 md:p-7">
+           <div className="text-left mb-4">
+              <h3 className="text-[#0A7E54] font-semibold tracking-wider text-xs mb-0.5 uppercase">GALLERY</h3>
+              <h2 className="text-xl xs:text-2xl font-bold text-gray-900 tracking-tight">비즈니스 VIP 갤러리</h2>
+           </div>
+           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+              {content.galleryImages.map((img, idx) => (
+                 <div key={idx} className="group relative overflow-hidden rounded-2xl h-32 xs:h-36 sm:h-40 bg-[#F2F2F7]">
+                    <img src={getFreshImageUrl(img)} className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" alt={`Gallery ${idx}`} />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2.5">
+                       <p className="text-white font-semibold text-[10px] uppercase">VIP Service {idx + 1}</p>
+                    </div>
+                 </div>
+              ))}
+           </div>
+        </div>
       </section>
     </div>
   );

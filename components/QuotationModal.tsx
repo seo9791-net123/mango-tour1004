@@ -209,20 +209,26 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 z-[10000] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe">
-      <div className="bg-gray-100 w-full max-w-none md:max-w-4xl h-full md:h-auto md:max-h-[96vh] rounded-none md:rounded-3xl shadow-2xl relative flex flex-col overflow-hidden my-auto print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none">
-        
+    <div
+      className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#F2F2F7] w-full max-w-none md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[96vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden no-print shrink-0"></div>
         {/* Top Control Bar inside Modal (no-print) */}
-        <div className="no-print bg-white px-2.5 md:px-6 py-2.5 md:py-3 border-b border-gray-200 flex items-center justify-between gap-2 shrink-0">
+        <div className="no-print bg-white/90 backdrop-blur-md px-3 md:px-6 py-2.5 md:py-3 border-b border-black/[0.06] flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <button
               type="button"
               onClick={onClose}
-              className="flex sm:hidden items-center justify-center w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 active:scale-95 transition shrink-0 cursor-pointer"
+              className="flex sm:hidden items-center justify-center w-8 h-8 rounded-full bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] active:scale-95 transition shrink-0 cursor-pointer"
               aria-label="뒤로가기"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <span className="text-lg sm:text-xl shrink-0">📄</span>
