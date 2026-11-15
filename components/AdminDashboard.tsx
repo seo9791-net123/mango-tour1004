@@ -76,12 +76,13 @@ const AdminDashboard: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'menu' | 'popup' | 'discountPopup'>('users');
   const [plannerSubTab, setPlannerSubTab] = useState<'packages' | 'masterPool'>('masterPool');
-  const [poolCategory, setPoolCategory] = useState<'region' | 'golf' | 'tour' | 'hotel' | 'vehicle' | 'extra' | 'guide' | 'meal'>('region');
+  const [poolCategory, setPoolCategory] = useState<'region' | 'golf' | 'tour' | 'hotel' | 'vehicle' | 'extra' | 'dinner' | 'guide' | 'meal'>('region');
+  const [dinnerRegionFilter, setDinnerRegionFilter] = useState<string>('전체');
   
   // Master Pool item creation modal states
   const [showAddPoolModal, setShowAddPoolModal] = useState(false);
   const [newPoolItem, setNewPoolItem] = useState<{
-    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'guide' | 'meal';
+    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'dinner' | 'guide' | 'meal';
     name: string;
     shortName?: string;
     icon?: string;
@@ -799,7 +800,7 @@ const AdminDashboard: React.FC<Props> = ({
 
   // Master Pool Handlers
   const handleUpdateMasterOptionPoolItem = (
-    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'guide' | 'meal',
+    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'dinner' | 'guide' | 'meal',
     id: string,
     field: string,
     value: any
@@ -824,6 +825,16 @@ const AdminDashboard: React.FC<Props> = ({
     } else if (category === 'extra') {
       const list = pool.extraServices || INITIAL_MASTER_OPTION_POOL.extraServices || [];
       pool.extraServices = list.map(item => item.id === id ? { ...item, [field]: value } : item);
+    } else if (category === 'dinner') {
+      const list = pool.dinnerOptions || INITIAL_MASTER_OPTION_POOL.dinnerOptions || [];
+      if (field === 'location') {
+        const targetCount = list.filter(item => item.location === value && item.id !== id).length;
+        if (targetCount >= 6) {
+          alert(`'${value}' 지역에는 최대 6개의 추천 저녁식사 메뉴만 등록할 수 있습니다.\n기존 메뉴를 수정하거나 삭제 후 이동해 주세요.`);
+          return;
+        }
+      }
+      pool.dinnerOptions = list.map(item => item.id === id ? { ...item, [field]: value } : item);
     } else if (category === 'guide') {
       pool.guides = pool.guides.map(item => item.id === id ? { ...item, [field]: value } : item);
     } else if (category === 'meal') {
@@ -869,7 +880,7 @@ const AdminDashboard: React.FC<Props> = ({
   };
 
   const handleDeleteMasterOptionPoolItem = (
-    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'guide' | 'meal',
+    category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'dinner' | 'guide' | 'meal',
     id: string,
     itemName: string
   ) => {
@@ -890,6 +901,8 @@ const AdminDashboard: React.FC<Props> = ({
       pool.vehicles = pool.vehicles.filter(item => item.id !== id);
     } else if (category === 'extra') {
       pool.extraServices = (pool.extraServices || INITIAL_MASTER_OPTION_POOL.extraServices || []).filter(item => item.id !== id);
+    } else if (category === 'dinner') {
+      pool.dinnerOptions = (pool.dinnerOptions || INITIAL_MASTER_OPTION_POOL.dinnerOptions || []).filter(item => item.id !== id);
     } else if (category === 'guide') {
       pool.guides = pool.guides.filter(item => item.id !== id);
     } else if (category === 'meal') {
@@ -1007,6 +1020,25 @@ const AdminDashboard: React.FC<Props> = ({
           icon: newPoolItem.icon || '✨',
           badge: newPoolItem.badge || '',
           defaultSelected: false
+        }
+      ];
+    } else if (newPoolItem.category === 'dinner') {
+      const current = pool.dinnerOptions || INITIAL_MASTER_OPTION_POOL.dinnerOptions || [];
+      const targetLoc = newPoolItem.location || '호치민';
+      const locCount = current.filter(item => item.location === targetLoc).length;
+      if (locCount >= 6) {
+        alert(`'${targetLoc}' 지역에는 최대 6개의 추천 저녁식사 메뉴만 등록할 수 있습니다.\n기존 메뉴를 수정하거나 삭제 후 추가해 주세요.`);
+        return;
+      }
+      pool.dinnerOptions = [
+        ...current,
+        {
+          id: `dinner-${Date.now()}`,
+          location: targetLoc,
+          name: newPoolItem.name.trim(),
+          priceUSD: Number(newPoolItem.priceUSD) || 35,
+          description: newPoolItem.description || '',
+          badge: newPoolItem.badge || ''
         }
       ];
     } else if (newPoolItem.category === 'guide') {
@@ -3134,10 +3166,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                           name: '',
                           shortName: '',
                           icon: '✨',
-                          location: '호치민',
+                          location: poolCategory === 'dinner' && dinnerRegionFilter !== '전체' ? dinnerRegionFilter : '호치민',
                           holes: 18,
                           type: 'hotel_5star',
-                          priceUSD: poolCategory === 'golf' ? 150 : poolCategory === 'tour' ? 80 : 50,
+                          priceUSD: poolCategory === 'golf' ? 150 : poolCategory === 'tour' ? 80 : poolCategory === 'dinner' ? 40 : 50,
                           priceDeltaUSD: 0,
                           pricingUnit: 'per_person',
                           isFreeTravel: false,
@@ -3162,8 +3194,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                     { id: 'hotel' as const, label: '🏨 숙박 4종 풀', count: (masterOptionPool.accommodationTiers || INITIAL_MASTER_OPTION_POOL.accommodationTiers || []).length },
                     { id: 'vehicle' as const, label: '🚐 차량 4종 풀', count: masterOptionPool.vehicles?.length || 0 },
                     { id: 'extra' as const, label: '✨ 기타 서비스 3종', count: (masterOptionPool.extraServices || INITIAL_MASTER_OPTION_POOL.extraServices || []).length },
+                    { id: 'dinner' as const, label: '🍽️ 세부식사 풀', count: (masterOptionPool.dinnerOptions || INITIAL_MASTER_OPTION_POOL.dinnerOptions || []).length },
                     { id: 'guide' as const, label: '👨‍💼 세부 가이드 풀', count: masterOptionPool.guides?.length || 0 },
-                    { id: 'meal' as const, label: '🦞 세부 식사 풀', count: masterOptionPool.meals?.length || 0 },
+                    { id: 'meal' as const, label: '🦞 패키지 식사 옵션', count: masterOptionPool.meals?.length || 0 },
                   ].map(cat => (
                     <button
                       key={cat.id}
@@ -3988,6 +4021,187 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                   </div>
                 )}
 
+                {/* CATEGORY 4.5: STEP 6 DINNER OPTIONS POOL (세부식사 풀) */}
+                {poolCategory === 'dinner' && (() => {
+                  const dinnerList = masterOptionPool.dinnerOptions || INITIAL_MASTER_OPTION_POOL.dinnerOptions || [];
+                  const availableRegions = Array.from(
+                    new Set([
+                      ...(masterOptionPool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).map(r => r.name),
+                      '호치민', '붕따우', '무이네', '나트랑', '달랏'
+                    ])
+                  );
+                  const filteredDinners = dinnerRegionFilter === '전체'
+                    ? dinnerList
+                    : dinnerList.filter(d => d.location === dinnerRegionFilter);
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap justify-between items-center gap-3 bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200">
+                        <div className="text-xs text-emerald-950">
+                          <strong className="font-black">🍽️ 세부식사 풀 (STEP 6 일자별 저녁식사 관리 · 지역별 최대 6개)</strong>
+                          <span className="block text-[11px] text-emerald-800 mt-0.5">
+                            지역별 추천 저녁식사 메뉴명, 뱃지/태그, 1인당 가격($), 한 줄 설명을 수정·추가·삭제하면 고객 화면의 &apos;STEP 6. 일자별 저녁식사 선택&apos; 팝업에 실시간 반영됩니다.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewPoolItem({
+                              category: 'dinner',
+                              name: '',
+                              location: dinnerRegionFilter !== '전체' ? dinnerRegionFilter : '호치민',
+                              priceUSD: 40,
+                              priceDeltaUSD: 0,
+                              description: '',
+                              badge: ''
+                            });
+                            setShowAddPoolModal(true);
+                          }}
+                          className="px-3.5 py-2 bg-deepgreen text-white text-xs font-bold rounded-xl shadow hover:bg-gold-600 transition shrink-0 cursor-pointer"
+                        >
+                          + 새 저녁식사 메뉴 추가
+                        </button>
+                      </div>
+
+                      {/* Region Filter Bar */}
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setDinnerRegionFilter('전체')}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                            dinnerRegionFilter === '전체'
+                              ? 'bg-deepgreen text-white shadow-xs'
+                              : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          전체 ({dinnerList.length})
+                        </button>
+                        {availableRegions.map(regName => {
+                          const regCount = dinnerList.filter(d => d.location === regName).length;
+                          const isActive = dinnerRegionFilter === regName;
+                          return (
+                            <button
+                              key={regName}
+                              type="button"
+                              onClick={() => setDinnerRegionFilter(regName)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 ${
+                                isActive
+                                  ? 'bg-deepgreen text-white shadow-xs'
+                                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-emerald-50/50'
+                              }`}
+                            >
+                              <span>{regName}</span>
+                              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                isActive ? 'bg-gold-500 text-white' : regCount >= 6 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'
+                              }`}>
+                                {regCount}/6
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Dinner Menu Cards */}
+                      {filteredDinners.length === 0 ? (
+                        <div className="p-8 bg-white rounded-2xl border border-dashed border-gray-300 text-center text-xs text-gray-500">
+                          선택된 지역에 등록된 저녁식사 메뉴가 없습니다. &apos;+ 새 저녁식사 메뉴 추가&apos; 버튼으로 메뉴를 등록해 주세요.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {filteredDinners.map((dinner) => (
+                            <div key={dinner.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition space-y-2.5 flex flex-col justify-between">
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="px-2.5 py-0.5 bg-deepgreen text-white text-[10px] font-bold rounded-md">
+                                    📍 {dinner.location}
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    {dinner.badge && (
+                                      <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                                        {dinner.badge}
+                                      </span>
+                                    )}
+                                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded tabular-nums">
+                                      1인 ${dinner.priceUSD}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-400 block mb-0.5">식사 메뉴명</label>
+                                  <input
+                                    type="text"
+                                    value={dinner.name}
+                                    onChange={(e) => handleUpdateMasterOptionPoolItem('dinner', dinner.id, 'name', e.target.value)}
+                                    placeholder="예: 현지식 코스요리, 선상 디너 크루즈"
+                                    className="w-full font-bold text-sm text-gray-900 border-b border-gray-200 pb-1 outline-none focus:border-emerald-500"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2 text-xs">
+                                  <div>
+                                    <label className="text-[10px] font-bold text-gray-400 block mb-0.5">지역 선택</label>
+                                    <select
+                                      value={dinner.location}
+                                      onChange={(e) => handleUpdateMasterOptionPoolItem('dinner', dinner.id, 'location', e.target.value)}
+                                      className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs font-bold outline-none"
+                                    >
+                                      {availableRegions.map(r => (
+                                        <option key={r} value={r}>{r}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold text-gray-400 block mb-0.5">1인 가격($)</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={dinner.priceUSD}
+                                      onChange={(e) => handleUpdateMasterOptionPoolItem('dinner', dinner.id, 'priceUSD', Math.max(0, Number(e.target.value) || 0))}
+                                      className="w-full p-1.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-black text-deepgreen outline-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold text-gray-400 block mb-0.5">뱃지/태그</label>
+                                    <input
+                                      type="text"
+                                      value={dinner.badge || ''}
+                                      onChange={(e) => handleUpdateMasterOptionPoolItem('dinner', dinner.id, 'badge', e.target.value)}
+                                      placeholder="인기, VIP"
+                                      className="w-full p-1.5 bg-gray-50 border rounded-lg text-xs outline-none"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-400 block mb-0.5">메뉴 한 줄 설명</label>
+                                  <textarea
+                                    value={dinner.description}
+                                    onChange={(e) => handleUpdateMasterOptionPoolItem('dinner', dinner.id, 'description', e.target.value)}
+                                    rows={2}
+                                    placeholder="메뉴 특징 및 구성 설명 입력"
+                                    className="w-full p-2 bg-gray-50 border rounded-xl text-xs text-gray-600 outline-none resize-none"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="pt-2 border-t flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMasterOptionPoolItem('dinner', dinner.id, dinner.name)}
+                                  className="px-3 py-1 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* CATEGORIES 5, 6: GUIDE, MEAL */}
                 {['guide', 'meal'].includes(poolCategory) && (
                   <div className="space-y-4">
@@ -4112,13 +4326,16 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <option value="hotel">🏨 지역별 세부 숙박/풀빌라 풀</option>
                         <option value="vehicle">🚐 5단계 차량 풀</option>
                         <option value="extra">✨ 6단계 기타 부가서비스</option>
+                        <option value="dinner">🍽️ 세부식사 풀 (STEP 6 저녁식사)</option>
                         <option value="guide">👨‍💼 세부 가이드 풀</option>
-                        <option value="meal">🦞 세부 식사 풀</option>
+                        <option value="meal">🦞 패키지 식사 옵션</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="font-bold text-gray-700 block mb-1">항목명 *</label>
+                      <label className="font-bold text-gray-700 block mb-1">
+                        {newPoolItem.category === 'dinner' ? '식사 메뉴명 *' : '항목명 *'}
+                      </label>
                       <input
                         type="text"
                         required
@@ -4127,6 +4344,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                           newPoolItem.category === 'golf' ? '예: 빈펄 골프 나트랑 CC (18홀)' :
                           newPoolItem.category === 'tour' ? '예: 나트랑 스노클링 호핑 투어' :
                           newPoolItem.category === 'vehicle' ? '예: 9인승 VIP 리무진 밴' :
+                          newPoolItem.category === 'dinner' ? '예: 현지식 코스요리, 선상 디너 크루즈' :
                           '항목명 입력'
                         }
                         value={newPoolItem.name}
@@ -4176,10 +4394,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                       </div>
                     )}
 
-                    {(newPoolItem.category === 'golf' || newPoolItem.category === 'hotel' || newPoolItem.category === 'tour') && (
+                    {(newPoolItem.category === 'golf' || newPoolItem.category === 'hotel' || newPoolItem.category === 'tour' || newPoolItem.category === 'dinner') && (
                       <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="font-bold text-gray-700 block mb-1">지역</label>
+                        <div className={newPoolItem.category === 'dinner' ? 'col-span-2' : ''}>
+                          <label className="font-bold text-gray-700 block mb-1">지역 선택 (최대 6개 등록 가능)</label>
                           <select
                             value={newPoolItem.location}
                             onChange={(e) => setNewPoolItem({ ...newPoolItem, location: e.target.value })}
@@ -4220,7 +4438,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                               <option value="hotel_4star">4성급 호텔</option>
                             </select>
                           </div>
-                        ) : (
+                        ) : newPoolItem.category === 'tour' ? (
                           <div>
                             <label className="font-bold text-gray-700 block mb-1">과금 유형</label>
                             <select
@@ -4232,17 +4450,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                               <option value="free">자유 여행 옵션</option>
                             </select>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
-                      {['region', 'golf', 'tour', 'hotelTier', 'vehicle', 'extra'].includes(newPoolItem.category) ? (
+                      {['region', 'golf', 'tour', 'hotelTier', 'vehicle', 'extra', 'dinner'].includes(newPoolItem.category) ? (
                         <div>
                           <label className="font-bold text-gray-700 block mb-1">
                             {newPoolItem.category === 'hotelTier' ? '1박 단가 ($ USD)' :
                              newPoolItem.category === 'vehicle' ? '1일 단가 ($ USD · 팀 기준)' :
                              newPoolItem.category === 'golf' ? '1회 라운딩 단가 ($ USD)' :
+                             newPoolItem.category === 'dinner' ? '1인당 가격 ($ USD)' :
                              '단가 ($ USD)'}
                           </label>
                           <input
@@ -4265,10 +4484,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         </div>
                       )}
                       <div>
-                        <label className="font-bold text-gray-700 block mb-1">강조 뱃지 (선택)</label>
+                        <label className="font-bold text-gray-700 block mb-1">
+                          {newPoolItem.category === 'dinner' ? '뱃지/태그 (선택)' : '강조 뱃지 (선택)'}
+                        </label>
                         <input
                           type="text"
-                          placeholder="예: 인기 1위, 바베큐 가능"
+                          placeholder={newPoolItem.category === 'dinner' ? '예: 인기, 야경 추천, VIP' : '예: 인기 1위, 바베큐 가능'}
                           value={newPoolItem.badge}
                           onChange={(e) => setNewPoolItem({ ...newPoolItem, badge: e.target.value })}
                           className="w-full p-2.5 bg-white border border-gray-300 rounded-xl outline-none"

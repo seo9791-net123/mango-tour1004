@@ -227,6 +227,14 @@ export interface MasterOptionPool {
     badge?: string;
     defaultSelected?: boolean;
   }>;
+  dinnerOptions?: Array<{
+    id: string;
+    location: string; // '호치민' | '붕따우' | '무이네' | '나트랑' | '달랏'
+    name: string;
+    priceUSD: number; // 1인당 가격 ($ USD)
+    description: string;
+    badge?: string;
+  }>;
   guides: Array<{
     id: string;
     name: string;

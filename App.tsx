@@ -441,6 +441,7 @@ const App: React.FC = () => {
       })),
       vehicles: mergedVehicles,
       extraServices: (pool.extraServices && pool.extraServices.length > 0) ? pool.extraServices : INITIAL_MASTER_OPTION_POOL.extraServices,
+      dinnerOptions: (pool.dinnerOptions && pool.dinnerOptions.length > 0) ? pool.dinnerOptions : INITIAL_MASTER_OPTION_POOL.dinnerOptions,
       guides: (pool.guides || []).map(gui => {
         if (gui.id === 'gui-1' || gui.name.includes('가이드')) {
           return {

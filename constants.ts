@@ -1544,6 +1544,48 @@ export const INITIAL_MASTER_OPTION_POOL: MasterOptionPool = {
     { id: 'massage', name: '마사지', priceUSD: 50, pricingUnit: 'per_person', description: '피로 회복 VIP 전신 힐링 마사지 90분 (1인 $50)', icon: '💆', badge: '힐링 스파', defaultSelected: true },
   ],
 
+  dinnerOptions: [
+    // 호치민 (6개)
+    { id: 'hcm-1', location: '호치민', name: '현지식 코스요리', priceUSD: 35, description: '깔끔한 로컬 다이닝에서 즐기는 베트남 정통 멀티코스', badge: '인기' },
+    { id: 'hcm-2', location: '호치민', name: '한식 정찬', priceUSD: 38, description: '시내 인기 한식당의 숯불 고기구이·찌개·정갈한 한상 차림', badge: '' },
+    { id: 'hcm-3', location: '호치민', name: '선상 디너 크루즈', priceUSD: 65, description: '사이공강 야경을 감상하며 즐기는 로맨틱 디너 & 라이브 공연', badge: '야경 추천' },
+    { id: 'hcm-4', location: '호치민', name: '해산물 BBQ', priceUSD: 55, description: '신선한 랍스터·타이거새우·가리비 숯불 해산물 만찬', badge: '' },
+    { id: 'hcm-5', location: '호치민', name: '베트남 가정식', priceUSD: 28, description: '분짜·반쎄오·모닝글로리 등 정갈한 베트남 홈스타일 만찬', badge: '' },
+    { id: 'hcm-6', location: '호치민', name: '스테이크 & 와인', priceUSD: 75, description: '1군 루프탑/프라이빗 다이닝 프라임 스테이크 & 와인 페어링', badge: 'VIP' },
+
+    // 붕따우 (6개)
+    { id: 'vt-1', location: '붕따우', name: '오션뷰 랍스터 해산물 만찬', priceUSD: 60, description: '붕따우 앞바다 직송 활어회·랍스터·조개구이 풀코스', badge: '대표 특선' },
+    { id: 'vt-2', location: '붕따우', name: '현지식 코스요리', priceUSD: 32, description: '바다 내음 가득한 남부 해안식 정통 베트남 코스', badge: '' },
+    { id: 'vt-3', location: '붕따우', name: '한식 정찬 (고기구이 & 찌개)', priceUSD: 35, description: '라운딩 후 든든하게 즐기는 한국인 맞춤 한식 정찬', badge: '' },
+    { id: 'vt-4', location: '붕따우', name: '해변 야외 BBQ 그릴', priceUSD: 50, description: '시원한 바닷바람과 함께 즐기는 육해공 숯불 BBQ', badge: '인기' },
+    { id: 'vt-5', location: '붕따우', name: '붕따우 반콧 & 베트남 가정식', priceUSD: 25, description: '붕따우 명물 반콧과 정갈한 남부 로컬 가정식 한상', badge: '' },
+    { id: 'vt-6', location: '붕따우', name: '스테이크 & 와인', priceUSD: 68, description: '럭셔리 리조트/오션 라운지 최상급 스테이크 디너', badge: 'VIP' },
+
+    // 무이네 (6개)
+    { id: 'mn-1', location: '무이네', name: '보케 거리 활해산물 BBQ', priceUSD: 48, description: '해변 바로 앞에서 즐기는 랍스터·가리비·새우 버터구이', badge: '무이네 필수' },
+    { id: 'mn-2', location: '무이네', name: '리조트 선셋 디너 코스', priceUSD: 55, description: '붉은 석양과 야자수를 배경으로 즐기는 럭셔리 리조트 코스', badge: '인기' },
+    { id: 'mn-3', location: '무이네', name: '현지식 씨푸드 & 해물 전골', priceUSD: 35, description: '매콤달콤 베트남식 해산물 전골(러우)과 로컬 특선 요리', badge: '' },
+    { id: 'mn-4', location: '무이네', name: '한식 정찬', priceUSD: 38, description: '사막 투어·라운딩 후 원기 회복 한식 숯불구이 정찬', badge: '' },
+    { id: 'mn-5', location: '무이네', name: '베트남 남부 가정식', priceUSD: 26, description: '무이네 특산 느억맘 소스를 곁들인 정통 로컬 가정식', badge: '' },
+    { id: 'mn-6', location: '무이네', name: '비치프론트 스테이크 & 와인', priceUSD: 68, description: '파도 소리와 함께하는 프라이빗 해변 스테이크 코스', badge: 'VIP' },
+
+    // 나트랑 (6개)
+    { id: 'nt-1', location: '나트랑', name: '활랍스터 & 씨푸드 특선', priceUSD: 62, description: '신선한 랍스터와 다채로운 해산물을 즐기는 프리미엄 만찬', badge: '시그니처' },
+    { id: 'nt-2', location: '나트랑', name: '해변 루프탑 스테이크 & 와인', priceUSD: 70, description: '나트랑 비치 파노라마 뷰와 함께하는 파인 다이닝', badge: 'VIP' },
+    { id: 'nt-3', location: '나트랑', name: '현지식 코스요리 (넴느엉)', priceUSD: 32, description: '나트랑 명물 넴느엉과 정갈한 중부 베트남 코스요리', badge: '' },
+    { id: 'nt-4', location: '나트랑', name: '한식 프리미엄 정찬', priceUSD: 38, description: '시내 인기 한식당의 푸짐한 고기구이 & 한식 반상', badge: '' },
+    { id: 'nt-5', location: '나트랑', name: '해산물 숯불 BBQ & 핫팟', priceUSD: 48, description: '신선한 오징어·새우·생선 구이 및 해물 샤브 전골', badge: '인기' },
+    { id: 'nt-6', location: '나트랑', name: '베트남 정통 가정식', priceUSD: 26, description: '부담 없이 즐기는 깔끔하고 건강한 베트남 로컬 한상', badge: '' },
+
+    // 달랏 (6개)
+    { id: 'dl-1', location: '달랏', name: '고원 숯불 BBQ & 야키니쿠', priceUSD: 52, description: '선선한 고원 날씨에 어울리는 프리미엄 숯불 고기 구이', badge: '달랏 추천' },
+    { id: 'dl-2', location: '달랏', name: '달랏 러우(전골) & 산채 코스', priceUSD: 36, description: '청정 고산 채소·버섯을 듬뿍 넣은 따뜻한 베트남 샤브 전골', badge: '인기' },
+    { id: 'dl-3', location: '달랏', name: '프렌치 빌라 스테이크 & 와인', priceUSD: 68, description: '고풍스러운 프랑스풍 저택 레스토랑 스테이크 & 달랏 와인', badge: '로맨틱' },
+    { id: 'dl-4', location: '달랏', name: '현지식 고원 코스요리', priceUSD: 32, description: '달랏 청정 농산물로 만든 깔끔한 로컬 다이닝 코스', badge: '' },
+    { id: 'dl-5', location: '달랏', name: '한식 정찬 (불고기 & 찌개)', priceUSD: 38, description: '쌀쌀한 달랏 저녁에 딱 맞는 따끈한 한식 정찬', badge: '' },
+    { id: 'dl-6', location: '달랏', name: '베트남 고원 가정식', priceUSD: 28, description: '달랏 로컬 감성과 정갈한 가정식을 결합한 저녁 한상', badge: '' },
+  ],
+
   guides: [
     { id: 'gui-1', name: '베테랑 한국어 가이드 전 일정 동행 (5일간 / 1일 기준 $120)', priceDeltaUSD: 0, description: '골프장 체크인/티타임 조율, 시내 관광 및 맛집/야경 전담 밀착 케어 (가이드 1일 $120 × 여행 일수 · 인원수 무관 팀 기준)', badge: '1일 $120' },
     { id: 'gui-2', name: 'VIP 비즈니스 의전 전문 가이드 (동시통역 가능 / 1일 기준 $150)', priceDeltaUSD: 30, description: '전문 비즈니스 통역 및 VIP 단독 의전, 만찬 미팅 케어 (가이드 1일 $150 × 여행 일수 · 인원수 무관 팀 기준)', badge: 'VIP 통역' },

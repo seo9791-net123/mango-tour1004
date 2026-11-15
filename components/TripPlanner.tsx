@@ -15,6 +15,19 @@ interface Props {
   onBack: () => void;
 }
 
+type DinnerMenuOption = NonNullable<MasterOptionPool['dinnerOptions']>[number];
+
+const getDinnerMenusForRegion = (pool: MasterOptionPool, loc: string): DinnerMenuOption[] => {
+  const allMenus = pool.dinnerOptions?.length
+    ? pool.dinnerOptions
+    : (INITIAL_MASTER_OPTION_POOL.dinnerOptions || []);
+  const matched = allMenus.filter(
+    item => item.location === loc || loc.includes(item.location) || item.location.includes(loc)
+  );
+  const fallback = allMenus.filter(item => item.location === '호치민');
+  return (matched.length > 0 ? matched : fallback).slice(0, 6);
+};
+
 export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], onBack }) => {
   const pool = masterOptionPool || INITIAL_MASTER_OPTION_POOL;
   const [activePackage, setActivePackage] = useState<CustomTripPackage | null>(null);
@@ -63,6 +76,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   const [viewTab, setViewTab] = useState<'options' | 'itinerary'>('options');
   const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
   const [showActivityModal, setShowActivityModal] = useState<'golf' | 'tour' | null>(null);
+  const [showHotelModal, setShowHotelModal] = useState<boolean>(false);
+  const [showVehicleModal, setShowVehicleModal] = useState<boolean>(false);
+  const [showDinnerModal, setShowDinnerModal] = useState<boolean>(false);
 
   const quotationCardRef = useRef<HTMLDivElement>(null);
   const a4QuotationPrintRef = useRef<HTMLDivElement>(null);
@@ -75,6 +91,18 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     }
     if (showActivityModal) {
       setShowActivityModal(null);
+      return;
+    }
+    if (showHotelModal) {
+      setShowHotelModal(false);
+      return;
+    }
+    if (showVehicleModal) {
+      setShowVehicleModal(false);
+      return;
+    }
+    if (showDinnerModal) {
+      setShowDinnerModal(false);
       return;
     }
     if (showImagePreviewModal) {
@@ -117,6 +145,21 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         e?.detail?.handled?.();
         return;
       }
+      if (showHotelModal) {
+        setShowHotelModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (showVehicleModal) {
+        setShowVehicleModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (showDinnerModal) {
+        setShowDinnerModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
       if (showImagePreviewModal) {
         setShowImagePreviewModal(false);
         e?.detail?.handled?.();
@@ -153,7 +196,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     return () => {
       window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
     };
-  }, [showScheduleModal, showActivityModal, showImagePreviewModal, showGolfModal, customizingOption, showKakaoModal, showInquiryModal, activePackage]);
+  }, [showScheduleModal, showActivityModal, showHotelModal, showVehicleModal, showDinnerModal, showImagePreviewModal, showGolfModal, customizingOption, showKakaoModal, showInquiryModal, activePackage]);
 
   // Live Pools synced from AdminDashboard (with safe fallbacks)
   const diyRegions = pool.diyRegions?.length ? pool.diyRegions : (INITIAL_MASTER_OPTION_POOL.diyRegions || []);
@@ -180,6 +223,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   const [diySelectedExtraIds, setDiySelectedExtraIds] = useState<string[]>(() =>
     diyExtraServices.filter(e => e.defaultSelected).map(e => e.id)
   );
+  // Day-by-day dinner selections (day 1..diyNights -> DinnerMenuOption.id, empty = 미포함)
+  const [diyDinnerSelections, setDiyDinnerSelections] = useState<Record<number, string>>({});
+  const [activeDinnerDay, setActiveDinnerDay] = useState<number>(1);
 
   // Step Modal Helpers
   const [diyChangingRoundIndex, setDiyChangingRoundIndex] = useState<number | null>(null);
@@ -191,6 +237,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   const selectedRegionItem = diyRegions.find(r => r.name === diyLocation) || diyRegions[0];
   const selectedHotelTier = diyAccommodations.find(a => a.id === diyHotelType) || diyAccommodations[0];
   const selectedVehicleItem = diyVehicles.find(v => v.id === diyVehicleType) || diyVehicles[0];
+  const activeRegionDinnerMenus = getDinnerMenusForRegion(pool, diyLocation);
+  const selectedDinnerEntries = Array.from({ length: diyNights }, (_, idx) => idx + 1)
+    .map(day => {
+      const menuId = diyDinnerSelections[day];
+      if (!menuId) return null;
+      const menu = activeRegionDinnerMenus.find(m => m.id === menuId);
+      return menu ? { day, menu } : null;
+    })
+    .filter((entry): entry is { day: number; menu: DinnerMenuOption } => entry !== null);
+  const dinnerCount = selectedDinnerEntries.length;
+  const dinnerPerPersonTotal = selectedDinnerEntries.reduce((sum, entry) => sum + entry.menu.priceUSD, 0);
 
   // Combine Admin Tour Pool + Regional Tour Products for the selected region
   const getDIYTourOptionsForRegion = (loc: string) => {
@@ -257,6 +314,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     const validIds = new Set(nextRegionTours.map(t => t.id));
     const filteredTours = diySelectedTourIds.filter(id => validIds.has(id));
     setDiySelectedTourIds(filteredTours.length > 0 ? filteredTours : ['tour-free']);
+
+    // Reset region-specific dinner selections when region changes
+    setDiyDinnerSelections({});
+    setActiveDinnerDay(1);
   };
 
   // DIY Rounds change handler
@@ -279,6 +340,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   const handleSelectSchedule = (nights: number, recommendedRounds: number) => {
     setDiyNights(nights);
     handleDIYRoundsChange(recommendedRounds, nights);
+    setDiyDinnerSelections(prev => {
+      const pruned: Record<number, string> = {};
+      Object.entries(prev).forEach(([dayStr, menuId]) => {
+        const dayNum = Number(dayStr);
+        if (dayNum >= 1 && dayNum <= nights) {
+          pruned[dayNum] = menuId;
+        }
+      });
+      return pruned;
+    });
+    setActiveDinnerDay(prev => Math.min(prev, nights));
     setShowScheduleModal(false);
   };
 
@@ -352,7 +424,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       }
     });
 
-    const perPersonOnlyUSD = Math.round(regionBase + activityTotal + hotelTotal + nonGuideExtraPerPersonTotal);
+    const perPersonOnlyUSD = Math.round(regionBase + activityTotal + hotelTotal + nonGuideExtraPerPersonTotal + dinnerPerPersonTotal);
     const teamFixedUSD = Math.round(vehicleTotal + guideTotal);
     const groupTotalUSD = Math.round(perPersonOnlyUSD * Math.max(1, personCount) + teamFixedUSD);
     const perPersonWithShareUSD = Math.round(groupTotalUSD / Math.max(1, personCount));
@@ -361,6 +433,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       perPersonOnlyUSD,
       vehicleTotal,
       guideTotal,
+      dinnerPerPersonTotal,
       teamFixedUSD,
       groupTotalUSD,
       perPersonWithShareUSD,
@@ -387,6 +460,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       : (selectedVehicleItem?.name || '전용 차량');
     const vehicleName = `전 일정 단독 ${vehicleTitle} (${days}일간 / 1일 $${dayVehRate} · 일정 기준 총액)`;
 
+    const getDinnerActivityText = (dayNum: number, fallbackText: string) => {
+      const picked = selectedDinnerEntries.find(e => e.day === dayNum);
+      if (picked) {
+        return `[선택 석식] ${picked.menu.name} (${picked.menu.description})`;
+      }
+      return fallbackText;
+    };
+
     // Dynamic Itinerary Generation
     const itinerary = [];
     itinerary.push({
@@ -396,7 +477,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         `${diyLocation} 도착 및 MANGO TOUR VIP 전담 기사 미팅`,
         `${vehicleTitle} 탑승 후 숙소로 편안한 이동`,
         `${hotelName} 체크인 및 객실 배정 후 휴식`,
-        '현지 추천 맛집 석식 및 자유 휴식'
+        getDinnerActivityText(1, '자유 석식 및 휴식 (석식 미포함)')
       ]
     });
 
@@ -413,7 +494,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             `${c} 18홀 라운딩 (골프 체크인/아웃 케어)`,
             '라운딩 후 클럽하우스 중식 및 휴식',
             hasMassage && rIdx < 2 ? '골프 피로 회복 VIP 전신 마사지 (90분)' : '숙소 휴식 또는 시내 쇼핑/자유 일정',
-            '현지 대표 미식 석식 및 나이트라이프'
+            getDinnerActivityText(d, '자유 석식 및 나이트라이프 (석식 미포함)')
           ]
         });
       }
@@ -428,7 +509,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             '숙소 조식 뷔페 후 전용 차량 미팅',
             tItem.isFreeTravel ? `${diyLocation} 내 맘대로 자유 일정 (카페, 쇼핑, 해변 휴양)` : `${tItem.name} 진행 (${tItem.description})`,
             hasMassage && d === 2 ? '여행 피로 회복 VIP 전신 마사지 (90분)' : '여유로운 휴식 및 시내 자유 탐방',
-            '현지 대표 맛집 탐방 & 휴식'
+            getDinnerActivityText(d, '자유 석식 및 자유 휴식 (석식 미포함)')
           ]
         });
       }
@@ -542,6 +623,19 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         allowCustomSelection: isGuideSvc
       });
     });
+
+    if (selectedDinnerEntries.length > 0) {
+      options.push({
+        id: 'diy-opt-dinner',
+        category: 'meal',
+        name: `맞춤 저녁식사 (${selectedDinnerEntries.length}회 · ${selectedDinnerEntries.map(e => `${e.day}일차 ${e.menu.name}`).join(', ')})`,
+        description: selectedDinnerEntries.map(e => `${e.day}일차: ${e.menu.name} ($${e.menu.priceUSD}/인)`).join(' · '),
+        priceUSD: dinnerPerPersonTotal,
+        isDefaultIncluded: true,
+        isRequired: false,
+        allowCustomSelection: false
+      });
+    }
 
     const activitySubtitle = isGolf
       ? `${diyRounds}회 라운딩`
@@ -1041,9 +1135,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
         catName = 'VIP패스트트랙';
         qty = `${personCount}인 (1인 $60)`;
       } else if (opt.category === 'meal') {
-        const mealNights = activePackage.itinerary?.length ? activePackage.itinerary.length - 1 : 4;
-        catName = '식사 및 만찬';
-        qty = `${personCount}인 (석식 ${mealNights}회 / 1일 $50)`;
+        if (opt.id === 'diy-opt-dinner') {
+          catName = '맞춤 저녁식사';
+          qty = `${personCount}인 (1인 $${getOptionPrice(opt).toLocaleString()})`;
+        } else {
+          const mealNights = activePackage.itinerary?.length ? activePackage.itinerary.length - 1 : 4;
+          catName = '식사 및 만찬';
+          qty = `${personCount}인 (석식 ${mealNights}회 / 1일 $50)`;
+        }
       } else if (opt.name.includes('마사지') || opt.name.includes('스파')) {
         catName = '스파 & 마사지';
         qty = `${personCount}인`;
@@ -1457,29 +1556,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       </div>
 
       {/* Main Container - Edge-to-edge on mobile, max-w-7xl containerized on desktop */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-1 pb-2 sm:pt-3 sm:pb-6 w-full">
+      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 pb-2 sm:pt-2 sm:pb-6 w-full">
         
         {/* ================= VIEW 1: 6-STEP DIY CUSTOM TRIP BUILDER ================= */}
         {!activePackage && (
           <div className="px-0 sm:px-0">
             <div className="space-y-4 sm:space-y-6">
-              {/* Main DIY Banner */}
-              <div className="bg-gradient-to-br from-emerald-900 via-deepgreen to-teal-950 text-white rounded-none sm:rounded-3xl p-4 sm:p-7 md:p-8 border-y sm:border border-emerald-600/30 shadow-md relative overflow-hidden">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-300 border border-gold-400/30 text-[10px] sm:text-xs md:text-sm font-bold mb-1.5">
-                      <span>✨</span> MANGO TOUR 실시간 맞춤 견적
-                    </div>
-                    <h2 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight">
-                      골프 / 투어 내 맘대로 여행 만들기
-                    </h2>
-                    <p className="text-xs sm:text-sm md:text-base text-gray-200 mt-1 leading-relaxed font-normal">
-                      원하시는 지역 선택, 여행기간, 숙박, 차량 등 선택하고 맞춤 견적서가 실시간으로 자동 완성됩니다
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* 1. 여행 지역 선택 (5 Regions - Concise Buttons) */}
               <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
                 <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
@@ -1685,121 +1767,166 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 </div>
               </div>
 
-              {/* 4. 숙박 (4 Uniform Cards synced from pool.accommodationTiers) */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">4</span>
-                    <span>숙박</span>
-                  </h3>
-                  <span className="text-xs md:text-sm font-bold text-deepgreen">
-                    {diyNights}박 기준 · 1인 1실
-                  </span>
-                </div>
+              {/* 4. 숙박 (Popup Selector matching Step 3 Pattern) */}
+              {(() => {
+                const hotelNightRate = selectedHotelTier?.pricePerNightUSD ?? 90;
+                const hotelTotalUSD = Math.round(hotelNightRate * diyNights);
+                return (
+                  <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3.5">
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                          <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">4</span>
+                          <span>숙박</span>
+                        </h3>
+                        <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                          버튼을 클릭하면 선택된 여행 기간({diyNights}박 기준 · 1인 1실) 맞춤 숙박 팝업이 열립니다.
+                        </p>
+                      </div>
+                      <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 whitespace-nowrap shrink-0">
+                        {selectedHotelTier?.name || '고급 호텔'} 선택됨
+                      </span>
+                    </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-                  {diyAccommodations.map((item) => {
-                    const isSelected = selectedHotelTier?.id === item.id;
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setDiyHotelType(item.id)}
-                        className={`p-3 md:p-4 rounded-2xl border text-left cursor-pointer transition flex flex-col justify-between ${
-                          isSelected
-                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-sm'
-                            : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            {isImageIconUrl(item.icon) ? (
-                              <img src={getFreshImageUrl(item.icon)} alt={item.name} className="w-6 h-6 md:w-7 md:h-7 object-contain rounded shrink-0" />
-                            ) : (
-                              <span className="text-lg md:text-xl">{item.icon}</span>
-                            )}
-                            <span className="text-[10px] md:text-xs font-extrabold text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200">
-                              1박 ${item.pricePerNightUSD}
-                            </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowHotelModal(true)}
+                      className="w-full p-4 md:p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100/60 ring-2 ring-emerald-400/50 text-left transition-all flex items-center justify-between gap-3 cursor-pointer shadow-sm"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-deepgreen text-white text-xl md:text-2xl flex items-center justify-center shadow-sm shrink-0">
+                          {isImageIconUrl(selectedHotelTier?.icon) ? (
+                            <img src={getFreshImageUrl(selectedHotelTier?.icon || '')} alt={selectedHotelTier?.name || '숙박'} className="w-7 h-7 object-contain rounded" />
+                          ) : (
+                            selectedHotelTier?.icon || '🏨'
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-black text-base md:text-lg text-gray-900 truncate">
+                            {selectedHotelTier?.name || '고급 호텔'}
                           </div>
-                          <div className="font-extrabold text-xs md:text-sm text-gray-900">{item.name}</div>
-                          <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</div>
-                        </div>
-                        <div className="mt-2 text-right">
-                          <span className={`text-[10px] font-bold ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
-                            {isSelected ? '✓ 선택됨' : '선택'}
-                          </span>
+                          <div className="text-[11px] md:text-xs text-gray-600 line-clamp-1 mt-0.5">
+                            {diyNights}박 기준 · 1인 1실 · {selectedHotelTier?.description || '엄선된 숙박 옵션'}
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      <span className="px-3 py-1.5 rounded-xl text-xs md:text-sm font-extrabold bg-white text-deepgreen border border-emerald-300 shadow-2xs whitespace-nowrap shrink-0">
+                        숙박 선택 ▾
+                      </span>
+                    </button>
 
-              {/* 5. 차량 (4 Uniform Cards matching Step 4 style: 7인승, 9인승, 16인승, 26인승) */}
-              <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">5</span>
-                    <span>차량</span>
-                  </h3>
-                  <span className="text-xs md:text-sm font-bold text-deepgreen">
-                    전 일정 ({diyDays}일) 단독 전용 · 차량 1대 (인원 무관)
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
-                  {diyVehicles.map((item) => {
-                    const isSelected = selectedVehicleItem?.id === item.id;
-                    const dayRate = item.pricePerDayUSD ?? Math.max(15, 25 + (item.priceDeltaUSD || 0));
-                    const scheduleVehTotal = Math.round(dayRate * diyDays);
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setDiyVehicleType(item.id)}
-                        className={`p-3 md:p-4 rounded-2xl border text-left cursor-pointer transition flex flex-col justify-between ${
-                          isSelected
-                            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400 shadow-sm'
-                            : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                        }`}
+                    {/* Selected Hotel Summary Strip */}
+                    <div className="p-3 md:p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
+                        <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">🏨 선택 숙박:</span>
+                        <span className="px-2.5 py-0.5 bg-white rounded-lg border border-emerald-200 text-xs md:text-sm font-extrabold text-gray-900 whitespace-nowrap">
+                          {selectedHotelTier?.name || '고급 호텔'}
+                        </span>
+                        <span className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-emerald-700 tabular-nums whitespace-nowrap">
+                          1박 ${hotelNightRate.toLocaleString()}
+                        </span>
+                        <span className="px-2 py-0.5 bg-deepgreen text-white rounded-lg text-[11px] md:text-xs font-black tabular-nums whitespace-nowrap">
+                          {diyNights}박 총 ${hotelTotalUSD.toLocaleString()}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowHotelModal(true)}
+                        className="self-start sm:self-auto px-3 py-1.5 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap transition"
                       >
-                        <div>
-                          <div className="flex items-center justify-between gap-1 mb-1">
-                            {isImageIconUrl(item.icon) ? (
-                              <img src={getFreshImageUrl(item.icon)} alt={item.name} className="w-6 h-6 md:w-7 md:h-7 object-contain rounded shrink-0" />
-                            ) : (
-                              <span className="text-lg md:text-xl">{item.icon || '🚐'}</span>
-                            )}
-                            <span className="text-[10px] md:text-xs font-extrabold text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200 whitespace-nowrap">
-                              1일 ${dayRate} ({diyDays}일 ${scheduleVehTotal})
-                            </span>
+                        숙박 변경 ✏️
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 5. 차량 (Popup Selector matching Steps 3 & 4 Pattern) */}
+              {(() => {
+                const vehDayRate = selectedVehicleItem?.pricePerDayUSD ?? Math.max(15, 25 + (selectedVehicleItem?.priceDeltaUSD || 0));
+                const vehTotalUSD = Math.round(vehDayRate * diyDays);
+                const vehDisplayName = selectedVehicleItem?.shortName || selectedVehicleItem?.name || '9인승';
+                return (
+                  <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3.5">
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                          <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">5</span>
+                          <span>차량</span>
+                        </h3>
+                        <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">
+                          버튼을 클릭하면 전 일정({diyDays}일) 단독 전용 차량 선택 팝업이 열립니다.
+                        </p>
+                      </div>
+                      <span className="text-xs md:text-sm font-extrabold text-deepgreen bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 whitespace-nowrap shrink-0">
+                        {vehDisplayName} 선택됨
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowVehicleModal(true)}
+                      className="w-full p-4 md:p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100/60 ring-2 ring-emerald-400/50 text-left transition-all flex items-center justify-between gap-3 cursor-pointer shadow-sm"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-deepgreen text-white text-xl md:text-2xl flex items-center justify-center shadow-sm shrink-0">
+                          {isImageIconUrl(selectedVehicleItem?.icon) ? (
+                            <img src={getFreshImageUrl(selectedVehicleItem?.icon || '')} alt={vehDisplayName} className="w-7 h-7 object-contain rounded" />
+                          ) : (
+                            selectedVehicleItem?.icon || '🚐'
+                          )}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-black text-base md:text-lg text-gray-900 truncate">
+                            {vehDisplayName}
                           </div>
-                          <div className="font-extrabold text-xs md:text-sm text-gray-900">
-                            {item.shortName || item.name}
+                          <div className="text-[11px] md:text-xs text-gray-600 line-clamp-1 mt-0.5">
+                            전 일정({diyDays}일) 단독 전용 · 차량 1대 (인원 무관) · {selectedVehicleItem?.description || ''}
                           </div>
-                          <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</div>
-                        </div>
-                        <div className="mt-2 text-right">
-                          <span className={`text-[10px] font-bold ${isSelected ? 'text-emerald-700' : 'text-gray-400'}`}>
-                            {isSelected ? '✓ 선택됨' : '선택'}
-                          </span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      <span className="px-3 py-1.5 rounded-xl text-xs md:text-sm font-extrabold bg-white text-deepgreen border border-emerald-300 shadow-2xs whitespace-nowrap shrink-0">
+                        차량 선택 ▾
+                      </span>
+                    </button>
 
-              {/* 6. 기타 (Multi-select Toggle Cards: 가이드, 패스트 트랙, 마사지) */}
+                    {/* Selected Vehicle Summary Strip */}
+                    <div className="p-3 md:p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
+                        <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">🚐 선택 차량:</span>
+                        <span className="px-2.5 py-0.5 bg-white rounded-lg border border-emerald-200 text-xs md:text-sm font-extrabold text-gray-900 whitespace-nowrap">
+                          {vehDisplayName}
+                        </span>
+                        <span className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-emerald-700 tabular-nums whitespace-nowrap">
+                          1일 ${vehDayRate.toLocaleString()}
+                        </span>
+                        <span className="px-2 py-0.5 bg-deepgreen text-white rounded-lg text-[11px] md:text-xs font-black tabular-nums whitespace-nowrap">
+                          {diyDays}일 총 ${vehTotalUSD.toLocaleString()} (인원 무관)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowVehicleModal(true)}
+                        className="self-start sm:self-auto px-3 py-1.5 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap transition"
+                      >
+                        차량 변경 ✏️
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* 6. 기타 (Multi-select 2x2 Grid: 가이드, 패스트 트랙, 마사지, 저녁식사) */}
               <div className="bg-white rounded-none sm:rounded-3xl p-4 sm:p-6 md:p-7 border-y sm:border border-gray-200/90 shadow-xs space-y-3">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold">6</span>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100 gap-2">
+                  <h3 className="font-black text-sm sm:text-base md:text-lg text-gray-900 flex items-center gap-2 whitespace-nowrap">
+                    <span className="w-6 h-6 rounded-full bg-deepgreen text-white text-xs md:text-sm flex items-center justify-center font-bold shrink-0">6</span>
                     <span>기타</span>
                   </h3>
-                  <span className="text-[11px] sm:text-xs text-gray-500 font-medium">복수 선택 가능 (가이드 · 패스트 트랙 · 마사지)</span>
+                  <span className="text-[11px] sm:text-xs text-gray-500 font-medium text-right">복수 선택 가능 (가이드 · 패스트 트랙 · 마사지 · 저녁식사)</span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {diyExtraServices.map((svc) => {
                     const isChecked = diySelectedExtraIds.includes(svc.id);
                     const isGuideSvc = svc.id === 'guide' || svc.name.includes('가이드');
@@ -1845,7 +1972,76 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </div>
                     );
                   })}
+
+                  {/* 4th Menu Card: 저녁식사 (Day-by-day Modal Selector) */}
+                  <div
+                    onClick={() => {
+                      setActiveDinnerDay(1);
+                      setShowDinnerModal(true);
+                    }}
+                    className={`p-3.5 md:p-4 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-2 ${
+                      dinnerCount > 0
+                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/70 shadow-xs'
+                        : 'bg-gray-50 border-gray-200 opacity-85 hover:opacity-100 hover:border-emerald-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={dinnerCount > 0}
+                        onChange={() => {}}
+                        className="w-4 h-4 md:w-5 md:h-5 rounded text-deepgreen accent-deepgreen cursor-pointer shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <div className="font-extrabold text-xs md:text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
+                          <span>🍽️</span>
+                          <span>저녁식사</span>
+                          <span className="text-[10px] md:text-xs text-emerald-800 bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-bold">
+                            {dinnerCount > 0 ? '변경 ▾' : '식사 선택 ▾'}
+                          </span>
+                        </div>
+                        <div className="text-[10px] md:text-xs text-gray-500 mt-0.5 line-clamp-1">
+                          {dinnerCount > 0
+                            ? selectedDinnerEntries.map(e => `${e.day}일차 ${e.menu.name}`).join(' · ')
+                            : `${diyLocation} 지역 대표 메뉴 중 일자별 선택`}
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-xs md:text-sm font-extrabold shrink-0 whitespace-nowrap ${dinnerCount > 0 ? 'text-deepgreen' : 'text-gray-400'}`}>
+                      {dinnerCount > 0 ? `선택됨 (${dinnerCount}회 · 총 $${dinnerPerPersonTotal.toLocaleString()})` : '미포함'}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Selected Dinner Summary Strip */}
+                {dinnerCount > 0 && (
+                  <div className="p-3 md:p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
+                      <span className="font-extrabold text-deepgreen mr-1 whitespace-nowrap">🍽️ 선택 저녁식사:</span>
+                      {selectedDinnerEntries.map(({ day, menu }) => (
+                        <span
+                          key={day}
+                          className="px-2 py-0.5 bg-white rounded-lg border border-emerald-200 text-[11px] md:text-xs font-bold text-gray-800 whitespace-nowrap"
+                        >
+                          {day}일차 · {menu.name} (${menu.priceUSD})
+                        </span>
+                      ))}
+                      <span className="px-2 py-0.5 bg-deepgreen text-white rounded-lg text-[11px] md:text-xs font-black tabular-nums whitespace-nowrap">
+                        1인 ${dinnerPerPersonTotal.toLocaleString()} ({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveDinnerDay(1);
+                        setShowDinnerModal(true);
+                      }}
+                      className="self-start sm:self-auto px-3 py-1.5 bg-white hover:bg-emerald-100 text-deepgreen border border-emerald-300 rounded-xl text-xs font-extrabold cursor-pointer shrink-0 whitespace-nowrap transition"
+                    >
+                      식사 변경 ✏️
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Bottom Real-Time Price Preview & Package Generation Action Box */}
@@ -3184,6 +3380,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                             </div>
                           );
                         })}
+                        <div>
+                          • 저녁식사: {dinnerCount > 0 ? `포함 (${dinnerCount}회 · 1인 $${dinnerPerPersonTotal.toLocaleString()})` : '미포함'}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -4502,6 +4701,422 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 type="button"
                 onClick={() => setShowActivityModal(null)}
                 className="px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
+              >
+                선택 완료 & 적용 ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 9: DIY STEP 4 HOTEL SELECTION MODAL ================= */}
+      {showHotelModal && (
+        <div
+          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep"
+          onClick={() => setShowHotelModal(false)}
+        >
+          <div
+            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+              <div>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
+                  STEP 4 · {diyNights}박 기준 · 1인 1실
+                </span>
+                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
+                  🏨 숙박 형태를 선택하세요
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHotelModal(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 md:py-4 space-y-2.5">
+              {diyAccommodations.map((item) => {
+                const isSelected = selectedHotelTier?.id === item.id;
+                const nightRate = item.pricePerNightUSD ?? 90;
+                const totalHotelCost = Math.round(nightRate * diyNights);
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setDiyHotelType(item.id);
+                      setShowHotelModal(false);
+                      showToast(`🏨 '${item.name}' 숙박이 선택되었습니다.`);
+                    }}
+                    className={`p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/50 shadow-sm'
+                        : 'bg-white hover:bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-2xl shrink-0">
+                        {isImageIconUrl(item.icon) ? (
+                          <img src={getFreshImageUrl(item.icon)} alt={item.name} className="w-7 h-7 object-contain rounded" />
+                        ) : (
+                          item.icon
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-extrabold text-sm md:text-base text-gray-900">{item.name}</h4>
+                          {item.badge && (
+                            <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] md:text-xs text-gray-500 mt-0.5 leading-snug">{item.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0 space-y-1">
+                      <div className="text-xs md:text-sm font-black text-deepgreen tabular-nums">
+                        1박 ${nightRate.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] md:text-[11px] font-bold text-gray-500 tabular-nums">
+                        ({diyNights}박 ${totalHotelCost.toLocaleString()})
+                      </div>
+                      <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
+                        isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {isSelected ? '✓ 선택됨' : '선택'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3">
+              <div className="text-xs text-gray-500 font-medium">
+                1인 1실 기준이며 {diyNights}박 일정 요금이 견적서에 자동 반영됩니다.
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHotelModal(false)}
+                className="px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
+              >
+                선택 완료 & 적용 ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 10: DIY STEP 5 VEHICLE SELECTION MODAL ================= */}
+      {showVehicleModal && (
+        <div
+          className="fixed inset-0 bg-black/75 z-[10002] flex items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden font-sans break-keep"
+          onClick={() => setShowVehicleModal(false)}
+        >
+          <div
+            className="bg-white rounded-none md:rounded-3xl max-w-none md:max-w-2xl w-full h-full md:h-auto max-h-none md:max-h-[92vh] p-0 md:p-6 relative shadow-2xl animate-scale-in flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-3 py-2.5 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10">
+              <div>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] md:text-xs font-bold rounded-md">
+                  STEP 5 · 전 일정 ({diyDays}일) 단독 전용 · 차량 1대 (인원 무관)
+                </span>
+                <h3 className="text-base sm:text-lg md:text-xl font-black text-deepgreen mt-1">
+                  🚐 전용 차량을 선택하세요
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVehicleModal(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-2.5 md:px-0 py-3 md:py-4 space-y-2.5">
+              {diyVehicles.map((item) => {
+                const isSelected = selectedVehicleItem?.id === item.id;
+                const dayRate = item.pricePerDayUSD ?? Math.max(15, 25 + (item.priceDeltaUSD || 0));
+                const scheduleVehTotal = Math.round(dayRate * diyDays);
+                const displayName = item.shortName || item.name;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setDiyVehicleType(item.id);
+                      setShowVehicleModal(false);
+                      showToast(`🚐 '${displayName}' 차량이 선택되었습니다.`);
+                    }}
+                    className={`p-3.5 sm:p-4 rounded-2xl border-2 cursor-pointer transition flex items-center justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/50 shadow-sm'
+                        : 'bg-white hover:bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-2xl shrink-0">
+                        {isImageIconUrl(item.icon) ? (
+                          <img src={getFreshImageUrl(item.icon)} alt={displayName} className="w-7 h-7 object-contain rounded" />
+                        ) : (
+                          item.icon || '🚐'
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-extrabold text-sm md:text-base text-gray-900">{displayName}</h4>
+                          {item.name !== displayName && (
+                            <span className="text-[11px] font-semibold text-gray-500">{item.name}</span>
+                          )}
+                          {item.badge && (
+                            <span className="px-2 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] md:text-xs text-gray-500 mt-0.5 leading-snug">{item.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0 space-y-1">
+                      <div className="text-xs md:text-sm font-black text-deepgreen tabular-nums">
+                        1일 ${dayRate.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] md:text-[11px] font-bold text-gray-500 tabular-nums">
+                        ({diyDays}일 ${scheduleVehTotal.toLocaleString()})
+                      </div>
+                      <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
+                        isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {isSelected ? '✓ 선택됨' : '선택'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex items-center justify-between gap-3">
+              <div className="text-xs text-gray-500 font-medium">
+                전용 차량 1대 · 기사/유류비 포함 (인원 무관 · {diyDays}일 총액 적용)
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVehicleModal(false)}
+                className="px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
+              >
+                선택 완료 & 적용 ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL 11: DIY STEP 6 DINNER SELECTION MODAL ================= */}
+      {showDinnerModal && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-0 md:p-4 backdrop-blur-xs"
+          onClick={() => setShowDinnerModal(false)}
+        >
+          <div
+            className="bg-white rounded-none md:rounded-3xl p-0 md:p-6 max-w-2xl w-full h-full md:h-auto max-h-screen md:max-h-[90vh] shadow-2xl border-0 md:border border-gray-200 flex flex-col justify-between overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-4 py-3 md:px-0 md:pt-0 md:pb-3 border-b border-gray-100 bg-white sticky top-0 z-10 flex justify-between items-start gap-3">
+              <div>
+                <span className="text-[11px] md:text-xs font-extrabold text-deepgreen bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 inline-block mb-1">
+                  STEP 6 · {diyLocation} · {diyNights}박 {diyDays}일 저녁식사
+                </span>
+                <h3 className="text-lg md:text-xl font-black text-gray-900">
+                  🍽️ 일자별 저녁식사 선택
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  선택된 여행 지역과 일정에 맞춰 일자별 저녁식사를 선택해 주세요. (미선택 시 미포함)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDinnerModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold flex items-center justify-center shrink-0 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto flex-1 px-3 py-3 md:px-0 md:py-4 space-y-3">
+              {/* Day Tabs (1일차 ~ diyNights일차) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 px-0.5">
+                  <span>일정별 저녁 선택 (마지막 귀국일 제외 {diyNights}일간)</span>
+                  <span className="text-deepgreen">{activeDinnerDay}일차 저녁 편집 중</span>
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                  {Array.from({ length: diyNights }, (_, idx) => idx + 1).map(dayNum => {
+                    const pickedId = diyDinnerSelections[dayNum];
+                    const pickedMenu = activeRegionDinnerMenus.find(m => m.id === pickedId);
+                    const isActive = activeDinnerDay === dayNum;
+                    return (
+                      <button
+                        key={dayNum}
+                        type="button"
+                        onClick={() => setActiveDinnerDay(dayNum)}
+                        className={`p-2 rounded-xl border text-left transition cursor-pointer ${
+                          isActive
+                            ? 'bg-deepgreen text-white border-deepgreen shadow-sm'
+                            : pickedMenu
+                              ? 'bg-emerald-50 text-emerald-900 border-emerald-400'
+                              : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-emerald-300'
+                        }`}
+                      >
+                        <div className={`text-[11px] font-black ${isActive ? 'text-gold-300' : 'text-gray-500'}`}>
+                          {dayNum}일차 저녁
+                        </div>
+                        <div className="text-xs font-extrabold truncate mt-0.5">
+                          {pickedMenu ? pickedMenu.name : '미포함'}
+                        </div>
+                        <div className={`text-[10px] font-bold tabular-nums ${isActive ? 'text-emerald-200' : pickedMenu ? 'text-deepgreen' : 'text-gray-400'}`}>
+                          {pickedMenu ? `$${pickedMenu.priceUSD}/인` : '선택 안함'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Unselect Option for Current Day */}
+              {(() => {
+                const currentPickedId = diyDinnerSelections[activeDinnerDay];
+                const isNoneSelected = !currentPickedId;
+                return (
+                  <div
+                    onClick={() => {
+                      setDiyDinnerSelections(prev => {
+                        const next = { ...prev };
+                        delete next[activeDinnerDay];
+                        return next;
+                      });
+                    }}
+                    className={`p-3 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-3 ${
+                      isNoneSelected
+                        ? 'bg-gray-100 border-gray-400 ring-2 ring-gray-300/70 shadow-xs'
+                        : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-9 h-9 rounded-xl bg-gray-100 text-lg flex items-center justify-center shrink-0 border border-gray-200">
+                        ➖
+                      </span>
+                      <div>
+                        <div className="font-extrabold text-sm text-gray-900">
+                          {activeDinnerDay}일차 선택 안함 (미포함)
+                        </div>
+                        <div className="text-[11px] text-gray-500">
+                          해당 일차는 자유 석식으로 진행하며 추가 비용이 발생하지 않습니다.
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 ${
+                      isNoneSelected ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {isNoneSelected ? '✓ 미포함' : '미포함 선택'}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* Regional Recommended 6 Menus (Toggle Select / Deselect) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {activeRegionDinnerMenus.map(menu => {
+                  const isSelected = diyDinnerSelections[activeDinnerDay] === menu.id;
+                  return (
+                    <div
+                      key={menu.id}
+                      onClick={() => {
+                        setDiyDinnerSelections(prev => {
+                          if (prev[activeDinnerDay] === menu.id) {
+                            const next = { ...prev };
+                            delete next[activeDinnerDay];
+                            return next;
+                          }
+                          return {
+                            ...prev,
+                            [activeDinnerDay]: menu.id
+                          };
+                        });
+                      }}
+                      className={`p-3.5 rounded-2xl border cursor-pointer transition flex flex-col justify-between gap-2.5 ${
+                        isSelected
+                          ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-400/70 shadow-sm'
+                          : 'bg-white border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/20'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="font-extrabold text-sm text-gray-900">{menu.name}</h4>
+                            {menu.badge && (
+                              <span className="px-1.5 py-0.5 bg-gold-100 text-gold-800 text-[10px] font-bold rounded">
+                                {menu.badge}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs md:text-sm font-black text-deepgreen tabular-nums shrink-0">
+                            1인 ${menu.priceUSD}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-snug">{menu.description}</p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-gray-100/80">
+                        <span className="text-[10px] text-gray-400 font-semibold">
+                          {isSelected ? '클릭 시 선택 해제 (미포함)' : `${activeDinnerDay}일차 저녁 적용`}
+                        </span>
+                        <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${
+                          isSelected ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {isSelected ? '✓ 선택됨' : '선택'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-3 py-2.5 md:px-0 md:pb-0 md:pt-3 border-t border-gray-100 bg-white sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center justify-between sm:justify-start gap-3">
+                <div className="text-xs text-gray-600 font-medium">
+                  {dinnerCount > 0 ? (
+                    <>
+                      선택 <strong className="text-deepgreen">{dinnerCount}회</strong> · 1인 총 <strong className="text-deepgreen tabular-nums">${dinnerPerPersonTotal.toLocaleString()}</strong>{' '}
+                      <span className="text-[11px] text-gray-400">({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})</span>
+                    </>
+                  ) : (
+                    <span>선택된 저녁식사 없음 (미포함)</span>
+                  )}
+                </div>
+                {dinnerCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDiyDinnerSelections({})}
+                    className="text-[11px] font-bold text-gray-500 hover:text-red-600 underline cursor-pointer shrink-0"
+                  >
+                    전체 미포함
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDinnerModal(false)}
+                className="w-full sm:w-auto px-6 py-3 bg-deepgreen hover:bg-[#00382e] text-white rounded-2xl text-sm font-black shadow-md cursor-pointer shrink-0"
               >
                 선택 완료 & 적용 ✓
               </button>
