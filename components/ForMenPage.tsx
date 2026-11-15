@@ -11,30 +11,35 @@ interface Props {
 
 const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
   return (
-    <div className="min-h-screen bg-white text-white font-sans overflow-x-hidden animate-fade-in pb-safe md:pb-0">
-      {/* Compact Hero */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4 pb-1 sm:pb-2">
-        <section className="relative h-[170px] xs:h-[190px] sm:h-[230px] md:h-[270px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl border-0 sm:border sm:border-white/10 shadow-xl">
-          <div className="absolute inset-0 z-0">
-            <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-50" />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-[#050505]"></div>
-          </div>
-          
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-            <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
-          </div>
+    <div className="min-h-screen bg-white text-white font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
+      {/* Sticky Compact Hero */}
+      <div
+        className="sticky z-20 w-full bg-white pb-2 sm:pb-3"
+        style={{ top: 'var(--site-header-height, 45px)' }}
+      >
+        <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-3">
+          <section className="relative h-[144px] sm:h-[158px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl border-0 sm:border sm:border-white/10 shadow-xl">
+            <div className="absolute inset-0 z-0">
+              <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-50" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-[#050505]"></div>
+            </div>
+            
+            <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 md:top-4 md:left-4 z-50">
+              <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
+            </div>
 
-          <div className="relative z-10 text-center animate-fade-in-up px-4">
-             <div className="mb-1.5 xs:mb-2 inline-block border-b border-gold-500">
-               <p className="text-[10px] xs:text-xs font-bold tracking-[0.3em] uppercase text-gold-400">Exclusive Nightlife</p>
-             </div>
-             <h1 className="text-3xl xs:text-4xl md:text-5xl font-black tracking-tight text-white drop-shadow-2xl mb-1 uppercase leading-tight">{content.heroTitle}</h1>
-             <p className="text-[10px] xs:text-xs font-medium text-gray-400 uppercase tracking-widest">{content.heroSubtitle}</p>
-          </div>
-        </section>
+            <div className="relative z-10 text-center animate-fade-in-up px-4 pt-5 sm:pt-3 md:pt-0">
+               <div className="mb-1 sm:mb-1.5 inline-block border-b border-gold-500">
+                 <p className="text-[9px] xs:text-[10px] sm:text-xs font-bold tracking-[0.25em] sm:tracking-[0.3em] uppercase text-gold-400">Exclusive Nightlife</p>
+               </div>
+               <h1 className="text-2xl xs:text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-2xl mb-0.5 sm:mb-1 uppercase leading-tight">{content.heroTitle}</h1>
+               <p className="text-[9px] xs:text-[10px] sm:text-xs font-medium text-gray-400 uppercase tracking-widest">{content.heroSubtitle}</p>
+            </div>
+          </section>
+        </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-0 sm:px-4 py-0 sm:py-2">
+      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-1 pb-0 sm:pt-0 sm:pb-2">
         <section className="py-5 sm:py-8 px-0 sm:px-6 md:px-8 bg-[#0a0a0a] border-y sm:border border-white/10 rounded-none sm:rounded-2xl md:rounded-3xl shadow-xl overflow-hidden">
            <div className="flex flex-col lg:flex-row gap-4 sm:gap-8 items-center mb-5 sm:mb-8">
               <div className="flex-1 space-y-3 px-2.5 sm:px-0">

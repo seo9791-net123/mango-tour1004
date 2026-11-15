@@ -5570,12 +5570,12 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
       {/* 5. Live Visitor Popup Preview Modal */}
       {showPopupLivePreview && (
         <div 
-          className="fixed inset-0 z-[10008] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-0 md:p-4 animate-fade-in"
+          className="fixed inset-0 z-[10008] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fade-in"
           onClick={() => setShowPopupLivePreview(false)}
         >
           {/* Header Banner */}
           <div 
-            className="mb-2 md:mb-4 bg-gold-400 text-deepgreen px-3 md:px-5 py-1.5 md:py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-xl border border-gold-300 mt-2 md:mt-0 shrink-0"
+            className="mb-3 md:mb-4 bg-gold-400 text-deepgreen px-3 md:px-5 py-1.5 md:py-2 rounded-full font-black text-xs flex items-center gap-2 shadow-xl border border-gold-300 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <span>📱</span> [실제 방문자 화면 미리보기] 모드
@@ -5585,7 +5585,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
 
           {/* Exact Visitor Popup Simulation */}
           <div 
-            className="bg-white rounded-none md:rounded-[2.5rem] overflow-hidden shadow-2xl max-w-none md:max-w-sm w-full flex-1 md:flex-initial animate-scale-in border-0 md:border md:border-white/30 relative overflow-y-auto"
+            className="bg-white rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl w-[80%] md:w-full md:max-w-sm max-h-[80vh] md:max-h-[90vh] h-auto flex flex-col animate-scale-in border border-white/30 relative overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close X */}
@@ -5598,11 +5598,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             </button>
 
             {popup.image ? (
-              <div className={`relative overflow-hidden bg-gray-950 flex items-center justify-center ${
-                popup.imageHeight === 'compact' ? 'h-48' :
-                popup.imageHeight === 'large' ? 'h-80' :
-                popup.imageHeight === 'auto' ? 'min-h-[200px] max-h-[380px] h-auto' :
-                popup.imageHeight === 'medium' ? 'h-64' :
+              <div className={`relative shrink-0 overflow-hidden bg-gray-950 flex items-center justify-center ${
+                popup.imageHeight === 'compact' ? 'h-36 md:h-48' :
+                popup.imageHeight === 'large' ? 'h-60 md:h-80' :
+                popup.imageHeight === 'auto' ? 'min-h-[160px] max-h-[300px] md:min-h-[200px] md:max-h-[380px] h-auto' :
+                popup.imageHeight === 'medium' ? 'h-48 md:h-64' :
                 'aspect-video w-full'
               }`}>
                 {/* Ambient Blurred Backdrop */}
@@ -5622,14 +5622,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                 />
               </div>
             ) : (
-              <div className="p-6 bg-deepgreen text-white">
-                <h3 className="font-bold text-xl">{popup.title || '공지사항 제목'}</h3>
+              <div className="p-5 md:p-6 bg-deepgreen text-white">
+                <h3 className="font-bold text-lg md:text-xl">{popup.title || '공지사항 제목'}</h3>
               </div>
             )}
 
-            <div className="p-6 sm:p-8 space-y-4">
-              {!popup.image && <h3 className="text-deepgreen font-bold text-xl">{popup.title || '공지사항'}</h3>}
-              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+            <div className="p-4 md:p-8 space-y-3 md:space-y-4">
+              {!popup.image && <h3 className="text-deepgreen font-bold text-lg md:text-xl">{popup.title || '공지사항'}</h3>}
+              <p className="text-gray-600 text-xs md:text-sm leading-relaxed whitespace-pre-line">
                 {popup.content || '공지사항 내용이 여기에 표시됩니다.'}
               </p>
               
@@ -5640,7 +5640,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                     onClick={() => {
                       alert(`[링크 이동 테스트]\n${popup.link} 로 이동합니다.`);
                     }}
-                    className="w-full py-3.5 bg-deepgreen text-white rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition transform active:scale-95 text-sm"
+                    className="w-full py-3 md:py-3.5 bg-deepgreen text-white rounded-xl md:rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition transform active:scale-95 text-sm"
                   >
                     자세히 보기
                   </button>
@@ -5648,7 +5648,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                 <button 
                   type="button"
                   onClick={() => setShowPopupLivePreview(false)}
-                  className="w-full py-3.5 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition text-sm cursor-pointer"
+                  className="w-full py-3 md:py-3.5 bg-gray-100 text-gray-600 rounded-xl md:rounded-2xl font-bold hover:bg-gray-200 transition text-sm cursor-pointer"
                 >
                   미리보기 닫기
                 </button>

@@ -281,37 +281,42 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 text-black font-sans overflow-x-hidden animate-fade-in pb-safe md:pb-0`}>
-      {/* Subpage Hero Banner */}
+    <div className={`min-h-screen bg-gray-50 text-black font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0`}>
+      {/* Sticky Subpage Hero Banner */}
       {onBack ? (
-        <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4 pb-1 sm:pb-0">
-          <section className="relative h-[170px] xs:h-[190px] sm:h-[230px] md:h-[270px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
-            <div className="absolute inset-0 z-0">
-              <img 
-                src={getFreshImageUrl("https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80")} 
-                alt="Community Hero" 
-                className="w-full h-full object-cover object-center opacity-60" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
-            </div>
-            
-            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-              <BackButton onClick={handleTopBack} variant="hero" label={viewingPost || isAdding ? '목록으로' : '뒤로가기'} />
-            </div>
+        <div
+          className="sticky z-20 w-full bg-gray-50 pb-2 sm:pb-3"
+          style={{ top: 'var(--site-header-height, 45px)' }}
+        >
+          <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-3">
+            <section className="relative h-[140px] sm:h-[156px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
+              <div className="absolute inset-0 z-0">
+                <img 
+                  src={getFreshImageUrl("https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80")} 
+                  alt="Community Hero" 
+                  className="w-full h-full object-cover object-center opacity-60" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
+              </div>
+              
+              <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 md:top-4 md:left-4 z-50">
+                <BackButton onClick={handleTopBack} variant="hero" label={viewingPost || isAdding ? '목록으로' : '뒤로가기'} />
+              </div>
 
-            <div className="relative z-10 text-center px-4">
-              <h1 className="text-2xl xs:text-3xl md:text-4xl font-black text-white drop-shadow-2xl mb-1 uppercase tracking-tight break-keep">
-                커뮤니티 & 여행 후기
-              </h1>
-              <p className="text-[11px] xs:text-xs md:text-sm font-bold tracking-[0.25em] text-gold-400 uppercase break-keep">
-                MEMBER STORIES & REVIEWS
-              </p>
-            </div>
-          </section>
+              <div className="relative z-10 text-center px-4 pt-4 sm:pt-2 md:pt-0">
+                <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black text-white drop-shadow-2xl mb-0.5 sm:mb-1 uppercase tracking-tight break-keep">
+                  커뮤니티 & 여행 후기
+                </h1>
+                <p className="text-[10px] xs:text-[11px] md:text-sm font-bold tracking-[0.2em] sm:tracking-[0.25em] text-gold-400 uppercase break-keep">
+                  MEMBER STORIES & REVIEWS
+                </p>
+              </div>
+            </section>
+          </div>
         </div>
       ) : null}
 
-      <section className="py-3 sm:py-8 bg-gray-50 text-black">
+      <section className="pt-1 pb-5 sm:pt-3 sm:pb-8 bg-gray-50 text-black">
         <div className="max-w-7xl mx-auto px-0 sm:px-4">
           
           {/* Action Bar (Header or Title Bar) */}

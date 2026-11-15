@@ -1292,14 +1292,14 @@ const App: React.FC = () => {
 
       {/* Popup Notification */}
       {showPopup && popup.isActive && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-none md:rounded-[2.5rem] overflow-hidden shadow-2xl max-w-none md:max-w-sm w-full h-full md:h-auto flex flex-col justify-center animate-scale-in border-0 md:border border-white/20 overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl w-[80%] md:w-full md:max-w-sm max-h-[80vh] md:max-h-[90vh] h-auto flex flex-col animate-scale-in border border-white/20 overflow-y-auto">
             {popup.image && (
-              <div className={`relative overflow-hidden bg-gray-950 flex items-center justify-center ${
-                popup.imageHeight === 'compact' ? 'h-48' :
-                popup.imageHeight === 'large' ? 'h-80' :
-                popup.imageHeight === 'auto' ? 'min-h-[200px] max-h-[380px] h-auto' :
-                popup.imageHeight === 'medium' ? 'h-64' :
+              <div className={`relative shrink-0 overflow-hidden bg-gray-950 flex items-center justify-center ${
+                popup.imageHeight === 'compact' ? 'h-36 md:h-48' :
+                popup.imageHeight === 'large' ? 'h-60 md:h-80' :
+                popup.imageHeight === 'auto' ? 'min-h-[160px] max-h-[300px] md:min-h-[200px] md:max-h-[380px] h-auto' :
+                popup.imageHeight === 'medium' ? 'h-48 md:h-64' :
                 'aspect-video w-full'
               }`}>
                 {/* Ambient Blurred Backdrop */}
@@ -1319,22 +1319,22 @@ const App: React.FC = () => {
                 />
               </div>
             )}
-            <div className="p-4 md:p-8 space-y-4">
-              {!popup.image && <h3 className="text-deepgreen font-bold text-xl">{popup.title}</h3>}
-              <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{popup.content}</p>
+            <div className="p-4 md:p-8 space-y-3 md:space-y-4">
+              {!popup.image && <h3 className="text-deepgreen font-bold text-lg md:text-xl">{popup.title}</h3>}
+              <p className="text-gray-600 text-xs md:text-sm leading-relaxed whitespace-pre-line">{popup.content}</p>
               
-              <div className="pt-4 flex flex-col gap-2">
+              <div className="pt-2 md:pt-4 flex flex-col gap-2">
                 {popup.link && (
                   <button 
                     onClick={() => { window.open(popup.link, '_blank'); setShowPopup(false); sessionStorage.setItem('mango_popup_closed', 'true'); }}
-                    className="w-full py-4 bg-deepgreen text-white rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition transform active:scale-95"
+                    className="w-full py-3 md:py-4 bg-deepgreen text-white rounded-xl md:rounded-2xl font-bold text-sm md:text-base shadow-lg hover:bg-gold-600 transition transform active:scale-95"
                   >
                     자세히 보기
                   </button>
                 )}
                 <button 
                   onClick={() => { setShowPopup(false); sessionStorage.setItem('mango_popup_closed', 'true'); }}
-                  className="w-full py-4 bg-gray-100 text-gray-500 rounded-2xl font-bold hover:bg-gray-200 transition"
+                  className="w-full py-3 md:py-4 bg-gray-100 text-gray-500 rounded-xl md:rounded-2xl font-bold text-sm md:text-base hover:bg-gray-200 transition"
                 >
                   닫기
                 </button>

@@ -27,26 +27,29 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
   }, [isSliderOpen]);
 
   return (
-    <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in pb-safe md:pb-0">
-      {/* Compact Hero */}
-      <div className="bg-gray-50">
-        <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4 pb-1 sm:pb-0">
-          <section className="relative h-[170px] xs:h-[190px] sm:h-[230px] md:h-[270px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
+    <div className="min-h-screen bg-white text-black font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
+      {/* Sticky Compact Hero */}
+      <div
+        className="sticky z-20 w-full bg-gray-50 pb-2 sm:pb-3"
+        style={{ top: 'var(--site-header-height, 45px)' }}
+      >
+        <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-3">
+          <section className="relative h-[144px] sm:h-[158px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
             <div className="absolute inset-0 z-0">
               <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-60" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
             </div>
             
-            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
+            <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 md:top-4 md:left-4 z-50">
               <BackButton onClick={isSliderOpen ? () => setIsSliderOpen(false) : onBack} variant="hero" label={isSliderOpen ? '닫기' : '뒤로가기'} />
             </div>
 
-            <div className="relative z-10 text-center px-4">
-               <div className="mb-1.5 xs:mb-2 inline-block border-b border-gold-500">
-                 <p className="text-[11px] xs:text-xs md:text-sm font-bold tracking-[0.25em] uppercase text-gold-400">{content.heroSubtitle}</p>
+            <div className="relative z-10 text-center px-4 pt-5 sm:pt-3 md:pt-0">
+               <div className="mb-1 sm:mb-1.5 inline-block border-b border-gold-500">
+                 <p className="text-[10px] xs:text-[11px] md:text-sm font-bold tracking-[0.2em] sm:tracking-[0.25em] uppercase text-gold-400">{content.heroSubtitle}</p>
                </div>
-               <h1 className="text-2xl xs:text-3xl md:text-4xl font-black tracking-tight text-white drop-shadow-2xl mb-1 uppercase leading-tight">{content.heroTitle}</h1>
-               <div className="mt-1.5 flex justify-center gap-1.5">
+               <h1 className="text-xl xs:text-2xl md:text-4xl font-black tracking-tight text-white drop-shadow-2xl mb-1 uppercase leading-tight">{content.heroTitle}</h1>
+               <div className="mt-1 sm:mt-1.5 flex justify-center gap-1.5">
                   <span className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-[9px] xs:text-[10px] text-white font-medium whitespace-nowrap">#명문골프장</span>
                   <span className="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-[9px] xs:text-[10px] text-white font-medium whitespace-nowrap">#VIP의전</span>
                </div>
@@ -55,7 +58,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </div>
 
-      <section className="py-5 sm:py-8 bg-gray-50 text-black border-b border-gray-100">
+      <section className="pt-3 pb-5 sm:pt-5 sm:pb-8 bg-gray-50 text-black border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-0 sm:px-4 text-left">
            <div className="px-2.5 sm:px-0">
               <h2 className="text-xl xs:text-2xl md:text-3xl font-black uppercase mb-2 tracking-tight text-deepgreen">{content.introTitle}</h2>

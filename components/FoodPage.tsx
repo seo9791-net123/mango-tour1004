@@ -11,27 +11,32 @@ interface Props {
 
 const FoodPage: React.FC<Props> = ({ content, onBack }) => {
   return (
-    <div className="min-h-screen bg-white text-black font-sans overflow-x-hidden animate-fade-in pb-safe md:pb-0">
-      {/* Compact Hero */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-4 pb-1 sm:pb-0">
-        <section className="relative h-[170px] xs:h-[190px] sm:h-[230px] md:h-[270px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
-          <div className="absolute inset-0 z-0">
-            <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-60" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
-          </div>
-          
-          <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-50">
-            <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
-          </div>
+    <div className="min-h-screen bg-white text-black font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
+      {/* Sticky Compact Hero */}
+      <div
+        className="sticky z-20 w-full bg-white pb-2 sm:pb-3"
+        style={{ top: 'var(--site-header-height, 45px)' }}
+      >
+        <div className="max-w-7xl mx-auto px-0 sm:px-4 pt-0 sm:pt-3">
+          <section className="relative h-[140px] sm:h-[156px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none sm:rounded-2xl md:rounded-3xl shadow-md">
+            <div className="absolute inset-0 z-0">
+              <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-60" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/30"></div>
+            </div>
+            
+            <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 md:top-4 md:left-4 z-50">
+              <BackButton onClick={onBack} variant="hero" label="뒤로가기" />
+            </div>
 
-          <div className="relative z-10 text-center px-4">
-             <h1 className="text-2xl xs:text-3xl md:text-4xl font-black text-white mb-1 uppercase drop-shadow-xl">{content.heroTitle}</h1>
-             <p className="text-[11px] xs:text-xs md:text-sm text-gold-400 font-bold tracking-widest">{content.heroSubtitle}</p>
-          </div>
-        </section>
+            <div className="relative z-10 text-center px-4 pt-4 sm:pt-2 md:pt-0">
+               <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-black text-white mb-0.5 sm:mb-1 uppercase drop-shadow-xl">{content.heroTitle}</h1>
+               <p className="text-[10px] xs:text-[11px] md:text-sm text-gold-400 font-bold tracking-widest">{content.heroSubtitle}</p>
+            </div>
+          </section>
+        </div>
       </div>
 
-      <section className="py-5 sm:py-8 max-w-7xl mx-auto px-0 sm:px-4">
+      <section className="pt-3 pb-5 sm:pt-5 sm:pb-8 max-w-7xl mx-auto px-0 sm:px-4">
         <div className="text-left mb-5 sm:mb-8">
            <div className="px-2.5 sm:px-0">
               <h2 className="text-xl xs:text-2xl md:text-3xl font-black uppercase mb-2 text-deepgreen tracking-tight">{content.introTitle}</h2>
