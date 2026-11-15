@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, PageSection } from '../types';
+import { Product, PageSection, RecommendedDiscountPopup } from '../types';
 import SectionDetailModal from './SectionDetailModal';
 import BackButton from './BackButton';
 import { getFreshImageUrl } from '../utils/imageUtils';
+import RecommendedDiscountModal, {
+  isDiscountPopupHiddenToday,
+  hideDiscountPopupToday
+} from './RecommendedDiscountModal';
 
 interface Props {
   category: string;
@@ -12,6 +16,7 @@ interface Props {
   onBack: () => void;
   isLoggedIn?: boolean;
   onReqLogin?: () => void;
+  recommendedDiscountPopup?: RecommendedDiscountPopup;
 }
 
 type DurationFilterKey = '3박5일' | '4박6일' | '5박7일';
@@ -57,20 +62,43 @@ const DurationIcon: React.FC<{ optionKey: DurationFilterKey; active: boolean }> 
   );
 };
 
-const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onBack, isLoggedIn, onReqLogin }) => {
+const CategoryPage: React.FC<Props> = ({
+  category,
+  products,
+  onProductClick,
+  onBack,
+  isLoggedIn,
+  onReqLogin,
+  recommendedDiscountPopup
+}) => {
   const [selectedDetail, setSelectedDetail] = useState<PageSection | null>(null);
   const [selectedDuration, setSelectedDuration] = useState<DurationFilterKey>('3박5일');
+  const [showDiscountPopup, setShowDiscountPopup] = useState(false);
 
   const isRecommendedCategory = category === '추천 상품';
 
-  // Reset duration filter when entering or changing category
+  // Reset duration filter when entering or changing category & check discount popup
   useEffect(() => {
     setSelectedDuration('3박5일');
-  }, [category]);
+    if (
+      category === '추천 상품' &&
+      recommendedDiscountPopup?.isActive &&
+      !isDiscountPopupHiddenToday()
+    ) {
+      setShowDiscountPopup(true);
+    } else {
+      setShowDiscountPopup(false);
+    }
+  }, [category, recommendedDiscountPopup?.isActive]);
 
   // Listen for mobile bottom nav "뒤로가기" event
   useEffect(() => {
     const handleSubViewBack = (e: any) => {
+      if (showDiscountPopup) {
+        setShowDiscountPopup(false);
+        e?.detail?.handled?.();
+        return;
+      }
       if (selectedDetail) {
         setSelectedDetail(null);
         e?.detail?.handled?.();
@@ -82,7 +110,7 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
     return () => {
       window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
     };
-  }, [selectedDetail]);
+  }, [selectedDetail, showDiscountPopup]);
 
   const filteredProducts = useMemo(() => {
     if (!isRecommendedCategory) {
@@ -246,6 +274,19 @@ const CategoryPage: React.FC<Props> = ({ category, products, onProductClick, onB
 
       {selectedDetail && (
         <SectionDetailModal section={selectedDetail} onClose={() => setSelectedDetail(null)} />
+      )}
+
+      {recommendedDiscountPopup && (
+        <RecommendedDiscountModal
+          isOpen={showDiscountPopup && recommendedDiscountPopup.isActive}
+          data={recommendedDiscountPopup}
+          onClose={() => setShowDiscountPopup(false)}
+          onHideToday={() => {
+            hideDiscountPopupToday();
+            setShowDiscountPopup(false);
+          }}
+          onSelectProduct={(productId) => onProductClick(productId)}
+        />
       )}
     </div>
   );

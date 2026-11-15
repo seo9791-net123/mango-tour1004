@@ -1,5 +1,5 @@
 
-import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, CustomTripPackage, MasterOptionPool } from './types';
+import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, RecommendedDiscountPopup, CustomTripPackage, MasterOptionPool } from './types';
 
 export const LOCATIONS = ['호치민', '붕따우', '무이네', '나트랑', '달랏'];
 export const THEMES = ['골프', '관광', '먹거리', '비지니스'];
@@ -1092,6 +1092,18 @@ export const INITIAL_POPUP: PopupNotification = {
   image: 'https://images.unsplash.com/photo-1628753232870-6da09a967c9c?q=80&w=800',
   imageFit: 'contain',
   imageHeight: '16:9'
+};
+
+export const INITIAL_RECOMMENDED_DISCOUNT_POPUP: RecommendedDiscountPopup = {
+  isActive: true,
+  badgeText: '선착순 특가',
+  productTitle: '달랏 3박 5일 54홀 VIP 골프 투어',
+  discountRate: '30% OFF',
+  originalPrice: '1,500,000원',
+  discountPrice: '1,050,000원',
+  benefitSummary: '전 일정 리무진 + 그린피/캐디피 포함\n5성급 리조트 2인 1실 및 조식 제공',
+  deadline: '2026년 11월 30일 예약분까지',
+  link: 'https://open.kakao.com/o/gprQnKSi'
 };
 
 export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [

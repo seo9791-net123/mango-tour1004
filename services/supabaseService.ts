@@ -7,6 +7,7 @@ import {
   CommunityPost, 
   PageContent, 
   PopupNotification, 
+  RecommendedDiscountPopup,
   CustomTripPackage,
   ChatMessage,
   User,
@@ -20,6 +21,7 @@ import {
   SUB_MENU_ITEMS, 
   INITIAL_PAGE_CONTENTS, 
   INITIAL_POPUP, 
+  INITIAL_RECOMMENDED_DISCOUNT_POPUP,
   INITIAL_CUSTOM_PACKAGES,
   INITIAL_MASTER_OPTION_POOL
 } from '../constants';
@@ -38,6 +40,7 @@ export const supabaseService = {
       posts: INITIAL_POSTS,
       pageContents: INITIAL_PAGE_CONTENTS,
       popup: INITIAL_POPUP,
+      recommendedDiscountPopup: INITIAL_RECOMMENDED_DISCOUNT_POPUP,
       customPackages: INITIAL_CUSTOM_PACKAGES,
       masterOptionPool: INITIAL_MASTER_OPTION_POOL,
       cloudinaryConfig: { cloudName: 'ducor31pp', uploadPreset: 'mangotour' },
@@ -175,15 +178,30 @@ export const supabaseService = {
         });
       }
 
-      // 6. Popup
+      // 6. Popup & Recommended Discount Popup
       let popup = INITIAL_POPUP;
-      const { data: popupData } = await supabase
+      let recommendedDiscountPopup = INITIAL_RECOMMENDED_DISCOUNT_POPUP;
+      try {
+        const localRecPopup = localStorage.getItem('mango_recommended_discount_popup_db');
+        if (localRecPopup) {
+          recommendedDiscountPopup = { ...INITIAL_RECOMMENDED_DISCOUNT_POPUP, ...JSON.parse(localRecPopup) };
+        }
+      } catch {
+        // ignore
+      }
+      const { data: popupRows } = await supabase
         .from('popup')
         .select('*')
-        .eq('id', 'main')
-        .maybeSingle();
-      if (popupData) {
-        popup = popupData.data || popupData;
+        .in('id', ['main', 'recommended_discount']);
+      if (popupRows && popupRows.length > 0) {
+        const mainRow = popupRows.find((r: any) => r.id === 'main');
+        if (mainRow) {
+          popup = mainRow.data || mainRow;
+        }
+        const recRow = popupRows.find((r: any) => r.id === 'recommended_discount');
+        if (recRow) {
+          recommendedDiscountPopup = { ...INITIAL_RECOMMENDED_DISCOUNT_POPUP, ...(recRow.data || recRow) };
+        }
       }
 
       // 7. Custom Packages
@@ -204,6 +222,7 @@ export const supabaseService = {
         posts,
         pageContents,
         popup,
+        recommendedDiscountPopup,
         customPackages,
         masterOptionPool,
         cloudinaryConfig,
@@ -383,6 +402,32 @@ export const supabaseService = {
         }, { onConflict: 'id' });
     } catch (e) {
       console.warn("Failed to save popup to Supabase:", e);
+    }
+  },
+
+  /**
+   * 추천상품 할인 팝업 저장
+   */
+  async saveRecommendedDiscountPopup(discountPopup: RecommendedDiscountPopup) {
+    try {
+      localStorage.setItem('mango_recommended_discount_popup_db', JSON.stringify(discountPopup));
+    } catch {
+      // ignore
+    }
+
+    const supabase = getSupabase();
+    if (!supabase || !isSupabaseConfigured) return;
+
+    try {
+      await supabase
+        .from('popup')
+        .upsert({
+          id: 'recommended_discount',
+          data: discountPopup,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+    } catch (e) {
+      console.warn("Failed to save recommended discount popup to Supabase:", e);
     }
   },
 
@@ -647,6 +692,7 @@ export const supabaseService = {
     menuItems: any[];
     cloudinaryConfig: { cloudName: string; uploadPreset: string };
     popup: PopupNotification;
+    recommendedDiscountPopup?: RecommendedDiscountPopup;
     pageContents: Record<string, PageContent>;
   }) {
     const supabase = getSupabase();
@@ -665,12 +711,22 @@ export const supabaseService = {
       updated_at: new Date().toISOString()
     }, { onConflict: 'id' });
 
-    // 2. Popup
-    await supabase.from('popup').upsert({
-      id: 'main',
-      data: payload.popup,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'id' });
+    // 2. Popup & Recommended Discount Popup
+    const popupRows: Array<{ id: string; data: any; updated_at: string }> = [
+      {
+        id: 'main',
+        data: payload.popup,
+        updated_at: new Date().toISOString()
+      }
+    ];
+    if (payload.recommendedDiscountPopup) {
+      popupRows.push({
+        id: 'recommended_discount',
+        data: payload.recommendedDiscountPopup,
+        updated_at: new Date().toISOString()
+      });
+    }
+    await supabase.from('popup').upsert(popupRows, { onConflict: 'id' });
 
     // 3. Products
     if (payload.products && payload.products.length > 0) {

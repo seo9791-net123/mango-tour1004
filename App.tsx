@@ -21,8 +21,8 @@ import TripPlanner from './components/TripPlanner';
 import BottomNav from './components/BottomNav';
 import Privacy from './components/Privacy';
 import Terms from './components/Terms';
-import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
-import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
+import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { supabaseService } from './services/supabaseService';
 import { updateSupabaseCredentials } from './services/supabaseClient';
 import { setCloudinaryConfig } from './services/uploadService';
@@ -455,6 +455,14 @@ const App: React.FC = () => {
   };
 
   const [popup, setPopup] = useState<PopupNotification>(INITIAL_POPUP);
+  const [recommendedDiscountPopup, setRecommendedDiscountPopup] = useState<RecommendedDiscountPopup>(() => {
+    try {
+      const saved = localStorage.getItem('mango_recommended_discount_popup_db');
+      return saved ? { ...INITIAL_RECOMMENDED_DISCOUNT_POPUP, ...JSON.parse(saved) } : INITIAL_RECOMMENDED_DISCOUNT_POPUP;
+    } catch {
+      return INITIAL_RECOMMENDED_DISCOUNT_POPUP;
+    }
+  });
   const [customPackages, setCustomPackages] = useState<CustomTripPackage[]>(() => {
     const saved = localStorage.getItem('mango_custom_packages_db');
     const raw = saved ? JSON.parse(saved) : INITIAL_CUSTOM_PACKAGES;
@@ -656,6 +664,16 @@ const App: React.FC = () => {
     }
   }, 2000)).current;
 
+  const debouncedSyncRecommendedDiscountPopup = useRef(debounce(async (newDiscountPopup: RecommendedDiscountPopup) => {
+    if (isSyncing.current['recommended_discount_popup']) return;
+    isSyncing.current['recommended_discount_popup'] = true;
+    try {
+      await supabaseService.saveRecommendedDiscountPopup(newDiscountPopup);
+    } finally {
+      isSyncing.current['recommended_discount_popup'] = false;
+    }
+  }, 1500)).current;
+
   const debouncedSyncCustomPackages = useRef(debounce(async (newPkgs: CustomTripPackage[]) => {
     if (isSyncing.current['custom_packages']) return;
     isSyncing.current['custom_packages'] = true;
@@ -732,6 +750,13 @@ const App: React.FC = () => {
           }
           if (data.popup) {
             setPopup(data.popup);
+          }
+          if ((data as any).recommendedDiscountPopup) {
+            const loadedRecPopup = { ...INITIAL_RECOMMENDED_DISCOUNT_POPUP, ...(data as any).recommendedDiscountPopup };
+            setRecommendedDiscountPopup(loadedRecPopup);
+            try {
+              localStorage.setItem('mango_recommended_discount_popup_db', JSON.stringify(loadedRecPopup));
+            } catch {}
           }
           if (data.customPackages && data.customPackages.length > 0) {
             setCustomPackages(cleanCustomPackages(data.customPackages));
@@ -837,6 +862,16 @@ const App: React.FC = () => {
   const handleUpdatePopup = async (newPopup: PopupNotification) => {
     setPopup(newPopup);
     debouncedSyncPopup(newPopup);
+  };
+
+  const handleUpdateRecommendedDiscountPopup = async (newDiscountPopup: RecommendedDiscountPopup) => {
+    setRecommendedDiscountPopup(newDiscountPopup);
+    try {
+      localStorage.setItem('mango_recommended_discount_popup_db', JSON.stringify(newDiscountPopup));
+    } catch (e) {
+      console.warn("Failed to write recommended discount popup to localStorage:", e);
+    }
+    debouncedSyncRecommendedDiscountPopup(newDiscountPopup);
   };
 
   const handleUpdateCustomPackages = async (newPkgs: CustomTripPackage[]) => {
@@ -1153,6 +1188,8 @@ const App: React.FC = () => {
             videos={videos} setVideos={handleUpdateVideos}
             posts={posts} setPosts={handleUpdatePosts}
             popup={popup} setPopup={handleUpdatePopup}
+            recommendedDiscountPopup={recommendedDiscountPopup}
+            setRecommendedDiscountPopup={handleUpdateRecommendedDiscountPopup}
             setCurrentPage={setCurrentPage}
           />
         ) : (
@@ -1191,7 +1228,15 @@ const App: React.FC = () => {
               ) : selectedCategory === '이벤트' ? (
                 <EventPage content={pageContents['event']} onBack={handleBackOneStep} />
               ) : (
-                <CategoryPage category={selectedCategory} products={getFilteredProducts()} onProductClick={handleProductClick} onBack={handleBackOneStep} isLoggedIn={!!user} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} />
+                <CategoryPage
+                  category={selectedCategory}
+                  products={getFilteredProducts()}
+                  onProductClick={handleProductClick}
+                  onBack={handleBackOneStep}
+                  isLoggedIn={!!user}
+                  onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }}
+                  recommendedDiscountPopup={recommendedDiscountPopup}
+                />
               )
             ) : null}
           </>

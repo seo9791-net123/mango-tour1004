@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, ProductCostBreakdownItem, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
+import { User, Product, ProductCostBreakdownItem, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, RecommendedDiscountPopup, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
 import { 
   INITIAL_PRODUCTS, 
   INITIAL_VIDEOS, 
@@ -9,6 +9,7 @@ import {
   SUB_MENU_ITEMS, 
   INITIAL_PAGE_CONTENTS,
   INITIAL_POPUP,
+  INITIAL_RECOMMENDED_DISCOUNT_POPUP,
   INITIAL_CUSTOM_PACKAGES,
   INITIAL_MASTER_OPTION_POOL 
 } from '../constants';
@@ -20,6 +21,7 @@ import { isSupabaseConfigured, updateSupabaseCredentials } from '../services/sup
 import { compressImage, getFreshImageUrl, isImageIconUrl } from '../utils/imageUtils';
 import BackButton from './BackButton';
 import { getTravelDays, getItemPricingType, calculateCostItemTotal } from '../utils/costBreakdownUtils';
+import RecommendedDiscountModal, { RecommendedDiscountCard } from './RecommendedDiscountModal';
 
 interface Props {
   users: User[];
@@ -42,6 +44,8 @@ interface Props {
   setPosts: (posts: CommunityPost[]) => void;
   popup: PopupNotification;
   setPopup: (popup: PopupNotification) => void;
+  recommendedDiscountPopup?: RecommendedDiscountPopup;
+  setRecommendedDiscountPopup?: (popup: RecommendedDiscountPopup) => void;
   setCurrentPage: (page: 'home' | 'admin' | 'category') => void;
 }
 
@@ -66,9 +70,11 @@ const AdminDashboard: React.FC<Props> = ({
   setPosts,
   popup,
   setPopup,
+  recommendedDiscountPopup = INITIAL_RECOMMENDED_DISCOUNT_POPUP,
+  setRecommendedDiscountPopup,
   setCurrentPage
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'menu' | 'popup'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'menu' | 'popup' | 'discountPopup'>('users');
   const [plannerSubTab, setPlannerSubTab] = useState<'packages' | 'masterPool'>('masterPool');
   const [poolCategory, setPoolCategory] = useState<'region' | 'golf' | 'tour' | 'hotel' | 'vehicle' | 'extra' | 'guide' | 'meal'>('region');
   
@@ -132,6 +138,7 @@ const AdminDashboard: React.FC<Props> = ({
   const popupDragStartRef = useRef({ x: 0, y: 0 });
   const [showPopupFullscreen, setShowPopupFullscreen] = useState(false);
   const [showPopupLivePreview, setShowPopupLivePreview] = useState(false);
+  const [showDiscountPopupLivePreview, setShowDiscountPopupLivePreview] = useState(false);
   const [showPopupUrlModal, setShowPopupUrlModal] = useState(false);
   const [popupUrlInput, setPopupUrlInput] = useState('');
 
@@ -1215,6 +1222,16 @@ const AdminDashboard: React.FC<Props> = ({
     setPopup({ ...popup, [field]: value });
   };
 
+  const handleDiscountPopupChange = <K extends keyof RecommendedDiscountPopup>(
+    field: K,
+    value: RecommendedDiscountPopup[K]
+  ) => {
+    setRecommendedDiscountPopup?.({
+      ...recommendedDiscountPopup,
+      [field]: value
+    });
+  };
+
   const handlePopupZoomIn = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     setPopupZoom(prev => Math.min(prev + 0.25, 3));
@@ -1364,6 +1381,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         menuItems,
         cloudinaryConfig: { cloudName, uploadPreset },
         popup,
+        recommendedDiscountPopup,
         pageContents
       });
       alert('🎉 축하합니다! 웹사이트의 모든 상품/투어/페이지/슬라이드 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 www.mangotour.co.kr에 접속하는 모든 고객이 이 클라우드 데이터를 실시간으로 보게 됩니다.');
@@ -1921,7 +1939,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
       
       {/* Navigation Tabs (좌우 여백 없이 칸에 딱 맞게 배치된 세련된 탭 바) */}
       <div className="w-full mb-3 sm:mb-5 bg-gray-100/90 p-1.5 rounded-none sm:rounded-2xl border-y sm:border border-gray-200/80 shadow-xs">
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-1 sm:gap-1.5 w-full">
+        <div className="grid grid-cols-4 lg:grid-cols-8 gap-1 sm:gap-1.5 w-full">
           {[
             { id: 'users', icon: '👥', label: '회원' },
             { id: 'hero', icon: '🖼️', label: '슬라이드' },
@@ -1929,6 +1947,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             { id: 'planner', icon: '⛳', label: '맞춤 여행' },
             { id: 'pages', icon: '📄', label: '페이지' },
             { id: 'popup', icon: '🔔', label: '팝업' },
+            { id: 'discountPopup', icon: '🏷️', label: '추천할인 팝업' },
             { id: 'menu', icon: '🔘', label: '메뉴' },
           ].map(tab => {
             const isActive = activeTab === tab.id;
@@ -1936,8 +1955,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
               <button
                 key={tab.id}
                 type="button"
+                title={tab.id === 'discountPopup' ? '추천상품 할인 팝업 관리' : tab.label}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1 transition-all text-center whitespace-nowrap ${
+                className={`w-full py-2 sm:py-2.5 px-1 sm:px-2 rounded-xl font-bold text-[11px] sm:text-xs xl:text-sm flex items-center justify-center gap-1 transition-all text-center whitespace-nowrap ${
                   isActive
                     ? 'bg-deepgreen text-white shadow-md'
                     : 'text-gray-600 hover:text-deepgreen hover:bg-white/80'
@@ -4702,7 +4722,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         {/* Popup Management */}
         {activeTab === 'popup' && (
           <div className="animate-fade-in-up w-full px-2 sm:px-0">
-            <h3 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">공지사항 팝업 관리</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-2xl font-bold text-gray-800">공지사항 팝업 관리</h3>
+              <button
+                type="button"
+                onClick={() => setActiveTab('discountPopup')}
+                className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-deepgreen border border-gold-400/60 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+              >
+                <span>🏷️</span>
+                <span>추천상품 할인 팝업 관리로 이동</span>
+                <span>→</span>
+              </button>
+            </div>
             <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-gray-100 shadow-lg sm:shadow-xl overflow-hidden">
               <div className="p-3 sm:p-4 space-y-4">
                 <div className="flex items-center justify-between bg-gray-50 p-3 sm:p-4 rounded-2xl sm:rounded-3xl">
@@ -5011,6 +5042,240 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
               </div>
               <div className="bg-gray-50 p-6 text-center">
                 <p className="text-xs text-gray-400 italic">※ 팝업 설정은 변경 즉시 실시간으로 반영됩니다.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recommended Product Discount Popup Management */}
+        {activeTab === 'discountPopup' && (
+          <div className="animate-fade-in-up w-full px-2 sm:px-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4 sm:mb-6">
+              <div>
+                <h3 className="text-lg sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <span>🏷️</span>
+                  <span>추천상품 할인 팝업 관리</span>
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                  고객이 <strong className="text-deepgreen">'추천 상품'</strong> 메뉴를 클릭해 진입할 때 표시되는 텍스트 카드형 특가 할인 팝업을 설정합니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDiscountPopupLivePreview(true)}
+                className="px-4 py-2.5 bg-gold-500 hover:bg-gold-600 text-deepgreen rounded-xl font-black text-xs transition shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <span>👁️</span>
+                <span>실제 팝업 모달 미리보기</span>
+              </button>
+            </div>
+
+            <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-gray-100 shadow-lg sm:shadow-xl overflow-hidden">
+              <div className="p-3 sm:p-6 space-y-5">
+                {/* ON / OFF Switch */}
+                <div className="flex items-center justify-between bg-gray-50 p-3.5 sm:p-4 rounded-2xl border border-gray-200/70">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-gray-800 text-sm sm:text-base">팝업 노출 상태</h4>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+                          recommendedDiscountPopup.isActive
+                            ? 'bg-emerald-100 text-deepgreen'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                      >
+                        {recommendedDiscountPopup.isActive ? 'ON (노출 중)' : 'OFF (비노출)'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      OFF로 설정하면 고객이 추천 상품 메뉴에 진입해도 할인 팝업이 뜨지 않습니다.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={recommendedDiscountPopup.isActive}
+                    onClick={() => handleDiscountPopupChange('isActive', !recommendedDiscountPopup.isActive)}
+                    className={`w-16 h-8 rounded-full transition-all relative shrink-0 cursor-pointer ${
+                      recommendedDiscountPopup.isActive ? 'bg-deepgreen' : 'bg-gray-300'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-all ${
+                        recommendedDiscountPopup.isActive ? 'left-9' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Form Fields */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 block">
+                          상단 뱃지 문구
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white focus:border-gold-500 outline-none text-sm font-bold text-gray-900"
+                          value={recommendedDiscountPopup.badgeText}
+                          onChange={(e) => handleDiscountPopupChange('badgeText', e.target.value)}
+                          placeholder="예: 선착순 특가, 이달의 한정 할인"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 block">
+                          할인율 강조 문구
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white focus:border-gold-500 outline-none text-sm font-black text-red-600"
+                          value={recommendedDiscountPopup.discountRate}
+                          onChange={(e) => handleDiscountPopupChange('discountRate', e.target.value)}
+                          placeholder="예: 30% OFF"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-500 uppercase ml-1 block">
+                        상품 제목
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white focus:border-gold-500 outline-none text-sm font-bold text-gray-900"
+                        value={recommendedDiscountPopup.productTitle}
+                        onChange={(e) => handleDiscountPopupChange('productTitle', e.target.value)}
+                        placeholder="예: 달랏 3박 5일 54홀 VIP 골프 투어"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 block">
+                          정상가 (취소선 표시용)
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white focus:border-gold-500 outline-none text-sm font-semibold text-gray-600"
+                          value={recommendedDiscountPopup.originalPrice}
+                          onChange={(e) => handleDiscountPopupChange('originalPrice', e.target.value)}
+                          placeholder="예: 1,500,000원"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 block">
+                          최종 할인가
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white focus:border-gold-500 outline-none text-sm font-black text-deepgreen"
+                          value={recommendedDiscountPopup.discountPrice}
+                          onChange={(e) => handleDiscountPopupChange('discountPrice', e.target.value)}
+                          placeholder="예: 1,050,000원"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-500 uppercase ml-1 block">
+                        혜택 / 옵션 요약
+                      </label>
+                      <textarea
+                        rows={3}
+                        className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white focus:border-gold-500 outline-none text-sm text-gray-800 resize-y"
+                        value={recommendedDiscountPopup.benefitSummary}
+                        onChange={(e) => handleDiscountPopupChange('benefitSummary', e.target.value)}
+                        placeholder="예: 전 일정 리무진 + 그린피/캐디피 포함"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-gray-500 uppercase ml-1 block">
+                        마감 기한
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white focus:border-gold-500 outline-none text-sm font-bold text-gray-800"
+                        value={recommendedDiscountPopup.deadline}
+                        onChange={(e) => handleDiscountPopupChange('deadline', e.target.value)}
+                        placeholder="예: 2026년 11월 30일 예약분까지"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase ml-1 block">
+                        이동할 버튼 링크 ('특가 상품 자세히 보기' 클릭 시 이동)
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full p-3.5 bg-gray-50 rounded-xl border border-gray-200 focus:bg-white focus:border-gold-500 outline-none text-sm text-gray-800"
+                        value={recommendedDiscountPopup.link}
+                        onChange={(e) => handleDiscountPopupChange('link', e.target.value)}
+                        placeholder="https://open.kakao.com/... 또는 product:상품ID"
+                      />
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          aria-label="등록된 추천 상품 연결 선택"
+                          value={
+                            recommendedDiscountPopup.link?.startsWith('product:')
+                              ? recommendedDiscountPopup.link.slice('product:'.length)
+                              : ''
+                          }
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleDiscountPopupChange('link', `product:${e.target.value}`);
+                            }
+                          }}
+                          className="flex-1 p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs font-bold text-deepgreen outline-none"
+                        >
+                          <option value="">💡 등록된 상품 견적 팝업과 바로 연결하기 (선택)</option>
+                          {products.map((prod) => (
+                            <option key={prod.id} value={prod.id}>
+                              [{prod.location}] {prod.title}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => handleDiscountPopupChange('link', 'https://open.kakao.com/o/gprQnKSi')}
+                          className="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer"
+                        >
+                          💬 카카오톡 상담 링크 적용
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Live Text Card Preview */}
+                  <div className="lg:col-span-5 bg-gray-900/95 p-4 sm:p-6 rounded-2xl border border-gray-800 flex flex-col items-center">
+                    <div className="w-full flex items-center justify-between mb-4">
+                      <span className="text-xs font-black text-gold-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>📱</span> 실시간 카드 미리보기
+                      </span>
+                      <span className="text-[11px] text-gray-400 font-medium">
+                        너비 88~90% (최대 400px)
+                      </span>
+                    </div>
+                    <div className="w-full max-w-[380px]">
+                      <RecommendedDiscountCard
+                        data={recommendedDiscountPopup}
+                        onClose={() => {}}
+                        onHideToday={() => showToast('※ 미리보기에서는 오늘 하루 보지 않기가 저장되지 않습니다.')}
+                        isPreview={true}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-5 text-center border-t border-gray-100">
+                <p className="text-xs text-gray-500">
+                  ※ 입력하신 모든 항목은 변경 즉시 저장 및 실시간으로 반영됩니다.
+                </p>
               </div>
             </div>
           </div>
@@ -5657,6 +5922,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
           </div>
         </div>
       )}
+
+      {/* 5-2. Recommended Discount Popup Live Preview Modal */}
+      <RecommendedDiscountModal
+        isOpen={showDiscountPopupLivePreview}
+        data={recommendedDiscountPopup}
+        onClose={() => setShowDiscountPopupLivePreview(false)}
+        onHideToday={() => {
+          setShowDiscountPopupLivePreview(false);
+          showToast('※ 미리보기 모드에서는 오늘 하루 보지 않기가 저장되지 않습니다.');
+        }}
+        isPreview={true}
+      />
 
       {/* 6. Floating Toast Notification */}
       {toastMessage && (

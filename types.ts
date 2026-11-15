@@ -117,6 +117,18 @@ export interface PopupNotification {
   imageHeight?: 'auto' | 'compact' | 'medium' | 'large' | '16:9';
 }
 
+export interface RecommendedDiscountPopup {
+  isActive: boolean;
+  badgeText: string;
+  productTitle: string;
+  discountRate: string;
+  originalPrice: string;
+  discountPrice: string;
+  benefitSummary: string;
+  deadline: string;
+  link: string;
+}
+
 // AI Trip Planner Types
 export interface TripPlanRequest {
   destination: string;
