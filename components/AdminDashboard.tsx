@@ -4912,6 +4912,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                     }} 
                   />
                   <button 
+                    type="button"
                     onClick={() => {
                       if(confirm('이 메뉴 아이콘을 삭제하시겠습니까?')) {
                         const ni = menuItems.filter((_, i) => i !== idx);
@@ -4927,6 +4928,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             </div>
             <div className="mt-6 sm:mt-8 flex justify-center">
               <button 
+                type="button"
                 onClick={() => {
                   const newItem: MenuItem = { label: '새 메뉴', icon: 'https://cdn-icons-png.flaticon.com/512/1039/1039328.png' };
                   setMenuItems([...menuItems, newItem]);

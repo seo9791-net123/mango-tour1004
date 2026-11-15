@@ -858,18 +858,18 @@ export const HERO_IMAGES = [
 ];
 
 export const SUB_MENU_ITEMS = [
-  { label: '추천 상품', icon: 'https://cdn-icons-png.flaticon.com/512/3504/3504445.png' },
-  { label: '동영상', icon: 'https://cdn-icons-png.flaticon.com/512/3670/3670163.png' },
-  { label: '커뮤니티', icon: 'https://cdn-icons-png.flaticon.com/512/2822/2822949.png' },
-  { label: '골프', icon: 'https://cdn-icons-png.flaticon.com/512/1039/1039328.png' },
-  { label: '호텔&빌라', icon: 'https://cdn-icons-png.flaticon.com/512/2903/2903388.png' },
-  { label: '관광', icon: 'https://cdn-icons-png.flaticon.com/512/2929/2929949.png' },
-  { label: '비지니스', icon: 'https://cdn-icons-png.flaticon.com/512/3281/3281307.png' },
-  { label: '여행 만들기', icon: 'https://cdn-icons-png.flaticon.com/512/3504/3504445.png' },
-  { label: '이벤트', icon: 'https://cdn-icons-png.flaticon.com/512/4213/4213645.png' },
-  { label: '베트남 문화', icon: 'https://cdn-icons-png.flaticon.com/512/4323/4323945.png' },
-  { label: '먹거리', icon: 'https://cdn-icons-png.flaticon.com/512/2819/2819194.png' },
-  { label: 'FOR MEN', icon: 'https://cdn-icons-png.flaticon.com/512/3596/3596091.png' },
+  { label: '추천 상품', icon: 'https://cdn-icons-png.flaticon.com/512/1042/1042339.png' },
+  { label: '동영상', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png' },
+  { label: '커뮤니티', icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png' },
+  { label: '골프', icon: 'https://cdn-icons-png.flaticon.com/512/2076/2076977.png' },
+  { label: '호텔&빌라', icon: 'https://cdn-icons-png.flaticon.com/512/2933/2933921.png' },
+  { label: '관광', icon: 'https://cdn-icons-png.flaticon.com/512/826/826070.png' },
+  { label: '비지니스', icon: 'https://cdn-icons-png.flaticon.com/512/3281/3281289.png' },
+  { label: '여행 만들기', icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png' },
+  { label: '이벤트', icon: 'https://cdn-icons-png.flaticon.com/512/4213/4213958.png' },
+  { label: '베트남 문화', icon: 'https://cdn-icons-png.flaticon.com/512/2276/2276931.png' },
+  { label: '먹거리', icon: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png' },
+  { label: 'FOR MEN', icon: 'https://cdn-icons-png.flaticon.com/512/3534/3534033.png' },
 ];
 
 export const INITIAL_PAGE_CONTENTS: Record<string, PageContent> = {

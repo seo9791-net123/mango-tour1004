@@ -1239,7 +1239,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 pt-2 sm:pt-4 no-print">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2 sm:pt-4 no-print">
         <footer className="bg-gray-800 text-gray-400 py-6 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
           <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
             <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">

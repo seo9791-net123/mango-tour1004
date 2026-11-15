@@ -9,6 +9,7 @@ export interface User {
 export interface MenuItem {
   label: string;
   icon: string;
+  colorKey?: string;
 }
 
 export interface ProductCostBreakdownItem {
