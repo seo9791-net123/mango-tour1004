@@ -363,7 +363,7 @@ const Privacy: React.FC<Props> = ({ onGoHome }) => {
 
       {/* Footer */}
       <div className="w-full max-w-7xl mx-auto px-0 sm:px-4 mt-8 sm:mt-12 no-print">
-        <footer className="bg-gray-800 text-gray-400 py-6 px-3 sm:px-6 text-center text-xs rounded-none sm:rounded-t-2xl md:rounded-t-3xl shadow-md">
+        <footer className="bg-gray-800 text-gray-400 py-6 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
           <p>MANGO TOUR TRAVEL AGENCY | 호치민 · 붕따우 · 달랏 골프/호텔/풀빌라 단독 투어</p>
           <p className="mt-1">대표이사 / 개인정보보호책임자: 김일선 | 문의: <span className="text-gold-400 font-bold">+84 37 720 4451</span></p>
           <p className="mt-2 text-gray-500 text-[11px]">© MANGO TOUR. All rights reserved.</p>
