@@ -14,7 +14,7 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
   const [isSliderOpen, setIsSliderOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
+    <div className="bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in">
       {/* Sticky Compact Hero */}
       <div
         className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
@@ -39,8 +39,8 @@ const HotelVillaPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </div>
 
-      <section className="pt-2 pb-6 sm:pt-3 sm:pb-8">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 space-y-4 sm:space-y-5">
+      <section className="pt-0 pb-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 space-y-3 sm:space-y-4">
           <div className="bg-white rounded-[20px] shadow-sm p-5 sm:p-6 md:p-7 flex flex-col md:flex-row gap-5 sm:gap-8 items-center">
              <div className="flex-1 space-y-3">
                 <h2 className="text-xl xs:text-2xl md:text-3xl font-bold uppercase leading-tight text-gray-900 tracking-tight">{content.introTitle}</h2>

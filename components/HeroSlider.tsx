@@ -19,7 +19,7 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
 
   if (images.length === 0) {
     return (
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-3 pb-1 sm:pb-2">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-0">
         <div className="w-full h-[168px] xs:h-[192px] sm:h-[240px] md:h-[288px] lg:h-[320px] bg-gray-900 rounded-[20px] flex items-center justify-center text-white shadow-sm">
           이미지가 없습니다.
         </div>
@@ -28,7 +28,7 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-3 pb-1 sm:pb-2">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-0">
       <div className="relative w-full h-[168px] xs:h-[192px] sm:h-[240px] md:h-[288px] lg:h-[320px] overflow-hidden bg-gray-900 select-none rounded-[20px] shadow-sm">
         {images.map((img, index) => (
           <div

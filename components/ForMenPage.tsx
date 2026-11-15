@@ -11,7 +11,7 @@ interface Props {
 
 const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
   return (
-    <div className="min-h-screen bg-[#F2F2F7] text-white font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
+    <div className="bg-[#F2F2F7] text-white font-sans overflow-x-clip animate-fade-in">
       {/* Sticky Compact Hero */}
       <div
         className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
@@ -37,7 +37,7 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2 pb-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-0 pb-0">
         <section className="p-5 sm:p-6 md:p-8 bg-gray-900 rounded-[20px] shadow-sm overflow-hidden space-y-6">
            <div className="flex flex-col lg:flex-row gap-5 sm:gap-8 items-center">
               <div className="flex-1 space-y-3">

@@ -27,7 +27,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
   }, [isSliderOpen]);
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
+    <div className="bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in">
       {/* Sticky Compact Hero */}
       <div
         className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
@@ -56,8 +56,8 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </div>
 
-      <section className="pt-2 pb-5 sm:pt-3 sm:pb-6">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 text-left space-y-4 sm:space-y-5">
+      <section className="pt-0 pb-3 sm:pb-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 text-left space-y-3 sm:space-y-4">
            <div className="bg-white rounded-[20px] shadow-sm p-5 sm:p-6 md:p-7">
               <h2 className="text-xl xs:text-2xl md:text-3xl font-bold uppercase mb-2 tracking-tight text-gray-900">{content.introTitle}</h2>
               <p className="text-sm xs:text-base md:text-lg leading-relaxed text-[#3A3A3C] font-normal whitespace-pre-line">{content.introText}</p>
@@ -95,7 +95,7 @@ const GolfPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </section>
 
-      <div className="pb-6">
+      <div className="pb-0">
         <div className="max-w-7xl mx-auto px-3 sm:px-4">
           <section className="p-5 sm:p-6 md:p-8 bg-gray-900 text-white rounded-[20px] shadow-sm grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 items-center overflow-hidden">
              <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl opacity-95" alt="Golf Service" />

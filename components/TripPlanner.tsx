@@ -1499,7 +1499,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   };
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7] pb-28 select-text font-sans antialiased text-[#3A3A3C] tracking-tight break-keep w-full max-w-full overflow-x-clip">
+    <div className="bg-[#F2F2F7] select-text font-sans antialiased text-[#3A3A3C] tracking-tight break-keep w-full max-w-full overflow-x-clip">
       {/* Toast Notification */}
       {copyToast && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-full shadow-lg text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md">
@@ -1553,15 +1553,15 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       </div>
 
       {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-1 pb-4 sm:pt-2 sm:pb-6 w-full">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-0 pb-0 w-full">
         
         {/* ================= VIEW 1: 6-STEP DIY CUSTOM TRIP BUILDER ================= */}
         {!activePackage && (
           <div>
-            <div className="space-y-4 sm:space-y-5">
+            <div className="space-y-2.5 sm:space-y-3">
               {/* 1. 여행 지역 선택 */}
-              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] gap-2">
+              <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.06] gap-2">
                   <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
                     <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">1</span>
                     <span>여행 지역 선택</span>
@@ -1604,8 +1604,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               </div>
 
               {/* 2. 여행 일정 */}
-              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] gap-2">
+              <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.06] gap-2">
                   <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5">
                     <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">2</span>
                     <span>여행 일정</span>
@@ -1637,14 +1637,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               </div>
 
               {/* 3. 골프, 여행 선택 */}
-              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
-                <div className="flex justify-between items-start sm:items-center pb-3 border-b border-black/[0.06] gap-2">
+              <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                <div className="flex justify-between items-start sm:items-center pb-2.5 border-b border-black/[0.06] gap-2">
                   <div className="min-w-0">
                     <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
                       <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">3</span>
                       <span>골프, 여행 선택</span>
                     </h3>
-                    <p className="text-xs text-[#8E8E93] mt-1">
+                    <p className="text-xs text-[#8E8E93] mt-0.5">
                       버튼을 클릭하면 {diyLocation} ({diyNights}박 {diyDays}일) 기준 맞춤 팝업이 열립니다.
                     </p>
                   </div>
@@ -1769,14 +1769,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 const hotelNightRate = selectedHotelTier?.pricePerNightUSD ?? 90;
                 const hotelTotalUSD = Math.round(hotelNightRate * diyNights);
                 return (
-                  <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
-                    <div className="flex justify-between items-start sm:items-center pb-3 border-b border-black/[0.06] gap-2">
+                  <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                    <div className="flex justify-between items-start sm:items-center pb-2.5 border-b border-black/[0.06] gap-2">
                       <div className="min-w-0">
                         <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
                           <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">4</span>
                           <span>숙박</span>
                         </h3>
-                        <p className="text-xs text-[#8E8E93] mt-1">
+                        <p className="text-xs text-[#8E8E93] mt-0.5">
                           버튼을 클릭하면 선택된 여행 기간({diyNights}박 기준 · 1인 1실) 맞춤 숙박 팝업이 열립니다.
                         </p>
                       </div>
@@ -1844,14 +1844,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 const vehTotalUSD = Math.round(vehDayRate * diyDays);
                 const vehDisplayName = selectedVehicleItem?.shortName || selectedVehicleItem?.name || '9인승';
                 return (
-                  <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
-                    <div className="flex justify-between items-start sm:items-center pb-3 border-b border-black/[0.06] gap-2">
+                  <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                    <div className="flex justify-between items-start sm:items-center pb-2.5 border-b border-black/[0.06] gap-2">
                       <div className="min-w-0">
                         <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
                           <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">5</span>
                           <span>차량</span>
                         </h3>
-                        <p className="text-xs text-[#8E8E93] mt-1">
+                        <p className="text-xs text-[#8E8E93] mt-0.5">
                           버튼을 클릭하면 전 일정({diyDays}일) 단독 전용 차량 선택 팝업이 열립니다.
                         </p>
                       </div>
@@ -1914,8 +1914,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               })()}
 
               {/* 6. 기타 (Multi-select 2x2 Grid: 가이드, 패스트 트랙, 마사지, 저녁식사) */}
-              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-black/[0.06] gap-2">
+              <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.06] gap-2">
                   <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
                     <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">6</span>
                     <span>기타</span>
@@ -2042,8 +2042,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               </div>
 
               {/* Bottom Real-Time Price Preview & Package Generation Action Box */}
-              <div className="bg-[#0A7E54] text-white rounded-[20px] p-5 sm:p-7 md:p-8 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-white/15">
+              <div className="bg-[#0A7E54] text-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-white/15">
                   <div>
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       <span className="px-2.5 py-0.5 rounded-full bg-white text-[#0A7E54] text-xs font-bold">

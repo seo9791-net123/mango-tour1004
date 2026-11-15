@@ -9,8 +9,8 @@ interface Props {
 
 const IconMenu: React.FC<Props> = ({ items, onItemClick }) => {
   return (
-    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-1.5 sm:pt-2 pb-1 sm:pb-2">
-      <div className="bg-white rounded-[20px] shadow-sm px-2 sm:px-4 py-3 sm:py-5">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-0">
+      <div className="bg-white rounded-[20px] shadow-sm px-2 sm:px-4 py-3 sm:py-4">
         <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-8 gap-1.5 sm:gap-3 md:gap-3.5 items-stretch">
         {items.map((item, index) => (
           <div
@@ -42,7 +42,7 @@ const IconMenu: React.FC<Props> = ({ items, onItemClick }) => {
             </div>
             
             {/* Label */}
-            <span className="text-[11px] xs:text-[12px] sm:text-[13px] md:text-[14px] font-bold text-gray-700 group-hover:text-deepgreen tracking-tight transition-colors duration-300 text-center leading-tight break-keep px-0.5 whitespace-nowrap">
+            <span className="text-[11px] xs:text-[12px] sm:text-[13px] md:text-[14px] font-bold text-gray-700 group-hover:text-deepgreen tracking-tight transition-colors duration-300 text-center leading-none break-keep px-0.5 whitespace-nowrap">
               {item.label}
             </span>
           </div>

@@ -281,7 +281,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   };
 
   return (
-    <div className={`min-h-screen bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0`}>
+    <div className="bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in">
       {/* Sticky Subpage Hero Banner */}
       {onBack ? (
         <div
@@ -316,8 +316,8 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
         </div>
       ) : null}
 
-      <section className="pt-2 pb-6 sm:pt-3 sm:pb-8">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 space-y-4">
+      <section className="pt-0 pb-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 space-y-3 sm:space-y-4">
           
           {/* Action Bar */}
           <div className="flex flex-row justify-between items-center gap-3 bg-white p-4 sm:p-5 rounded-[20px] shadow-sm">

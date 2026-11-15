@@ -11,7 +11,7 @@ interface Props {
 
 const CulturePage: React.FC<Props> = ({ content, onBack }) => {
   return (
-    <div className="min-h-screen bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in pb-safe md:pb-0">
+    <div className="bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in">
       {/* Sticky Compact Hero */}
       <div
         className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
@@ -36,7 +36,7 @@ const CulturePage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </div>
 
-      <section className="pt-2 pb-6 sm:pt-3 sm:pb-8 max-w-7xl mx-auto px-3 sm:px-4 space-y-4 sm:space-y-5">
+      <section className="pt-0 pb-0 max-w-7xl mx-auto px-3 sm:px-4 space-y-3 sm:space-y-4">
          <div className="bg-white rounded-[20px] shadow-sm p-5 sm:p-6 md:p-7 flex flex-col lg:flex-row gap-5 sm:gap-8 items-center">
             <div className="w-full flex-1 order-2 lg:order-1 relative group">
                <img src={getFreshImageUrl(content.introImage)} className="w-full h-[200px] xs:h-[240px] md:h-[280px] object-cover rounded-2xl group-hover:scale-[1.02] transition duration-500" alt="Intro" />

@@ -137,7 +137,7 @@ const CategoryPage: React.FC<Props> = ({
   };
 
   return (
-    <div className="py-4 sm:py-6 bg-[#F2F2F7] min-h-[600px] animate-fade-in pb-safe md:pb-6">
+    <div className="pt-2.5 sm:pt-3 pb-0 bg-[#F2F2F7] animate-fade-in">
       <div className="max-w-7xl mx-auto px-3 sm:px-4">
         {/* Header: BackButton + Duration Segmented Tabs + Title */}
         <div className="flex flex-col gap-3 mb-4 sm:mb-5">
