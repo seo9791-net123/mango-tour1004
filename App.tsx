@@ -21,6 +21,7 @@ import TripPlanner from './components/TripPlanner';
 import BottomNav from './components/BottomNav';
 import Privacy from './components/Privacy';
 import Terms from './components/Terms';
+import SplashScreen from './components/SplashScreen';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
 import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { supabaseService } from './services/supabaseService';
@@ -479,7 +480,38 @@ const App: React.FC = () => {
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [incomingChatToast, setIncomingChatToast] = useState<ChatMessage | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [isSplashExiting, setIsSplashExiting] = useState(false);
+  const splashMountTimeRef = useRef<number>(Date.now());
   const [isLocalMode, setIsLocalMode] = useState(false);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const minDisplayMs = prefersReducedMotion ? 150 : 1650;
+    const exitDurationMs = prefersReducedMotion ? 150 : 720;
+
+    const elapsed = Date.now() - splashMountTimeRef.current;
+    const delayBeforeExit = Math.max(0, minDisplayMs - elapsed);
+
+    let unmountTimer: number | undefined;
+    const exitTimer = window.setTimeout(() => {
+      setIsSplashExiting(true);
+      unmountTimer = window.setTimeout(() => {
+        setShowSplash(false);
+      }, exitDurationMs);
+    }, delayBeforeExit);
+
+    return () => {
+      window.clearTimeout(exitTimer);
+      if (unmountTimer !== undefined) {
+        window.clearTimeout(unmountTimer);
+      }
+    };
+  }, [isDataLoaded]);
 
   const handleIncomingChatMessage = (msg: ChatMessage) => {
     if (!isChatOpen) {
@@ -1089,18 +1121,15 @@ const App: React.FC = () => {
     return <Terms onGoHome={() => navigateTo('home', null)} />;
   }
 
-  if (!isDataLoaded) {
-    return (
-      <div className="min-h-screen bg-[#F2F2F7] flex flex-col items-center justify-center text-[#3A3A3C] p-8 text-center">
-        <div className="w-14 h-14 border-[3.5px] border-[#0A7E54] border-t-transparent rounded-full animate-spin mb-6"></div>
-        <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 mb-2">설레는 여행 준비 중</h2>
-        <p className="text-xs font-semibold tracking-widest uppercase text-[#8E8E93]">MANGO TOUR</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#F2F2F7] text-[#3A3A3C] flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full">
+    <>
+      {showSplash && <SplashScreen isExiting={isSplashExiting} />}
+      {isDataLoaded && (
+      <div
+        className={`min-h-screen bg-[#F2F2F7] text-[#3A3A3C] flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full transition-opacity duration-700 ease-out ${
+          showSplash && !isSplashExiting ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-black/[0.06] no-print" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
           {/* Logo */}
@@ -1457,7 +1486,9 @@ const App: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+      )}
+    </>
   );
 };
 
