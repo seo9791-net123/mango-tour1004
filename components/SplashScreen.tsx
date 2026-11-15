@@ -52,58 +52,74 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isExiting }) => {
       />
 
       <div className="relative z-10 flex flex-col items-center w-full max-w-md">
-        {/* Flight Path & Airplane SVG Animation */}
-        <div className="w-[290px] xs:w-[320px] sm:w-[360px] mb-5 sm:mb-6">
+        {/* Flight Path, Airplane & Vietnam Map Illustration */}
+        <div className="relative w-[300px] xs:w-[330px] sm:w-[380px] aspect-[380/164] mb-5 sm:mb-6">
+          {/* Layer 1: Background Sky, Sun & Horizon */}
           <svg
-            viewBox="0 0 360 156"
-            className="w-full h-auto overflow-visible"
-            role="img"
-            aria-label="망고투어 비행기 궤적 애니메이션"
+            viewBox="0 0 380 164"
+            className="absolute inset-0 w-full h-full overflow-visible pointer-events-none"
+            aria-hidden="true"
           >
             <defs>
               <linearGradient id="mangoSkyGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#FDE047" stopOpacity="0.45" />
-                <stop offset="100%" stopColor="#A7F3D0" stopOpacity="0.2" />
+                <stop offset="0%" stopColor="#FDE047" stopOpacity="0.42" />
+                <stop offset="100%" stopColor="#A7F3D0" stopOpacity="0.18" />
               </linearGradient>
-              <linearGradient id="mangoRouteGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#0A7E54" stopOpacity="0.35" />
-                <stop offset="55%" stopColor="#EAB308" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#0A7E54" stopOpacity="0.95" />
-              </linearGradient>
-              <path
-                id="mango-flight-curve"
-                d="M 28 118 C 82 118, 108 42, 178 62 C 234 78, 266 28, 330 42"
-              />
             </defs>
 
-            {/* Warm Resort Sun */}
-            <circle cx="294" cy="40" r="24" fill="url(#mangoSkyGlow)" />
-            <circle cx="294" cy="40" r="11" fill="#FACC15" fillOpacity="0.65" />
+            {/* Warm Resort Sun Behind Vietnam */}
+            <circle cx="328" cy="44" r="26" fill="url(#mangoSkyGlow)" />
+            <circle cx="328" cy="44" r="11" fill="#FACC15" fillOpacity="0.45" />
 
-            {/* Soft Rolling Fairway Hills */}
+            {/* Soft Rolling Horizon Accent */}
             <path
-              d="M 18 134 Q 95 104 176 126 T 342 122 L 342 142 L 18 142 Z"
+              d="M 18 144 Q 108 118 196 138 T 358 134 L 358 154 L 18 154 Z"
               fill="#D1FAE5"
-              fillOpacity="0.55"
-            />
-            <path
-              d="M 48 138 Q 145 116 238 132 T 342 130 L 342 144 L 48 144 Z"
-              fill="#A7F3D0"
-              fillOpacity="0.35"
+              fillOpacity="0.42"
             />
 
             {/* Soft Cloud Accents */}
             <g fill="#FFFFFF" fillOpacity="0.88">
-              <path d="M 76 48 a 9 9 0 0 1 17 -3 a 11 11 0 0 1 20 2 a 8 8 0 0 1 2 15 H 76 a 7 7 0 0 1 0 -14 Z" />
-              <path d="M 218 26 a 7 7 0 0 1 13 -2 a 8 8 0 0 1 15 2 a 6 6 0 0 1 1 11 H 218 a 5.5 5.5 0 0 1 0 -11 Z" />
+              <path d="M 84 48 a 8.5 8.5 0 0 1 16 -2.5 a 10 10 0 0 1 19 2 a 7.5 7.5 0 0 1 2 14 H 84 a 6.5 6.5 0 0 1 0 -13.5 Z" />
+              <path d="M 210 24 a 6.5 6.5 0 0 1 12 -2 a 7.5 7.5 0 0 1 14 2 a 5.5 5.5 0 0 1 1 10.5 H 210 a 5 5 0 0 1 0 -10.5 Z" />
             </g>
+          </svg>
+
+          {/* Layer 2: User-Provided Illustrated Vietnam Map */}
+          <div className="absolute right-[3%] top-[3%] bottom-[3%] w-[28%] flex items-center justify-center pointer-events-none select-none">
+            <img
+              src="/assets/aistudio/_____2026-11-15_213254-removebg-preview_499f2f5b.png"
+              alt="베트남 지도"
+              referrerPolicy="no-referrer"
+              className="w-full h-full object-contain drop-shadow-[0_4px_10px_rgba(10,126,84,0.14)]"
+            />
+          </div>
+
+          {/* Layer 3: Dashed Flight Trajectory, Pulsing Yellow Pin & Airplane */}
+          <svg
+            viewBox="0 0 380 164"
+            className="absolute inset-0 w-full h-full overflow-visible pointer-events-none"
+            role="img"
+            aria-label="베트남 지도로 향하는 망고투어 비행기 궤적 애니메이션"
+          >
+            <defs>
+              <linearGradient id="mangoRouteGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#0A7E54" stopOpacity="0.32" />
+                <stop offset="55%" stopColor="#EAB308" stopOpacity="0.82" />
+                <stop offset="100%" stopColor="#0A7E54" stopOpacity="0.95" />
+              </linearGradient>
+              <path
+                id="mango-flight-curve"
+                d="M 32 114 C 92 114, 126 32, 198 52 C 250 66, 288 46, 330 96"
+              />
+            </defs>
 
             {/* Base Dashed Flight Trajectory */}
             <use
               href="#mango-flight-curve"
               fill="none"
               stroke="#0A7E54"
-              strokeOpacity="0.2"
+              strokeOpacity="0.22"
               strokeWidth="2.5"
               strokeDasharray="6 7"
               strokeLinecap="round"
@@ -120,16 +136,80 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isExiting }) => {
               className="mango-dash-flow"
             />
 
-            {/* Departure Marker */}
-            <circle cx="28" cy="118" r="5" fill="#FFFDF7" stroke="#0A7E54" strokeWidth="2.5" />
-            <circle cx="28" cy="118" r="2" fill="#FACC15" />
+            {/* Departure Marker (Left) */}
+            <circle cx="32" cy="114" r="5" fill="#FFFDF7" stroke="#0A7E54" strokeWidth="2.5" />
+            <circle cx="32" cy="114" r="2" fill="#FACC15" />
 
-            {/* Destination Resort Pin / Golf Flag */}
-            <g transform="translate(330, 42)">
-              <circle cx="0" cy="0" r="5" fill="#0A7E54" />
-              <circle cx="0" cy="0" r="2" fill="#FACC15" />
-              <line x1="0" y1="0" x2="0" y2="-16" stroke="#0A7E54" strokeWidth="2" strokeLinecap="round" />
-              <path d="M 0 -16 L 13 -11.5 L 0 -7 Z" fill="#FACC15" stroke="#0A7E54" strokeWidth="1" strokeLinejoin="round" />
+            {/* Yellow Location Pin + Arrival Synchronized Pulse Ripples Overlaid on Vietnam Map */}
+            <g transform="translate(330, 96)">
+              {/* Synchronized Arrival Pulse Ring 1 */}
+              <circle cx="0" cy="0" r="4" fill="none" stroke="#FACC15" strokeWidth="2.2" opacity="0">
+                <animate
+                  attributeName="r"
+                  values="4;4;19;27"
+                  keyTimes="0;0.55;0.82;1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0;0;0.82;0"
+                  keyTimes="0;0.55;0.74;1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+
+              {/* Synchronized Arrival Pulse Ring 2 */}
+              <circle cx="0" cy="0" r="4" fill="none" stroke="#0A7E54" strokeWidth="1.6" opacity="0">
+                <animate
+                  attributeName="r"
+                  values="4;4;16;23"
+                  keyTimes="0;0.66;0.88;1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0;0;0.5;0"
+                  keyTimes="0;0.66;0.82;1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+
+              {/* Soft Glow Halo Around Pin Base */}
+              <circle cx="0" cy="0" r="6" fill="#FACC15" opacity="0.28">
+                <animate
+                  attributeName="r"
+                  values="6;6;11;6"
+                  keyTimes="0;0.64;0.86;1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0.22;0.22;0.6;0.22"
+                  keyTimes="0;0.64;0.86;1"
+                  dur="2.8s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+
+              {/* Pin Contact Shadow */}
+              <ellipse cx="0" cy="0.5" rx="4.5" ry="2.2" fill="#0A7E54" fillOpacity="0.34" />
+
+              {/* Yellow Location Pin Icon */}
+              <g>
+                <path
+                  d="M 0 0 C -5 -6.5, -8.5 -10.5, -8.5 -15 C -8.5 -19.7, -4.7 -23.5, 0 -23.5 C 4.7 -23.5, 8.5 -19.7, 8.5 -15 C 8.5 -10.5, 5 -6.5, 0 0 Z"
+                  fill="#FACC15"
+                  stroke="#0A7E54"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+                <circle cx="0" cy="-14.8" r="3.2" fill="#FFFDF7" stroke="#0A7E54" strokeWidth="1.3" />
+              </g>
             </g>
 
             {/* Airplane Following the Curved Dashed Path */}
@@ -161,7 +241,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ isExiting }) => {
                   d="M -4 -3 L -9 -14 L -2 -14 L 5 -3 Z"
                   fill="#086945"
                 />
-                {/* Main Fuselage (Deep Green + Cream Belly) */}
+                {/* Main Fuselage (Deep Green) */}
                 <path
                   d="M -17 1 C -17 -3, -10 -5, 4 -5 C 14 -5, 21 -2, 23 0.5 C 21 3, 13 4.5, 2 4.5 C -9 4.5, -16 3.2, -17 1 Z"
                   fill="#0A7E54"
