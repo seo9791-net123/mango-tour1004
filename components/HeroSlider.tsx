@@ -20,7 +20,7 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
   if (images.length === 0) {
     return (
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-0">
-        <div className="w-full h-[168px] xs:h-[192px] sm:h-[240px] md:h-[288px] lg:h-[320px] bg-gray-900 rounded-[20px] flex items-center justify-center text-white shadow-sm">
+        <div className="w-full h-[200px] xs:h-[228px] sm:h-[285px] md:h-[340px] lg:h-[380px] bg-gray-900 rounded-[20px] flex items-center justify-center text-white shadow-sm">
           이미지가 없습니다.
         </div>
       </div>
@@ -29,7 +29,7 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-0">
-      <div className="relative w-full h-[168px] xs:h-[192px] sm:h-[240px] md:h-[288px] lg:h-[320px] overflow-hidden bg-gray-900 select-none rounded-[20px] shadow-sm">
+      <div className="relative w-full h-[200px] xs:h-[228px] sm:h-[285px] md:h-[340px] lg:h-[380px] overflow-hidden bg-gray-900 select-none rounded-[20px] shadow-sm">
         {images.map((img, index) => (
           <div
             key={index}
@@ -45,38 +45,38 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
             />
           </div>
         ))}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-gradient-to-t from-black/75 via-black/30 to-black/35 px-3 sm:px-4 py-2.5 sm:py-3 text-center">
-          <span className="text-[9px] xs:text-[10px] sm:text-xs font-bold tracking-[0.2em] text-emerald-300 uppercase mb-0.5">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-gradient-to-t from-black/75 via-black/30 to-black/35 px-4 py-3 sm:py-4 text-center">
+          <span className="text-[10px] sm:text-xs font-bold tracking-[0.2em] text-emerald-300 uppercase mb-1">
             VIETNAM PREMIUM TRAVEL
           </span>
-          <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-extrabold mb-1 xs:mb-1.5 text-white tracking-tight">
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold mb-1.5 sm:mb-2 text-white tracking-tight">
             MANGO TOUR
           </h1>
-          <p className="text-[11px] xs:text-xs sm:text-sm md:text-base font-medium mb-2.5 xs:mb-3 text-white/90 break-keep max-w-md">
+          <p className="text-xs sm:text-sm md:text-base font-medium mb-3 sm:mb-3.5 text-white/90 break-keep max-w-md">
             베트남 명문 골프 & 럭셔리 맞춤 투어
           </p>
           {onActionClick && (
             <button 
               type="button"
               onClick={onActionClick}
-              className="px-4 xs:px-5 py-1.5 xs:py-2 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-full font-bold text-[11px] xs:text-xs sm:text-sm transition-all duration-200 shadow-lg active:scale-95 flex items-center gap-1 whitespace-nowrap cursor-pointer"
+              className="px-5 sm:px-6 py-2 sm:py-2.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-full font-bold text-xs sm:text-sm transition-all duration-200 shadow-lg active:scale-95 flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
             >
               <span>나만의 여행 만들기</span>
-              <span className="text-[11px] xs:text-xs">→</span>
+              <span className="text-xs sm:text-sm">→</span>
             </button>
           )}
         </div>
 
         {/* Slide Indicators */}
         {images.length > 1 && (
-          <div className="absolute bottom-2 xs:bottom-2.5 left-0 right-0 z-20 flex justify-center gap-1.5">
+          <div className="absolute bottom-2.5 sm:bottom-3 left-0 right-0 z-20 flex justify-center gap-1.5">
             {images.map((_, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => setCurrentIndex(idx)}
-                className={`h-1 xs:h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                  idx === currentIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/45'
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                  idx === currentIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/45'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
               />

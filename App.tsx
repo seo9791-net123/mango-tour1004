@@ -1126,7 +1126,7 @@ const App: React.FC = () => {
       {showSplash && <SplashScreen isExiting={isSplashExiting} />}
       {isDataLoaded && (
       <div
-        className={`min-h-screen bg-[#F2F2F7] text-[#3A3A3C] flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full transition-opacity duration-700 ease-out ${
+        className={`min-h-screen min-h-[100dvh] bg-[#F2F2F7] text-[#3A3A3C] flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full transition-opacity duration-700 ease-out ${
           showSplash && !isSplashExiting ? 'opacity-0' : 'opacity-100'
         }`}
       >
@@ -1199,7 +1199,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="w-full max-w-full min-w-0">
+      <main className="flex-1 w-full max-w-full min-w-0">
         {currentPage === 'admin' && isAdmin ? (
           <AdminDashboard 
             users={users}
@@ -1268,7 +1268,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 no-print">
+      <div className="mt-auto w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 no-print">
         <footer className="bg-gray-800 text-gray-400 py-6 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
           <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
             <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
