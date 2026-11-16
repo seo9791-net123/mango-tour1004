@@ -48,6 +48,8 @@ export interface A4QuotationProps {
   reservationNotice?: ReservationNoticeData;
   onClose?: () => void;
   showControls?: boolean;
+  uncheckedKeys?: Record<string, boolean>;
+  onUncheckedKeysChange?: (next: Record<string, boolean>) => void;
 }
 
 export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
@@ -67,12 +69,15 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   reservationNotice,
   onClose,
   showControls = true,
+  uncheckedKeys: controlledUncheckedKeys,
+  onUncheckedKeysChange,
 }) => {
   const documentRef = useRef<HTMLDivElement>(null);
   const exactA4Ref = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [uncheckedKeys, setUncheckedKeys] = useState<Record<string, boolean>>({});
+  const [internalUncheckedKeys, setInternalUncheckedKeys] = useState<Record<string, boolean>>({});
+  const uncheckedKeys = controlledUncheckedKeys ?? internalUncheckedKeys;
 
   const getCostItemKey = (item: CostItem, idx: number) => `${item.category}__${idx}`;
 
@@ -81,19 +86,25 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
 
   const toggleCostItem = (item: CostItem, idx: number) => {
     const key = getCostItemKey(item, idx);
-    setUncheckedKeys((prev) => {
-      const next = { ...prev };
-      if (next[key]) {
-        delete next[key];
-      } else {
-        next[key] = true;
-      }
-      return next;
-    });
+    const next = { ...uncheckedKeys };
+    if (next[key]) {
+      delete next[key];
+    } else {
+      next[key] = true;
+    }
+    if (onUncheckedKeysChange) {
+      onUncheckedKeysChange(next);
+    } else {
+      setInternalUncheckedKeys(next);
+    }
   };
 
   const selectAllCostItems = () => {
-    setUncheckedKeys({});
+    if (onUncheckedKeysChange) {
+      onUncheckedKeysChange({});
+    } else {
+      setInternalUncheckedKeys({});
+    }
   };
 
   const showToast = (msg: string) => {

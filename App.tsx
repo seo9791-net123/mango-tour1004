@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import HeroSlider from './components/HeroSlider';
 import IconMenu from './components/IconMenu';
 import VideoGallery from './components/VideoGallery';
@@ -25,7 +25,7 @@ import SplashScreen from './components/SplashScreen';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
 import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { supabaseService } from './services/supabaseService';
-import { updateSupabaseCredentials } from './services/supabaseClient';
+import { updateSupabaseCredentials, clearAdminSessionToken } from './services/supabaseClient';
 import { setCloudinaryConfig } from './services/uploadService';
 import { debounce } from './utils/debounce';
 import { getFreshImageUrl } from './utils/imageUtils';
@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   
   // Routing State & Privacy / Terms Route Detection
   type PageType = 'home' | 'admin' | 'category' | 'privacy' | 'terms';
@@ -563,7 +564,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      localStorage.setItem('mango_user', JSON.stringify(user));
+      const { passwordHash: _omit, ...safeUser } = user;
+      localStorage.setItem('mango_user', JSON.stringify(safeUser));
     } else {
       localStorage.removeItem('mango_user');
     }
@@ -770,7 +772,23 @@ const App: React.FC = () => {
             } catch {}
           }
           if (Array.isArray(data.posts) && data.posts.length > 0) {
-            setPosts(data.posts);
+            const legacySeedIds = new Set(['post1', 'post2', 'post3', 'post4', 'post5']);
+            const isOnlyLegacySeed = data.posts.every((p: CommunityPost) => legacySeedIds.has(String(p.id)));
+            if (isOnlyLegacySeed) {
+              setPosts(INITIAL_POSTS);
+              supabaseService.syncCollection('posts', INITIAL_POSTS).catch(() => {});
+            } else {
+              const filteredNewPosts = data.posts.filter((p: CommunityPost) => !legacySeedIds.has(String(p.id)));
+              if (filteredNewPosts.length > 0) {
+                setPosts(filteredNewPosts);
+                if (filteredNewPosts.length !== data.posts.length) {
+                  supabaseService.syncCollection('posts', filteredNewPosts).catch(() => {});
+                }
+              } else {
+                setPosts(INITIAL_POSTS);
+                supabaseService.syncCollection('posts', INITIAL_POSTS).catch(() => {});
+              }
+            }
           }
           if (Array.isArray(data.videos) && data.videos.length > 0) {
             const validVideos = data.videos.filter((v: VideoItem) => v?.url && !v.url.startsWith('blob:'));
@@ -942,34 +960,112 @@ const App: React.FC = () => {
 
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>(undefined);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const refreshUsers = useCallback(async (): Promise<User[] | null> => {
+    try {
+      const latestUsers = await supabaseService.loadUsers();
+      if (latestUsers && latestUsers.length > 0) {
+        setUsers(latestUsers);
+        return latestUsers;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // 실시간 회원 목록 변경 구독 (한국/해외 가입 즉시 관리자 대시보드 반영)
+  useEffect(() => {
+    if (isLocalMode) return;
+    const unsubscribe = supabaseService.subscribeToUsers((freshUsers) => {
+      if (freshUsers && freshUsers.length > 0) {
+        setUsers(freshUsers);
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [isLocalMode]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'rlathdud1~') {
-      const adminUser = users.find(u => u.username === 'admin')!;
-      setUser(adminUser);
-      setShowAuthModal(false);
-      resetAuthFields();
+    if (isAuthSubmitting) return;
+
+    const cleanUsername = username.trim();
+    const cleanNickname = nickname.trim();
+
+    if (!cleanUsername || !password.trim()) {
+      alert('아이디와 비밀번호를 입력해주세요.');
+      return;
+    }
+
+    if (authMode === 'signup') {
+      if (!cleanNickname) {
+        alert('닉네임을 입력해주세요.');
+        return;
+      }
+
+      // 클라이언트 단 1차 중복/예약어 검사
+      if (cleanUsername.toLowerCase() === 'admin') {
+        alert('사용할 수 없는 아이디입니다. 다른 아이디를 입력해주세요.');
+        return;
+      }
+      if (users.some(u => (u.username || '').trim().toLowerCase() === cleanUsername.toLowerCase())) {
+        alert('이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.');
+        return;
+      }
+
+      const newUser: User = {
+        id: `u_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        username: cleanUsername,
+        role: 'user',
+        nickname: cleanNickname
+      };
+
+      setIsAuthSubmitting(true);
+      try {
+        const result = await supabaseService.registerUser(newUser, password);
+        if (!result.success || !result.user) {
+          alert(result.message || '회원가입 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+          if (result.code === 'DUPLICATE_USERNAME') {
+            refreshUsers();
+          }
+          return;
+        }
+
+        const savedUser = result.user;
+        setUsers(prev => {
+          const filtered = prev.filter(u => u.username !== savedUser.username);
+          return [savedUser, ...filtered];
+        });
+        setUser(savedUser);
+        setShowAuthModal(false);
+        resetAuthFields();
+        alert('회원가입이 완료되었습니다!');
+      } finally {
+        setIsAuthSubmitting(false);
+      }
     } else {
-       if (authMode === 'signup') {
-         if (!username.trim() || !password.trim()) { alert('아이디와 비밀번호를 입력해주세요.'); return; }
-         if (!nickname.trim()) { alert('닉네임을 입력해주세요.'); return; }
-         const newUser: User = { id: Date.now().toString(), username, role: 'user', nickname };
-         setUsers([...users, newUser]);
-         setUser(newUser);
-         setShowAuthModal(false);
-         resetAuthFields();
-         supabaseService.saveUser(newUser, password).catch(() => {});
-         alert('회원가입이 완료되었습니다!');
-       } else {
-         const existingUser = users.find(u => u.username === username);
-         if (existingUser) {
-           setUser(existingUser);
-           setShowAuthModal(false);
-           resetAuthFields();
-         } else {
-           alert('사용자 정보가 일치하지 않습니다.');
-         }
-       }
+      setIsAuthSubmitting(true);
+      try {
+        const result = await supabaseService.authenticateUser(cleanUsername, password, users);
+        if (!result.success || !result.user) {
+          alert(result.message || '아이디 또는 비밀번호가 일치하지 않습니다.');
+          return;
+        }
+
+        const authenticatedUser = result.user;
+        setUsers(prev => {
+          const exists = prev.some(u => u.id === authenticatedUser.id || u.username === authenticatedUser.username);
+          return exists
+            ? prev.map(u => (u.username === authenticatedUser.username ? { ...u, ...authenticatedUser } : u))
+            : [authenticatedUser, ...prev];
+        });
+        setUser(authenticatedUser);
+        setShowAuthModal(false);
+        resetAuthFields();
+      } finally {
+        setIsAuthSubmitting(false);
+      }
     }
   };
 
@@ -1090,6 +1186,7 @@ const App: React.FC = () => {
   const handleLogout = () => { 
     setUser(null); 
     localStorage.removeItem('mango_user');
+    clearAdminSessionToken();
     navigateTo('home', null); 
   };
   const handleProductClick = (id: string) => {
@@ -1204,6 +1301,7 @@ const App: React.FC = () => {
           <AdminDashboard 
             users={users}
             onUpdateUsers={setUsers}
+            onRefreshUsers={refreshUsers}
             heroImages={heroImages} setHeroImages={handleUpdateHeroImages}
             menuItems={menuItems} setMenuItems={handleUpdateMenuItems} 
             products={products} setProducts={handleUpdateProducts}
@@ -1233,7 +1331,23 @@ const App: React.FC = () => {
               selectedCategory === '동영상' ? (
                 <VideoGallery videos={videos} user={user} onUpdateVideos={handleUpdateVideos} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={handleBackOneStep} />
               ) : selectedCategory === '커뮤니티' ? (
-                <CommunityBoard posts={posts} user={user} onUpdatePosts={handleUpdatePosts} onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }} onBack={handleBackOneStep} />
+                <CommunityBoard
+                  posts={posts}
+                  user={user}
+                  onUpdatePosts={handleUpdatePosts}
+                  onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }}
+                  onBack={handleBackOneStep}
+                  heroImage={(pageContents['community'] || INITIAL_PAGE_CONTENTS['community'])?.heroImage}
+                  heroTitle={(pageContents['community'] || INITIAL_PAGE_CONTENTS['community'])?.heroTitle}
+                  heroSubtitle={(pageContents['community'] || INITIAL_PAGE_CONTENTS['community'])?.heroSubtitle}
+                  onUpdateHeroImage={(url) => {
+                    const base = pageContents['community'] || INITIAL_PAGE_CONTENTS['community'];
+                    handleUpdatePageContents({
+                      ...pageContents,
+                      community: { ...base, heroImage: url }
+                    });
+                  }}
+                />
               ) : selectedCategory === '비지니스' ? (
                 <BusinessPage content={pageContents['business']} onBack={handleBackOneStep} />
               ) : selectedCategory === '여행 만들기' ? (
@@ -1439,8 +1553,16 @@ const App: React.FC = () => {
                   <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="사용하실 닉네임을 입력하세요" required />
                 </div>
               )}
-              <button type="submit" className="w-full bg-[#0A7E54] text-white font-bold py-3.5 rounded-2xl shadow-sm transition-all duration-200 active:scale-95 hover:bg-[#086945] mt-2 cursor-pointer">
-                {authMode === 'login' ? '로그인' : '가입 완료하기'}
+              <button
+                type="submit"
+                disabled={isAuthSubmitting}
+                className={`w-full font-bold py-3.5 rounded-2xl shadow-sm transition-all duration-200 mt-2 ${
+                  isAuthSubmitting
+                    ? 'bg-gray-400 text-white cursor-wait'
+                    : 'bg-[#0A7E54] text-white active:scale-95 hover:bg-[#086945] cursor-pointer'
+                }`}
+              >
+                {isAuthSubmitting ? '처리 중...' : (authMode === 'login' ? '로그인' : '가입 완료하기')}
               </button>
               {authMode === 'signup' && (
                 <p className="text-[11px] text-[#8E8E93] text-center pt-1">

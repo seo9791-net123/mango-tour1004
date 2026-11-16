@@ -4,6 +4,7 @@ import { CommunityPost, User, Comment } from '../types';
 import { uploadFile } from '../services/uploadService';
 import BackButton from './BackButton';
 import { getFreshImageUrl } from '../utils/imageUtils';
+import { VERIFIED_IMAGE_PRESETS } from '../constants';
 
 interface Props {
   posts: CommunityPost[];
@@ -11,15 +12,33 @@ interface Props {
   onUpdatePosts: (posts: CommunityPost[]) => void;
   onReqLogin: () => void;
   onBack?: () => void;
+  heroImage?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  onUpdateHeroImage?: (url: string) => void;
 }
 
-const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogin, onBack }) => {
+const DEFAULT_COMMUNITY_HERO = 'https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80';
+
+const CommunityBoard: React.FC<Props> = ({
+  posts,
+  user,
+  onUpdatePosts,
+  onReqLogin,
+  onBack,
+  heroImage,
+  heroTitle,
+  heroSubtitle,
+  onUpdateHeroImage
+}) => {
   const isAdmin = user?.role === 'admin';
   const [isAdding, setIsAdding] = useState(false);
   
   // New Post State
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
+  const [newPostRegion, setNewPostRegion] = useState('호치민');
+  const [newPostTheme, setNewPostTheme] = useState('자유 여행');
   const [newPostImage, setNewPostImage] = useState<string>('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [postPassword, setPostPassword] = useState('');
@@ -28,6 +47,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   // File input refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
+  const heroFileInputRef = useRef<HTMLInputElement>(null);
   
   // Detail & Edit Modal State
   const [viewingPost, setViewingPost] = useState<CommunityPost | null>(null);
@@ -37,6 +57,14 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   const [passwordInput, setPasswordInput] = useState('');
   const [showPasswordPrompt, setShowPasswordPrompt] = useState<string | null>(null);
   const [adminReplyInput, setAdminReplyInput] = useState('');
+  const [likedPostIds, setLikedPostIds] = useState<Record<string, boolean>>({});
+  const [viewImageBroken, setViewImageBroken] = useState(false);
+  const [editImageBroken, setEditImageBroken] = useState(false);
+  const [showEditPresetPicker, setShowEditPresetPicker] = useState(false);
+  const [heroImageBroken, setHeroImageBroken] = useState(false);
+  const [showHeroEditor, setShowHeroEditor] = useState(false);
+  const [heroUrlDraft, setHeroUrlDraft] = useState(heroImage || DEFAULT_COMMUNITY_HERO);
+  const [isUploadingHero, setIsUploadingHero] = useState(false);
 
   // Handle internal step-by-step back
   const handleTopBack = () => {
@@ -115,6 +143,7 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
       try {
         const downloadUrl = await uploadFile(file, 'community_images');
         setEditForm({ ...editForm, image: downloadUrl });
+        setEditImageBroken(false);
       } catch (error) {
         alert('이미지 업로드 실패: ' + error);
       } finally {
@@ -124,10 +153,31 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
     e.target.value = '';
   };
 
+  // Handle Hero Banner Image Upload for Admin
+  const handleHeroBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onUpdateHeroImage) {
+      setIsUploadingHero(true);
+      try {
+        const downloadUrl = await uploadFile(file, 'community_images');
+        setHeroUrlDraft(downloadUrl);
+        setHeroImageBroken(false);
+        onUpdateHeroImage(downloadUrl);
+        setShowHeroEditor(false);
+      } catch (error) {
+        alert('배너 이미지 업로드 실패: ' + error);
+      } finally {
+        setIsUploadingHero(false);
+      }
+    }
+    e.target.value = '';
+  };
+
   // Remove Image during Edit
   const handleRemoveEditImage = () => {
     if (editForm && confirm('이미지를 삭제하시겠습니까?')) {
       setEditForm({ ...editForm, image: '' });
+      setEditImageBroken(false);
     }
   };
 
@@ -151,9 +201,12 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
       content: newPostContent,
       author: user.nickname || user.username,
       date: new Date().toISOString().split('T')[0],
+      region: newPostRegion,
+      theme: newPostTheme,
       image: newPostImage,
       comments: [],
       views: 0,
+      likes: 0,
       isPrivate: isPrivate,
       password: isPrivate ? postPassword : undefined
     };
@@ -161,6 +214,8 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
     onUpdatePosts([newPost, ...posts]);
     setNewPostTitle('');
     setNewPostContent('');
+    setNewPostRegion('호치민');
+    setNewPostTheme('자유 여행');
     setNewPostImage('');
     setIsPrivate(false);
     setPostPassword('');
@@ -183,13 +238,22 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
     openPost(post);
   };
 
-  const openPost = (post: CommunityPost) => {
+  const openPost = (post: CommunityPost, startInEditMode = false) => {
     // Increment view count when opening
     const updatedPost = { ...post, views: post.views + 1 };
     const updatedPosts = posts.map(p => p.id === post.id ? updatedPost : p);
     onUpdatePosts(updatedPosts);
     setViewingPost(updatedPost);
-    setIsEditing(false); // Reset edit mode when opening new post
+    setViewImageBroken(false);
+    setEditImageBroken(false);
+    setShowEditPresetPicker(false);
+    if (startInEditMode) {
+      setEditForm({ ...updatedPost });
+      setIsEditing(true);
+    } else {
+      setIsEditing(false);
+      setEditForm(null);
+    }
     setAdminReplyInput(post.adminReply || '');
     setShowPasswordPrompt(null);
     setPasswordInput('');
@@ -226,6 +290,8 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   const startEdit = () => {
     if (viewingPost) {
       setEditForm({ ...viewingPost });
+      setEditImageBroken(false);
+      setShowEditPresetPicker(false);
       setIsEditing(true);
     }
   };
@@ -233,6 +299,8 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
   const cancelEdit = () => {
     setIsEditing(false);
     setEditForm(null);
+    setEditImageBroken(false);
+    setShowEditPresetPicker(false);
   };
 
   const saveEdit = () => {
@@ -248,8 +316,10 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
     
     // Update local viewing state
     setViewingPost(editForm);
+    setViewImageBroken(false);
     setIsEditing(false);
     setEditForm(null);
+    setShowEditPresetPicker(false);
   };
 
   const handleAddComment = () => {
@@ -280,6 +350,16 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
     setCommentInput('');
   };
 
+  const handleToggleLike = (post: CommunityPost) => {
+    const alreadyLiked = Boolean(likedPostIds[post.id]);
+    const currentLikes = post.likes ?? 0;
+    const nextLikes = alreadyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1;
+    const updatedPost = { ...post, likes: nextLikes };
+    setLikedPostIds(prev => ({ ...prev, [post.id]: !alreadyLiked }));
+    setViewingPost(updatedPost);
+    onUpdatePosts(posts.map(p => p.id === post.id ? updatedPost : p));
+  };
+
   return (
     <div className="bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in">
       {/* Sticky Subpage Hero Banner */}
@@ -292,8 +372,10 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
             <section className="relative h-[140px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-[20px] shadow-sm">
               <div className="absolute inset-0 z-0">
                 <img 
-                  src={getFreshImageUrl("https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=1600&q=80")} 
+                  src={getFreshImageUrl(heroImage || DEFAULT_COMMUNITY_HERO)} 
                   alt="Community Hero" 
+                  onLoad={() => setHeroImageBroken(false)}
+                  onError={() => setHeroImageBroken(true)}
                   className="w-full h-full object-cover object-center opacity-60" 
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/25"></div>
@@ -303,15 +385,107 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 <BackButton onClick={handleTopBack} variant="hero" label={viewingPost || isAdding ? '목록으로' : '뒤로가기'} />
               </div>
 
+              {isAdmin && onUpdateHeroImage && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeroUrlDraft(heroImage || DEFAULT_COMMUNITY_HERO);
+                    setShowHeroEditor(prev => !prev);
+                  }}
+                  className={`absolute top-3 right-3 sm:top-4 sm:right-4 z-50 px-3 py-1.5 rounded-xl text-[11px] font-bold shadow-lg transition cursor-pointer flex items-center gap-1.5 backdrop-blur-md border ${
+                    heroImageBroken
+                      ? 'bg-red-600/95 text-white border-red-300'
+                      : 'bg-black/65 hover:bg-[#0A7E54] text-white border-white/25'
+                  }`}
+                >
+                  <span>{heroImageBroken ? '⚠️' : '🖼️'}</span>
+                  <span>{heroImageBroken ? '배너 깨짐 · 수정' : '배너 사진 수정'}</span>
+                </button>
+              )}
+
               <div className="relative z-10 text-center px-4 pt-4 sm:pt-2 md:pt-0">
                 <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow mb-0.5 sm:mb-1 uppercase tracking-tight break-keep">
-                  커뮤니티 & 여행 후기
+                  {heroTitle || '커뮤니티 & 여행 후기'}
                 </h1>
                 <p className="text-[10px] xs:text-[11px] md:text-sm font-semibold tracking-[0.2em] text-emerald-300 uppercase break-keep">
-                  MEMBER STORIES & REVIEWS
+                  {heroSubtitle || 'MEMBER STORIES & REVIEWS'}
                 </p>
               </div>
             </section>
+
+            {/* Admin Inline Banner Photo Editor */}
+            {isAdmin && onUpdateHeroImage && showHeroEditor && (
+              <div className="mt-2.5 bg-white p-3.5 sm:p-4 rounded-2xl shadow-lg border border-emerald-200 space-y-3 animate-fade-in-up">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs sm:text-sm font-bold text-[#0A7E54]">🖼️ 커뮤니티 상단 배너 사진 변경</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowHeroEditor(false)}
+                    className="text-xs text-gray-500 hover:text-gray-800 font-bold px-2 py-1"
+                  >
+                    닫기 ✕
+                  </button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={heroUrlDraft}
+                    onChange={(e) => setHeroUrlDraft(e.target.value)}
+                    placeholder="배너 이미지 URL을 입력하거나 파일을 업로드하세요"
+                    className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-[#0A7E54]"
+                  />
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => heroFileInputRef.current?.click()}
+                      disabled={isUploadingHero}
+                      className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-bold transition cursor-pointer"
+                    >
+                      {isUploadingHero ? '업로드 중...' : '📁 파일 선택'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!heroUrlDraft.trim()) return;
+                        setHeroImageBroken(false);
+                        onUpdateHeroImage(heroUrlDraft.trim());
+                        setShowHeroEditor(false);
+                      }}
+                      className="px-4 py-2 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-xl text-xs font-bold transition cursor-pointer"
+                    >
+                      적용 저장
+                    </button>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={heroFileInputRef}
+                    onChange={handleHeroBannerUpload}
+                    className="hidden"
+                  />
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {VERIFIED_IMAGE_PRESETS.slice(0, 8).map((preset, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setHeroUrlDraft(preset.url);
+                        setHeroImageBroken(false);
+                        onUpdateHeroImage(preset.url);
+                        setShowHeroEditor(false);
+                      }}
+                      className="shrink-0 w-24 text-left group cursor-pointer"
+                    >
+                      <div className="w-24 h-14 rounded-lg overflow-hidden border border-gray-200 group-hover:border-[#0A7E54]">
+                        <img src={getFreshImageUrl(preset.url)} alt={preset.label} className="w-full h-full object-cover" />
+                      </div>
+                      <p className="text-[10px] text-gray-600 truncate mt-1 font-medium">{preset.label}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : null}
@@ -349,6 +523,27 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
           <div className="bg-white p-5 sm:p-6 rounded-[20px] shadow-sm animate-fade-in-up">
             <h3 className="font-bold text-sm md:text-base mb-3 text-gray-900">새 글 작성</h3>
             <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={newPostRegion}
+                    onChange={e => setNewPostRegion(e.target.value)}
+                    className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none text-xs md:text-sm bg-white"
+                  >
+                    <option value="호치민">호치민</option>
+                    <option value="붕따우">붕따우</option>
+                    <option value="무이네">무이네</option>
+                    <option value="달랏">달랏</option>
+                  </select>
+                  <select
+                    value={newPostTheme}
+                    onChange={e => setNewPostTheme(e.target.value)}
+                    className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none text-xs md:text-sm bg-white"
+                  >
+                    <option value="골프 여행">골프 여행</option>
+                    <option value="자유 여행">자유 여행</option>
+                    <option value="단체 여행">단체 여행</option>
+                  </select>
+                </div>
                 <input
                   className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none text-xs md:text-sm"
                   placeholder="제목을 입력하세요"
@@ -471,6 +666,11 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                             {post.image && (
                               <span className="text-xs md:text-sm shrink-0" title="사진 포함">📷</span>
                             )}
+                            {(post.region || post.theme) && (
+                              <span className="text-[11px] font-bold text-[#0A7E54] shrink-0 whitespace-nowrap">
+                                [{[post.region, post.theme].filter(Boolean).join(' · ')}]
+                              </span>
+                            )}
                             <h3 className="font-bold text-sm md:text-base text-gray-900 group-hover:text-deepgreen transition-colors truncate">
                               {post.title}
                             </h3>
@@ -478,6 +678,19 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                               <span className="text-[11px] md:text-xs font-bold text-gold-600 shrink-0 ml-1.5">
                                 [{post.comments.length}]
                               </span>
+                            )}
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openPost(post, true);
+                                }}
+                                className="ml-2 px-2 py-0.5 bg-emerald-50 hover:bg-[#0A7E54] text-[#0A7E54] hover:text-white border border-emerald-200 rounded-md text-[11px] font-bold transition shrink-0 cursor-pointer"
+                                title="게시글 및 사진 바로 수정"
+                              >
+                                ✏️ 사진·글 편집
+                              </button>
                             )}
                           </div>
                           {post.content && (
@@ -494,8 +707,11 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                         <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 whitespace-nowrap">
                           {post.date}
                         </div>
-                        <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 font-medium">
-                          {post.views}
+                        <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 font-medium whitespace-nowrap">
+                          <span>{post.views}</span>
+                          {typeof post.likes === 'number' && (
+                            <span className="ml-1.5 text-[11px] text-rose-500 font-semibold">♥{post.likes}</span>
+                          )}
                         </div>
                       </div>
 
@@ -530,14 +746,40 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                         )}
 
                         <div className="flex items-center gap-2 text-[11px] text-gray-400 pt-0.5 flex-wrap">
+                          {(post.region || post.theme) && (
+                            <>
+                              <span className="font-semibold text-[#0A7E54] whitespace-nowrap">
+                                {[post.region, post.theme].filter(Boolean).join(' · ')}
+                              </span>
+                              <span>·</span>
+                            </>
+                          )}
                           <span className="font-medium text-gray-600 whitespace-nowrap">{post.author}</span>
                           <span>·</span>
                           <span className="whitespace-nowrap">조회 {post.views}</span>
+                          {typeof post.likes === 'number' && (
+                            <>
+                              <span>·</span>
+                              <span className="text-rose-500 font-medium whitespace-nowrap">좋아요 {post.likes}</span>
+                            </>
+                          )}
                           {hasComments && (
                             <>
                               <span>·</span>
                               <span className="whitespace-nowrap">댓글 {post.comments.length}</span>
                             </>
+                          )}
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPost(post, true);
+                              }}
+                              className="ml-auto px-2 py-0.5 bg-emerald-50 text-[#0A7E54] border border-emerald-200 rounded text-[10px] font-bold"
+                            >
+                              ✏️ 편집
+                            </button>
                           )}
                         </div>
                       </div>
@@ -610,14 +852,42 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
               <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3 md:hidden"></div>
                 <div className="flex justify-between items-start mb-4">
                      {isEditing && editForm ? (
-                       <input 
-                         className="w-full text-lg font-bold text-gray-900 border-b-2 border-gold-500 outline-none pb-1 bg-transparent"
-                         value={editForm.title}
-                         onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                         placeholder="제목을 입력하세요"
-                       />
+                       <div className="w-full space-y-2.5">
+                         <div className="grid grid-cols-2 gap-2">
+                           <select
+                             value={editForm.region || '호치민'}
+                             onChange={(e) => setEditForm({ ...editForm, region: e.target.value })}
+                             className="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-gray-700 bg-white outline-none focus:border-[#0A7E54]"
+                           >
+                             <option value="호치민">호치민</option>
+                             <option value="붕따우">붕따우</option>
+                             <option value="무이네">무이네</option>
+                             <option value="달랏">달랏</option>
+                           </select>
+                           <select
+                             value={editForm.theme || '자유 여행'}
+                             onChange={(e) => setEditForm({ ...editForm, theme: e.target.value })}
+                             className="border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-gray-700 bg-white outline-none focus:border-[#0A7E54]"
+                           >
+                             <option value="골프 여행">골프 여행</option>
+                             <option value="자유 여행">자유 여행</option>
+                             <option value="단체 여행">단체 여행</option>
+                           </select>
+                         </div>
+                         <input 
+                           className="w-full text-lg font-bold text-gray-900 border-b-2 border-gold-500 outline-none pb-1 bg-transparent"
+                           value={editForm.title}
+                           onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                           placeholder="제목을 입력하세요"
+                         />
+                       </div>
                      ) : (
                        <div>
+                          {(viewingPost.region || viewingPost.theme) && (
+                            <p className="text-[11px] sm:text-xs font-bold text-[#0A7E54] mb-1">
+                              {[viewingPost.region, viewingPost.theme].filter(Boolean).join(' · ')}
+                            </p>
+                          )}
                           <h2 className="text-base sm:text-xl md:text-2xl font-extrabold text-gray-900 mb-2 leading-snug break-keep">{viewingPost.title}</h2>
                           <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs md:text-sm text-gray-500">
                               <div className="flex items-center gap-1.5">
@@ -630,6 +900,17 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                               <span className="font-normal text-gray-400">{viewingPost.date}</span>
                               <span>•</span>
                               <span className="font-normal text-gray-400">조회 {viewingPost.views}</span>
+                              <span>•</span>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleLike(viewingPost)}
+                                className={`inline-flex items-center gap-1 font-semibold transition cursor-pointer ${
+                                  likedPostIds[viewingPost.id] ? 'text-rose-600' : 'text-rose-500 hover:text-rose-600'
+                                }`}
+                              >
+                                <span>{likedPostIds[viewingPost.id] ? '❤️' : '🤍'}</span>
+                                <span>좋아요 {viewingPost.likes ?? 0}</span>
+                              </button>
                           </div>
                        </div>
                      )}
@@ -640,48 +921,134 @@ const CommunityBoard: React.FC<Props> = ({ posts, user, onUpdatePosts, onReqLogi
                 </div>
 
                 {/* Image Section */}
-                <div className="mb-4 rounded-lg overflow-hidden shadow-sm border border-gray-100 relative group min-h-[100px] bg-gray-50">
+                <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-gray-200 bg-gray-50">
                     {isEditing && editForm ? (
-                       <>
-                          {editForm.image ? (
-                             <img src={getFreshImageUrl(editForm.image)} alt="Editing Post" className="w-full h-auto opacity-80" />
-                          ) : (
-                             <div className="w-full h-40 bg-gray-100 flex flex-col items-center justify-center text-gray-400 gap-2">
-                                <span className="text-2xl">🖼️</span>
-                                <span className="text-xs">{isUploading ? '업로드 중...' : '이미지 없음'}</span>
-                             </div>
-                          )}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity gap-3">
-                             {!isUploading && (
-                                 <div className="flex gap-2">
-                                   <button 
-                                     onClick={() => editFileInputRef.current?.click()}
-                                     className="bg-white text-deepgreen px-4 py-2 rounded-full font-bold shadow-lg hover:bg-gold-50 transition text-[10px]"
-                                   >
-                                      🖼️ 이미지 {editForm.image ? '교체' : '추가'}
-                                   </button>
-                                   {editForm.image && (
-                                     <button 
-                                       onClick={handleRemoveEditImage}
-                                       className="bg-red-500 text-white px-4 py-2 rounded-full font-bold shadow-lg hover:bg-red-600 transition text-[10px]"
-                                     >
-                                        🗑️ 이미지 삭제
-                                     </button>
-                                   )}
-                                 </div>
-                             )}
-                             <input 
-                               type="file" 
-                               accept="image/*"
-                               ref={editFileInputRef}
-                               onChange={handleEditImageUpload}
-                               className="hidden"
-                             />
+                       <div className="space-y-3 p-3">
+                          <div className="relative rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                            {editForm.image ? (
+                              <>
+                                <img
+                                  src={getFreshImageUrl(editForm.image)}
+                                  alt="Editing Post"
+                                  onLoad={() => setEditImageBroken(false)}
+                                  onError={() => setEditImageBroken(true)}
+                                  className="w-full max-h-72 object-cover"
+                                />
+                                {editImageBroken && (
+                                  <div className="p-3 bg-red-50 border-t border-red-200 text-red-700 text-xs font-bold flex items-center justify-between gap-2">
+                                    <span>⚠️ 현재 이미지 주소가 깨졌거나 불러올 수 없습니다. 아래에서 새 사진으로 교체해주세요.</span>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                               <div className="w-full h-36 bg-gray-100 flex flex-col items-center justify-center text-gray-400 gap-2">
+                                  <span className="text-2xl">🖼️</span>
+                                  <span className="text-xs">{isUploading ? '업로드 중...' : '등록된 이미지가 없습니다'}</span>
+                               </div>
+                            )}
                           </div>
-                       </>
+
+                          {/* Always-visible image editing bar (Mobile & Desktop friendly) */}
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => editFileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className="px-3.5 py-2 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-lg font-bold text-xs transition cursor-pointer disabled:opacity-50"
+                              >
+                                {isUploading ? '업로드 중...' : `📷 파일 ${editForm.image ? '교체' : '업로드'}`}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setShowEditPresetPicker(prev => !prev)}
+                                className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg font-bold text-xs transition cursor-pointer"
+                              >
+                                🎨 {showEditPresetPicker ? '추천 사진 닫기' : '추천 사진 선택'}
+                              </button>
+                              {editForm.image && (
+                                <button
+                                  type="button"
+                                  onClick={handleRemoveEditImage}
+                                  className="px-3.5 py-2 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-200 rounded-lg font-bold text-xs transition cursor-pointer"
+                                >
+                                  🗑️ 이미지 삭제
+                                </button>
+                              )}
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                ref={editFileInputRef}
+                                onChange={handleEditImageUpload}
+                                className="hidden"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[11px] font-bold text-gray-500 block mb-1">🔗 이미지 URL 직접 입력 / 수정</label>
+                              <input
+                                type="text"
+                                value={editForm.image || ''}
+                                onChange={(e) => {
+                                  setEditImageBroken(false);
+                                  setEditForm({ ...editForm, image: e.target.value });
+                                }}
+                                placeholder="https://... 또는 /images/products/..."
+                                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs outline-none focus:border-[#0A7E54]"
+                              />
+                            </div>
+
+                            {showEditPresetPicker && (
+                              <div className="bg-white p-2.5 rounded-xl border border-gray-200 space-y-2">
+                                <p className="text-[11px] font-bold text-gray-600">검증된 여행·골프 사진 1클릭 적용</p>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                                  {VERIFIED_IMAGE_PRESETS.map((preset, pIdx) => (
+                                    <button
+                                      key={pIdx}
+                                      type="button"
+                                      onClick={() => {
+                                        setEditImageBroken(false);
+                                        setEditForm({ ...editForm, image: preset.url });
+                                        setShowEditPresetPicker(false);
+                                      }}
+                                      className="text-left group cursor-pointer"
+                                    >
+                                      <div className="aspect-video rounded-md overflow-hidden border border-gray-200 group-hover:border-[#0A7E54]">
+                                        <img src={getFreshImageUrl(preset.url)} alt={preset.label} className="w-full h-full object-cover" />
+                                      </div>
+                                      <p className="text-[10px] text-gray-700 truncate mt-0.5 font-medium">{preset.label}</p>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                       </div>
                     ) : (
                        viewingPost.image && (
-                          <img src={getFreshImageUrl(viewingPost.image)} alt="Post" className="w-full h-auto" />
+                          <div className="relative">
+                            <img
+                              src={getFreshImageUrl(viewingPost.image)}
+                              alt="Post"
+                              onLoad={() => setViewImageBroken(false)}
+                              onError={() => setViewImageBroken(true)}
+                              className="w-full h-auto"
+                            />
+                            {viewImageBroken && (
+                              <div className="p-3 bg-red-50 border-t border-red-200 flex items-center justify-between gap-2 text-xs text-red-700 font-bold">
+                                <span>⚠️ 이 게시글의 이미지를 불러올 수 없습니다.</span>
+                                {isAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={startEdit}
+                                    className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition cursor-pointer shrink-0"
+                                  >
+                                    🖼️ 바로 사진 교체
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                        )
                     )}
                 </div>

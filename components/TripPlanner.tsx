@@ -69,6 +69,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   const [showKakaoModal, setShowKakaoModal] = useState<boolean>(false);
   const [showImagePreviewModal, setShowImagePreviewModal] = useState<boolean>(false);
   const [inquirySuccess, setInquirySuccess] = useState<boolean>(false);
+  const [inquiryError, setInquiryError] = useState<string | null>(null);
+  const [submissionNotice, setSubmissionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSubmittingEmail, setIsSubmittingEmail] = useState<boolean>(false);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
@@ -1091,7 +1093,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     }
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `📞 망고투어 고객센터: +84 37 720 4451\n`;
-    text += `📧 이메일 접수처: seo9791@gmail.com\n`;
+    text += `📩 온라인 견적 접수: 홈페이지 [1:1 온라인 견적 신청하기]로 즉시 접수\n`;
     text += `💬 실시간 1:1 카카오톡 상담: https://open.kakao.com/o/gprQnKSi`;
     return text;
   };
@@ -1392,88 +1394,193 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   const handleOpenOnlineInquiry = async () => {
     setShowInquiryModal(true);
     setInquirySuccess(false);
+    setInquiryError(null);
     if (!capturedImageUrl) {
       await captureQuotationImage();
     }
   };
 
-  // Direct Mailto Action to seo9791@gmail.com
-  const handleSendMailto = () => {
-    if (!activePackage) return;
-    const subject = encodeURIComponent(`[망고투어 1:1 맞춤 견적 신청] ${customerName || '고객'}님 (${activePackage.title})`);
-    const body = encodeURIComponent(generateQuotationText());
-    window.open(`mailto:seo9791@gmail.com?subject=${subject}&body=${body}`, '_blank');
-  };
-
-  // Submit Online Inquiry & Send to seo9791@gmail.com
+  // Submit Online Inquiry & Send via Web3Forms API (Text/Table format - no file attachments)
   const handleSubmitOnlineInquiry = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || !customerContact.trim()) {
-      alert('예약자 성함과 연락처(또는 카카오톡 ID)를 입력해주세요.');
+    if (isSubmittingEmail) return;
+
+    const trimmedName = customerName.trim();
+    const trimmedContact = customerContact.trim();
+    if (!trimmedName || !trimmedContact) {
+      setInquiryError('예약자 성함과 연락처(또는 카카오톡 ID)를 입력해주세요.');
       return;
     }
 
+    setInquiryError(null);
     setIsSubmittingEmail(true);
 
-    let imgUrl = capturedImageUrl;
-    if (!imgUrl) {
-      imgUrl = await captureQuotationImage();
-    }
-
-    const included = activePackage ? activePackage.options.filter(o => selectedOptionIds.has(o.id)) : [];
-    const excluded = activePackage ? activePackage.options.filter(o => !selectedOptionIds.has(o.id)) : [];
-
-    const inquiryPayload = {
-      _subject: `[망고투어 1:1 맞춤 견적 신청] ${customerName}님 (${activePackage?.title || '골프 패키지'})`,
-      _template: 'table',
-      _captcha: 'false',
-      담당자이메일: 'seo9791@gmail.com',
-      예약자명: customerName,
-      연락처_카카오톡ID: customerContact,
-      상품명: activePackage?.title || '',
-      지역: activePackage?.location || '',
-      기간: activePackage?.duration || '4박 5일',
-      맞춤선택_골프장: customGolfCourses.join(' · '),
-      맞춤선택_숙박: getChosenAccommodationName(),
-      출발희망일: departureDate || '미정',
-      여행인원: `${personCount}명`,
-      '1인_예상금액': `$${currentTotalPerPerson.toLocaleString()} (약 ${(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)`,
-      '총_예상견적': `$${currentTotalGroup.toLocaleString()} (약 ${(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)`,
-      선택포함항목: included.map(i => {
-        const isTeam = i.category === 'vehicle' || i.category === 'guide';
-        return isTeam
-          ? `${getOptionDisplayName(i)} (일정 총액 $${getOptionGroupTotalUSD(i)})`
-          : `${getOptionDisplayName(i)} (1인 $${getOptionPrice(i)})`;
-      }).join(' / '),
-      제외항목: excluded.map(i => getOptionDisplayName(i)).join(' / ') || '없음',
-      고객요청사항: customerNotes || '없음',
-      접수일시: new Date().toLocaleString('ko-KR')
-    };
-
-    // 1. Send via FormSubmit AJAX API to seo9791@gmail.com
     try {
-      await fetch('https://formsubmit.co/ajax/seo9791@gmail.com', {
+      const a4CostItems = getA4CostItems();
+      const a4ItineraryDays = getA4ItineraryDays();
+      const reservationNotice = getReservationNoticeData();
+
+      const includedOptions = activePackage
+        ? activePackage.options.filter(o => selectedOptionIds.has(o.id))
+        : [];
+      const excludedOptions = activePackage
+        ? activePackage.options.filter(o => !selectedOptionIds.has(o.id))
+        : [];
+
+      const tourName =
+        activePackage?.title ||
+        reservationNotice?.productTitle ||
+        `[고객 맞춤 DIY] ${diyLocation} 맞춤 투어`;
+      const tourLocation = activePackage?.location || reservationNotice?.region || diyLocation;
+      const tourDuration =
+        activePackage?.duration || reservationNotice?.duration || `${diyNights}박 ${diyDays}일`;
+
+      const golfListText =
+        customGolfCourses.length > 0
+          ? customGolfCourses.map((c, idx) => `${idx + 1}R: ${c}`).join(' / ')
+          : reservationNotice?.tourItems?.join(', ') || '자유·맞춤 여행 일정';
+
+      const accommodationOpt = activePackage?.options.find(o => o.category === 'hotel');
+      const accommodationText =
+        accommodationOpt && selectedOptionIds.has(accommodationOpt.id)
+          ? getChosenAccommodationName()
+          : reservationNotice?.accommodation || '미포함 / 개별 예약';
+
+      const vehicleOpt = activePackage?.options.find(o => o.category === 'vehicle');
+      const vehicleText =
+        vehicleOpt && selectedOptionIds.has(vehicleOpt.id)
+          ? getOptionDisplayName(vehicleOpt)
+          : reservationNotice?.vehicle || '미포함';
+
+      const guideOpt = activePackage?.options.find(o => o.category === 'guide');
+      const guideText =
+        guideOpt && selectedOptionIds.has(guideOpt.id)
+          ? getOptionDisplayName(guideOpt)
+          : '미포함';
+
+      const extraOptionLines = includedOptions
+        .filter(
+          o =>
+            o.category !== 'hotel' &&
+            o.category !== 'vehicle' &&
+            o.category !== 'guide' &&
+            o.category !== 'golf' &&
+            o.id !== 'diy-opt-region'
+        )
+        .map(o => `- ${getOptionDisplayName(o)}: $${getOptionGroupTotalUSD(o).toLocaleString()} USD`);
+
+      const costTableLines = a4CostItems.map((item, idx) => {
+        const usd = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / USD_TO_KRW);
+        const krw = item.amountKRW || usd * USD_TO_KRW;
+        return `${idx + 1}. [${item.category}] | 수량/기준: ${item.quantity} | 금액: $${usd.toLocaleString()} (약 ${krw.toLocaleString()}원)\n   └ 세부: ${item.detail}`;
+      });
+
+      const itineraryLines = a4ItineraryDays.map(day => {
+        const actTexts = day.activities.map(act =>
+          typeof act === 'string' ? act : `${act.time ? `[${act.time}] ` : ''}${act.desc}`
+        );
+        return `• ${day.title}\n   - ${actTexts.join(' / ')}`;
+      });
+
+      const submittedAt = new Date().toLocaleString('ko-KR');
+
+      const formattedMessage = [
+        '==================================================',
+        '           MANGO TOUR 1:1 맞춤 견적 신청서',
+        '==================================================',
+        '',
+        '[1. 고객 신청 정보]',
+        `• 예약자 성함: ${trimmedName}`,
+        `• 연락처 / 카카오톡 ID: ${trimmedContact}`,
+        `• 인원 수: ${personCount}명`,
+        `• 출발 희망일: ${departureDate || '미정'}`,
+        `• 추가 요청사항: ${customerNotes.trim() || '없음'}`,
+        `• 접수 일시: ${submittedAt}`,
+        '',
+        '[2. 정식 A4 견적서 요약 내역]',
+        `• 투어명: ${tourName}`,
+        `• 여행 지역 / 일정: ${tourLocation} / ${tourDuration} (총 ${pkgTravelDays}일 일정)`,
+        `• ${customGolfCourses.length > 0 ? '라운딩 골프장' : '여행/투어 구성'}: ${golfListText}`,
+        `• 숙박: ${accommodationText}`,
+        `• 차량: ${vehicleText}`,
+        `• 가이드: ${guideText}`,
+        `• 추가/선택 옵션:`,
+        extraOptionLines.length > 0 ? extraOptionLines.join('\n') : '  - 기본 포함 구성 외 추가 옵션 없음',
+        `• 제외(미선택) 항목: ${excludedOptions.length > 0 ? excludedOptions.map(o => getOptionDisplayName(o)).join(' / ') : '없음'}`,
+        '',
+        '[3. 정식 A4 견적서 — 경비 세부 내역표]',
+        ...(costTableLines.length > 0 ? costTableLines : ['(선택된 세부 경비 항목 없음)']),
+        '',
+        '[4. 최종 예상 견적 합계]',
+        `• 1인당 예상 금액: $${currentTotalPerPerson.toLocaleString()} USD (약 ${(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)`,
+        `• 총 예상 견적 합계 (${personCount}인 기준): $${currentTotalGroup.toLocaleString()} USD (약 ${(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)`,
+        '  ※ 환율 1 USD = 1,360 KRW 기준 / 차량·가이드는 인원수 무관 일정 총액 적용',
+        '',
+        ...(itineraryLines.length > 0
+          ? ['[5. 예정 일정표 요약]', ...itineraryLines, '']
+          : []),
+        '==================================================',
+        'MANGO TOUR | +84 37 720 4451 | Kakao: MANGO TOUR',
+      ].join('\n');
+
+      const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
-        body: JSON.stringify(inquiryPayload)
+        body: JSON.stringify({
+          access_key: '58044e40-51a1-4f63-9248-81b6b1bca9ef',
+          subject: `[MANGO TOUR 견적신청] ${trimmedName}님의 맞춤 견적 문의`,
+          from_name: 'MANGO TOUR 온라인 견적',
+          name: trimmedName,
+          message: formattedMessage,
+        }),
       });
-    } catch (netErr) {
-      console.warn('FormSubmit AJAX request notice:', netErr);
-    }
 
-    // 2. Backup save to Supabase Database
-    try {
-      await supabaseService.saveInquiry(inquiryPayload);
-    } catch (dbErr) {
-      console.warn('Supabase backup save error:', dbErr);
-    }
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || `Web3Forms error (${response.status})`);
+      }
 
-    setIsSubmittingEmail(false);
-    setInquirySuccess(true);
-    showToast('📧 견적 신청서가 seo9791@gmail.com으로 접수되었습니다!');
+      // Backup save to Supabase Database (non-blocking)
+      try {
+        await supabaseService.saveInquiry({
+          _subject: `[MANGO TOUR 견적신청] ${trimmedName}님의 맞춤 견적 문의`,
+          예약자명: trimmedName,
+          연락처_카카오톡ID: trimmedContact,
+          상품명: tourName,
+          지역: tourLocation,
+          기간: tourDuration,
+          맞춤선택_골프장: customGolfCourses.join(' · '),
+          맞춤선택_숙박: accommodationText,
+          출발희망일: departureDate || '미정',
+          여행인원: `${personCount}명`,
+          '1인_예상금액': `$${currentTotalPerPerson.toLocaleString()} (약 ${(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)`,
+          '총_예상견적': `$${currentTotalGroup.toLocaleString()} (약 ${(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)`,
+          고객요청사항: customerNotes.trim() || '없음',
+          접수일시: submittedAt,
+        });
+      } catch (dbErr) {
+        console.warn('Supabase backup save error:', dbErr);
+      }
+
+      setShowInquiryModal(false);
+      setInquirySuccess(false);
+      setInquiryError(null);
+      setSubmissionNotice({
+        type: 'success',
+        message: '견적 신청이 성공적으로 접수되었습니다. 담당 매니저가 곧 연락드리겠습니다.',
+      });
+      showToast('견적 신청이 성공적으로 접수되었습니다. 담당 매니저가 곧 연락드리겠습니다.');
+    } catch (err) {
+      console.error('Web3Forms submission failed:', err);
+      const failMsg = '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.';
+      setInquiryError(failMsg);
+      showToast(failMsg);
+    } finally {
+      setIsSubmittingEmail(false);
+    }
   };
 
   const handleCopyQuote = () => {
@@ -1502,7 +1609,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     <div className="bg-[#F2F2F7] select-text font-sans antialiased text-[#3A3A3C] tracking-tight break-keep w-full max-w-full overflow-x-clip">
       {/* Toast Notification */}
       {copyToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-gray-900/90 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-full shadow-lg text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[10007] bg-gray-900/90 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-full shadow-lg text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md">
           <span>{copyToast}</span>
         </div>
       )}
@@ -2644,7 +2751,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   {/* Official Inquiry Channels Footer */}
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-1.5 px-1 text-[11px] md:text-xs text-[#8E8E93] font-normal w-full overflow-hidden">
                     <div className="truncate max-w-full">카카오톡 상담: <strong className="text-[#0A7E54] font-semibold break-all">open.kakao.com/o/gprQnKSi</strong></div>
-                    <div className="truncate max-w-full">이메일 문의: <strong className="text-[#0A7E54] font-semibold break-all">seo9791@gmail.com</strong></div>
+                    <div className="truncate max-w-full">온라인 접수: <strong className="text-[#0A7E54] font-semibold">온라인 견적 신청서로 즉시 접수</strong></div>
                   </div>
                 </div>
 
@@ -2878,14 +2985,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     <span>{isCapturing ? '견적서 캡처 생성 중...' : '카카오톡으로 즉시 견적 문의하기'}</span>
                   </button>
 
-                  {/* 1:1 Online Inquiry (Email to seo9791@gmail.com) */}
+                  {/* 1:1 Online Inquiry (Web3Forms) */}
                   <button
                     type="button"
                     onClick={handleOpenOnlineInquiry}
                     className="w-full py-3.5 sm:py-4 bg-[#0A7E54] text-white font-bold rounded-2xl hover:bg-[#086945] transition-all duration-200 flex items-center justify-center gap-2 text-xs sm:text-sm md:text-base tracking-tight active:scale-95 cursor-pointer"
                   >
                     <span>📧</span>
-                    <span>1:1 온라인 신청 (이메일 발송)</span>
+                    <span>1:1 온라인 견적 신청하기</span>
                   </button>
 
                   {/* Secondary actions grid */}
@@ -2911,7 +3018,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 </div>
 
                 <div className="p-2.5 md:p-3 bg-amber-50 rounded-xl border border-amber-200 text-[10px] md:text-xs text-amber-800 leading-relaxed font-normal">
-                  💡 <strong>안내:</strong> 견적서 캡처 저장 또는 1:1 온라인 신청 시 현재 맞춤 구성이 <strong>정식 A4 견적서(PDF 양식)</strong>로 자동 생성되어 다운로드 및 이메일(<strong>seo9791@gmail.com</strong>)로 전송됩니다.
+                  💡 <strong>안내:</strong> 견적서 캡처 저장 또는 1:1 온라인 신청 시 현재 맞춤 구성이 <strong>정식 A4 견적서</strong>로 생성되며, <strong>온라인 견적 신청서로 담당 매니저에게 즉시 접수</strong>됩니다.
                 </div>
 
               </div>
@@ -2973,11 +3080,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   style={{ WebkitOverflowScrolling: 'touch' }}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] md:text-xs font-semibold rounded-full shrink-0">이메일 공식 접수</span>
-                    <span className="text-xs text-[#8E8E93] break-all font-medium">seo9791@gmail.com</span>
+                    <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] md:text-xs font-semibold rounded-full shrink-0">온라인 공식 접수</span>
+                    <span className="text-xs text-[#8E8E93] font-medium">온라인 견적 신청서로 즉시 접수됩니다</span>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">맞춤 견적서 이메일 발송</h3>
-                  <p className="text-xs md:text-sm text-[#8E8E93] break-keep">작성하신 예약 정보와 맞춤 견적서가 담당 매니저에게 즉시 발송됩니다.</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">1:1 맞춤 견적서 온라인 접수</h3>
+                  <p className="text-xs md:text-sm text-[#8E8E93] break-keep">작성하신 예약 정보와 맞춤 견적서가 담당 매니저에게 즉시 접수됩니다.</p>
 
                   {capturedImageUrl && (
                     <div className="p-3.5 bg-[#F2F2F7] rounded-2xl w-full max-w-full overflow-hidden box-border">
@@ -3077,6 +3184,21 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       선택 {selectedOptionIds.size}개
                     </div>
                   </div>
+
+                  {inquiryError && (
+                    <div className="p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs md:text-sm text-red-700 font-semibold space-y-2">
+                      <p>⚠️ {inquiryError}</p>
+                      <a
+                        href="https://open.kakao.com/o/gprQnKSi"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FEE500] text-[#191919] rounded-xl text-xs font-bold hover:bg-[#FDD835] transition"
+                      >
+                        <span>💬</span>
+                        <span>카카오톡으로 바로 문의하기</span>
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* Sticky Pinned Bottom Action Bar */}
@@ -3087,10 +3209,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   <button
                     type="submit"
                     disabled={isSubmittingEmail}
-                    className="w-full py-3.5 md:py-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-2xl text-sm sm:text-base active:scale-95 disabled:opacity-75 flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
+                    className="w-full py-3.5 md:py-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-2xl text-sm sm:text-base active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
                   >
                     <span className="font-bold tracking-tight">
-                      {isSubmittingEmail ? '이메일 전송 중...' : '1:1 온라인 견적 신청서 발송하기'}
+                      {isSubmittingEmail ? '발송 중...' : '1:1 온라인 견적 신청서 발송하기'}
                     </span>
                   </button>
                 </div>
@@ -3101,8 +3223,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   ✓
                 </div>
                 <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-deepgreen">신청서가 성공적으로 전송되었습니다!</h3>
-                <p className="text-xs md:text-sm text-gray-600 leading-relaxed max-w-sm md:max-w-md mx-auto break-words break-all">
-                  <strong>{customerName}</strong>님, 접수해주신 견적서가 담당자 이메일(<strong>seo9791@gmail.com</strong>)로 정상 전달되었습니다. 담당 매니저가 확인 후 연락처(<strong>{customerContact}</strong>)로 빠른 상담을 진행해 드립니다.
+                <p className="text-xs md:text-sm text-gray-600 leading-relaxed max-w-sm md:max-w-md mx-auto break-words">
+                  <strong>{customerName}</strong>님, 접수해주신 견적서가 <strong>온라인 견적 신청서로 즉시 접수</strong>되었습니다. 담당 매니저가 확인 후 연락처(<strong>{customerContact}</strong>)로 빠른 상담을 진행해 드립니다.
                 </p>
 
                 {capturedImageUrl && (
@@ -3133,14 +3255,6 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                   >
                     <span>📥</span>
                     <span>견적서 고해상도 이미지(PNG) 다운로드</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSendMailto}
-                    className="w-full py-3 md:py-3.5 bg-blue-50 text-blue-800 border border-blue-200 font-bold rounded-2xl hover:bg-blue-100 transition text-xs md:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <span>📧</span>
-                    <span>내 메일 앱(Gmail/기본메일)으로도 확인 발송</span>
                   </button>
                   <button
                     type="button"
@@ -5030,6 +5144,35 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             reservationNotice={getReservationNoticeData()}
             showControls={false}
           />
+        </div>
+      )}
+
+      {/* ================= SUBMISSION RESULT NOTICE MODAL ================= */}
+      {submissionNotice && (
+        <div
+          className="fixed inset-0 bg-black/55 z-[10006] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in font-sans break-keep"
+          onClick={() => setSubmissionNotice(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl space-y-4 animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={`w-14 h-14 rounded-full mx-auto flex items-center justify-center text-2xl font-bold ${
+              submissionNotice.type === 'success' ? 'bg-emerald-100 text-[#0A7E54]' : 'bg-red-100 text-red-600'
+            }`}>
+              {submissionNotice.type === 'success' ? '✓' : '⚠️'}
+            </div>
+            <p className="text-sm sm:text-base font-bold text-gray-900 leading-relaxed">
+              {submissionNotice.message}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSubmissionNotice(null)}
+              className="w-full py-3 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-2xl text-sm transition cursor-pointer active:scale-95"
+            >
+              확인
+            </button>
+          </div>
         </div>
       )}
 

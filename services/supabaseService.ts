@@ -1,4 +1,4 @@
-import { getSupabase, isSupabaseConfigured } from './supabaseClient';
+import { getSupabase, isSupabaseConfigured, setAdminSessionToken, clearAdminSessionToken } from './supabaseClient';
 import { setCloudinaryConfig } from './uploadService';
 import { storageService } from './storageService';
 import { 
@@ -25,6 +25,164 @@ import {
   INITIAL_CUSTOM_PACKAGES,
   INITIAL_MASTER_OPTION_POOL
 } from '../constants';
+
+const encodeLegacyBase64 = (password: string): string => {
+  try {
+    const bytes = new TextEncoder().encode(password);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  } catch {
+    return btoa(unescape(encodeURIComponent(password)));
+  }
+};
+
+// Pure-JS FIPS 180-4 SHA-256 fallback (used only if Web Crypto subtle is unavailable in non-HTTPS contexts)
+const sha256FallbackBytes = (data: Uint8Array): string => {
+  const K = new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+  ]);
+  const H = new Uint32Array([
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+  ]);
+  const rotr = (x: number, n: number) => (x >>> n) | (x << (32 - n));
+
+  const bitLen = data.length * 8;
+  const padLen = ((data.length + 9 + 63) >> 6) << 6;
+  const padded = new Uint8Array(padLen);
+  padded.set(data);
+  padded[data.length] = 0x80;
+  const view = new DataView(padded.buffer);
+  view.setUint32(padLen - 8, Math.floor(bitLen / 0x100000000), false);
+  view.setUint32(padLen - 4, bitLen >>> 0, false);
+
+  const w = new Uint32Array(64);
+  for (let offset = 0; offset < padLen; offset += 64) {
+    for (let i = 0; i < 16; i++) {
+      w[i] = view.getUint32(offset + i * 4, false);
+    }
+    for (let i = 16; i < 64; i++) {
+      const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+      const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+    }
+
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const ch = (e & f) ^ (~e & g);
+      const temp1 = (h + S1 + ch + K[i] + w[i]) >>> 0;
+      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const temp2 = (S0 + maj) >>> 0;
+
+      h = g;
+      g = f;
+      f = e;
+      e = (d + temp1) >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (temp1 + temp2) >>> 0;
+    }
+
+    H[0] = (H[0] + a) >>> 0;
+    H[1] = (H[1] + b) >>> 0;
+    H[2] = (H[2] + c) >>> 0;
+    H[3] = (H[3] + d) >>> 0;
+    H[4] = (H[4] + e) >>> 0;
+    H[5] = (H[5] + f) >>> 0;
+    H[6] = (H[6] + g) >>> 0;
+    H[7] = (H[7] + h) >>> 0;
+  }
+
+  return Array.from(H)
+    .map(n => n.toString(16).padStart(8, '0'))
+    .join('');
+};
+
+export const sha256Hex = async (input: string): Promise<string> => {
+  const bytes = new TextEncoder().encode(input);
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.crypto?.subtle) {
+      const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+  } catch {
+    // fallback below
+  }
+  return sha256FallbackBytes(bytes);
+};
+
+const generateRandomSaltHex = (byteLength = 16): string => {
+  const bytes = new Uint8Array(byteLength);
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < byteLength; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+};
+
+const timingSafeEqual = (a: string, b: string): boolean => {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+};
+
+/**
+ * 비밀번호 단방향 암호화 (무작위 16바이트 솔트 + SHA-256)
+ * 포맷: sha256$<saltHex>$<digestHex>
+ */
+export const hashPasswordSha256 = async (password: string): Promise<string> => {
+  const salt = generateRandomSaltHex(16);
+  const digest = await sha256Hex(`${salt}:${password}`);
+  return `sha256$${salt}$${digest}`;
+};
+
+export const verifyPasswordHash = async (password: string, storedHash?: string | null): Promise<boolean> => {
+  if (!storedHash) return false;
+  if (storedHash.startsWith('sha256$')) {
+    const parts = storedHash.split('$');
+    if (parts.length === 3 && parts[1] && parts[2]) {
+      const digest = await sha256Hex(`${parts[1]}:${password}`);
+      return timingSafeEqual(digest, parts[2]);
+    }
+    if (parts.length === 2 && parts[1]) {
+      const digest = await sha256Hex(password);
+      return timingSafeEqual(digest, parts[1]);
+    }
+    return false;
+  }
+  // 기존 Base64 계정 호환 검증 (로그인 시 자동 SHA-256 업그레이드 대상)
+  return timingSafeEqual(encodeLegacyBase64(password), storedHash);
+};
+
+const isMissingRpcError = (err: any): boolean => {
+  const code = String(err?.code || '');
+  const msg = String(err?.message || '').toLowerCase();
+  return code === 'PGRST202' || code === '42883' || msg.includes('could not find the function');
+};
 
 export const supabaseService = {
   /**
@@ -146,7 +304,9 @@ export const supabaseService = {
         .select('*')
         .order('id', { ascending: false });
       const posts: CommunityPost[] = (postsData && postsData.length > 0) 
-        ? postsData.map(p => p.data || p) 
+        ? postsData
+            .map(p => p.data || p)
+            .sort((a: CommunityPost, b: CommunityPost) => (b.date || '').localeCompare(a.date || ''))
         : INITIAL_POSTS;
 
       // 5. Pages
@@ -568,7 +728,7 @@ export const supabaseService = {
   },
 
   /**
-   * 회원 목록 조회
+   * 회원 목록 조회 (password_hash는 절대 조회하지 않음)
    */
   async loadUsers(): Promise<User[]> {
     const supabase = getSupabase();
@@ -579,14 +739,15 @@ export const supabaseService = {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, username, nickname, role, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []).map(u => ({
         id: String(u.id),
         username: u.username,
         role: u.role || 'user',
-        nickname: u.nickname || u.username
+        nickname: u.nickname || u.username,
+        createdAt: u.created_at || undefined
       }));
     } catch (e) {
       console.warn("Failed to load users from Supabase:", e);
@@ -595,15 +756,441 @@ export const supabaseService = {
   },
 
   /**
-   * 회원 저장 (신규 가입 또는 관리자 추가)
+   * 회원 목록 실시간 변경 구독 (신규 가입/권한 변경/삭제 즉시 반영)
+   */
+  subscribeToUsers(onUsersChanged: (users: User[]) => void) {
+    const supabase = getSupabase();
+    if (!supabase || !isSupabaseConfigured) {
+      return () => {};
+    }
+
+    const channel = supabase
+      .channel('public:users_realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'users'
+      }, async () => {
+        const freshUsers = await this.loadUsers();
+        if (freshUsers) {
+          onUsersChanged(freshUsers);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
+
+  /**
+   * 신규 회원가입 / 관리자 신규 회원 등록 (SHA-256 솔트 해시 + 중복 아이디 차단 + RPC/RLS 지원)
+   */
+  async registerUser(user: User, password: string): Promise<{
+    success: boolean;
+    user?: User;
+    code?: 'VALIDATION_ERROR' | 'RESERVED_USERNAME' | 'DUPLICATE_USERNAME' | 'DB_ERROR';
+    message?: string;
+  }> {
+    const cleanUsername = (user.username || '').trim();
+    const cleanNickname = (user.nickname || '').trim() || cleanUsername;
+    if (!cleanUsername || !password.trim()) {
+      return {
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: '아이디와 비밀번호를 입력해주세요.'
+      };
+    }
+
+    if (cleanUsername.toLowerCase() === 'admin' && user.role !== 'admin') {
+      return {
+        success: false,
+        code: 'RESERVED_USERNAME',
+        message: '사용할 수 없는 아이디입니다. 다른 아이디를 입력해주세요.'
+      };
+    }
+
+    const passwordHash = await hashPasswordSha256(password);
+    const nowIso = new Date().toISOString();
+    const supabase = getSupabase();
+
+    if (!supabase || !isSupabaseConfigured) {
+      const users: User[] = JSON.parse(localStorage.getItem('mango_users_db') || '[]');
+      const isDuplicate = users.some(
+        u => (u.username || '').trim().toLowerCase() === cleanUsername.toLowerCase()
+      );
+      if (isDuplicate) {
+        return {
+          success: false,
+          code: 'DUPLICATE_USERNAME',
+          message: '이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.'
+        };
+      }
+      const savedUser: User = {
+        ...user,
+        username: cleanUsername,
+        nickname: cleanNickname,
+        passwordHash,
+        createdAt: nowIso
+      };
+      users.push(savedUser);
+      localStorage.setItem('mango_users_db', JSON.stringify(users));
+      return {
+        success: true,
+        user: {
+          id: savedUser.id,
+          username: savedUser.username,
+          role: savedUser.role,
+          nickname: savedUser.nickname,
+          createdAt: savedUser.createdAt
+        }
+      };
+    }
+
+    try {
+      // 일반 회원 가입은 보안 강화 RPC(register_member)를 우선 사용하여 RLS 하에서도 안전하게 가입
+      if (user.role !== 'admin') {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('register_member', {
+          p_id: user.id,
+          p_username: cleanUsername,
+          p_nickname: cleanNickname,
+          p_password_hash: passwordHash
+        });
+
+        if (!rpcError && rpcData) {
+          if (!rpcData.success) {
+            return {
+              success: false,
+              code: rpcData.code || 'DB_ERROR',
+              message: rpcData.message || '회원가입에 실패했습니다.'
+            };
+          }
+          const u = rpcData.user || {};
+          return {
+            success: true,
+            user: {
+              id: String(u.id || user.id),
+              username: u.username || cleanUsername,
+              role: (u.role as 'admin' | 'user') || 'user',
+              nickname: u.nickname || cleanNickname,
+              createdAt: u.created_at || nowIso
+            }
+          };
+        }
+
+        if (rpcError && !isMissingRpcError(rpcError)) {
+          console.warn("register_member RPC error:", rpcError);
+          return {
+            success: false,
+            code: 'DB_ERROR',
+            message: '회원가입 정보를 서버에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'
+          };
+        }
+      }
+
+      // RPC 미설치 구버전 DB 또는 관리자 직접 등록 폴백
+      const { data: existingRows, error: checkError } = await supabase
+        .from('users')
+        .select('id, username')
+        .eq('username', cleanUsername)
+        .limit(1);
+
+      if (checkError) {
+        console.warn("Failed to check duplicate username in Supabase:", checkError);
+        return {
+          success: false,
+          code: 'DB_ERROR',
+          message: '서버 연결 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
+        };
+      }
+
+      if (existingRows && existingRows.length > 0) {
+        return {
+          success: false,
+          code: 'DUPLICATE_USERNAME',
+          message: '이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.'
+        };
+      }
+
+      const { data: insertedRow, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: user.id,
+          username: cleanUsername,
+          role: user.role,
+          nickname: cleanNickname,
+          password_hash: passwordHash,
+          created_at: nowIso,
+          updated_at: nowIso
+        })
+        .select('id, username, role, nickname, created_at')
+        .single();
+
+      if (insertError) {
+        const errCode = (insertError as any)?.code;
+        const errMsg = String((insertError as any)?.message || '');
+        if (errCode === '23505' || errMsg.toLowerCase().includes('duplicate')) {
+          return {
+            success: false,
+            code: 'DUPLICATE_USERNAME',
+            message: '이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.'
+          };
+        }
+        console.warn("Failed to insert user in Supabase:", insertError);
+        return {
+          success: false,
+          code: 'DB_ERROR',
+          message: '회원가입 정보를 서버에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.'
+        };
+      }
+
+      const savedUser: User = {
+        id: String(insertedRow?.id || user.id),
+        username: insertedRow?.username || cleanUsername,
+        role: (insertedRow?.role as 'admin' | 'user') || user.role,
+        nickname: insertedRow?.nickname || cleanNickname,
+        createdAt: insertedRow?.created_at || nowIso
+      };
+
+      return { success: true, user: savedUser };
+    } catch (e) {
+      console.warn("Failed to register user in Supabase:", e);
+      return {
+        success: false,
+        code: 'DB_ERROR',
+        message: '네트워크 오류로 회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.'
+      };
+    }
+  },
+
+  /**
+   * 로그인 인증 (관리자: VITE_ADMIN_PASSWORD 환경변수 검증 / 일반회원: SHA-256 해시 검증)
+   */
+  async authenticateUser(
+    username: string,
+    password: string,
+    fallbackUsers: User[] = []
+  ): Promise<{ success: boolean; user?: User; message?: string }> {
+    const cleanUsername = (username || '').trim();
+    if (!cleanUsername || !password) {
+      return { success: false, message: '아이디와 비밀번호를 입력해주세요.' };
+    }
+
+    const supabase = getSupabase();
+    const envAdminPassword = ((import.meta as any).env?.VITE_ADMIN_PASSWORD || '').trim();
+
+    // 1. 기본 관리자 계정: 환경변수 VITE_ADMIN_PASSWORD 로 검증 (평문 하드코딩 제거)
+    if (cleanUsername.toLowerCase() === 'admin') {
+      if (envAdminPassword && timingSafeEqual(password, envAdminPassword)) {
+        const adminToken = await sha256Hex(`mango-admin-api:${envAdminPassword}`);
+        setAdminSessionToken(adminToken);
+
+        const localAdmin = fallbackUsers.find(u => u.username === 'admin');
+        if (supabase && isSupabaseConfigured) {
+          try {
+            const { data } = await supabase
+              .from('users')
+              .select('id, username, role, nickname, created_at')
+              .eq('username', 'admin')
+              .maybeSingle();
+            if (data) {
+              return {
+                success: true,
+                user: {
+                  id: String(data.id),
+                  username: data.username,
+                  role: 'admin',
+                  nickname: data.nickname || '관리자',
+                  createdAt: data.created_at || undefined
+                }
+              };
+            }
+          } catch {
+            // fallback below
+          }
+        }
+        return {
+          success: true,
+          user: localAdmin
+            ? { id: localAdmin.id, username: localAdmin.username, role: 'admin', nickname: localAdmin.nickname || '관리자', createdAt: localAdmin.createdAt }
+            : { id: 'admin_primary', username: 'admin', role: 'admin', nickname: '관리자' }
+        };
+      }
+      // 환경변수 미일치 또는 미설정 시, 아래 DB 해시 검증(SQL로 직접 해시 지정한 경우)을 추가로 확인한 뒤 최종 실패 반환
+    }
+
+    // 2. 로컬 모드 검증
+    if (!supabase || !isSupabaseConfigured) {
+      if (cleanUsername.toLowerCase() === 'admin' && !envAdminPassword) {
+        return {
+          success: false,
+          message: '관리자 비밀번호 환경변수(VITE_ADMIN_PASSWORD)가 설정되지 않았습니다.'
+        };
+      }
+      const storedUsers: User[] = JSON.parse(localStorage.getItem('mango_users_db') || '[]');
+      const pool = storedUsers.length > 0 ? storedUsers : fallbackUsers;
+      const found = pool.find(u => (u.username || '').trim() === cleanUsername);
+      if (!found || !(await verifyPasswordHash(password, found.passwordHash))) {
+        return { success: false, message: '아이디 또는 비밀번호가 일치하지 않습니다.' };
+      }
+      // 기존 Base64 저장 회원은 로그인 성공 시 SHA-256 솔트 해시로 자동 업그레이드
+      if (found.passwordHash && !found.passwordHash.startsWith('sha256$')) {
+        try {
+          const upgradedHash = await hashPasswordSha256(password);
+          const updatedPool = pool.map(u =>
+            u.username === found.username ? { ...u, passwordHash: upgradedHash } : u
+          );
+          localStorage.setItem('mango_users_db', JSON.stringify(updatedPool));
+        } catch {
+          // ignore
+        }
+      }
+      return {
+        success: true,
+        user: {
+          id: found.id,
+          username: found.username,
+          role: found.role,
+          nickname: found.nickname,
+          createdAt: found.createdAt
+        }
+      };
+    }
+
+    try {
+      // 3-A. 보안 강화 RPC 로그인 (password_hash를 네트워크로 내려보내지 않음)
+      const { data: challenge, error: challengeError } = await supabase.rpc('get_member_login_challenge', {
+        p_username: cleanUsername
+      });
+
+      if (!challengeError && challenge) {
+        if (!challenge.found) {
+          if (cleanUsername.toLowerCase() === 'admin' && !envAdminPassword) {
+            return {
+              success: false,
+              message: '관리자 비밀번호 환경변수(VITE_ADMIN_PASSWORD)가 설정되지 않았습니다.'
+            };
+          }
+          return { success: false, message: '아이디 또는 비밀번호가 일치하지 않습니다.' };
+        }
+
+        let candidateHash = '';
+        let upgradeSaltedHash: string | null = null;
+
+        if (challenge.format === 'salted_sha256' && challenge.salt) {
+          const digest = await sha256Hex(`${challenge.salt}:${password}`);
+          candidateHash = `sha256$${challenge.salt}$${digest}`;
+        } else if (challenge.format === 'sha256') {
+          const digest = await sha256Hex(password);
+          candidateHash = `sha256$${digest}`;
+        } else {
+          candidateHash = encodeLegacyBase64(password);
+          upgradeSaltedHash = await hashPasswordSha256(password);
+        }
+
+        const { data: loginRes, error: verifyError } = await supabase.rpc('verify_member_login_hash', {
+          p_username: cleanUsername,
+          p_candidate_hash: candidateHash,
+          p_upgrade_salted_hash: upgradeSaltedHash
+        });
+
+        if (verifyError) {
+          console.warn("verify_member_login_hash error:", verifyError);
+          return { success: false, message: '로그인 검증 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' };
+        }
+
+        if (!loginRes?.success || !loginRes?.user) {
+          return { success: false, message: '아이디 또는 비밀번호가 일치하지 않습니다.' };
+        }
+
+        const u = loginRes.user;
+        if (u.role === 'admin' && envAdminPassword) {
+          const adminToken = await sha256Hex(`mango-admin-api:${envAdminPassword}`);
+          setAdminSessionToken(adminToken);
+        } else if (u.role !== 'admin') {
+          clearAdminSessionToken();
+        }
+
+        return {
+          success: true,
+          user: {
+            id: String(u.id),
+            username: u.username,
+            role: u.role || 'user',
+            nickname: u.nickname || u.username,
+            createdAt: u.created_at || undefined
+          }
+        };
+      }
+
+      if (challengeError && !isMissingRpcError(challengeError)) {
+        console.warn("Failed to authenticate user via RPC:", challengeError);
+        return { success: false, message: '서버 연결 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' };
+      }
+
+      // 3-B. RPC 미설치 구버전 DB 폴백
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, username, role, nickname, password_hash, created_at')
+        .eq('username', cleanUsername)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("Failed to authenticate user from Supabase:", error);
+        return { success: false, message: '서버 연결 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' };
+      }
+
+      if (!data || !(await verifyPasswordHash(password, data.password_hash))) {
+        if (cleanUsername.toLowerCase() === 'admin' && !envAdminPassword) {
+          return {
+            success: false,
+            message: '관리자 비밀번호 환경변수(VITE_ADMIN_PASSWORD)가 설정되지 않았습니다.'
+          };
+        }
+        return { success: false, message: '아이디 또는 비밀번호가 일치하지 않습니다.' };
+      }
+
+      // 구버전 Base64 저장 계정은 로그인 성공 시 SHA-256 솔트 해시로 자동 업그레이드
+      if (data.password_hash && !String(data.password_hash).startsWith('sha256$')) {
+        try {
+          const upgradedHash = await hashPasswordSha256(password);
+          await supabase
+            .from('users')
+            .update({ password_hash: upgradedHash, updated_at: new Date().toISOString() })
+            .eq('id', data.id);
+        } catch {
+          // ignore upgrade error if restricted
+        }
+      }
+
+      return {
+        success: true,
+        user: {
+          id: String(data.id),
+          username: data.username,
+          role: data.role || 'user',
+          nickname: data.nickname || data.username,
+          createdAt: data.created_at || undefined
+        }
+      };
+    } catch (e) {
+      console.warn("Failed to authenticate user:", e);
+      return { success: false, message: '네트워크 오류로 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.' };
+    }
+  },
+
+  /**
+   * 회원 저장 (SHA-256 솔트 해시 암호화 적용)
    */
   async saveUser(user: User, password?: string) {
+    const passwordHash = password ? await hashPasswordSha256(password) : user.passwordHash;
     const supabase = getSupabase();
     if (!supabase || !isSupabaseConfigured) {
       const users: User[] = JSON.parse(localStorage.getItem('mango_users_db') || '[]');
+      const userToStore: User = { ...user, ...(passwordHash ? { passwordHash } : {}) };
       const idx = users.findIndex(u => u.username === user.username);
-      if (idx >= 0) users[idx] = user;
-      else users.push(user);
+      if (idx >= 0) users[idx] = userToStore;
+      else users.push(userToStore);
       localStorage.setItem('mango_users_db', JSON.stringify(users));
       return { success: true };
     }
@@ -616,7 +1203,7 @@ export const supabaseService = {
           username: user.username,
           role: user.role,
           nickname: user.nickname,
-          password_hash: password ? btoa(password) : undefined, // 간이 해시 (Supabase Auth 연동 보강)
+          password_hash: passwordHash,
           updated_at: new Date().toISOString()
         }, { onConflict: 'username' });
       if (error) throw error;

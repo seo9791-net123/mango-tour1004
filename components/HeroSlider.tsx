@@ -8,14 +8,17 @@ interface Props {
 
 const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const safeIndex = images.length > 0 ? currentIndex % images.length : 0;
 
   useEffect(() => {
-    if (images.length === 0) return;
+    if (images.length <= 1 || isPaused) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % images.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [images]);
+  }, [images.length, isPaused]);
 
   if (images.length === 0) {
     return (
@@ -29,14 +32,18 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-0">
-      <div className="relative w-full h-[200px] xs:h-[228px] sm:h-[285px] md:h-[340px] lg:h-[380px] overflow-hidden bg-gray-900 select-none rounded-[20px] shadow-sm">
+      <div
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+        className="relative w-full h-[200px] xs:h-[228px] sm:h-[285px] md:h-[340px] lg:h-[380px] overflow-hidden bg-gray-900 select-none rounded-[20px] shadow-sm"
+      >
         {images.map((img, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+            className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${
+              index === safeIndex ? 'opacity-100 z-[1]' : 'opacity-0 z-0 pointer-events-none'
             }`}
-            style={{ transitionProperty: 'opacity, transform' }}
+            style={{ transitionProperty: 'opacity' }}
           >
             <img
               src={getFreshImageUrl(img)}
@@ -76,7 +83,7 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
                 type="button"
                 onClick={() => setCurrentIndex(idx)}
                 className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                  idx === currentIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/45'
+                  idx === safeIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/45'
                 }`}
                 aria-label={`Go to slide ${idx + 1}`}
               />

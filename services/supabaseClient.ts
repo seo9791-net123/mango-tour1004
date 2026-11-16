@@ -7,6 +7,51 @@ interface SupabaseSingletonStore {
 }
 
 const SINGLETON_KEY = '__MANGO_SUPABASE_SINGLETON__';
+const ADMIN_TOKEN_STORAGE_KEY = 'mango_admin_api_token';
+
+let inMemoryAdminToken = '';
+
+export const setAdminSessionToken = (token: string) => {
+  inMemoryAdminToken = (token || '').trim();
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      if (inMemoryAdminToken) {
+        sessionStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, inMemoryAdminToken);
+      } else {
+        sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+      }
+    }
+  } catch {
+    // ignore storage restriction
+  }
+};
+
+export const getAdminSessionToken = (): string => {
+  if (inMemoryAdminToken) return inMemoryAdminToken;
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const stored = (sessionStorage.getItem(ADMIN_TOKEN_STORAGE_KEY) || '').trim();
+      if (stored) {
+        inMemoryAdminToken = stored;
+        return stored;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return '';
+};
+
+export const clearAdminSessionToken = () => {
+  inMemoryAdminToken = '';
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+};
 
 const getSingletonStore = (): SupabaseSingletonStore => {
   const g = globalThis as Record<string, any>;
@@ -68,11 +113,26 @@ const getOrCreateSingletonClient = (url: string, anonKey: string): SupabaseClien
   }
 
   try {
+    const customFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const adminToken = getAdminSessionToken();
+      if (!adminToken) {
+        return fetch(input, init);
+      }
+      const headers = new Headers(
+        init?.headers || (typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined)
+      );
+      headers.set('x-mango-admin-key', adminToken);
+      return fetch(input, { ...init, headers });
+    };
+
     const instance = createClient(cleanUrl, cleanKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+      },
+      global: {
+        fetch: customFetch,
       },
     });
     store.client = instance;

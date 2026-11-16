@@ -4,6 +4,8 @@ export interface User {
   username: string;
   role: 'admin' | 'user';
   nickname?: string;
+  passwordHash?: string;
+  createdAt?: string;
 }
 
 export interface MenuItem {
@@ -60,9 +62,12 @@ export interface CommunityPost {
   content: string;
   author: string;
   date: string;
+  region?: string;
+  theme?: string;
   image?: string;     // Added for photo uploads
   comments: Comment[]; // Added for reviews/comments
   views: number;      // Added for view count
+  likes?: number;     // Added for like count
   isPrivate?: boolean;
   password?: string;
   adminReply?: string;

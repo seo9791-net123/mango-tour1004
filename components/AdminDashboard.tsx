@@ -11,7 +11,8 @@ import {
   INITIAL_POPUP,
   INITIAL_RECOMMENDED_DISCOUNT_POPUP,
   INITIAL_CUSTOM_PACKAGES,
-  INITIAL_MASTER_OPTION_POOL 
+  INITIAL_MASTER_OPTION_POOL,
+  VERIFIED_IMAGE_PRESETS 
 } from '../constants';
 import { driveService } from '../services/googleDriveService';
 import { fetchGoogleSheetData } from '../services/googleSheetService';
@@ -26,6 +27,7 @@ import RecommendedDiscountModal, { RecommendedDiscountCard } from './Recommended
 interface Props {
   users: User[];
   onUpdateUsers?: (users: User[]) => void;
+  onRefreshUsers?: () => Promise<User[] | null>;
   heroImages: string[];
   setHeroImages: (images: string[]) => void;
   menuItems: MenuItem[];
@@ -52,6 +54,7 @@ interface Props {
 const AdminDashboard: React.FC<Props> = ({
   users,
   onUpdateUsers,
+  onRefreshUsers,
   heroImages,
   setHeroImages,
   menuItems,
@@ -74,7 +77,29 @@ const AdminDashboard: React.FC<Props> = ({
   setRecommendedDiscountPopup,
   setCurrentPage
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'menu' | 'popup' | 'discountPopup'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'posts' | 'menu' | 'popup' | 'discountPopup'>('users');
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+  const markImageBroken = (key: string) => setBrokenImages(prev => (prev[key] ? prev : { ...prev, [key]: true }));
+  const clearImageBroken = (key: string) => setBrokenImages(prev => {
+    if (!prev[key]) return prev;
+    const next = { ...prev };
+    delete next[key];
+    return next;
+  });
+
+  const [imagePickerTarget, setImagePickerTarget] = useState<{
+    label: string;
+    currentUrl: string;
+    onSelect: (url: string) => void;
+  } | null>(null);
+  const [imagePickerCategory, setImagePickerCategory] = useState<string>('전체');
+  const [newHeroUrl, setNewHeroUrl] = useState('');
+  const [newSlideUrl, setNewSlideUrl] = useState('');
+  const [newGalleryUrl, setNewGalleryUrl] = useState('');
+  const [postFilterRegion, setPostFilterRegion] = useState<string>('전체');
+  const [postSearchQuery, setPostSearchQuery] = useState('');
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+
   const [plannerSubTab, setPlannerSubTab] = useState<'packages' | 'masterPool'>('masterPool');
   const [poolCategory, setPoolCategory] = useState<'region' | 'golf' | 'tour' | 'hotel' | 'vehicle' | 'extra' | 'dinner' | 'guide' | 'meal'>('region');
   const [dinnerRegionFilter, setDinnerRegionFilter] = useState<string>('전체');
@@ -163,6 +188,28 @@ const AdminDashboard: React.FC<Props> = ({
   const [newPassword, setNewPassword] = useState('');
   const [newNickname, setNewNickname] = useState('');
   const [newRole, setNewRole] = useState<'user' | 'admin'>('user');
+  const [isRefreshingUsers, setIsRefreshingUsers] = useState(false);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+
+  // 회원 관리 탭 진입/포커스 시 최신 회원 목록 자동 재조회 + 주기적 동기화
+  useEffect(() => {
+    if (activeTab !== 'users' || !onRefreshUsers) return;
+
+    onRefreshUsers();
+
+    const handleFocus = () => {
+      onRefreshUsers();
+    };
+    window.addEventListener('focus', handleFocus);
+    const intervalId = window.setInterval(() => {
+      onRefreshUsers();
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.clearInterval(intervalId);
+    };
+  }, [activeTab, onRefreshUsers]);
 
   // Cloudinary Config
   const [showCloudinaryConfig, setShowCloudinaryConfig] = useState(false);
@@ -1338,7 +1385,11 @@ const AdminDashboard: React.FC<Props> = ({
   };
 
   const handleCopySupabaseSql = () => {
-    const sqlText = `-- 망고투어 (MANGO TOUR) Supabase 테이블 원클릭 생성 SQL
+    const sqlText = `-- =====================================================================
+-- 망고투어 (MANGO TOUR) Supabase 보안 강화 스키마 및 RLS 스크립트
+-- =====================================================================
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS public.settings (id TEXT PRIMARY KEY, hero_images JSONB, menu_items JSONB, cloudinary_config JSONB, updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.products (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.videos (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
@@ -1346,13 +1397,171 @@ CREATE TABLE IF NOT EXISTS public.posts (id TEXT PRIMARY KEY, data JSONB NOT NUL
 CREATE TABLE IF NOT EXISTS public.pages (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.popup (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.custom_packages (id TEXT PRIMARY KEY, data JSONB NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
-CREATE TABLE IF NOT EXISTS public.chat_messages (id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, sender TEXT NOT NULL, text TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS public.chat_messages (id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, sender TEXT, user_id TEXT, user_name TEXT, user_nickname TEXT, is_admin BOOLEAN DEFAULT FALSE, text TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS sender TEXT;
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS user_id TEXT;
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS user_name TEXT;
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS user_nickname TEXT;
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+DO $$ BEGIN ALTER TABLE public.chat_messages ALTER COLUMN user_id DROP NOT NULL; EXCEPTION WHEN undefined_column THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.chat_messages ALTER COLUMN sender DROP NOT NULL; EXCEPTION WHEN undefined_column THEN NULL; END $$;
+
 CREATE TABLE IF NOT EXISTS public.inquiries (id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, data JSONB NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW());
 CREATE TABLE IF NOT EXISTS public.users (id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, nickname TEXT, role TEXT DEFAULT 'user', password_hash TEXT, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS nickname TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+CREATE TABLE IF NOT EXISTS public.app_secrets (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TIMESTAMPTZ DEFAULT NOW());
 
 INSERT INTO public.users (id, username, nickname, role, password_hash)
-VALUES ('admin_primary', 'admin', '관리자', 'admin', encode('rlathdud1~'::bytea, 'base64'))
+VALUES ('admin_primary', 'admin', '관리자', 'admin', NULL)
 ON CONFLICT (username) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION public.is_mango_admin()
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_headers JSONB;
+  v_secret TEXT;
+  v_expected TEXT;
+BEGIN
+  v_headers := COALESCE(NULLIF(current_setting('request.headers', true), ''), '{}')::jsonb;
+  v_secret := COALESCE(v_headers->>'x-mango-admin-key', '');
+  IF v_secret = '' THEN RETURN FALSE; END IF;
+  SELECT value INTO v_expected FROM public.app_secrets WHERE key = 'admin_api_hash' LIMIT 1;
+  IF v_expected IS NULL OR v_expected = '' THEN RETURN FALSE; END IF;
+  RETURN encode(digest(v_secret, 'sha256'), 'hex') = v_expected;
+EXCEPTION WHEN OTHERS THEN
+  RETURN FALSE;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.set_mango_admin_password(p_admin_password TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_api_token TEXT;
+  v_api_hash TEXT;
+BEGIN
+  IF p_admin_password IS NULL OR length(trim(p_admin_password)) = 0 THEN
+    RAISE EXCEPTION 'Admin password cannot be empty';
+  END IF;
+  v_api_token := encode(digest('mango-admin-api:' || trim(p_admin_password), 'sha256'), 'hex');
+  v_api_hash := encode(digest(v_api_token, 'sha256'), 'hex');
+  INSERT INTO public.app_secrets (key, value, updated_at)
+  VALUES ('admin_api_hash', v_api_hash, NOW())
+  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.set_mango_admin_password(TEXT) FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.check_username_exists(p_username TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF p_username IS NULL OR length(trim(p_username)) = 0 THEN RETURN FALSE; END IF;
+  RETURN EXISTS (SELECT 1 FROM public.users WHERE lower(trim(username)) = lower(trim(p_username)));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.register_member(p_id TEXT, p_username TEXT, p_nickname TEXT, p_password_hash TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_clean_username TEXT := trim(COALESCE(p_username, ''));
+  v_clean_nickname TEXT := COALESCE(NULLIF(trim(COALESCE(p_nickname, '')), ''), v_clean_username);
+  v_row public.users%ROWTYPE;
+BEGIN
+  IF v_clean_username = '' OR COALESCE(p_password_hash, '') = '' THEN
+    RETURN jsonb_build_object('success', false, 'code', 'VALIDATION_ERROR', 'message', '아이디와 비밀번호를 입력해주세요.');
+  END IF;
+  IF lower(v_clean_username) = 'admin' THEN
+    RETURN jsonb_build_object('success', false, 'code', 'RESERVED_USERNAME', 'message', '사용할 수 없는 아이디입니다.');
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.users WHERE lower(trim(username)) = lower(v_clean_username)) THEN
+    RETURN jsonb_build_object('success', false, 'code', 'DUPLICATE_USERNAME', 'message', '이미 사용 중인 아이디입니다.');
+  END IF;
+  INSERT INTO public.users (id, username, nickname, role, password_hash, created_at, updated_at)
+  VALUES (p_id, v_clean_username, v_clean_nickname, 'user', p_password_hash, NOW(), NOW())
+  RETURNING * INTO v_row;
+  RETURN jsonb_build_object('success', true, 'user', jsonb_build_object('id', v_row.id, 'username', v_row.username, 'nickname', v_row.nickname, 'role', v_row.role, 'created_at', v_row.created_at));
+EXCEPTION WHEN unique_violation THEN
+  RETURN jsonb_build_object('success', false, 'code', 'DUPLICATE_USERNAME', 'message', '이미 사용 중인 아이디입니다.');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_member_login_challenge(p_username TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_hash TEXT;
+  v_parts TEXT[];
+BEGIN
+  SELECT password_hash INTO v_hash FROM public.users WHERE lower(trim(username)) = lower(trim(COALESCE(p_username, ''))) LIMIT 1;
+  IF NOT FOUND OR v_hash IS NULL OR v_hash = '' THEN
+    RETURN jsonb_build_object('found', false);
+  END IF;
+  IF v_hash LIKE 'sha256$%' THEN
+    v_parts := string_to_array(v_hash, '$');
+    IF array_length(v_parts, 1) = 3 THEN
+      RETURN jsonb_build_object('found', true, 'format', 'salted_sha256', 'salt', v_parts[2]);
+    END IF;
+    RETURN jsonb_build_object('found', true, 'format', 'sha256');
+  END IF;
+  RETURN jsonb_build_object('found', true, 'format', 'legacy_base64');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.verify_member_login_hash(p_username TEXT, p_candidate_hash TEXT, p_upgrade_salted_hash TEXT DEFAULT NULL)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row public.users%ROWTYPE;
+BEGIN
+  SELECT * INTO v_row FROM public.users WHERE lower(trim(username)) = lower(trim(COALESCE(p_username, ''))) LIMIT 1;
+  IF NOT FOUND OR v_row.password_hash IS NULL OR v_row.password_hash = '' THEN
+    RETURN jsonb_build_object('success', false);
+  END IF;
+  IF v_row.password_hash = COALESCE(p_candidate_hash, '') THEN
+    IF v_row.password_hash NOT LIKE 'sha256$%' AND p_upgrade_salted_hash IS NOT NULL AND p_upgrade_salted_hash LIKE 'sha256$%$%' THEN
+      UPDATE public.users SET password_hash = p_upgrade_salted_hash, updated_at = NOW() WHERE id = v_row.id;
+    END IF;
+    RETURN jsonb_build_object('success', true, 'user', jsonb_build_object('id', v_row.id, 'username', v_row.username, 'nickname', COALESCE(v_row.nickname, v_row.username), 'role', COALESCE(v_row.role, 'user'), 'created_at', v_row.created_at));
+  END IF;
+  RETURN jsonb_build_object('success', false);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.check_username_exists(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.register_member(TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_member_login_challenge(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.verify_member_login_hash(TEXT, TEXT, TEXT) TO anon, authenticated;
 
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
@@ -1364,22 +1573,98 @@ ALTER TABLE public.custom_packages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_secrets ENABLE ROW LEVEL SECURITY;
 
-DO $$ BEGIN CREATE POLICY "Public full access to settings" ON public.settings FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to products" ON public.products FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to videos" ON public.videos FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to posts" ON public.posts FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to pages" ON public.pages FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to popup" ON public.popup FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to custom_packages" ON public.custom_packages FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to chat_messages" ON public.chat_messages FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to inquiries" ON public.inquiries FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE POLICY "Public full access to users" ON public.users FOR ALL USING (true) WITH CHECK (true); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
+DROP POLICY IF EXISTS "Public full access to settings" ON public.settings;
+DROP POLICY IF EXISTS "Public full access to products" ON public.products;
+DROP POLICY IF EXISTS "Public full access to videos" ON public.videos;
+DROP POLICY IF EXISTS "Public full access to posts" ON public.posts;
+DROP POLICY IF EXISTS "Public full access to pages" ON public.pages;
+DROP POLICY IF EXISTS "Public full access to popup" ON public.popup;
+DROP POLICY IF EXISTS "Public full access to custom_packages" ON public.custom_packages;
+DROP POLICY IF EXISTS "Public full access to chat_messages" ON public.chat_messages;
+DROP POLICY IF EXISTS "Public full access to inquiries" ON public.inquiries;
+DROP POLICY IF EXISTS "Public full access to users" ON public.users;
+
+REVOKE SELECT ON public.users FROM anon, authenticated;
+GRANT SELECT (id, username, nickname, role, created_at, updated_at) ON public.users TO anon, authenticated;
+
+DROP POLICY IF EXISTS "Public read settings" ON public.settings;
+DROP POLICY IF EXISTS "Admin write settings" ON public.settings;
+CREATE POLICY "Public read settings" ON public.settings FOR SELECT USING (true);
+CREATE POLICY "Admin write settings" ON public.settings FOR ALL USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Public read products" ON public.products;
+DROP POLICY IF EXISTS "Admin write products" ON public.products;
+CREATE POLICY "Public read products" ON public.products FOR SELECT USING (true);
+CREATE POLICY "Admin write products" ON public.products FOR ALL USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Public read videos" ON public.videos;
+DROP POLICY IF EXISTS "Admin write videos" ON public.videos;
+CREATE POLICY "Public read videos" ON public.videos FOR SELECT USING (true);
+CREATE POLICY "Admin write videos" ON public.videos FOR ALL USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Public read pages" ON public.pages;
+DROP POLICY IF EXISTS "Admin write pages" ON public.pages;
+CREATE POLICY "Public read pages" ON public.pages FOR SELECT USING (true);
+CREATE POLICY "Admin write pages" ON public.pages FOR ALL USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Public read popup" ON public.popup;
+DROP POLICY IF EXISTS "Admin write popup" ON public.popup;
+CREATE POLICY "Public read popup" ON public.popup FOR SELECT USING (true);
+CREATE POLICY "Admin write popup" ON public.popup FOR ALL USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Public read custom_packages" ON public.custom_packages;
+DROP POLICY IF EXISTS "Admin write custom_packages" ON public.custom_packages;
+CREATE POLICY "Public read custom_packages" ON public.custom_packages FOR SELECT USING (true);
+CREATE POLICY "Admin write custom_packages" ON public.custom_packages FOR ALL USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Public read posts" ON public.posts;
+DROP POLICY IF EXISTS "Public insert posts" ON public.posts;
+DROP POLICY IF EXISTS "Public update posts" ON public.posts;
+DROP POLICY IF EXISTS "Admin delete posts" ON public.posts;
+CREATE POLICY "Public read posts" ON public.posts FOR SELECT USING (true);
+CREATE POLICY "Public insert posts" ON public.posts FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update posts" ON public.posts FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "Admin delete posts" ON public.posts FOR DELETE USING (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Public read chat_messages" ON public.chat_messages;
+DROP POLICY IF EXISTS "Public insert chat_messages" ON public.chat_messages;
+DROP POLICY IF EXISTS "Admin modify chat_messages" ON public.chat_messages;
+DROP POLICY IF EXISTS "Admin delete chat_messages" ON public.chat_messages;
+CREATE POLICY "Public read chat_messages" ON public.chat_messages FOR SELECT USING (true);
+CREATE POLICY "Public insert chat_messages" ON public.chat_messages FOR INSERT WITH CHECK (COALESCE(is_admin, false) = false OR public.is_mango_admin());
+CREATE POLICY "Admin modify chat_messages" ON public.chat_messages FOR UPDATE USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+CREATE POLICY "Admin delete chat_messages" ON public.chat_messages FOR DELETE USING (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Public insert inquiries" ON public.inquiries;
+DROP POLICY IF EXISTS "Admin manage inquiries" ON public.inquiries;
+DROP POLICY IF EXISTS "Admin update inquiries" ON public.inquiries;
+DROP POLICY IF EXISTS "Admin delete inquiries" ON public.inquiries;
+CREATE POLICY "Public insert inquiries" ON public.inquiries FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admin manage inquiries" ON public.inquiries FOR SELECT USING (public.is_mango_admin());
+CREATE POLICY "Admin update inquiries" ON public.inquiries FOR UPDATE USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+CREATE POLICY "Admin delete inquiries" ON public.inquiries FOR DELETE USING (public.is_mango_admin());
+
+DROP POLICY IF EXISTS "Admin read users" ON public.users;
+DROP POLICY IF EXISTS "Admin manage users" ON public.users;
+DROP POLICY IF EXISTS "Admin insert users" ON public.users;
+DROP POLICY IF EXISTS "Admin update users" ON public.users;
+DROP POLICY IF EXISTS "Admin delete users" ON public.users;
+CREATE POLICY "Admin read users" ON public.users FOR SELECT USING (public.is_mango_admin());
+CREATE POLICY "Admin insert users" ON public.users FOR INSERT WITH CHECK (public.is_mango_admin());
+CREATE POLICY "Admin update users" ON public.users FOR UPDATE USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
+CREATE POLICY "Admin delete users" ON public.users FOR DELETE USING (public.is_mango_admin());
+
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- [필수] 아래 문자열을 Vercel 환경변수 VITE_ADMIN_PASSWORD 와 동일하게 입력해 1회 실행하세요:
+-- SELECT public.set_mango_admin_password('여기에_설정한_VITE_ADMIN_PASSWORD');`;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(sqlText).then(() => {
-        alert('📋 Supabase 원클릭 테이블 생성 SQL이 복사되었습니다!\n\nSupabase 대시보드 -> [SQL Editor] -> [New Query]에 붙여넣고 [Run]을 누르시면 모든 테이블이 3초 만에 생성됩니다.');
+        alert('📋 보안 강화 Supabase SQL이 복사되었습니다!\n\nSupabase 대시보드 -> [SQL Editor] -> [New Query]에 붙여넣고 실행한 뒤, 마지막 줄의 set_mango_admin_password(...)도 환경변수 VITE_ADMIN_PASSWORD와 동일하게 1회 실행해 주세요.');
       });
     } else {
       prompt('아래 SQL 코드를 복사하여 Supabase SQL Editor에서 실행하세요:', sqlText);
@@ -1425,43 +1710,73 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
     }
   };
 
+  const handleRefreshUsersClick = async () => {
+    if (isRefreshingUsers) return;
+    setIsRefreshingUsers(true);
+    try {
+      let latest: User[] | null = null;
+      if (onRefreshUsers) {
+        latest = await onRefreshUsers();
+      } else {
+        latest = await supabaseService.loadUsers();
+        if (latest && latest.length > 0 && onUpdateUsers) {
+          onUpdateUsers(latest);
+        }
+      }
+      const count = latest ? latest.length : users.length;
+      showToast(`🔄 회원 목록을 최신 상태로 불러왔습니다. (총 ${count}명)`);
+    } finally {
+      setIsRefreshingUsers(false);
+    }
+  };
+
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newUsername.trim() || !newPassword.trim()) {
+    if (isAddingUser) return;
+    const cleanUsername = newUsername.trim();
+    if (!cleanUsername || !newPassword.trim()) {
       alert('아이디와 비밀번호를 입력해주세요.');
       return;
     }
-    const cleanUsername = newUsername.trim();
-    if (users.some(u => u.username === cleanUsername)) {
+    if (users.some(u => (u.username || '').trim().toLowerCase() === cleanUsername.toLowerCase())) {
       alert('이미 존재하는 아이디입니다.');
       return;
     }
 
     const newUser: User = {
-      id: `u_${Date.now()}`,
+      id: `u_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       username: cleanUsername,
       role: newRole,
       nickname: newNickname.trim() || cleanUsername
     };
 
-    const nextUsers = [...users, newUser];
-    if (onUpdateUsers) onUpdateUsers(nextUsers);
+    setIsAddingUser(true);
     try {
-      localStorage.setItem('mango_users_db', JSON.stringify(nextUsers));
-    } catch {}
+      const res = await supabaseService.registerUser(newUser, newPassword);
+      if (!res.success || !res.user) {
+        alert(res.message || '회원 등록 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        if (res.code === 'DUPLICATE_USERNAME') {
+          onRefreshUsers?.();
+        }
+        return;
+      }
 
-    try {
-      await supabaseService.saveUser(newUser, newPassword);
+      const savedUser = res.user;
+      const nextUsers = [savedUser, ...users.filter(u => u.username !== savedUser.username)];
+      if (onUpdateUsers) onUpdateUsers(nextUsers);
+      try {
+        localStorage.setItem('mango_users_db', JSON.stringify(nextUsers));
+      } catch {}
+
       showToast(`✅ '${cleanUsername}' 회원이 등록되었습니다.`);
-    } catch (err) {
-      console.warn("Supabase user save notice:", err);
+      setShowAddUserModal(false);
+      setNewUsername('');
+      setNewPassword('');
+      setNewNickname('');
+      setNewRole('user');
+    } finally {
+      setIsAddingUser(false);
     }
-
-    setShowAddUserModal(false);
-    setNewUsername('');
-    setNewPassword('');
-    setNewNickname('');
-    setNewRole('user');
   };
 
   const handleToggleUserRole = async (targetUser: User) => {
@@ -1971,13 +2286,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
       
       {/* Navigation Tabs (좌우 여백 없이 칸에 딱 맞게 배치된 세련된 탭 바) */}
       <div className="w-full mb-3 sm:mb-5 bg-gray-100/90 p-1.5 rounded-none sm:rounded-2xl border-y sm:border border-gray-200/80 shadow-xs">
-        <div className="grid grid-cols-4 lg:grid-cols-8 gap-1 sm:gap-1.5 w-full">
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1 sm:gap-1.5 w-full">
           {[
             { id: 'users', icon: '👥', label: '회원' },
             { id: 'hero', icon: '🖼️', label: '슬라이드' },
             { id: 'products', icon: '🛍️', label: '일반 상품' },
             { id: 'planner', icon: '⛳', label: '맞춤 여행' },
             { id: 'pages', icon: '📄', label: '페이지' },
+            { id: 'posts', icon: '💬', label: '커뮤니티' },
             { id: 'popup', icon: '🔔', label: '팝업' },
             { id: 'discountPopup', icon: '🏷️', label: '추천할인 팝업' },
             { id: 'menu', icon: '🔘', label: '메뉴' },
@@ -2006,29 +2322,131 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
       <div className="bg-white shadow-xl border-y sm:border border-gray-100 min-h-[600px] px-0 py-3 sm:p-6 md:p-8 rounded-none sm:rounded-3xl">
         {/* Hero Slide */}
         {activeTab === 'hero' && (
-           <div className="animate-fade-in-up px-2.5 sm:px-0">
-            <h3 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">메인 슬라이드 이미지 (총 {heroImages.length}개)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-4">
-              {heroImages.map((img, idx) => (
-                <div key={idx} className="relative group rounded-2xl overflow-hidden aspect-video shadow-md border bg-gray-50">
-                  <img src={getFreshImageUrl(img)} alt={`Slide ${idx}`} className="w-full h-full object-cover" />
-                  {img.startsWith('data:') && (
-                    <div className="absolute top-1 left-1 bg-red-500/80 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold backdrop-blur-sm whitespace-nowrap">
-                      Base64 ({(img.length / 1024).toFixed(0)}KB)
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
-                    <label className="bg-white text-deepgreen px-3 py-1 rounded-full font-bold text-[10px] cursor-pointer hover:bg-gold-50 shadow-md whitespace-nowrap">
-                      교체 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleReplaceHeroImage(idx, e)} />
-                    </label>
-                    <button onClick={() => setHeroImages(heroImages.filter((_, i) => i !== idx))} className="bg-red-600 text-white px-3 py-1 rounded-full font-bold text-[10px] shadow-md whitespace-nowrap">삭제</button>
-                  </div>
-                </div>
-              ))}
-              <button onClick={() => heroFileInputRef.current?.click()} className="aspect-video border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-gray-400 hover:border-gold-500 hover:text-gold-500 transition">
-                 <span className="text-2xl">+</span>
-                 <input type="file" className="hidden" ref={heroFileInputRef} accept="image/*" onChange={(e) => handleFileUpload(e, (url) => setHeroImages([...heroImages, url]))} />
+           <div className="animate-fade-in-up px-2.5 sm:px-0 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <h3 className="text-lg sm:text-2xl font-bold text-gray-800">메인 슬라이드 이미지 (총 {heroImages.length}개)</h3>
+                <p className="text-xs text-gray-500 mt-0.5">파일 업로드, 추천 사진 선택, 이미지 URL 직접 입력으로 즉시 교체하거나 추가할 수 있습니다.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => heroFileInputRef.current?.click()}
+                  className="bg-deepgreen text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow hover:bg-gold-600 transition cursor-pointer"
+                >
+                  📁 + 파일로 추가
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImagePickerTarget({
+                    label: '메인 슬라이드 추가',
+                    currentUrl: '',
+                    onSelect: (url) => setHeroImages([...heroImages, url])
+                  })}
+                  className="bg-amber-50 text-amber-800 border border-amber-300 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-amber-100 transition cursor-pointer"
+                >
+                  🎨 + 추천 사진 추가
+                </button>
+                <input type="file" className="hidden" ref={heroFileInputRef} accept="image/*" onChange={(e) => handleFileUpload(e, (url) => setHeroImages([...heroImages, url]))} />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 bg-gray-50 p-3 rounded-2xl border border-gray-200">
+              <input
+                type="text"
+                value={newHeroUrl}
+                onChange={(e) => setNewHeroUrl(e.target.value)}
+                placeholder="새 슬라이드 이미지 URL 붙여넣기 (https://... 또는 /images/...)"
+                className="flex-1 bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs outline-none focus:border-deepgreen"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newHeroUrl.trim()) return;
+                  setHeroImages([...heroImages, newHeroUrl.trim()]);
+                  setNewHeroUrl('');
+                  showToast('✅ 새 슬라이드가 추가되었습니다.');
+                }}
+                className="px-4 py-2 bg-gold-500 hover:bg-gold-600 text-white rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
+              >
+                🔗 URL로 슬라이드 추가
               </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {heroImages.map((img, idx) => {
+                const errKey = `hero-${idx}`;
+                const isBroken = Boolean(brokenImages[errKey]);
+                return (
+                  <div key={idx} className={`rounded-2xl overflow-hidden shadow-md border bg-white flex flex-col ${isBroken ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-200'}`}>
+                    <div className="relative aspect-video bg-gray-100">
+                      <img
+                        src={getFreshImageUrl(img)}
+                        alt={`Slide ${idx}`}
+                        onLoad={() => clearImageBroken(errKey)}
+                        onError={() => markImageBroken(errKey)}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2 left-2 bg-black/65 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                        #{idx + 1}
+                      </div>
+                      {isBroken && (
+                        <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow">
+                          ⚠️ 깨진 이미지
+                        </div>
+                      )}
+                      {img.startsWith('data:') && !isBroken && (
+                        <div className="absolute top-2 right-2 bg-red-500/85 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">
+                          Base64 ({(img.length / 1024).toFixed(0)}KB)
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2.5 space-y-2">
+                      <input
+                        type="text"
+                        value={img}
+                        onChange={(e) => {
+                          clearImageBroken(errKey);
+                          const updated = [...heroImages];
+                          updated[idx] = e.target.value;
+                          setHeroImages(updated);
+                        }}
+                        placeholder="이미지 URL"
+                        className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-deepgreen"
+                      />
+                      <div className="flex gap-1.5">
+                        <label className="flex-1 bg-deepgreen text-white px-2 py-1.5 rounded-lg font-bold text-[11px] cursor-pointer hover:bg-gold-600 text-center transition">
+                          📷 파일 교체
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => { clearImageBroken(errKey); handleReplaceHeroImage(idx, e); }} />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setImagePickerTarget({
+                            label: `메인 슬라이드 #${idx + 1} 교체`,
+                            currentUrl: img,
+                            onSelect: (url) => {
+                              clearImageBroken(errKey);
+                              const updated = [...heroImages];
+                              updated[idx] = url;
+                              setHeroImages(updated);
+                            }
+                          })}
+                          className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg font-bold text-[11px] transition cursor-pointer"
+                        >
+                          🎨 추천
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setHeroImages(heroImages.filter((_, i) => i !== idx))}
+                          className="px-2.5 py-1.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 rounded-lg font-bold text-[11px] transition cursor-pointer"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -2065,20 +2483,62 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-8 px-2 sm:px-0">
-               {products.map((p) => (
-                 <div key={p.id} className={`flex flex-col border rounded-2xl sm:rounded-3xl bg-white shadow-md sm:shadow-xl overflow-hidden transition-all duration-300 ${editingProductId === p.id ? 'ring-4 ring-gold-400' : 'hover:shadow-2xl'}`}>
-                   <div className="h-40 bg-gray-100 relative group">
-                     <img src={getFreshImageUrl(p.image)} className="w-full h-full object-cover" alt={p.title} />
-                     {p.image.startsWith('data:') && (
+               {products.map((p) => {
+                 const prodImgKey = `prod-${p.id}`;
+                 const isProdImgBroken = Boolean(brokenImages[prodImgKey]);
+                 return (
+                 <div key={p.id} className={`flex flex-col border rounded-2xl sm:rounded-3xl bg-white shadow-md sm:shadow-xl overflow-hidden transition-all duration-300 ${editingProductId === p.id ? 'ring-4 ring-gold-400' : isProdImgBroken ? 'border-red-400 ring-2 ring-red-200' : 'hover:shadow-2xl'}`}>
+                   <div className="h-44 bg-gray-100 relative">
+                     <img
+                       src={getFreshImageUrl(p.image)}
+                       onLoad={() => clearImageBroken(prodImgKey)}
+                       onError={() => markImageBroken(prodImgKey)}
+                       className="w-full h-full object-cover"
+                       alt={p.title}
+                     />
+                     {isProdImgBroken && (
+                       <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow">
+                         ⚠️ 깨진 이미지
+                       </div>
+                     )}
+                     {p.image.startsWith('data:') && !isProdImgBroken && (
                        <div className="absolute top-2 left-2 bg-red-500/80 text-white text-[10px] px-2 py-1 rounded-full font-bold backdrop-blur-sm">
                          Base64 ({(p.image.length / 1024).toFixed(0)}KB)
                        </div>
                      )}
-                     <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center cursor-pointer text-white">
-                        <span className="text-2xl mb-1">🖼️</span>
-                        <span className="text-xs font-bold">사진 교체</span>
-                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleReplaceProductImage(p.id, e)} />
-                     </label>
+                   </div>
+                   {/* Always-visible Product Image Editor Bar */}
+                   <div className="px-3 pt-2.5 pb-2 bg-gray-50 border-b border-gray-100 space-y-1.5">
+                     <div className="flex gap-1.5">
+                       <label className="flex-1 py-1.5 bg-deepgreen hover:bg-gold-600 text-white rounded-lg text-[11px] font-bold text-center cursor-pointer transition">
+                         📷 사진 파일 교체
+                         <input type="file" className="hidden" accept="image/*" onChange={(e) => { clearImageBroken(prodImgKey); handleReplaceProductImage(p.id, e); }} />
+                       </label>
+                       <button
+                         type="button"
+                         onClick={() => setImagePickerTarget({
+                           label: `'${p.title}' 대표 이미지 선택`,
+                           currentUrl: p.image,
+                           onSelect: (url) => {
+                             clearImageBroken(prodImgKey);
+                             handleProductFieldChange(p.id, 'image', url);
+                           }
+                         })}
+                         className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                       >
+                         🎨 추천 사진
+                       </button>
+                     </div>
+                     <input
+                       type="text"
+                       value={p.image}
+                       onChange={(e) => {
+                         clearImageBroken(prodImgKey);
+                         handleProductFieldChange(p.id, 'image', e.target.value);
+                       }}
+                       placeholder="대표 이미지 URL (https://... 또는 /images/...)"
+                       className="w-full px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[11px] text-gray-600 outline-none focus:border-deepgreen"
+                     />
                    </div>
                    
                    <div className="p-4 space-y-2">
@@ -2453,7 +2913,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                      </div>
                    </div>
                  </div>
-               ))}
+                 );
+               })}
             </div>
           </div>
         )}
@@ -2537,7 +2998,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         setPackageModalTab('basic');
                       }}
                     >
-                      <img src={getFreshImageUrl(pkg.image)} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      <img
+                        src={getFreshImageUrl(pkg.image)}
+                        alt={pkg.title}
+                        onLoad={() => clearImageBroken(`pkg-${pkg.id}`)}
+                        onError={() => markImageBroken(`pkg-${pkg.id}`)}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                      {brokenImages[`pkg-${pkg.id}`] && (
+                        <div className="absolute top-3 right-3 bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow">
+                          ⚠️ 깨진 이미지
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                         <span className="px-3 py-1.5 bg-gold-500 text-white font-black text-xs rounded-xl shadow-lg">
                           ✏️ 클릭하여 편집창 열기
@@ -2775,30 +3247,61 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                         <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-3">
                           <label className="font-bold text-gray-800 text-xs block">대표 썸네일 이미지</label>
                           <div className="flex flex-col sm:flex-row gap-4 items-start">
-                            <div className="w-full sm:w-44 h-28 bg-gray-200 rounded-xl overflow-hidden border shrink-0">
-                              <img src={getFreshImageUrl(editingPackage.image)} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="w-full sm:w-44 h-28 bg-gray-200 rounded-xl overflow-hidden border shrink-0 relative">
+                              <img
+                                src={getFreshImageUrl(editingPackage.image)}
+                                alt="Preview"
+                                onLoad={() => clearImageBroken(`pkg-${editingPackage.id}`)}
+                                onError={() => markImageBroken(`pkg-${editingPackage.id}`)}
+                                className="w-full h-full object-cover"
+                              />
+                              {brokenImages[`pkg-${editingPackage.id}`] && (
+                                <span className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow">
+                                  ⚠️ 깨짐
+                                </span>
+                              )}
                             </div>
                             <div className="flex-1 space-y-2 w-full">
-                              <div className="flex gap-2">
+                              <div className="flex flex-wrap gap-2">
                                 <input
                                   type="text"
-                                  className="flex-1 p-2 bg-white border border-gray-300 rounded-xl text-xs outline-none"
+                                  className="flex-1 min-w-[180px] p-2 bg-white border border-gray-300 rounded-xl text-xs outline-none"
                                   value={editingPackage.image}
-                                  onChange={(e) => handlePackageFieldChange(editingPackage.id, 'image', e.target.value)}
+                                  onChange={(e) => {
+                                    clearImageBroken(`pkg-${editingPackage.id}`);
+                                    handlePackageFieldChange(editingPackage.id, 'image', e.target.value);
+                                  }}
                                   placeholder="이미지 URL 직접 입력"
                                 />
-                                <label className="px-4 py-2 bg-deepgreen text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-gold-600 whitespace-nowrap shadow-sm">
+                                <label className="px-3.5 py-2 bg-deepgreen text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-gold-600 whitespace-nowrap shadow-sm">
                                   📁 파일 업로드
                                   <input
                                     type="file"
                                     className="hidden"
                                     accept="image/*"
-                                    onChange={(e) => handleFileUpload(e, (url) => handlePackageFieldChange(editingPackage.id, 'image', url))}
+                                    onChange={(e) => handleFileUpload(e, (url) => {
+                                      clearImageBroken(`pkg-${editingPackage.id}`);
+                                      handlePackageFieldChange(editingPackage.id, 'image', url);
+                                    })}
                                   />
                                 </label>
+                                <button
+                                  type="button"
+                                  onClick={() => setImagePickerTarget({
+                                    label: `'${editingPackage.title}' 썸네일 선택`,
+                                    currentUrl: editingPackage.image,
+                                    onSelect: (url) => {
+                                      clearImageBroken(`pkg-${editingPackage.id}`);
+                                      handlePackageFieldChange(editingPackage.id, 'image', url);
+                                    }
+                                  })}
+                                  className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold whitespace-nowrap cursor-pointer"
+                                >
+                                  🎨 추천 사진
+                                </button>
                               </div>
                               <p className="text-[11px] text-gray-400">
-                                Unsplash 이미지 주소나 컴퓨터에 있는 골프장 사진 파일을 직접 업로드하실 수 있습니다.
+                                추천 사진 1클릭 선택, 이미지 URL 입력 또는 파일 업로드로 바로 교체하실 수 있습니다.
                               </p>
                             </div>
                           </div>
@@ -4650,6 +5153,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                 <option value="men">FOR MEN</option>
                 <option value="tour">관광</option>
                 <option value="event">이벤트</option>
+                <option value="community">커뮤니티 (상단 배너)</option>
               </select>
             </div>
 
@@ -4660,22 +5164,59 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                     <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
                         <span className="text-xl">1️⃣</span> 상단 배너 설정 (Hero)
                     </h4>
-                    <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-2 shadow-sm">
+                    <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-2.5 shadow-sm">
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-400">메인 타이틀</label>
-                            <input className="w-full p-3 border rounded-xl font-bold shadow-sm focus:ring-2 focus:ring-gold-500 outline-none" value={pageForm.heroTitle} onChange={(e) => handlePageFieldChange('heroTitle', e.target.value)} placeholder="큰 제목" />
+                            <input className="w-full p-3 border rounded-xl font-bold shadow-sm focus:ring-2 focus:ring-gold-500 outline-none bg-white" value={pageForm.heroTitle} onChange={(e) => handlePageFieldChange('heroTitle', e.target.value)} placeholder="큰 제목" />
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-bold text-gray-400">서브 타이틀 (작은 글씨)</label>
-                            <input className="w-full p-3 border rounded-xl font-bold shadow-sm focus:ring-2 focus:ring-gold-500 outline-none" value={pageForm.heroSubtitle} onChange={(e) => handlePageFieldChange('heroSubtitle', e.target.value)} placeholder="부제목" />
+                            <input className="w-full p-3 border rounded-xl font-bold shadow-sm focus:ring-2 focus:ring-gold-500 outline-none bg-white" value={pageForm.heroSubtitle} onChange={(e) => handlePageFieldChange('heroSubtitle', e.target.value)} placeholder="부제목" />
                         </div>
-                        <div className="h-32 bg-white rounded-2xl overflow-hidden relative group border-2 border-white shadow-sm">
-                        <img src={getFreshImageUrl(pageForm.heroImage)} className="w-full h-full object-cover" alt="Hero Banner" />
-                        <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white font-bold cursor-pointer text-xs">
-                            <span className="text-2xl mb-1">🖼️</span> 배너 이미지 교체
-                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePageFieldChange('heroImage', url))} />
-                        </label>
+                        <div className={`h-36 bg-white rounded-2xl overflow-hidden relative border-2 shadow-sm ${brokenImages[`page-hero-${selectedPageId}`] ? 'border-red-500' : 'border-white'}`}>
+                          <img
+                            src={getFreshImageUrl(pageForm.heroImage)}
+                            onLoad={() => clearImageBroken(`page-hero-${selectedPageId}`)}
+                            onError={() => markImageBroken(`page-hero-${selectedPageId}`)}
+                            className="w-full h-full object-cover"
+                            alt="Hero Banner"
+                          />
+                          {brokenImages[`page-hero-${selectedPageId}`] && (
+                            <span className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow">
+                              ⚠️ 깨진 이미지
+                            </span>
+                          )}
                         </div>
+                        <div className="flex flex-wrap gap-2">
+                          <label className="px-3.5 py-2 bg-deepgreen hover:bg-gold-600 text-white rounded-xl text-xs font-bold cursor-pointer transition">
+                            📷 배너 파일 교체
+                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => { clearImageBroken(`page-hero-${selectedPageId}`); handlePageFieldChange('heroImage', url); })} />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setImagePickerTarget({
+                              label: `${selectedPageId} 상단 배너 선택`,
+                              currentUrl: pageForm.heroImage,
+                              onSelect: (url) => {
+                                clearImageBroken(`page-hero-${selectedPageId}`);
+                                handlePageFieldChange('heroImage', url);
+                              }
+                            })}
+                            className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold cursor-pointer"
+                          >
+                            🎨 추천 사진
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={pageForm.heroImage}
+                          onChange={(e) => {
+                            clearImageBroken(`page-hero-${selectedPageId}`);
+                            handlePageFieldChange('heroImage', e.target.value);
+                          }}
+                          placeholder="배너 이미지 URL 직접 입력"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs outline-none focus:border-deepgreen"
+                        />
                     </div>
                   </div>
 
@@ -4683,16 +5224,53 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                      <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
                         <span className="text-xl">2️⃣</span> 소개 섹션 (Intro)
                     </h4>
-                    <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-2 shadow-sm">
-                        <input className="w-full p-3 border rounded-xl font-bold shadow-sm" value={pageForm.introTitle} onChange={(e) => handlePageFieldChange('introTitle', e.target.value)} placeholder="소개 제목" />
-                        <textarea className="w-full p-3 border rounded-xl h-32 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-gold-500 resize-none" value={pageForm.introText} onChange={(e) => handlePageFieldChange('introText', e.target.value)} placeholder="소개글 본문" />
-                        <div className="h-32 bg-white rounded-2xl overflow-hidden relative group border-2 border-white shadow-sm">
-                            <img src={getFreshImageUrl(pageForm.introImage)} className="w-full h-full object-cover" alt="Intro Banner" />
-                            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white font-bold cursor-pointer text-xs">
-                                <span className="text-2xl mb-1">🖼️</span> 소개 이미지 교체
-                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => handlePageFieldChange('introImage', url))} />
-                            </label>
+                    <div className="bg-gray-50 p-4 rounded-3xl border border-gray-100 space-y-2.5 shadow-sm">
+                        <input className="w-full p-3 border rounded-xl font-bold shadow-sm bg-white" value={pageForm.introTitle} onChange={(e) => handlePageFieldChange('introTitle', e.target.value)} placeholder="소개 제목" />
+                        <textarea className="w-full p-3 border rounded-xl h-32 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-gold-500 resize-none bg-white" value={pageForm.introText} onChange={(e) => handlePageFieldChange('introText', e.target.value)} placeholder="소개글 본문" />
+                        <div className={`h-36 bg-white rounded-2xl overflow-hidden relative border-2 shadow-sm ${brokenImages[`page-intro-${selectedPageId}`] ? 'border-red-500' : 'border-white'}`}>
+                            <img
+                              src={getFreshImageUrl(pageForm.introImage)}
+                              onLoad={() => clearImageBroken(`page-intro-${selectedPageId}`)}
+                              onError={() => markImageBroken(`page-intro-${selectedPageId}`)}
+                              className="w-full h-full object-cover"
+                              alt="Intro Banner"
+                            />
+                            {brokenImages[`page-intro-${selectedPageId}`] && (
+                              <span className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-2.5 py-1 rounded-full font-bold shadow">
+                                ⚠️ 깨진 이미지
+                              </span>
+                            )}
                         </div>
+                        <div className="flex flex-wrap gap-2">
+                          <label className="px-3.5 py-2 bg-deepgreen hover:bg-gold-600 text-white rounded-xl text-xs font-bold cursor-pointer transition">
+                            📷 소개 파일 교체
+                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => { clearImageBroken(`page-intro-${selectedPageId}`); handlePageFieldChange('introImage', url); })} />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setImagePickerTarget({
+                              label: `${selectedPageId} 소개 이미지 선택`,
+                              currentUrl: pageForm.introImage,
+                              onSelect: (url) => {
+                                clearImageBroken(`page-intro-${selectedPageId}`);
+                                handlePageFieldChange('introImage', url);
+                              }
+                            })}
+                            className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl text-xs font-bold cursor-pointer"
+                          >
+                            🎨 추천 사진
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={pageForm.introImage}
+                          onChange={(e) => {
+                            clearImageBroken(`page-intro-${selectedPageId}`);
+                            handlePageFieldChange('introImage', e.target.value);
+                          }}
+                          placeholder="소개 이미지 URL 직접 입력"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs outline-none focus:border-deepgreen"
+                        />
                     </div>
                   </div>
                </div>
@@ -4701,35 +5279,114 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                <div className="space-y-4">
                   {/* 갤러리 슬라이드 관리 */}
                   <div className="space-y-2">
-                     <div className="flex justify-between items-center">
+                     <div className="flex flex-wrap justify-between items-center gap-2">
                         <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
                            <span className="text-xl">🖼️</span> 갤러리 슬라이드 관리
                         </h4>
-                        <label className="bg-gold-500 text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-sm hover:bg-gold-600 transition cursor-pointer">
-                          + 슬라이드 추가
-                          <input type="file" className="hidden" accept="image/*" onChange={handlePageSlideAdd} />
-                        </label>
+                        <div className="flex flex-wrap gap-1.5">
+                          <label className="bg-gold-500 text-white text-[10px] px-3 py-1.5 rounded-full font-bold shadow-sm hover:bg-gold-600 transition cursor-pointer">
+                            + 파일 추가
+                            <input type="file" className="hidden" accept="image/*" onChange={handlePageSlideAdd} />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setImagePickerTarget({
+                              label: `${selectedPageId} 슬라이드 이미지 추가`,
+                              currentUrl: '',
+                              onSelect: (url) => {
+                                const newSlides = [...(pageForm.slides || []), { image: url, description: '' }];
+                                handlePageFieldChange('slides', newSlides);
+                              }
+                            })}
+                            className="bg-amber-50 text-amber-800 border border-amber-300 text-[10px] px-3 py-1.5 rounded-full font-bold hover:bg-amber-100 transition cursor-pointer"
+                          >
+                            🎨 + 추천 추가
+                          </button>
+                        </div>
                      </div>
-                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                       {pageForm.slides?.map((slide, idx) => (
-                         <div key={idx} className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm space-y-2 relative group">
-                           <button 
-                             onClick={() => handlePageSlideRemove(idx)}
-                             className="absolute top-2 right-2 z-10 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition"
-                           >
-                             ✕
-                           </button>
-                           <div className="h-32 rounded-xl overflow-hidden bg-gray-100">
-                             <img src={getFreshImageUrl(slide.image)} className="w-full h-full object-cover" alt={`Slide ${idx}`} />
+                     <div className="flex gap-1.5">
+                       <input
+                         type="text"
+                         value={newSlideUrl}
+                         onChange={(e) => setNewSlideUrl(e.target.value)}
+                         placeholder="새 슬라이드 이미지 URL 입력"
+                         className="flex-1 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-deepgreen"
+                       />
+                       <button
+                         type="button"
+                         onClick={() => {
+                           if (!newSlideUrl.trim()) return;
+                           const newSlides = [...(pageForm.slides || []), { image: newSlideUrl.trim(), description: '' }];
+                           handlePageFieldChange('slides', newSlides);
+                           setNewSlideUrl('');
+                         }}
+                         className="px-3 py-1.5 bg-deepgreen text-white rounded-xl text-[11px] font-bold cursor-pointer shrink-0"
+                       >
+                         URL 추가
+                       </button>
+                     </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                       {pageForm.slides?.map((slide, idx) => {
+                         const sKey = `page-slide-${selectedPageId}-${idx}`;
+                         const isBrokenSlide = Boolean(brokenImages[sKey]);
+                         return (
+                           <div key={idx} className={`bg-white p-3 rounded-2xl border shadow-sm space-y-2 relative ${isBrokenSlide ? 'border-red-400' : 'border-gray-200'}`}>
+                             <button 
+                               type="button"
+                               onClick={() => handlePageSlideRemove(idx)}
+                               className="absolute top-2 right-2 z-10 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow cursor-pointer"
+                               title="슬라이드 삭제"
+                             >
+                               ✕
+                             </button>
+                             <div className="h-32 rounded-xl overflow-hidden bg-gray-100 relative">
+                               <img
+                                 src={getFreshImageUrl(slide.image)}
+                                 onLoad={() => clearImageBroken(sKey)}
+                                 onError={() => markImageBroken(sKey)}
+                                 className="w-full h-full object-cover"
+                                 alt={`Slide ${idx}`}
+                               />
+                               {isBrokenSlide && (
+                                 <span className="absolute bottom-1.5 left-1.5 bg-red-600 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">⚠️ 깨짐</span>
+                               )}
+                             </div>
+                             <div className="flex gap-1.5">
+                               <label className="flex-1 py-1 bg-deepgreen text-white rounded-lg text-[10px] font-bold text-center cursor-pointer">
+                                 📷 교체
+                                 <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => { clearImageBroken(sKey); handlePageSlideChange(idx, 'image', url); })} />
+                               </label>
+                               <button
+                                 type="button"
+                                 onClick={() => setImagePickerTarget({
+                                   label: `슬라이드 #${idx + 1} 교체`,
+                                   currentUrl: slide.image,
+                                   onSelect: (url) => {
+                                     clearImageBroken(sKey);
+                                     handlePageSlideChange(idx, 'image', url);
+                                   }
+                                 })}
+                                 className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-300 rounded-lg text-[10px] font-bold cursor-pointer"
+                               >
+                                 🎨 추천
+                               </button>
+                             </div>
+                             <input
+                               type="text"
+                               value={slide.image}
+                               onChange={(e) => { clearImageBroken(sKey); handlePageSlideChange(idx, 'image', e.target.value); }}
+                               placeholder="슬라이드 이미지 URL"
+                               className="w-full text-[10px] px-2 py-1 border rounded-lg outline-none focus:border-deepgreen bg-gray-50"
+                             />
+                             <textarea 
+                               className="w-full text-[10px] p-2 border rounded-lg h-12 resize-none outline-none focus:border-gold-500"
+                               value={slide.description}
+                               onChange={(e) => handlePageSlideChange(idx, 'description', e.target.value)}
+                               placeholder="슬라이드 설명 (선택)"
+                             />
                            </div>
-                           <textarea 
-                             className="w-full text-[10px] p-2 border rounded-lg h-12 resize-none outline-none focus:border-gold-500"
-                             value={slide.description}
-                             onChange={(e) => handlePageSlideChange(idx, 'description', e.target.value)}
-                             placeholder="슬라이드 설명 (선택)"
-                           />
-                         </div>
-                       ))}
+                         );
+                       })}
                      </div>
                   </div>
 
@@ -4784,21 +5441,55 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                                     />
                                     
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-bold text-gray-400 block">팝업 상세 이미지 (여러 장 가능)</label>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <label className="text-[9px] font-bold text-gray-400 block">팝업 상세 이미지 (여러 장 가능)</label>
+                                          <button
+                                            type="button"
+                                            onClick={() => setImagePickerTarget({
+                                              label: `'${section.title}' 상세 이미지 추가`,
+                                              currentUrl: '',
+                                              onSelect: (url) => {
+                                                const newSections = [...pageForm.sections];
+                                                const detailImages = [...(newSections[idx].detailImages || []), url];
+                                                newSections[idx] = { ...newSections[idx], detailImages };
+                                                handlePageFieldChange('sections', newSections);
+                                              }
+                                            })}
+                                            className="text-[10px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md cursor-pointer"
+                                          >
+                                            🎨 추천 사진 추가
+                                          </button>
+                                        </div>
                                         <div className="flex flex-wrap gap-2">
-                                            {section.detailImages?.map((img, imgIdx) => (
-                                                <div key={imgIdx} className="w-12 h-12 rounded-lg overflow-hidden relative group border shadow-sm">
-                                                    <img src={getFreshImageUrl(img)} className="w-full h-full object-cover" alt={`Detail ${imgIdx}`} />
-                                                    <button 
-                                                        onClick={() => handleSectionDetailImageRemove(idx, imgIdx)}
-                                                        className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[10px] font-bold"
-                                                    >
-                                                        삭제
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            <label className="w-12 h-12 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-gold-400 hover:text-gold-400 transition cursor-pointer">
-                                                <span className="text-xl">+</span>
+                                            {section.detailImages?.map((img, imgIdx) => {
+                                                const sdKey = `sec-detail-${selectedPageId}-${idx}-${imgIdx}`;
+                                                const isSdBroken = Boolean(brokenImages[sdKey]);
+                                                return (
+                                                  <div key={imgIdx} className={`w-16 h-16 rounded-lg overflow-hidden relative border shadow-sm ${isSdBroken ? 'border-red-500 ring-2 ring-red-200' : 'border-gray-200'}`}>
+                                                      <img
+                                                        src={getFreshImageUrl(img)}
+                                                        onLoad={() => clearImageBroken(sdKey)}
+                                                        onError={() => markImageBroken(sdKey)}
+                                                        className="w-full h-full object-cover"
+                                                        alt={`Detail ${imgIdx}`}
+                                                      />
+                                                      {isSdBroken && (
+                                                        <span className="absolute bottom-0 inset-x-0 bg-red-600 text-white text-[8px] text-center font-bold">깨짐</span>
+                                                      )}
+                                                      <button 
+                                                          type="button"
+                                                          onClick={() => handleSectionDetailImageRemove(idx, imgIdx)}
+                                                          className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow cursor-pointer"
+                                                          title="삭제"
+                                                      >
+                                                          ✕
+                                                      </button>
+                                                  </div>
+                                                );
+                                            })}
+                                            <label className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-gold-400 hover:text-gold-500 transition cursor-pointer">
+                                                <span className="text-lg leading-none">+</span>
+                                                <span className="text-[9px] font-bold mt-0.5">파일</span>
                                                 <input 
                                                     type="file" 
                                                     className="hidden" 
@@ -4818,42 +5509,122 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-2">
                         <h4 className="font-bold text-deepgreen uppercase tracking-wider flex items-center gap-2">
                             <span className="text-xl">4️⃣</span> 갤러리 이미지 (총 {pageForm.galleryImages.length}개)
                         </h4>
-                        <label className="bg-gold-500 text-white text-[10px] px-3 py-1 rounded-full font-bold shadow-sm hover:bg-gold-600 transition cursor-pointer">
-                          + 이미지 추가
-                          <input 
-                            type="file" 
-                            className="hidden" 
-                            accept="image/*" 
-                            onChange={(e) => handleFileUpload(e, (url) => {
-                              handlePageFieldChange('galleryImages', [...pageForm.galleryImages, url]);
-                            })} 
-                          />
-                        </label>
+                        <div className="flex flex-wrap gap-1.5">
+                          <label className="bg-gold-500 text-white text-[10px] px-3 py-1.5 rounded-full font-bold shadow-sm hover:bg-gold-600 transition cursor-pointer">
+                            + 파일 추가
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*" 
+                              onChange={(e) => handleFileUpload(e, (url) => {
+                                handlePageFieldChange('galleryImages', [...pageForm.galleryImages, url]);
+                              })} 
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setImagePickerTarget({
+                              label: `${selectedPageId} 갤러리 이미지 추가`,
+                              currentUrl: '',
+                              onSelect: (url) => handlePageFieldChange('galleryImages', [...pageForm.galleryImages, url])
+                            })}
+                            className="bg-amber-50 text-amber-800 border border-amber-300 text-[10px] px-3 py-1.5 rounded-full font-bold hover:bg-amber-100 transition cursor-pointer"
+                          >
+                            🎨 + 추천 추가
+                          </button>
+                        </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                        {pageForm.galleryImages.map((img, idx) => (
-                            <div key={idx} className="aspect-square bg-gray-50 border rounded-2xl overflow-hidden relative group shadow-sm">
-                            <img src={getFreshImageUrl(img)} className="w-full h-full object-cover" alt={`Gallery ${idx}`} />
-                            <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-2">
-                                <label className="bg-white text-deepgreen px-2 py-1 rounded-full text-[9px] font-bold cursor-pointer hover:bg-gray-100">
-                                    교체
-                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => {
-                                    const ng = [...pageForm.galleryImages]; ng[idx] = url; handlePageFieldChange('galleryImages', ng);
-                                    })} />
-                                </label>
-                                <button 
-                                  onClick={() => handleRemoveGalleryImage(idx)}
-                                  className="bg-red-500 text-white px-2 py-1 rounded-full text-[9px] font-bold hover:bg-red-600"
-                                >
-                                  삭제
-                                </button>
-                            </div>
-                            </div>
-                        ))}
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={newGalleryUrl}
+                        onChange={(e) => setNewGalleryUrl(e.target.value)}
+                        placeholder="새 갤러리 이미지 URL 입력"
+                        className="flex-1 bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-deepgreen"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newGalleryUrl.trim()) return;
+                          handlePageFieldChange('galleryImages', [...pageForm.galleryImages, newGalleryUrl.trim()]);
+                          setNewGalleryUrl('');
+                        }}
+                        className="px-3 py-1.5 bg-deepgreen text-white rounded-xl text-[11px] font-bold cursor-pointer shrink-0"
+                      >
+                        URL 추가
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {pageForm.galleryImages.map((img, idx) => {
+                            const gKey = `page-gal-${selectedPageId}-${idx}`;
+                            const isGBroken = Boolean(brokenImages[gKey]);
+                            return (
+                              <div key={idx} className={`bg-white border rounded-2xl overflow-hidden shadow-sm flex flex-col ${isGBroken ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-200'}`}>
+                                <div className="aspect-square bg-gray-100 relative">
+                                  <img
+                                    src={getFreshImageUrl(img)}
+                                    onLoad={() => clearImageBroken(gKey)}
+                                    onError={() => markImageBroken(gKey)}
+                                    className="w-full h-full object-cover"
+                                    alt={`Gallery ${idx}`}
+                                  />
+                                  {isGBroken && (
+                                    <span className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow">⚠️ 깨짐</span>
+                                  )}
+                                </div>
+                                <div className="p-2 space-y-1.5">
+                                  <input
+                                    type="text"
+                                    value={img}
+                                    onChange={(e) => {
+                                      clearImageBroken(gKey);
+                                      const ng = [...pageForm.galleryImages];
+                                      ng[idx] = e.target.value;
+                                      handlePageFieldChange('galleryImages', ng);
+                                    }}
+                                    placeholder="이미지 URL"
+                                    className="w-full px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[10px] outline-none focus:bg-white focus:border-deepgreen"
+                                  />
+                                  <div className="flex gap-1">
+                                    <label className="flex-1 bg-deepgreen text-white px-2 py-1 rounded-lg text-[10px] font-bold text-center cursor-pointer hover:bg-gold-600">
+                                      📷 교체
+                                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, (url) => {
+                                        clearImageBroken(gKey);
+                                        const ng = [...pageForm.galleryImages]; ng[idx] = url; handlePageFieldChange('galleryImages', ng);
+                                      })} />
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => setImagePickerTarget({
+                                        label: `갤러리 이미지 #${idx + 1} 교체`,
+                                        currentUrl: img,
+                                        onSelect: (url) => {
+                                          clearImageBroken(gKey);
+                                          const ng = [...pageForm.galleryImages];
+                                          ng[idx] = url;
+                                          handlePageFieldChange('galleryImages', ng);
+                                        }
+                                      })}
+                                      className="px-2 py-1 bg-amber-50 text-amber-800 border border-amber-300 rounded-lg text-[10px] font-bold cursor-pointer"
+                                    >
+                                      🎨
+                                    </button>
+                                    <button 
+                                      type="button"
+                                      onClick={() => handleRemoveGalleryImage(idx)}
+                                      className="px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[10px] font-bold hover:bg-red-600 hover:text-white cursor-pointer"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                        })}
                         {pageForm.galleryImages.length === 0 && (
                           <div className="col-span-3 aspect-video border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center text-gray-400 italic text-xs">
                             이미지가 없습니다.
@@ -4873,37 +5644,338 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
           </div>
         )}
 
+        {/* Community Posts & Image Management Tab */}
+        {activeTab === 'posts' && (() => {
+          const brokenOrEmptyCount = posts.filter(post => !post.image || brokenImages[`post-${post.id}`]).length;
+          const filteredPosts = posts.filter(post => {
+            if (postFilterRegion === '⚠️ 깨진/없는 이미지') {
+              if (post.image && !brokenImages[`post-${post.id}`]) return false;
+            } else if (postFilterRegion !== '전체') {
+              if (post.region !== postFilterRegion) return false;
+            }
+            if (postSearchQuery.trim()) {
+              const q = postSearchQuery.trim().toLowerCase();
+              const match = (post.title || '').toLowerCase().includes(q)
+                || (post.content || '').toLowerCase().includes(q)
+                || (post.author || '').toLowerCase().includes(q);
+              if (!match) return false;
+            }
+            return true;
+          });
+
+          const handlePostFieldChange = (postId: string, field: keyof CommunityPost, value: any) => {
+            setPosts(posts.map(p => p.id === postId ? { ...p, [field]: value } : p));
+          };
+
+          const handleAddAdminPost = () => {
+            const newPost: CommunityPost = {
+              id: `post-${Date.now()}`,
+              title: '새 커뮤니티 게시글',
+              content: '여행 후기나 안내 내용을 입력하세요.',
+              author: 'MANGO TOUR',
+              date: new Date().toISOString().split('T')[0],
+              region: '호치민',
+              theme: '골프 여행',
+              image: VERIFIED_IMAGE_PRESETS[0].url,
+              comments: [],
+              views: 55,
+              likes: 12,
+              isPrivate: false
+            };
+            setPosts([newPost, ...posts]);
+            setExpandedPostId(newPost.id);
+            showToast('✨ 새 커뮤니티 게시글이 추가되었습니다.');
+          };
+
+          return (
+            <div className="animate-fade-in-up px-2.5 sm:px-0 space-y-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
+                <div>
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <span>💬</span> 커뮤니티 게시글 · 이미지 관리 (총 {posts.length}개)
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    깨지거나 내용과 맞지 않는 게시글 사진을 파일 업로드, 추천 사진 선택, 또는 URL 직접 수정으로 즉시 교체하세요.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddAdminPost}
+                  className="bg-gold-500 hover:bg-gold-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition cursor-pointer whitespace-nowrap"
+                >
+                  + 새 게시글 추가
+                </button>
+              </div>
+
+              {/* Filter & Search Bar */}
+              <div className="flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center bg-gray-50 p-3 rounded-2xl border border-gray-200">
+                <div className="flex flex-wrap gap-1.5">
+                  {['전체', '⚠️ 깨진/없는 이미지', '호치민', '붕따우', '무이네', '달랏'].map(filterName => (
+                    <button
+                      key={filterName}
+                      type="button"
+                      onClick={() => setPostFilterRegion(filterName)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        postFilterRegion === filterName
+                          ? filterName === '⚠️ 깨진/없는 이미지' ? 'bg-red-600 text-white shadow' : 'bg-deepgreen text-white shadow'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      {filterName}
+                      {filterName === '⚠️ 깨진/없는 이미지' && brokenOrEmptyCount > 0 ? ` (${brokenOrEmptyCount})` : ''}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  value={postSearchQuery}
+                  onChange={(e) => setPostSearchQuery(e.target.value)}
+                  placeholder="제목, 작성자, 내용 검색..."
+                  className="px-3.5 py-2 bg-white border border-gray-300 rounded-xl text-xs outline-none focus:border-deepgreen md:w-64"
+                />
+              </div>
+
+              {/* Posts Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPosts.map((post) => {
+                  const pKey = `post-${post.id}`;
+                  const isBroken = Boolean(brokenImages[pKey]);
+                  const isExpanded = expandedPostId === post.id;
+
+                  return (
+                    <div
+                      key={post.id}
+                      className={`bg-white rounded-2xl border overflow-hidden shadow-sm flex flex-col justify-between transition ${
+                        isBroken || !post.image ? 'border-red-300 ring-1 ring-red-100' : 'border-gray-200'
+                      }`}
+                    >
+                      <div>
+                        {/* Image Preview */}
+                        <div className="relative h-44 bg-gray-100">
+                          {post.image ? (
+                            <img
+                              src={getFreshImageUrl(post.image)}
+                              alt={post.title}
+                              onLoad={() => clearImageBroken(pKey)}
+                              onError={() => markImageBroken(pKey)}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 text-xs gap-1">
+                              <span className="text-2xl">🖼️</span>
+                              <span>등록된 사진 없음</span>
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 flex gap-1.5">
+                            <span className="bg-black/65 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                              {post.region || '기타'} · {post.theme || '자유 여행'}
+                            </span>
+                          </div>
+                          {isBroken && (
+                            <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow">
+                              ⚠️ 깨진 이미지
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Always-visible Image Action Strip */}
+                        <div className="p-3 bg-gray-50 border-b border-gray-100 space-y-2">
+                          <div className="flex flex-wrap gap-1.5">
+                            <label className="flex-1 py-1.5 bg-deepgreen hover:bg-gold-600 text-white rounded-lg text-[11px] font-bold text-center cursor-pointer transition">
+                              📷 파일 교체
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={(e) => handleFileUpload(e, (url) => {
+                                  clearImageBroken(pKey);
+                                  handlePostFieldChange(post.id, 'image', url);
+                                  showToast('✅ 게시글 사진이 교체되었습니다.');
+                                })}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setImagePickerTarget({
+                                label: `'${post.title}' 사진 선택`,
+                                currentUrl: post.image || '',
+                                onSelect: (url) => {
+                                  clearImageBroken(pKey);
+                                  handlePostFieldChange(post.id, 'image', url);
+                                  showToast('✅ 추천 사진이 적용되었습니다.');
+                                }
+                              })}
+                              className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-[11px] font-bold cursor-pointer"
+                            >
+                              🎨 추천 사진
+                            </button>
+                            {post.image && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm('이 게시글의 사진을 삭제하시겠습니까?')) {
+                                    clearImageBroken(pKey);
+                                    handlePostFieldChange(post.id, 'image', '');
+                                  }
+                                }}
+                                className="px-2.5 py-1.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 rounded-lg text-[11px] font-bold cursor-pointer"
+                              >
+                                🗑️ 사진 삭제
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={post.image || ''}
+                            onChange={(e) => {
+                              clearImageBroken(pKey);
+                              handlePostFieldChange(post.id, 'image', e.target.value);
+                            }}
+                            placeholder="이미지 URL (https://... 또는 /images/...)"
+                            className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-[11px] outline-none focus:border-deepgreen"
+                          />
+                        </div>
+
+                        {/* Metadata & Content Editor */}
+                        <div className="p-3.5 space-y-2.5">
+                          <input
+                            type="text"
+                            value={post.title}
+                            onChange={(e) => handlePostFieldChange(post.id, 'title', e.target.value)}
+                            className="w-full font-bold text-sm text-gray-900 border-b border-gray-200 focus:border-deepgreen outline-none pb-1"
+                            placeholder="게시글 제목"
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <select
+                              value={post.region || '호치민'}
+                              onChange={(e) => handlePostFieldChange(post.id, 'region', e.target.value)}
+                              className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-deepgreen"
+                            >
+                              <option value="호치민">호치민</option>
+                              <option value="붕따우">붕따우</option>
+                              <option value="무이네">무이네</option>
+                              <option value="달랏">달랏</option>
+                            </select>
+                            <select
+                              value={post.theme || '자유 여행'}
+                              onChange={(e) => handlePostFieldChange(post.id, 'theme', e.target.value)}
+                              className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-semibold outline-none focus:border-deepgreen"
+                            >
+                              <option value="골프 여행">골프 여행</option>
+                              <option value="자유 여행">자유 여행</option>
+                              <option value="단체 여행">단체 여행</option>
+                            </select>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-gray-500">
+                            <span>작성자: <strong className="text-gray-700">{post.author}</strong></span>
+                            <span>{post.date} · 조회 {post.views} · ♥{post.likes ?? 0}</span>
+                          </div>
+
+                          {isExpanded && (
+                            <div className="pt-2 space-y-2 border-t border-gray-100">
+                              <textarea
+                                value={post.content}
+                                onChange={(e) => handlePostFieldChange(post.id, 'content', e.target.value)}
+                                rows={5}
+                                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs leading-relaxed outline-none focus:bg-white focus:border-deepgreen resize-y"
+                                placeholder="게시글 본문"
+                              />
+                              <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+                                <input
+                                  type="text"
+                                  value={post.date}
+                                  onChange={(e) => handlePostFieldChange(post.id, 'date', e.target.value)}
+                                  className="px-2 py-1 border rounded-lg text-center"
+                                  placeholder="YYYY-MM-DD"
+                                />
+                                <input
+                                  type="number"
+                                  value={post.views}
+                                  onChange={(e) => handlePostFieldChange(post.id, 'views', parseInt(e.target.value, 10) || 0)}
+                                  className="px-2 py-1 border rounded-lg text-center"
+                                  placeholder="조회수"
+                                />
+                                <input
+                                  type="number"
+                                  value={post.likes ?? 0}
+                                  onChange={(e) => handlePostFieldChange(post.id, 'likes', parseInt(e.target.value, 10) || 0)}
+                                  className="px-2 py-1 border rounded-lg text-center"
+                                  placeholder="좋아요"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="px-3.5 pb-3.5 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
+                          className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                            isExpanded ? 'bg-gold-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {isExpanded ? '내용 접기 ▲' : '내용·날짜 상세 편집 ▼'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (confirm(`'${post.title}' 게시글을 삭제하시겠습니까?`)) {
+                              setPosts(posts.filter(p => p.id !== post.id));
+                              showToast('🗑️ 게시글이 삭제되었습니다.');
+                            }
+                          }}
+                          className="px-3 py-2 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                        >
+                          🗑️ 삭제
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filteredPosts.length === 0 && (
+                <div className="py-16 text-center text-gray-400 text-sm">
+                  조건에 해당하는 게시글이 없습니다.
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Menu Icon Management */}
         {activeTab === 'menu' && (
            <div className="animate-fade-in-up px-2.5 sm:px-0">
             <h3 className="text-lg sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6">메인 아이콘 메뉴 관리</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-6">
-              {menuItems.map((item, idx) => (
-                <div key={idx} className="border-2 border-gray-50 p-3 sm:p-4 rounded-2xl sm:rounded-[2.5rem] bg-gray-50 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
-                  <div className="w-20 h-20 mb-3 bg-white rounded-3xl shadow-inner flex items-center justify-center p-4 relative overflow-hidden">
-                    <img src={getFreshImageUrl(item.icon)} alt={item.label} className="w-full h-full object-contain transform group-hover:scale-110 transition" />
-                    {item.icon.startsWith('data:') && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-5">
+              {menuItems.map((item, idx) => {
+                const mKey = `menu-${idx}`;
+                const isMenuBroken = Boolean(brokenImages[mKey]);
+                return (
+                <div key={idx} className={`border p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-gray-50 flex flex-col items-center hover:bg-white hover:shadow-xl transition-all duration-300 ${isMenuBroken ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-200'}`}>
+                  <div className="w-20 h-20 mb-2 bg-white rounded-2xl shadow-inner flex items-center justify-center p-3 relative overflow-hidden border border-gray-100">
+                    <img
+                      src={getFreshImageUrl(item.icon)}
+                      alt={item.label}
+                      onLoad={() => clearImageBroken(mKey)}
+                      onError={() => markImageBroken(mKey)}
+                      className="w-full h-full object-contain"
+                    />
+                    {isMenuBroken && (
+                      <div className="absolute inset-x-0 bottom-0 bg-red-600 text-white text-[9px] text-center py-0.5 font-bold">
+                        ⚠️ 깨짐
+                      </div>
+                    )}
+                    {item.icon.startsWith('data:') && !isMenuBroken && (
                       <div className="absolute top-0 left-0 right-0 bg-red-500/80 text-white text-[7px] text-center py-0.5 font-bold">
                         Base64 ({(item.icon.length / 1024).toFixed(0)}KB)
                       </div>
                     )}
-                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer text-white text-[10px] font-bold flex-col whitespace-nowrap">
-                      <span>🖼️</span>
-                      <span>아이콘 변경</span>
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        accept="image/*" 
-                        onChange={(e) => handleFileUpload(e, (url) => { 
-                          const ni = [...menuItems]; 
-                          ni[idx] = { ...ni[idx], icon: url }; 
-                          setMenuItems(ni); 
-                        })} 
-                      />
-                    </label>
                   </div>
                   <input 
-                    className="w-full border-b-2 border-transparent bg-transparent text-center font-bold text-gray-800 focus:border-gold-500 outline-none transition text-sm py-1" 
+                    className="w-full border-b border-gray-200 bg-transparent text-center font-bold text-gray-800 focus:border-gold-500 outline-none transition text-sm py-1 mb-2" 
                     value={item.label} 
                     onChange={(e) => { 
                       const ni = [...menuItems]; 
@@ -4911,20 +5983,49 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                       setMenuItems(ni); 
                     }} 
                   />
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      if(confirm('이 메뉴 아이콘을 삭제하시겠습니까?')) {
-                        const ni = menuItems.filter((_, i) => i !== idx);
-                        setMenuItems(ni);
-                      }
+                  <input
+                    type="text"
+                    value={item.icon}
+                    onChange={(e) => {
+                      clearImageBroken(mKey);
+                      const ni = [...menuItems];
+                      ni[idx] = { ...ni[idx], icon: e.target.value };
+                      setMenuItems(ni);
                     }}
-                    className="mt-2 text-[10px] text-gray-400 hover:text-red-500 transition opacity-100 sm:opacity-0 sm:group-hover:opacity-100 whitespace-nowrap"
-                  >
-                    삭제
-                  </button>
+                    placeholder="아이콘 URL"
+                    className="w-full px-2 py-1 bg-white border border-gray-200 rounded-lg text-[10px] outline-none focus:border-deepgreen mb-2"
+                  />
+                  <div className="flex gap-1.5 w-full">
+                    <label className="flex-1 py-1.5 bg-deepgreen hover:bg-gold-600 text-white rounded-lg text-[10px] font-bold text-center cursor-pointer transition">
+                      🖼️ 변경
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={(e) => handleFileUpload(e, (url) => { 
+                          clearImageBroken(mKey);
+                          const ni = [...menuItems]; 
+                          ni[idx] = { ...ni[idx], icon: url }; 
+                          setMenuItems(ni); 
+                        })} 
+                      />
+                    </label>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if(confirm('이 메뉴 아이콘을 삭제하시겠습니까?')) {
+                          const ni = menuItems.filter((_, i) => i !== idx);
+                          setMenuItems(ni);
+                        }
+                      }}
+                      className="px-2.5 py-1.5 bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white rounded-lg text-[10px] font-bold transition cursor-pointer"
+                    >
+                      삭제
+                    </button>
+                  </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-6 sm:mt-8 flex justify-center">
               <button 
@@ -5537,13 +6638,28 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                     상단에 관리자 계정이 배치되며, 아래로 일반 회원 계정이 정렬됩니다.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAddUserModal(true)}
-                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-deepgreen text-white hover:bg-emerald-800 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-sm active:scale-98 shrink-0 whitespace-nowrap"
-                >
-                  <span>➕</span> 신규 회원/관리자 추가
-                </button>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleRefreshUsersClick}
+                    disabled={isRefreshingUsers}
+                    className={`w-full sm:w-auto px-3.5 py-2.5 sm:py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-xs border active:scale-98 whitespace-nowrap cursor-pointer ${
+                      isRefreshingUsers
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
+                        : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'
+                    }`}
+                  >
+                    <span className={isRefreshingUsers ? 'animate-spin inline-block' : ''}>🔄</span>
+                    <span>{isRefreshingUsers ? '불러오는 중...' : '새로고침'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddUserModal(true)}
+                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 bg-deepgreen text-white hover:bg-emerald-800 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition shadow-sm active:scale-98 shrink-0 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>➕</span> 신규 회원/관리자 추가
+                  </button>
+                </div>
               </div>
 
               {/* Mobile Horizontal Scroll Hint */}
@@ -5733,9 +6849,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 py-2.5 bg-deepgreen hover:bg-emerald-800 text-white font-bold rounded-xl text-xs transition shadow-md"
+                        disabled={isAddingUser}
+                        className={`flex-1 py-2.5 text-white font-bold rounded-xl text-xs transition shadow-md ${
+                          isAddingUser
+                            ? 'bg-gray-400 cursor-wait'
+                            : 'bg-deepgreen hover:bg-emerald-800 cursor-pointer'
+                        }`}
                       >
-                        계정 생성 및 저장
+                        {isAddingUser ? '저장 중...' : '계정 생성 및 저장'}
                       </button>
                     </div>
                   </form>
@@ -6157,6 +7278,76 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;`;
         }}
         isPreview={true}
       />
+
+      {/* 5-3. Verified Preset Image Picker Modal */}
+      {imagePickerTarget && (
+        <div
+          className="fixed inset-0 z-[10002] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in"
+          onClick={() => setImagePickerTarget(null)}
+        >
+          <div
+            className="bg-white w-full max-w-3xl max-h-[88vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-gray-200 animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-deepgreen text-white px-5 py-4 flex items-center justify-between gap-3">
+              <div>
+                <h4 className="font-bold text-base sm:text-lg">🎨 {imagePickerTarget.label}</h4>
+                <p className="text-[11px] text-emerald-200">검증된 고화질 여행·골프 사진을 클릭하면 즉시 적용됩니다.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setImagePickerTarget(null)}
+                className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap gap-1.5">
+              {['전체', '골프', '호치민', '붕따우', '무이네', '달랏', '호텔·리조트', '관광·미식'].map(cat => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setImagePickerCategory(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    imagePickerCategory === cat
+                      ? 'bg-deepgreen text-white shadow-xs'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-5 overflow-y-auto flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {VERIFIED_IMAGE_PRESETS.filter(p => imagePickerCategory === '전체' || p.category === imagePickerCategory).map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    imagePickerTarget.onSelect(preset.url);
+                    setImagePickerTarget(null);
+                  }}
+                  className="text-left bg-white rounded-2xl border border-gray-200 hover:border-deepgreen hover:shadow-md overflow-hidden transition group cursor-pointer"
+                >
+                  <div className="aspect-video bg-gray-100 overflow-hidden">
+                    <img
+                      src={getFreshImageUrl(preset.url)}
+                      alt={preset.label}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    />
+                  </div>
+                  <div className="p-2">
+                    <span className="text-[10px] font-bold text-deepgreen block">{preset.category}</span>
+                    <p className="text-xs font-bold text-gray-800 truncate">{preset.label}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 6. Floating Toast Notification */}
       {toastMessage && (
