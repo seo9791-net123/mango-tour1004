@@ -19,8 +19,9 @@ import { fetchGoogleSheetData } from '../services/googleSheetService';
 import { uploadFile, setCloudinaryConfig } from '../services/uploadService';
 import { supabaseService } from '../services/supabaseService';
 import { isSupabaseConfigured, updateSupabaseCredentials } from '../services/supabaseClient';
-import { compressImage, getFreshImageUrl, isImageIconUrl } from '../utils/imageUtils';
+import { compressImage, getFreshImageUrl, withImageVersion, isImageIconUrl } from '../utils/imageUtils';
 import BackButton from './BackButton';
+import { appAlert, appConfirm, appPrompt } from '../services/dialogService';
 import { getTravelDays, getItemPricingType, calculateCostItemTotal } from '../utils/costBreakdownUtils';
 import RecommendedDiscountModal, { RecommendedDiscountCard } from './RecommendedDiscountModal';
 
@@ -242,7 +243,7 @@ const AdminDashboard: React.FC<Props> = ({
   // Handle Drive Connection
   const handleConnectDrive = async () => {
     if (!apiKey || !clientId) {
-      alert('API Key와 Client ID를 입력해주세요.');
+      await appAlert('API Key와 Client ID를 입력해주세요.');
       return;
     }
     
@@ -259,17 +260,15 @@ const AdminDashboard: React.FC<Props> = ({
         if (response && response.access_token) {
             setIsDriveConnected(true);
             setIsConnecting(false);
-            alert('구글 드라이브 연결 성공! 이제 저장/복원 기능을 사용할 수 있습니다.');
+            void appAlert('구글 드라이브 연결 성공! 이제 저장/복원 기능을 사용할 수 있습니다.');
         } else {
             setIsConnecting(false);
         }
       });
 
       // 3. Request Token (Login Popup)
-      // 팝업 차단 안내를 미리 띄우거나, 팝업 호출 직전에 알림
       driveService.requestAccessToken();
       
-      // 팝업이 뜨지 않을 경우를 대비해 10초 후 로딩 상태 해제 (성공하지 않았다면)
       setTimeout(() => {
         setIsConnecting(prev => {
           if (prev) {
@@ -287,23 +286,22 @@ const AdminDashboard: React.FC<Props> = ({
       const errorMsg = getErrorMessage(e);
       
       if (errorMsg.includes('popup_closed-by-user')) {
-          // 사용자가 창을 닫은 경우는 별도 알림 없이 로딩만 해제
           return;
       }
 
       if (errorMsg.includes('has not been used in project') || errorMsg.includes('is disabled') || errorMsg.includes('PERMISSION_DENIED')) {
-          alert(`[🚨 중요: 구글 드라이브 API 미활성화]\n\n구글 클라우드 콘솔에서 'Google Drive API'가 활성화되지 않았습니다.\n\n해결 방법:\n1. Google Cloud Console 접속\n2. 'Google Drive API' 검색 후 [사용(ENABLE)] 클릭\n3. 1~2분 뒤 다시 시도해주세요.\n\n(상세 에러: ${errorMsg})`);
+          await appAlert(`[🚨 중요: 구글 드라이브 API 미활성화]\n\n구글 클라우드 콘솔에서 'Google Drive API'가 활성화되지 않았습니다.\n\n해결 방법:\n1. Google Cloud Console 접속\n2. 'Google Drive API' 검색 후 [사용(ENABLE)] 클릭\n3. 1~2분 뒤 다시 시도해주세요.\n\n(상세 에러: ${errorMsg})`);
       } else if (errorMsg.includes('Script load failed') || errorMsg.includes('스크립트 로드 실패')) {
-          alert(errorMsg);
+          await appAlert(errorMsg);
       } else {
-          alert(`연결 중 오류가 발생했습니다. 팝업 차단이 설정되어 있는지 확인해 주세요.\n\n상세 에러: ${errorMsg}`);
+          await appAlert(`연결 중 오류가 발생했습니다. 팝업 차단이 설정되어 있는지 확인해 주세요.\n\n상세 에러: ${errorMsg}`);
       }
     }
   };
 
   const handleSaveToDrive = async () => {
     if (!isDriveConnected) {
-        alert('먼저 구글 드라이브에 연결해주세요.');
+        await appAlert('먼저 구글 드라이브에 연결해주세요.');
         return;
     }
     setIsSyncing(true);
@@ -317,10 +315,10 @@ const AdminDashboard: React.FC<Props> = ({
     };
     try {
         await driveService.saveData(backupData);
-        alert('구글 드라이브에 데이터가 성공적으로 저장되었습니다!');
+        await appAlert('구글 드라이브에 데이터가 성공적으로 저장되었습니다!');
     } catch (e) {
         console.error(e);
-        alert('저장 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
+        await appAlert('저장 중 오류가 발생했습니다. 콘솔을 확인해주세요.');
     } finally {
         setIsSyncing(false);
     }
@@ -328,10 +326,10 @@ const AdminDashboard: React.FC<Props> = ({
 
   const handleLoadFromDrive = async () => {
     if (!isDriveConnected) {
-        alert('먼저 구글 드라이브에 연결해주세요.');
+        await appAlert('먼저 구글 드라이브에 연결해주세요.');
         return;
     }
-    if (!confirm('현재 데이터를 덮어쓰고 구글 드라이브의 데이터를 불러오시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    if (!(await appConfirm('현재 데이터를 덮어쓰고 구글 드라이브의 데이터를 불러오시겠습니까? 이 작업은 되돌릴 수 없습니다.'))) return;
 
     setIsSyncing(true);
     try {
@@ -343,24 +341,24 @@ const AdminDashboard: React.FC<Props> = ({
             if (data.videos) setVideos(data.videos);
             if (data.posts) setPosts(data.posts);
             if (data.pageContents) setPageContents(data.pageContents);
-            alert('데이터 복원 완료!');
+            await appAlert('데이터 복원 완료!');
         } else {
-            alert('저장된 데이터를 찾을 수 없습니다 (mango_tour_data.json).');
+            await appAlert('저장된 데이터를 찾을 수 없습니다 (mango_tour_data.json).');
         }
     } catch (e) {
         console.error(e);
-        alert('복원 중 오류가 발생했습니다.');
+        await appAlert('복원 중 오류가 발생했습니다.');
     } finally {
         setIsSyncing(false);
     }
   };
 
-  // Improved File Upload Handler - Using Local Preview for simplicity if Firebase is too complex
+  // Improved File Upload Handler - attaches version stamp once on replacement upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void | Promise<void>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 50 * 1024 * 1024) { 
-        alert('파일이 너무 큽니다. 50MB 이하의 파일을 권장합니다.');
+        await appAlert('파일이 너무 큽니다. 50MB 이하의 파일을 권장합니다.');
         return;
       }
 
@@ -370,31 +368,27 @@ const AdminDashboard: React.FC<Props> = ({
         const downloadUrl = await uploadFile(file, 'images', (progress) => {
           setUploadProgress(progress);
         });
-        await callback(downloadUrl);
+        await callback(withImageVersion(downloadUrl));
       } catch (e: any) {
         console.error("Upload failed, falling back to Base64:", e);
         
-        // Fallback: 로컬 미리보기 (Base64) - 서버 연동 없이도 작동하게 함
         try {
-          // Base64로 저장할 때도 압축을 적용하여 Firestore 1MB 제한을 피하도록 함
-          const compressedBlob = await compressImage(file, 800, 800, 0.5); // 더 강력한 압축
+          const compressedBlob = await compressImage(file, 800, 800, 0.5);
           const reader = new FileReader();
           reader.onloadend = async () => {
             const base64 = reader.result as string;
             
-            // Firestore 1MB limit check (approximate for Base64)
             if (base64.length > 900000) { 
-              alert('⚠️ 경고: 이미지 서버 연결 실패로 압축 후 저장하려고 했으나, 여전히 용량이 너무 큽니다. (Firestore 1MB 제한)\n\n더 작은 이미지를 사용하거나 Cloudinary 설정을 확인해주세요.');
+              await appAlert('⚠️ 경고: 이미지 서버 연결 실패로 압축 후 저장하려고 했으나, 여전히 용량이 너무 큽니다. (Firestore 1MB 제한)\n\n더 작은 이미지를 사용하거나 Cloudinary 설정을 확인해주세요.');
               return;
             }
 
             await callback(base64);
-            alert('이미지 서버 연결 실패로 압축된 로컬(Base64) 데이터로 저장되었습니다.');
+            await appAlert('이미지 서버 연결 실패로 압축된 로컬(Base64) 데이터로 저장되었습니다.');
           };
           reader.readAsDataURL(compressedBlob);
         } catch (compressErr) {
           console.error("Compression fallback failed:", compressErr);
-          // 최후의 수단: 원본 Base64 (위험함)
           const reader = new FileReader();
           reader.onloadend = async () => {
             const base64 = reader.result as string;
@@ -427,7 +421,7 @@ const AdminDashboard: React.FC<Props> = ({
     } catch (error) {
       console.error("Failed to update product:", error);
       setProducts(previousProducts);
-      alert('상품 정보 저장 중 오류가 발생했습니다. 이전 상태로 복구합니다.');
+      await appAlert('상품 정보 저장 중 오류가 발생했습니다. 이전 상태로 복구합니다.');
     }
   };
 
@@ -586,12 +580,12 @@ const AdminDashboard: React.FC<Props> = ({
     handleProductFieldChange(productId, 'costItems', items);
   };
 
-  const handleDeleteProduct = (product: Product, e?: React.MouseEvent) => {
+  const handleDeleteProduct = async (product: Product, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
-    const confirmed = window.confirm(`[상품 삭제 확인]\n\n'${product.title}' 상품을 삭제하시겠습니까?`);
+    const confirmed = await appConfirm(`[상품 삭제 확인]\n\n'${product.title}' 상품을 삭제하시겠습니까?`);
     if (confirmed) {
       executeDeleteProduct(product);
     }
@@ -702,15 +696,15 @@ const AdminDashboard: React.FC<Props> = ({
     handlePackageFieldChange(pkgId, 'itinerary', newItinerary);
   };
 
-  const handlePackageItineraryDayRemove = (pkgId: string, dayIdx: number) => {
+  const handlePackageItineraryDayRemove = async (pkgId: string, dayIdx: number) => {
     if (!setCustomPackages) return;
     const pkg = customPackages.find(p => p.id === pkgId);
     if (!pkg || !pkg.itinerary) return;
     if (pkg.itinerary.length <= 1) {
-      alert('일정표에는 최소 1개 이상의 일차가 있어야 합니다.');
+      await appAlert('일정표에는 최소 1개 이상의 일차가 있어야 합니다.');
       return;
     }
-    if (!confirm(`Day ${dayIdx + 1} 일차 일정을 삭제하시겠습니까?`)) return;
+    if (!(await appConfirm(`Day ${dayIdx + 1} 일차 일정을 삭제하시겠습니까?`))) return;
     const newItinerary = pkg.itinerary.filter((_, i) => i !== dayIdx).map((d, i) => ({ ...d, day: i + 1 }));
     handlePackageFieldChange(pkgId, 'itinerary', newItinerary);
   };
@@ -731,7 +725,7 @@ const AdminDashboard: React.FC<Props> = ({
     handlePackageFieldChange(pkgId, 'itinerary', renumbered);
   };
 
-  const handlePackageQuickDayAdjust = (pkgId: string, targetDays: number, durName?: string) => {
+  const handlePackageQuickDayAdjust = async (pkgId: string, targetDays: number, durName?: string) => {
     if (!setCustomPackages) return;
     const pkg = customPackages.find(p => p.id === pkgId);
     if (!pkg) return;
@@ -747,7 +741,7 @@ const AdminDashboard: React.FC<Props> = ({
         });
       }
     } else if (current.length > targetDays) {
-      if (!confirm(`현재 ${current.length}일차 일정을 ${targetDays}일차 일정으로 줄이시겠습니까? (초과된 ${current.length - targetDays}개 일차는 삭제됩니다)`)) {
+      if (!(await appConfirm(`현재 ${current.length}일차 일정을 ${targetDays}일차 일정으로 줄이시겠습니까? (초과된 ${current.length - targetDays}개 일차는 삭제됩니다)`))) {
         return;
       }
       updatedItinerary = updatedItinerary.slice(0, targetDays);
@@ -877,7 +871,7 @@ const AdminDashboard: React.FC<Props> = ({
       if (field === 'location') {
         const targetCount = list.filter(item => item.location === value && item.id !== id).length;
         if (targetCount >= 6) {
-          alert(`'${value}' 지역에는 최대 6개의 추천 저녁식사 메뉴만 등록할 수 있습니다.\n기존 메뉴를 수정하거나 삭제 후 이동해 주세요.`);
+          void appAlert(`'${value}' 지역에는 최대 6개의 추천 저녁식사 메뉴만 등록할 수 있습니다.\n기존 메뉴를 수정하거나 삭제 후 이동해 주세요.`);
           return;
         }
       }
@@ -926,12 +920,12 @@ const AdminDashboard: React.FC<Props> = ({
     setIconPickerTarget(null);
   };
 
-  const handleDeleteMasterOptionPoolItem = (
+  const handleDeleteMasterOptionPoolItem = async (
     category: 'region' | 'golf' | 'tour' | 'hotel' | 'hotelTier' | 'vehicle' | 'extra' | 'dinner' | 'guide' | 'meal',
     id: string,
     itemName: string
   ) => {
-    if (!window.confirm(`[맞춤 풀 항목 삭제]\n\n'${itemName}' 항목을 삭제하시겠습니까?`)) return;
+    if (!(await appConfirm(`[맞춤 풀 항목 삭제]\n\n'${itemName}' 항목을 삭제하시겠습니까?`))) return;
     if (!setMasterOptionPool) return;
     const pool = { ...masterOptionPool };
     if (category === 'region') {
@@ -964,10 +958,10 @@ const AdminDashboard: React.FC<Props> = ({
     showToast(`🗑️ '${itemName}' 항목이 삭제되었습니다.`);
   };
 
-  const handleAddNewPoolItemSubmit = (e: React.FormEvent) => {
+  const handleAddNewPoolItemSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPoolItem.name.trim()) {
-      alert('항목 이름을 입력해주세요.');
+      await appAlert('항목 이름을 입력해주세요.');
       return;
     }
     if (!setMasterOptionPool) return;
@@ -1074,7 +1068,7 @@ const AdminDashboard: React.FC<Props> = ({
       const targetLoc = newPoolItem.location || '호치민';
       const locCount = current.filter(item => item.location === targetLoc).length;
       if (locCount >= 6) {
-        alert(`'${targetLoc}' 지역에는 최대 6개의 추천 저녁식사 메뉴만 등록할 수 있습니다.\n기존 메뉴를 수정하거나 삭제 후 추가해 주세요.`);
+        await appAlert(`'${targetLoc}' 지역에는 최대 6개의 추천 저녁식사 메뉴만 등록할 수 있습니다.\n기존 메뉴를 수정하거나 삭제 후 추가해 주세요.`);
         return;
       }
       pool.dinnerOptions = [
@@ -1136,8 +1130,8 @@ const AdminDashboard: React.FC<Props> = ({
     showToast('✨ 새 맞춤 옵션 항목이 풀(Pool)에 추가되었습니다.');
   };
 
-  const handleResetMasterOptionPool = () => {
-    if (!window.confirm('DIY 맞춤 옵션 풀(지역 5곳, 골프장, 여행/자유여행, 숙박 4종, 차량 4종, 기타 3종)을 기본 표준 데이터로 복원하시겠습니까?')) return;
+  const handleResetMasterOptionPool = async () => {
+    if (!(await appConfirm('DIY 맞춤 옵션 풀(지역 5곳, 골프장, 여행/자유여행, 숙박 4종, 차량 4종, 기타 3종)을 기본 표준 데이터로 복원하시겠습니까?'))) return;
     if (setMasterOptionPool) {
       setMasterOptionPool(INITIAL_MASTER_OPTION_POOL);
       try {
@@ -1156,12 +1150,12 @@ const AdminDashboard: React.FC<Props> = ({
     }, 3500);
   };
 
-  const handleDeletePackage = (pkg: CustomTripPackage, e?: React.MouseEvent) => {
+  const handleDeletePackage = async (pkg: CustomTripPackage, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
-    const confirmed = window.confirm(`[맞춤 여행 상품 삭제 확인]\n\n'${pkg.title}' (${pkg.location} / ${pkg.duration}) 상품을 삭제하시겠습니까?`);
+    const confirmed = await appConfirm(`[맞춤 여행 상품 삭제 확인]\n\n'${pkg.title}' (${pkg.location} / ${pkg.duration}) 상품을 삭제하시겠습니까?`);
     if (confirmed) {
       executeDeletePackage(pkg);
     }
@@ -1235,7 +1229,7 @@ const AdminDashboard: React.FC<Props> = ({
       // Restore previous state on error
       setPageForm(previousPageForm);
       setPageContents(previousPageContents);
-      alert('데이터 저장 중 오류가 발생했습니다. 이전 상태로 복구합니다.');
+      await appAlert('데이터 저장 중 오류가 발생했습니다. 이전 상태로 복구합니다.');
     }
   };
 
@@ -1285,14 +1279,14 @@ const AdminDashboard: React.FC<Props> = ({
     handlePageFieldChange('sections', newSections);
   };
 
-  const handleRemoveSection = (index: number) => {
-    if (!window.confirm('이 섹션을 삭제하시겠습니까?')) return;
+  const handleRemoveSection = async (index: number) => {
+    if (!(await appConfirm('이 섹션을 삭제하시겠습니까?'))) return;
     const newSections = pageForm.sections.filter((_, i) => i !== index);
     handlePageFieldChange('sections', newSections);
   };
 
-  const handleRemoveGalleryImage = (index: number) => {
-    if (!confirm('이 이미지를 삭제하시겠습니까?')) return;
+  const handleRemoveGalleryImage = async (index: number) => {
+    if (!(await appConfirm('이 이미지를 삭제하시겠습니까?'))) return;
     const newGallery = pageForm.galleryImages.filter((_, i) => i !== index);
     handlePageFieldChange('galleryImages', newGallery);
   };
@@ -1347,12 +1341,12 @@ const AdminDashboard: React.FC<Props> = ({
 
   const handlePopupMouseUp = () => setIsPopupDragging(false);
 
-  const handlePopupApplyUrl = () => {
+  const handlePopupApplyUrl = async () => {
     if (!popupUrlInput.trim()) {
-      alert('이미지 URL을 입력해주세요.');
+      await appAlert('이미지 URL을 입력해주세요.');
       return;
     }
-    handlePopupChange('image', popupUrlInput.trim());
+    handlePopupChange('image', withImageVersion(popupUrlInput.trim()));
     setShowPopupUrlModal(false);
     setPopupUrlInput('');
     showToast('✨ 팝업 이미지가 적용되었습니다.');
@@ -1367,20 +1361,20 @@ const AdminDashboard: React.FC<Props> = ({
     // Supabase 클라우드에도 저장하여 다른 컴퓨터에서 접속 시 자동으로 적용되도록 함
     try {
       await supabaseService.saveCloudinaryConfig(cloudName, uploadPreset);
-      alert('✅ Cloudinary 이미지 서버 설정이 저장되었습니다!\n\n클라우드(Supabase)에도 동기화되어 이제 다른 컴퓨터 및 모바일 기기에서도 동일한 이미지 서버가 자동으로 적용됩니다.');
+      await appAlert('✅ Cloudinary 이미지 서버 설정이 저장되었습니다!\n\n클라우드(Supabase)에도 동기화되어 이제 다른 컴퓨터 및 모바일 기기에서도 동일한 이미지 서버가 자동으로 적용됩니다.');
     } catch (e) {
-      alert('Cloudinary 설정이 로컬에 저장되었습니다.');
+      await appAlert('Cloudinary 설정이 로컬에 저장되었습니다.');
     }
     setShowCloudinaryConfig(false);
   };
 
-  const handleSaveSupabaseConfig = () => {
+  const handleSaveSupabaseConfig = async () => {
     const success = updateSupabaseCredentials(sbUrl, sbAnonKey);
     if (success) {
-      alert('✅ Supabase 연결 설정이 저장되었습니다!\n\n페이지가 새로고침되며 Supabase 클라우드 데이터와 연동됩니다.');
+      await appAlert('✅ Supabase 연결 설정이 저장되었습니다!\n\n페이지가 새로고침되며 Supabase 클라우드 데이터와 연동됩니다.');
       window.location.reload();
     } else {
-      alert('⚠️ 설정이 로컬에 저장되었습니다. 올바른 URL(https://...)과 Anon Key를 입력했는지 확인해주세요.');
+      await appAlert('⚠️ 설정이 로컬에 저장되었습니다. 올바른 URL(https://...)과 Anon Key를 입력했는지 확인해주세요.');
     }
   };
 
@@ -1664,10 +1658,12 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(sqlText).then(() => {
-        alert('📋 보안 강화 Supabase SQL이 복사되었습니다!\n\nSupabase 대시보드 -> [SQL Editor] -> [New Query]에 붙여넣고 실행한 뒤, 마지막 줄의 set_mango_admin_password(...)도 환경변수 VITE_ADMIN_PASSWORD와 동일하게 1회 실행해 주세요.');
+        void appAlert('📋 보안 강화 Supabase SQL이 복사되었습니다!\n\nSupabase 대시보드 -> [SQL Editor] -> [New Query]에 붙여넣고 실행한 뒤, 마지막 줄의 set_mango_admin_password(...)도 환경변수 VITE_ADMIN_PASSWORD와 동일하게 1회 실행해 주세요.');
+      }).catch(() => {
+        void appPrompt('아래 SQL 코드를 복사하여 Supabase SQL Editor에서 실행하세요:', sqlText);
       });
     } else {
-      prompt('아래 SQL 코드를 복사하여 Supabase SQL Editor에서 실행하세요:', sqlText);
+      void appPrompt('아래 SQL 코드를 복사하여 Supabase SQL Editor에서 실행하세요:', sqlText);
     }
   };
 
@@ -1676,14 +1672,14 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
     const currentKey = (sbAnonKey || localStorage.getItem('sb_anon_key') || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '').trim();
 
     if (!currentUrl || !currentKey || !currentUrl.startsWith('https://')) {
-      alert('⚠️ Supabase 연결 정보(URL 및 Key)가 아직 입력되지 않았습니다.\n\n위의 [Project URL (API URL)] 칸에 https://로 시작하는 주소와\n[Anon Public Key] 칸에 anon 키를 입력하신 후 다시 클릭해 주세요.');
+      await appAlert('⚠️ Supabase 연결 정보(URL 및 Key)가 아직 입력되지 않았습니다.\n\n위의 [Project URL (API URL)] 칸에 https://로 시작하는 주소와\n[Anon Public Key] 칸에 anon 키를 입력하신 후 다시 클릭해 주세요.');
       return;
     }
 
     // 자동으로 자격 증명 갱신 및 연결
     updateSupabaseCredentials(currentUrl, currentKey);
 
-    if (!confirm('현재 웹사이트의 모든 상품, 골프/호텔 페이지 이미지, 메인 슬라이드, 메뉴, 맞춤 여행 패키지 데이터를 Supabase 클라우드로 일괄 전송하시겠습니까?\n\n(Supabase에 데이터가 성공적으로 채워지면 전 세계 모든 고객에게 실시간 반영됩니다)')) {
+    if (!(await appConfirm('현재 웹사이트의 모든 상품, 골프/호텔 페이지 이미지, 메인 슬라이드, 메뉴, 맞춤 여행 패키지 데이터를 Supabase 클라우드로 일괄 전송하시겠습니까?\n\n(Supabase에 데이터가 성공적으로 채워지면 전 세계 모든 고객에게 실시간 반영됩니다)'))) {
       return;
     }
     
@@ -1701,10 +1697,10 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
         recommendedDiscountPopup,
         pageContents
       });
-      alert('🎉 축하합니다! 웹사이트의 모든 상품/투어/페이지/슬라이드 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 www.mangotour.co.kr에 접속하는 모든 고객이 이 클라우드 데이터를 실시간으로 보게 됩니다.');
+      await appAlert('🎉 축하합니다! 웹사이트의 모든 상품/투어/페이지/슬라이드 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 www.mangotour.co.kr에 접속하는 모든 고객이 이 클라우드 데이터를 실시간으로 보게 됩니다.');
     } catch (e: any) {
       console.error("Supabase seed error:", e);
-      alert('❌ 전송 실패: ' + (e?.message || e) + '\n\n테이블이 아직 생성되지 않았다면, 위의 [📋 원클릭 테이블 생성 SQL 복사] 버튼을 누른 후 Supabase 콘솔 SQL Editor에서 Run을 먼저 실행해 주세요.');
+      await appAlert('❌ 전송 실패: ' + (e?.message || e) + '\n\n테이블이 아직 생성되지 않았다면, 위의 [📋 원클릭 테이블 생성 SQL 복사] 버튼을 누른 후 Supabase 콘솔 SQL Editor에서 Run을 먼저 실행해 주세요.');
     } finally {
       setIsSeedingSupabase(false);
     }
@@ -1735,11 +1731,11 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
     if (isAddingUser) return;
     const cleanUsername = newUsername.trim();
     if (!cleanUsername || !newPassword.trim()) {
-      alert('아이디와 비밀번호를 입력해주세요.');
+      await appAlert('아이디와 비밀번호를 입력해주세요.');
       return;
     }
     if (users.some(u => (u.username || '').trim().toLowerCase() === cleanUsername.toLowerCase())) {
-      alert('이미 존재하는 아이디입니다.');
+      await appAlert('이미 존재하는 아이디입니다.');
       return;
     }
 
@@ -1754,7 +1750,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
     try {
       const res = await supabaseService.registerUser(newUser, newPassword);
       if (!res.success || !res.user) {
-        alert(res.message || '회원 등록 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        await appAlert(res.message || '회원 등록 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
         if (res.code === 'DUPLICATE_USERNAME') {
           onRefreshUsers?.();
         }
@@ -1781,7 +1777,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
 
   const handleToggleUserRole = async (targetUser: User) => {
     if (targetUser.username === 'admin') {
-      alert('기본 최고 관리자(admin)의 권한은 변경할 수 없습니다.');
+      await appAlert('기본 최고 관리자(admin)의 권한은 변경할 수 없습니다.');
       return;
     }
     const nextRole: 'admin' | 'user' = targetUser.role === 'admin' ? 'user' : 'admin';
@@ -1801,10 +1797,10 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
 
   const handleDeleteUser = async (targetUser: User) => {
     if (targetUser.username === 'admin') {
-      alert('기본 최고 관리자(admin) 계정은 삭제할 수 없습니다.');
+      await appAlert('기본 최고 관리자(admin) 계정은 삭제할 수 없습니다.');
       return;
     }
-    if (!confirm(`'${targetUser.username}' (${targetUser.nickname || '회원'}) 계정을 정말 삭제하시겠습니까?`)) return;
+    if (!(await appConfirm(`'${targetUser.username}' (${targetUser.nickname || '회원'}) 계정을 정말 삭제하시겠습니까?`))) return;
 
     const nextUsers = users.filter(u => u.id !== targetUser.id);
     if (onUpdateUsers) onUpdateUsers(nextUsers);
@@ -1836,16 +1832,16 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(syncUrl).then(() => {
-        alert('🔗 [다른 컴퓨터 원클릭 동기화 링크]가 클립보드에 복사되었습니다!\n\n다른 컴퓨터나 휴대폰의 웹 브라우저에서 이 링크를 한 번만 열면 이미지 서버 및 DB 설정이 즉시 자동으로 동기화됩니다.');
+        void appAlert('🔗 [다른 컴퓨터 원클릭 동기화 링크]가 클립보드에 복사되었습니다!\n\n다른 컴퓨터나 휴대폰의 웹 브라우저에서 이 링크를 한 번만 열면 이미지 서버 및 DB 설정이 즉시 자동으로 동기화됩니다.');
       }).catch(() => {
-        prompt('아래 동기화 링크를 복사하여 다른 컴퓨터에서 접속하세요:', syncUrl);
+        void appPrompt('아래 동기화 링크를 복사하여 다른 컴퓨터에서 접속하세요:', syncUrl);
       });
     } else {
-      prompt('아래 동기화 링크를 복사하여 다른 컴퓨터에서 접속하세요:', syncUrl);
+      void appPrompt('아래 동기화 링크를 복사하여 다른 컴퓨터에서 접속하세요:', syncUrl);
     }
   };
 
-  const handleExportData = () => {
+  const handleExportData = async () => {
     const data = {
       heroImages,
       menuItems,
@@ -1866,21 +1862,21 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    alert('데이터 백업 파일이 다운로드되었습니다. GitHub 저장소의 초기 데이터로 활용할 수 있습니다.');
+    await appAlert('데이터 백업 파일이 다운로드되었습니다. GitHub 저장소의 초기 데이터로 활용할 수 있습니다.');
   };
 
-  const handleConvertVndToUsd = () => {
-    if (!confirm('모든 상품의 가격을 VND에서 USD로 변환하시겠습니까? (금액을 25,000으로 나눕니다. 이미 달러인 경우 실행하지 마세요!)')) return;
+  const handleConvertVndToUsd = async () => {
+    if (!(await appConfirm('모든 상품의 가격을 VND에서 USD로 변환하시겠습니까? (금액을 25,000으로 나눕니다. 이미 달러인 경우 실행하지 마세요!)'))) return;
     const updated = products.map(p => ({
       ...p,
       price: p.price > 10000 ? Math.round(p.price / 25000) : p.price
     }));
     setProducts(updated);
-    alert('변환되었습니다. 잠시 후 서버에 자동 저장됩니다.');
+    await appAlert('변환되었습니다. 잠시 후 서버에 자동 저장됩니다.');
   };
 
-  const handleResetToDefaults = () => {
-    if (!confirm('모든 데이터를 USD 기준의 초기 상태로 리셋하시겠습니까? 현재 저장된 모든 데이터가 삭제됩니다.')) return;
+  const handleResetToDefaults = async () => {
+    if (!(await appConfirm('모든 데이터를 USD 기준의 초기 상태로 리셋하시겠습니까? 현재 저장된 모든 데이터가 삭제됩니다.'))) return;
     
     setHeroImages(HERO_IMAGES);
     setMenuItems(SUB_MENU_ITEMS);
@@ -1891,11 +1887,11 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
     setPosts(INITIAL_POSTS);
     setPopup(INITIAL_POPUP);
     
-    alert('초기 데이터로 복구되었습니다. 잠시 후 서버와 동기화됩니다.');
+    await appAlert('초기 데이터로 복구되었습니다. 잠시 후 서버와 동기화됩니다.');
   };
 
   const handleSyncFromGoogleSheet = async () => {
-    if (!confirm('구글 시트에서 데이터를 가져와 상품 목록을 업데이트하시겠습니까? (기존 상품 목록에 추가됩니다)')) return;
+    if (!(await appConfirm('구글 시트에서 데이터를 가져와 상품 목록을 업데이트하시겠습니까? (기존 상품 목록에 추가됩니다)'))) return;
     
     setIsSyncing(true);
     try {
@@ -1923,22 +1919,21 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
           };
         });
 
-        // 중복 체크 (제목 기준)
         const existingTitles = new Set(products.map(p => p.title));
         const uniqueNewProducts = newProducts.filter(p => !existingTitles.has(p.title));
 
         if (uniqueNewProducts.length === 0) {
-          alert('새로 추가할 상품이 없습니다. (이미 모든 상품이 등록되어 있습니다)');
+          await appAlert('새로 추가할 상품이 없습니다. (이미 모든 상품이 등록되어 있습니다)');
         } else {
           setProducts([...uniqueNewProducts, ...products]);
-          alert(`${uniqueNewProducts.length}개의 새로운 상품이 구글 시트에서 성공적으로 동기화되었습니다!`);
+          await appAlert(`${uniqueNewProducts.length}개의 새로운 상품이 구글 시트에서 성공적으로 동기화되었습니다!`);
         }
       } else {
-        alert('구글 시트에서 데이터를 가져오지 못했습니다. 시트 설정을 확인해주세요.');
+        await appAlert('구글 시트에서 데이터를 가져오지 못했습니다. 시트 설정을 확인해주세요.');
       }
     } catch (error) {
       console.error("Sync Error:", error);
-      alert('동기화 중 오류가 발생했습니다.');
+      await appAlert('동기화 중 오류가 발생했습니다.');
     } finally {
       setIsSyncing(false);
     }
@@ -2363,7 +2358,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                 type="button"
                 onClick={() => {
                   if (!newHeroUrl.trim()) return;
-                  setHeroImages([...heroImages, newHeroUrl.trim()]);
+                  setHeroImages([...heroImages, withImageVersion(newHeroUrl.trim())]);
                   setNewHeroUrl('');
                   showToast('✅ 새 슬라이드가 추가되었습니다.');
                 }}
@@ -3127,7 +3122,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                       <button
                         onClick={() => {
                           setEditingPackage(null);
-                          alert('수정 내용이 안전하게 저장되었습니다.');
+                          void appAlert('수정 내용이 안전하게 저장되었습니다.');
                         }}
                         className="px-4 py-2 bg-gold-500 hover:bg-gold-600 text-white text-xs font-black rounded-xl transition shadow-lg flex items-center gap-1 active:scale-95"
                       >
@@ -3625,7 +3620,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                       <button
                         onClick={() => {
                           setEditingPackage(null);
-                          alert('수정 내용이 저장되었습니다.');
+                          void appAlert('수정 내용이 저장되었습니다.');
                         }}
                         className="flex-1 sm:flex-none px-6 py-2.5 bg-deepgreen hover:bg-gold-600 text-white font-black text-xs rounded-xl shadow-md transition active:scale-95"
                       >
@@ -5316,7 +5311,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                          type="button"
                          onClick={() => {
                            if (!newSlideUrl.trim()) return;
-                           const newSlides = [...(pageForm.slides || []), { image: newSlideUrl.trim(), description: '' }];
+                           const newSlides = [...(pageForm.slides || []), { image: withImageVersion(newSlideUrl.trim()), description: '' }];
                            handlePageFieldChange('slides', newSlides);
                            setNewSlideUrl('');
                          }}
@@ -5550,7 +5545,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                         type="button"
                         onClick={() => {
                           if (!newGalleryUrl.trim()) return;
-                          handlePageFieldChange('galleryImages', [...pageForm.galleryImages, newGalleryUrl.trim()]);
+                          handlePageFieldChange('galleryImages', [...pageForm.galleryImages, withImageVersion(newGalleryUrl.trim())]);
                           setNewGalleryUrl('');
                         }}
                         className="px-3 py-1.5 bg-deepgreen text-white rounded-xl text-[11px] font-bold cursor-pointer shrink-0"
@@ -5812,8 +5807,8 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                             {post.image && (
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (confirm('이 게시글의 사진을 삭제하시겠습니까?')) {
+                                onClick={async () => {
+                                  if (await appConfirm('이 게시글의 사진을 삭제하시겠습니까?')) {
                                     clearImageBroken(pKey);
                                     handlePostFieldChange(post.id, 'image', '');
                                   }
@@ -5920,8 +5915,8 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (confirm(`'${post.title}' 게시글을 삭제하시겠습니까?`)) {
+                          onClick={async () => {
+                            if (await appConfirm(`'${post.title}' 게시글을 삭제하시겠습니까?`)) {
                               setPosts(posts.filter(p => p.id !== post.id));
                               showToast('🗑️ 게시글이 삭제되었습니다.');
                             }
@@ -6012,8 +6007,8 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                     </label>
                     <button 
                       type="button"
-                      onClick={() => {
-                        if(confirm('이 메뉴 아이콘을 삭제하시겠습니까?')) {
+                      onClick={async () => {
+                        if(await appConfirm('이 메뉴 아이콘을 삭제하시겠습니까?')) {
                           const ni = menuItems.filter((_, i) => i !== idx);
                           setMenuItems(ni);
                         }
@@ -6031,7 +6026,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
               <button 
                 type="button"
                 onClick={() => {
-                  const newItem: MenuItem = { label: '새 메뉴', icon: 'https://cdn-icons-png.flaticon.com/512/1039/1039328.png' };
+                  const newItem: MenuItem = { label: '새 메뉴', icon: '/icon-192.png' };
                   setMenuItems([...menuItems, newItem]);
                 }}
                 className="bg-deepgreen text-white px-6 sm:px-8 py-3 rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition flex items-center gap-2 whitespace-nowrap text-xs sm:text-sm"
@@ -6233,8 +6228,8 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                             </button>
                             <button 
                               type="button"
-                              onClick={() => {
-                                if (confirm('팝업 이미지를 삭제하시겠습니까?')) {
+                              onClick={async () => {
+                                if (await appConfirm('팝업 이미지를 삭제하시겠습니까?')) {
                                   handlePopupChange('image', undefined);
                                 }
                               }}
@@ -7247,7 +7242,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                   <button 
                     type="button"
                     onClick={() => {
-                      alert(`[링크 이동 테스트]\n${popup.link} 로 이동합니다.`);
+                      void appAlert(`[링크 이동 테스트]\n${popup.link} 로 이동합니다.`);
                     }}
                     className="w-full py-3 md:py-3.5 bg-deepgreen text-white rounded-xl md:rounded-2xl font-bold shadow-lg hover:bg-gold-600 transition transform active:scale-95 text-sm"
                   >
@@ -7326,7 +7321,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                   key={idx}
                   type="button"
                   onClick={() => {
-                    imagePickerTarget.onSelect(preset.url);
+                    imagePickerTarget.onSelect(withImageVersion(preset.url));
                     setImagePickerTarget(null);
                   }}
                   className="text-left bg-white rounded-2xl border border-gray-200 hover:border-deepgreen hover:shadow-md overflow-hidden transition group cursor-pointer"

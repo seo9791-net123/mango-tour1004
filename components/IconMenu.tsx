@@ -32,7 +32,10 @@ const IconMenu: React.FC<Props> = ({ items, onItemClick }) => {
                     className="w-full h-full object-contain drop-shadow-sm transform group-hover:scale-108 group-hover:-rotate-2 transition-all duration-300 ease-out"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = getFreshImageUrl('https://cdn-icons-png.flaticon.com/512/8212/8212613.png'); // Fallback
+                      if (!target.dataset.fallbackApplied) {
+                        target.dataset.fallbackApplied = '1';
+                        target.src = '/icon-192.png';
+                      }
                     }}
                   />
                </div>

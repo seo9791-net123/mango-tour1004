@@ -29,6 +29,8 @@ import { updateSupabaseCredentials, clearAdminSessionToken } from './services/su
 import { setCloudinaryConfig } from './services/uploadService';
 import { debounce } from './utils/debounce';
 import { getFreshImageUrl } from './utils/imageUtils';
+import CustomDialogHost from './components/CustomDialogHost';
+import { appAlert } from './services/dialogService';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -994,23 +996,23 @@ const App: React.FC = () => {
     const cleanNickname = nickname.trim();
 
     if (!cleanUsername || !password.trim()) {
-      alert('아이디와 비밀번호를 입력해주세요.');
+      await appAlert('아이디와 비밀번호를 입력해주세요.');
       return;
     }
 
     if (authMode === 'signup') {
       if (!cleanNickname) {
-        alert('닉네임을 입력해주세요.');
+        await appAlert('닉네임을 입력해주세요.');
         return;
       }
 
       // 클라이언트 단 1차 중복/예약어 검사
       if (cleanUsername.toLowerCase() === 'admin') {
-        alert('사용할 수 없는 아이디입니다. 다른 아이디를 입력해주세요.');
+        await appAlert('사용할 수 없는 아이디입니다. 다른 아이디를 입력해주세요.');
         return;
       }
       if (users.some(u => (u.username || '').trim().toLowerCase() === cleanUsername.toLowerCase())) {
-        alert('이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.');
+        await appAlert('이미 사용 중인 아이디입니다. 다른 아이디를 입력해주세요.');
         return;
       }
 
@@ -1025,7 +1027,7 @@ const App: React.FC = () => {
       try {
         const result = await supabaseService.registerUser(newUser, password);
         if (!result.success || !result.user) {
-          alert(result.message || '회원가입 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+          await appAlert(result.message || '회원가입 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
           if (result.code === 'DUPLICATE_USERNAME') {
             refreshUsers();
           }
@@ -1040,7 +1042,7 @@ const App: React.FC = () => {
         setUser(savedUser);
         setShowAuthModal(false);
         resetAuthFields();
-        alert('회원가입이 완료되었습니다!');
+        await appAlert('회원가입이 완료되었습니다!');
       } finally {
         setIsAuthSubmitting(false);
       }
@@ -1049,7 +1051,7 @@ const App: React.FC = () => {
       try {
         const result = await supabaseService.authenticateUser(cleanUsername, password, users);
         if (!result.success || !result.user) {
-          alert(result.message || '아이디 또는 비밀번호가 일치하지 않습니다.');
+          await appAlert(result.message || '아이디 또는 비밀번호가 일치하지 않습니다.');
           return;
         }
 
@@ -1610,6 +1612,7 @@ const App: React.FC = () => {
       )}
       </div>
       )}
+      <CustomDialogHost />
     </>
   );
 };

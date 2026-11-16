@@ -3,8 +3,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CommunityPost, User, Comment } from '../types';
 import { uploadFile } from '../services/uploadService';
 import BackButton from './BackButton';
-import { getFreshImageUrl } from '../utils/imageUtils';
+import { getFreshImageUrl, withImageVersion } from '../utils/imageUtils';
 import { VERIFIED_IMAGE_PRESETS } from '../constants';
+import { appAlert, appConfirm } from '../services/dialogService';
 
 interface Props {
   posts: CommunityPost[];
@@ -118,16 +119,16 @@ const CommunityBoard: React.FC<Props> = ({
     };
   }, [isEditing, viewingPost, isAdding, showPasswordPrompt]);
 
-  // Handle Image Upload for New Post (Firebase Storage)
+  // Handle Image Upload for New Post
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setIsUploading(true);
       try {
         const downloadUrl = await uploadFile(file, 'community_images');
-        setNewPostImage(downloadUrl);
+        setNewPostImage(withImageVersion(downloadUrl));
       } catch (error) {
-        alert('이미지 업로드 실패: ' + error);
+        await appAlert('이미지 업로드 실패: ' + error);
       } finally {
         setIsUploading(false);
       }
@@ -135,17 +136,17 @@ const CommunityBoard: React.FC<Props> = ({
     e.target.value = '';
   };
 
-  // Handle Image Upload for Editing Post (Firebase Storage)
+  // Handle Image Upload for Editing Post
   const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && editForm) {
       setIsUploading(true);
       try {
         const downloadUrl = await uploadFile(file, 'community_images');
-        setEditForm({ ...editForm, image: downloadUrl });
+        setEditForm({ ...editForm, image: withImageVersion(downloadUrl) });
         setEditImageBroken(false);
       } catch (error) {
-        alert('이미지 업로드 실패: ' + error);
+        await appAlert('이미지 업로드 실패: ' + error);
       } finally {
         setIsUploading(false);
       }
@@ -159,13 +160,13 @@ const CommunityBoard: React.FC<Props> = ({
     if (file && onUpdateHeroImage) {
       setIsUploadingHero(true);
       try {
-        const downloadUrl = await uploadFile(file, 'community_images');
+        const downloadUrl = withImageVersion(await uploadFile(file, 'community_images'));
         setHeroUrlDraft(downloadUrl);
         setHeroImageBroken(false);
         onUpdateHeroImage(downloadUrl);
         setShowHeroEditor(false);
       } catch (error) {
-        alert('배너 이미지 업로드 실패: ' + error);
+        await appAlert('배너 이미지 업로드 실패: ' + error);
       } finally {
         setIsUploadingHero(false);
       }
@@ -174,24 +175,24 @@ const CommunityBoard: React.FC<Props> = ({
   };
 
   // Remove Image during Edit
-  const handleRemoveEditImage = () => {
-    if (editForm && confirm('이미지를 삭제하시겠습니까?')) {
+  const handleRemoveEditImage = async () => {
+    if (editForm && (await appConfirm('이미지를 삭제하시겠습니까?'))) {
       setEditForm({ ...editForm, image: '' });
       setEditImageBroken(false);
     }
   };
 
-  const handleAddPost = () => {
+  const handleAddPost = async () => {
     if (!user) {
         onReqLogin();
         return;
     }
     if (!newPostTitle || !newPostContent) {
-        alert('제목과 내용을 입력해주세요.');
+        await appAlert('제목과 내용을 입력해주세요.');
         return;
     }
     if (isPrivate && !postPassword) {
-        alert('비공개 글은 비밀번호가 필요합니다.');
+        await appAlert('비공개 글은 비밀번호가 필요합니다.');
         return;
     }
 
@@ -222,9 +223,9 @@ const CommunityBoard: React.FC<Props> = ({
     setIsAdding(false);
   };
 
-  const handlePostClick = (post: CommunityPost) => {
+  const handlePostClick = async (post: CommunityPost) => {
     if (!user) {
-      if (confirm('게시글 상세 내용과 사진을 보시려면 로그인이 필요합니다. 로그인하시겠습니까?')) {
+      if (await appConfirm('게시글 상세 내용과 사진을 보시려면 로그인이 필요합니다. 로그인하시겠습니까?')) {
         onReqLogin();
       }
       return;
@@ -259,25 +260,25 @@ const CommunityBoard: React.FC<Props> = ({
     setPasswordInput('');
   };
 
-  const handlePasswordSubmit = () => {
+  const handlePasswordSubmit = async () => {
     const post = posts.find(p => p.id === showPasswordPrompt);
     if (post && post.password === passwordInput) {
       openPost(post);
     } else {
-      alert('비밀번호가 일치하지 않습니다.');
+      await appAlert('비밀번호가 일치하지 않습니다.');
     }
   };
 
-  const handleSaveAdminReply = () => {
+  const handleSaveAdminReply = async () => {
     if (!viewingPost || !isAdmin) return;
     const updatedPost = { ...viewingPost, adminReply: adminReplyInput };
     setViewingPost(updatedPost);
     onUpdatePosts(posts.map(p => p.id === updatedPost.id ? updatedPost : p));
-    alert('답변이 저장되었습니다.');
+    await appAlert('답변이 저장되었습니다.');
   };
 
-  const handleDelete = (id: string) => {
-    if ((isAdmin || viewingPost?.author === user?.username || viewingPost?.author === user?.nickname) && confirm('정말 게시글을 삭제하시겠습니까?')) {
+  const handleDelete = async (id: string) => {
+    if ((isAdmin || viewingPost?.author === user?.username || viewingPost?.author === user?.nickname) && (await appConfirm('정말 게시글을 삭제하시겠습니까?'))) {
       onUpdatePosts(posts.filter(p => p.id !== id));
       if (viewingPost?.id === id) {
         setViewingPost(null);
@@ -303,10 +304,10 @@ const CommunityBoard: React.FC<Props> = ({
     setShowEditPresetPicker(false);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editForm || !viewingPost) return;
     if (!editForm.title.trim() || !editForm.content.trim()) {
-      alert('제목과 내용은 필수입니다.');
+      await appAlert('제목과 내용은 필수입니다.');
       return;
     }
 
@@ -322,9 +323,9 @@ const CommunityBoard: React.FC<Props> = ({
     setShowEditPresetPicker(false);
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!user) {
-        if(confirm('로그인이 필요한 서비스입니다. 로그인 하시겠습니까?')) {
+        if(await appConfirm('로그인이 필요한 서비스입니다. 로그인 하시겠습니까?')) {
             onReqLogin();
         }
         return;
@@ -448,7 +449,7 @@ const CommunityBoard: React.FC<Props> = ({
                       onClick={() => {
                         if (!heroUrlDraft.trim()) return;
                         setHeroImageBroken(false);
-                        onUpdateHeroImage(heroUrlDraft.trim());
+                        onUpdateHeroImage(withImageVersion(heroUrlDraft.trim()));
                         setShowHeroEditor(false);
                       }}
                       className="px-4 py-2 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-xl text-xs font-bold transition cursor-pointer"
@@ -470,9 +471,10 @@ const CommunityBoard: React.FC<Props> = ({
                       key={i}
                       type="button"
                       onClick={() => {
-                        setHeroUrlDraft(preset.url);
+                        const versioned = withImageVersion(preset.url);
+                        setHeroUrlDraft(versioned);
                         setHeroImageBroken(false);
-                        onUpdateHeroImage(preset.url);
+                        onUpdateHeroImage(versioned);
                         setShowHeroEditor(false);
                       }}
                       className="shrink-0 w-24 text-left group cursor-pointer"
@@ -505,9 +507,9 @@ const CommunityBoard: React.FC<Props> = ({
             </div>
             
             <button
-              onClick={() => {
+              onClick={async () => {
                 if(!user) {
-                  if(confirm('로그인 후 작성 가능합니다. 로그인 하시겠습니까?')) onReqLogin();
+                  if(await appConfirm('로그인 후 작성 가능합니다. 로그인 하시겠습니까?')) onReqLogin();
                 } else {
                   setIsAdding(true);
                 }

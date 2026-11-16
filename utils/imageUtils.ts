@@ -63,33 +63,24 @@ export const compressImage = (
   });
 };
 
-// 페이지 접속 시점의 고유 타임스탬프 (밀리초)
-export const PAGE_LOAD_TIMESTAMP = typeof window !== 'undefined' && (window as any).__PAGE_LOAD_TIMESTAMP__ 
-  ? (window as any).__PAGE_LOAD_TIMESTAMP__ 
-  : Date.now();
-
-export const getCurrentImageVersionTimestamp = (): number => {
-  if (typeof window !== 'undefined' && (window as any).__PAGE_LOAD_TIMESTAMP__) {
-    return (window as any).__PAGE_LOAD_TIMESTAMP__;
-  }
-  return PAGE_LOAD_TIMESTAMP;
+/**
+ * 이미지 URL을 안전하게 정리해 반환합니다.
+ * 브라우저 정적 캐시 효율을 위해 매 접속 시 강제로 ?t=타임스탬프를 붙이지 않고 저장된 URL(교체 시 ?v=버전 포함)을 그대로 사용합니다.
+ */
+export const getFreshImageUrl = (url: string | undefined | null): string => {
+  if (!url || typeof url !== 'string') return '';
+  return url.trim();
 };
 
 /**
- * 이미지 URL 뒤에 캐시 방지용 타임스탬프(?t=현재시간)를 자동으로 덧붙여 항상 최신 이미지를 불러오도록 합니다.
- * data:, blob: URL은 보존하고, 기존 t= 파라미터가 있으면 최신 타임스탬프로 교체합니다.
- * @param url 원본 이미지 URL
- * @param timestamp 부여할 타임스탬프 (기본값: 현재 페이지 접속/갱신 시각)
+ * 관리자가 이미지를 새로 업로드하거나 URL을 교체했을 때만 1회성 버전 쿼리(?v=timestamp)를 부여해
+ * 기존 방문자의 브라우저 캐시를 즉시 갱신합니다. (data:, blob: URL 제외)
  */
-export const getFreshImageUrl = (
-  url: string | undefined | null, 
-  timestamp?: number
-): string => {
+export const withImageVersion = (url: string | undefined | null, version?: number): string => {
   if (!url || typeof url !== 'string') return '';
   const trimmed = url.trim();
   if (!trimmed) return '';
 
-  // base64 data URI, blob URL, SVG 인라인, 앵커 링크 등은 캐시 방지 불필요 및 제외
   if (
     trimmed.startsWith('data:') ||
     trimmed.startsWith('blob:') ||
@@ -99,15 +90,16 @@ export const getFreshImageUrl = (
     return trimmed;
   }
 
-  const ts = timestamp ?? getCurrentImageVersionTimestamp();
-
-  // 이미 ?t= 또는 &t= 타임스탬프가 있다면 최신 타임스탬프로 교체
+  const ver = version ?? Date.now();
+  if (/[?&]v=\d+/.test(trimmed)) {
+    return trimmed.replace(/([?&]v=)\d+/, `$1${ver}`);
+  }
   if (/[?&]t=\d+/.test(trimmed)) {
-    return trimmed.replace(/([?&]t=)\d+/, `$1${ts}`);
+    return trimmed.replace(/([?&])t=\d+/, `$1v=${ver}`);
   }
 
   const separator = trimmed.includes('?') ? '&' : '?';
-  return `${trimmed}${separator}t=${ts}`;
+  return `${trimmed}${separator}v=${ver}`;
 };
 
 /**

@@ -1,23 +1,67 @@
-
 <!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     <meta name="format-detection" content="telephone=no" />
-    <meta name="theme-color" content="#F2F2F7" />
+    <meta name="theme-color" content="#0A7E54" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8212/8212613.png" />
+    <meta name="apple-mobile-web-app-title" content="MANGO TOUR" />
+
+    <title>MANGO TOUR - 베트남 명문 골프 &amp; 럭셔리 맞춤 투어</title>
+    <meta
+      name="description"
+      content="호치민, 붕따우, 무이네, 달랏, 나트랑 베트남 명문 골프 부킹부터 1:1 맞춤형 자유여행·VIP 전용 차량·호텔&풀빌라 예약까지, 망고투어에서 즉시 온라인 견적을 받아보세요."
+    />
+    <link rel="canonical" href="https://www.mangotour.co.kr/" />
+
+    <!-- Favicon & Home Screen Icons (Local Assets) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="shortcut icon" href="/favicon-64.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <title>MANGO TOUR - 베트남 골프 투어 전문</title>
-    <!-- 기존 서비스 워커(sw.js) 즉시 해제 및 브라우저 캐시 스토리지 완전 초기화 (모바일 Safari 구버전 고정 방지) -->
+
+    <!-- OpenGraph / KakaoTalk / SNS Share Metadata -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:site_name" content="MANGO TOUR" />
+    <meta property="og:url" content="https://www.mangotour.co.kr/" />
+    <meta property="og:title" content="MANGO TOUR - 베트남 명문 골프 &amp; 럭셔리 맞춤 투어" />
+    <meta
+      property="og:description"
+      content="호치민·붕따우·무이네·달랏 베트남 명문 골프 부킹과 1:1 맞춤 여행 견적을 망고투어에서 한 번에 확인하세요."
+    />
+    <meta property="og:image" content="https://www.mangotour.co.kr/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MANGO TOUR 베트남 명문 골프 &amp; 럭셔리 맞춤 투어" />
+
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MANGO TOUR - 베트남 명문 골프 &amp; 럭셔리 맞춤 투어" />
+    <meta
+      name="twitter:description"
+      content="호치민·붕따우·무이네·달랏 베트남 명문 골프 부킹과 1:1 맞춤 여행 견적을 망고투어에서 한 번에 확인하세요."
+    />
+    <meta name="twitter:image" content="https://www.mangotour.co.kr/og-image.jpg" />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TravelAgency",
+        "name": "MANGO TOUR (망고투어)",
+        "url": "https://www.mangotour.co.kr/",
+        "logo": "https://www.mangotour.co.kr/icon-512.png",
+        "image": "https://www.mangotour.co.kr/og-image.jpg",
+        "description": "호치민, 붕따우, 무이네, 달랏 베트남 명문 골프 부킹과 1:1 맞춤형 자유여행·VIP 전용 차량·호텔&풀빌라 예약 전문 여행사"
+      }
+    </script>
+
+    <!-- 기존 서비스 워커(sw.js) 해제 (구버전 캐시 고착 방지) -->
     <script>
       (function() {
         var reloadedKey = 'mango_sw_cleared_v2';
@@ -46,405 +90,11 @@
         } catch (e) {}
       })();
     </script>
-    <!-- 모바일 및 웹 공통 이미지 캐시 방지(Cache-Buster): 접속 및 복귀 시마다 타임스탬프(?t=현재시간)를 이미지 URL에 자동 부여 -->
-    <script>
-      (function() {
-        // 사용자가 홈페이지에 접속한 시점의 고유 타임스탬프
-        var pageLoadTimestamp = Date.now();
-        window.__PAGE_LOAD_TIMESTAMP__ = pageLoadTimestamp;
 
-        // 이미지 단일 URL 뒤에 ?t=현재시간 (또는 &t=현재시간)을 안전하게 붙여주는 함수
-        function attachTimestamp(url, customTs) {
-          if (!url || typeof url !== 'string') return url;
-          var trimmed = url.trim();
-          
-          // data URI, blob URL, SVG 인라인, 앵커 링크 등은 캐시 방지 제외 및 데이터 손상 방지
-          if (
-            trimmed.startsWith('data:') ||
-            trimmed.startsWith('blob:') ||
-            trimmed.startsWith('javascript:') ||
-            trimmed.startsWith('#')
-          ) {
-            return url;
-          }
-
-          var ts = customTs || pageLoadTimestamp;
-
-          // 이미 ?t= 또는 &t= 타임스탬프가 붙어 있는 경우 최신 타임스탬프로 교체
-          if (/[?&]t=\d+/.test(trimmed)) {
-            return trimmed.replace(/([?&]t=)\d+/, '$1' + ts);
-          }
-
-          // 기존 쿼리스트링(?) 존재 여부에 따라 ?t= 또는 &t= 연결
-          var separator = trimmed.indexOf('?') !== -1 ? '&' : '?';
-          return trimmed + separator + 't=' + ts;
-        }
-
-        // 반응형 이미지 srcset (url 1x, url 2x ...) 처리 함수
-        function attachTimestampToSrcset(srcsetStr, customTs) {
-          if (!srcsetStr || typeof srcsetStr !== 'string') return srcsetStr;
-          return srcsetStr.split(',').map(function(item) {
-            var parts = item.trim().split(/\s+/);
-            if (parts.length > 0 && parts[0]) {
-              parts[0] = attachTimestamp(parts[0], customTs);
-            }
-            return parts.join(' ');
-          }).join(', ');
-        }
-
-        // 전역에서 어디서나 호출할 수 있도록 함수 공개
-        window.getFreshImageUrl = attachTimestamp;
-        window.getFreshImageSrcset = attachTimestampToSrcset;
-
-        // 1. HTMLImageElement.src 및 srcset 프로퍼티 Setter 가로채기 (React 및 JS 동적 렌더링에 자동 적용)
-        try {
-          var originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
-          if (originalSrcDescriptor && originalSrcDescriptor.set) {
-            Object.defineProperty(HTMLImageElement.prototype, 'src', {
-              get: function() {
-                return originalSrcDescriptor.get.call(this);
-              },
-              set: function(value) {
-                originalSrcDescriptor.set.call(this, attachTimestamp(value));
-              },
-              configurable: true,
-              enumerable: true
-            });
-          }
-
-          var originalSrcsetDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'srcset');
-          if (originalSrcsetDescriptor && originalSrcsetDescriptor.set) {
-            Object.defineProperty(HTMLImageElement.prototype, 'srcset', {
-              get: function() {
-                return originalSrcsetDescriptor.get.call(this);
-              },
-              set: function(value) {
-                originalSrcsetDescriptor.set.call(this, attachTimestampToSrcset(value));
-              },
-              configurable: true,
-              enumerable: true
-            });
-          }
-
-          // 2. setAttribute('src', ...) 및 setAttribute('srcset', ...) 가로채기
-          var originalSetAttribute = Element.prototype.setAttribute;
-          Element.prototype.setAttribute = function(name, value) {
-            if (this instanceof HTMLImageElement) {
-              var attrName = String(name).toLowerCase();
-              if (attrName === 'src') {
-                return originalSetAttribute.call(this, name, attachTimestamp(value));
-              }
-              if (attrName === 'srcset') {
-                return originalSetAttribute.call(this, name, attachTimestampToSrcset(value));
-              }
-            }
-            return originalSetAttribute.apply(this, arguments);
-          };
-        } catch (err) {
-          console.warn('[CacheBuster] Interceptor hook warning:', err);
-        }
-
-        // 3. 페이지 내 모든 <img> 태그 최신화 함수
-        function updateAllImages(customTs) {
-          var ts = customTs || pageLoadTimestamp;
-          var images = document.querySelectorAll('img');
-          for (var i = 0; i < images.length; i++) {
-            var img = images[i];
-            var currentSrc = img.getAttribute('src');
-            if (currentSrc) {
-              var newSrc = attachTimestamp(currentSrc, ts);
-              if (newSrc !== currentSrc) {
-                img.setAttribute('src', newSrc);
-              }
-            }
-            var currentSrcset = img.getAttribute('srcset');
-            if (currentSrcset) {
-              var newSrcset = attachTimestampToSrcset(currentSrcset, ts);
-              if (newSrcset !== currentSrcset) {
-                img.setAttribute('srcset', newSrcset);
-              }
-            }
-          }
-        }
-
-        // 4. 모바일 환경 특화: bfcache (뒤로가기/앞으로가기 캐시) 대응 및 탭 전환 대응
-        window.addEventListener('pageshow', function(event) {
-          // 모바일 사파리/크롬 등에서 bfcache로 복원되었거나 재방문 시 타임스탬프를 갱신하여 최신 이미지 재요청
-          if (event.persisted) {
-            pageLoadTimestamp = Date.now();
-            window.__PAGE_LOAD_TIMESTAMP__ = pageLoadTimestamp;
-            updateAllImages(pageLoadTimestamp);
-          }
-        });
-
-        // 5. 모바일 브라우저 백그라운드 복귀 시 타임스탬프 갱신 (15초 이상 경과 시 최신화)
-        document.addEventListener('visibilitychange', function() {
-          if (!document.hidden) {
-            var now = Date.now();
-            if (now - pageLoadTimestamp > 15000) {
-              pageLoadTimestamp = now;
-              window.__PAGE_LOAD_TIMESTAMP__ = pageLoadTimestamp;
-              updateAllImages(pageLoadTimestamp);
-            }
-          }
-        });
-
-        // 6. DOM 생성 완료 및 동적 노드 감지 (MutationObserver)
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function() {
-            updateAllImages();
-            observeDomMutations();
-          });
-        } else {
-          updateAllImages();
-          observeDomMutations();
-        }
-
-        function observeDomMutations() {
-          if (!window.MutationObserver) return;
-          var observer = new MutationObserver(function(mutations) {
-            for (var i = 0; i < mutations.length; i++) {
-              var mutation = mutations[i];
-              if (mutation.type === 'childList') {
-                for (var j = 0; j < mutation.addedNodes.length; j++) {
-                  var node = mutation.addedNodes[j];
-                  if (node.nodeType === 1) {
-                    if (node.tagName === 'IMG') {
-                      var s = node.getAttribute('src');
-                      if (s) {
-                        var fresh = attachTimestamp(s);
-                        if (fresh !== s) node.setAttribute('src', fresh);
-                      }
-                    } else if (node.querySelectorAll) {
-                      var subImgs = node.querySelectorAll('img');
-                      for (var k = 0; k < subImgs.length; k++) {
-                        var sub = subImgs[k];
-                        var subSrc = sub.getAttribute('src');
-                        if (subSrc) {
-                          var freshSub = attachTimestamp(subSrc);
-                          if (freshSub !== subSrc) sub.setAttribute('src', freshSub);
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          });
-
-          try {
-            observer.observe(document.body || document.documentElement, {
-              childList: true,
-              subtree: true
-            });
-          } catch (e) {
-            // ignore
-          }
-        }
-      })();
-    </script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
-    <script>
-      (function() {
-        var _originalWarn = console.warn;
-        console.warn = function() {
-          if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].indexOf('cdn.tailwindcss.com') !== -1) {
-            return;
-          }
-          return _originalWarn.apply(console, arguments);
-        };
-      })();
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Pretendard', '"Pretendard Variable"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', '"Apple SD Gothic Neo"', '"Noto Sans KR"', '"Malgun Gothic"', 'sans-serif'],
-              serif: ['Pretendard', '"Pretendard Variable"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', '"Apple SD Gothic Neo"', '"Noto Sans KR"', '"Malgun Gothic"', 'sans-serif'],
-              heading: ['Pretendard', '"Pretendard Variable"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', '"Apple SD Gothic Neo"', '"Noto Sans KR"', '"Malgun Gothic"', 'sans-serif'],
-            },
-            colors: {
-              gold: {
-                400: '#D4AF37',
-                500: '#C5A028',
-                600: '#B4901C',
-              },
-              deepgreen: '#0A7E54',
-              iosbg: '#F2F2F7',
-              iosmint: '#ECFDF5',
-            },
-            screens: {
-              'xs': '375px',
-            }
-          }
-        }
-      }
-    </script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <style>
-      :root {
-        --sat: env(safe-area-inset-top, 0px);
-        --sab: env(safe-area-inset-bottom, 0px);
-        --sal: env(safe-area-inset-left, 0px);
-        --sar: env(safe-area-inset-right, 0px);
-        --site-header-height: calc(45px + env(safe-area-inset-top, 0px));
-      }
-      @media (min-width: 640px) {
-        :root {
-          --site-header-height: calc(53px + env(safe-area-inset-top, 0px));
-        }
-      }
-      *, *::before, *::after {
-        box-sizing: border-box;
-        font-family: 'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-      }
-      html {
-        overflow-x: clip;
-        overflow-y: auto;
-        width: 100%;
-        scroll-behavior: smooth;
-        font-family: 'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-      }
-      body {
-        overflow-x: clip;
-        overflow-y: auto;
-        width: 100%;
-        min-height: 100%;
-        background-color: #F2F2F7;
-        color: #3A3A3C;
-        font-family: 'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-        letter-spacing: -0.025em;
-        word-break: break-keep;
-        -webkit-tap-highlight-color: transparent;
-        -webkit-text-size-adjust: 100%;
-      }
-      h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, textarea, label {
-        font-family: 'Pretendard', 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
-      }
-      #root {
-        min-height: 100%;
-        width: 100%;
-      }
-      /* Prevent iOS font auto-zoom in form controls */
-      input, select, textarea {
-        font-size: 16px !important;
-      }
-      @media (min-width: 768px) {
-        input, select, textarea {
-          font-size: 14px !important;
-        }
-      }
-      /* Safe area utilities */
-      .pb-safe {
-        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
-      }
-      .pt-safe {
-        padding-top: env(safe-area-inset-top, 0px);
-      }
-      .bottom-safe {
-        bottom: env(safe-area-inset-bottom, 0px);
-      }
-      /* Mobile horizontal table scrolling & short label protection */
-      .overflow-x-auto {
-        -webkit-overflow-scrolling: touch;
-        max-width: 100%;
-      }
-      table th {
-        white-space: nowrap;
-      }
-      @media (max-width: 767px) {
-        button, [role="tab"] {
-          word-break: keep-all;
-        }
-      }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #f1f1f1; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #888; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
-      }
-
-      /* Print Styles for PDF Generation */
-      @media print {
-        @page {
-          margin: 10mm;
-          size: A4;
-        }
-        body * {
-          visibility: hidden;
-        }
-        .printable-area, .printable-area * {
-          visibility: visible;
-        }
-        .printable-area {
-          width: 100%;
-          height: auto;
-          margin: 0;
-          padding: 10mm !important; /* Reduced padding for print */
-          background: white !important;
-          box-shadow: none !important;
-          overflow: visible !important;
-          border-radius: 0 !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        .no-print {
-          display: none !important;
-        }
-        ::-webkit-scrollbar {
-          display: none;
-        }
-        .break-inside-avoid {
-          break-inside: avoid;
-        }
-      }
-
-      @keyframes fade-in-up {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes fade-in {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes scale-in {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-      }
-      @keyframes ios-sheet-up {
-        from { opacity: 0; transform: translateY(100%); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .animate-fade-in-up {
-        animation: fade-in-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-      }
-      .animate-fade-in {
-        animation: fade-in 0.25s ease-out forwards;
-      }
-      .animate-scale-in {
-        animation: scale-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-      }
-      .animate-ios-sheet-up {
-        animation: ios-sheet-up 0.34s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-      }
-      @media (min-width: 768px) {
-        .animate-ios-sheet-up {
-          animation: scale-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        }
-      }
-    </style>
   </head>
   <body>
     <div id="root"></div>

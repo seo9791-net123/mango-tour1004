@@ -4,6 +4,7 @@ import { Product, PageSection, RecommendedDiscountPopup } from '../types';
 import SectionDetailModal from './SectionDetailModal';
 import BackButton from './BackButton';
 import { getFreshImageUrl } from '../utils/imageUtils';
+import { appConfirm } from '../services/dialogService';
 import RecommendedDiscountModal, {
   isDiscountPopupHiddenToday,
   hideDiscountPopupToday
@@ -119,9 +120,10 @@ const CategoryPage: React.FC<Props> = ({
     return products.filter((p) => normalizeDuration(p.duration) === selectedDuration);
   }, [products, isRecommendedCategory, selectedDuration]);
 
-  const handlePreviewClick = (product: Product) => {
+  const handlePreviewClick = async (product: Product) => {
     if (!isLoggedIn) {
-      if (confirm('상세 정보 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?')) {
+      const ok = await appConfirm('상세 정보 보기 및 상담 문의는 로그인 후 이용 가능합니다. 로그인하시겠습니까?');
+      if (ok) {
         onReqLogin?.();
       }
       return;
