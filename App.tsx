@@ -1298,7 +1298,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-full min-w-0">
+      <main className="flex-1 flex flex-col w-full max-w-full min-w-0">
         {currentPage === 'admin' && isAdmin ? (
           <AdminDashboard 
             users={users}
@@ -1320,13 +1320,15 @@ const App: React.FC = () => {
         ) : (
           <>
             {currentPage === 'home' && (
-              <>
+              <div className="flex-1 flex flex-col">
                 <HeroSlider 
                   images={heroImages} 
                   onActionClick={() => handleMenuClick('여행 만들기')} 
                 />
-                <IconMenu items={menuItems} onItemClick={handleMenuClick} />
-              </>
+                <div className="my-auto py-2.5 sm:py-3 w-full">
+                  <IconMenu items={menuItems} onItemClick={handleMenuClick} />
+                </div>
+              </div>
             )}
 
             {currentPage === 'category' && selectedCategory ? (
@@ -1384,7 +1386,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <div className="mt-auto w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 no-print">
+      <div className={`mt-auto w-full max-w-7xl mx-auto px-3 sm:px-4 no-print ${currentPage === 'home' ? 'pt-0' : 'pt-2.5 sm:pt-3'}`}>
         <footer className="bg-gray-800 text-gray-400 py-6 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
           <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
             <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
