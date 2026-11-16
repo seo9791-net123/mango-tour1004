@@ -5950,13 +5950,13 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                 const isMenuBroken = Boolean(brokenImages[mKey]);
                 return (
                 <div key={idx} className={`border p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-gray-50 flex flex-col items-center hover:bg-white hover:shadow-xl transition-all duration-300 ${isMenuBroken ? 'border-red-400 ring-2 ring-red-200' : 'border-gray-200'}`}>
-                  <div className="w-20 h-20 mb-2 bg-white rounded-2xl shadow-inner flex items-center justify-center p-3 relative overflow-hidden border border-gray-100">
+                  <div className="w-20 h-20 mb-2 bg-white rounded-2xl flex items-center justify-center p-3 relative overflow-hidden">
                     <img
                       src={getFreshImageUrl(item.icon)}
                       alt={item.label}
                       onLoad={() => clearImageBroken(mKey)}
                       onError={() => markImageBroken(mKey)}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain mix-blend-multiply brightness-[1.04] contrast-[1.05]"
                     />
                     {isMenuBroken && (
                       <div className="absolute inset-x-0 bottom-0 bg-red-600 text-white text-[9px] text-center py-0.5 font-bold">
