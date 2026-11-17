@@ -1896,7 +1896,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <span>숙박</span>
                         </h3>
                         <p className="text-xs text-[#8E8E93] mt-0.5">
-                          버튼을 클릭하면 선택된 여행 기간({diyNights}박 기준 · 1인 1실) 맞춤 숙박 팝업이 열립니다.
+                          우측 [숙박 변경] 버튼을 클릭하면 선택된 여행 기간({diyNights}박 기준 · 1인 1실) 맞춤 숙박 팝업이 열립니다.
                         </p>
                       </div>
                       <span
@@ -1910,13 +1910,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </span>
                     </div>
 
+                    {/* Box 1: 옵션 정보 및 [숙박 변경] 통합 카드 */}
                     <button
                       type="button"
                       onClick={() => setShowHotelModal(true)}
                       className={`w-full p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer ${
                         diyIncludeHotel
                           ? 'bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20'
-                          : 'bg-[#F2F2F7]/75 hover:bg-[#ECFDF5]/60 opacity-80'
+                          : 'bg-[#F2F2F7]/75 hover:bg-[#ECFDF5]/60 opacity-85'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -1938,29 +1939,30 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
                             {diyIncludeHotel
                               ? `${diyNights}박 기준 · 1인 1실 · ${selectedHotelTier?.description || '엄선된 숙박 옵션'}`
-                              : '숙박 미포함 상태입니다 · 아래 체크박스로 포함하거나 숙박을 선택하세요.'}
+                              : '숙박 미포함 상태입니다 · 아래 체크박스로 포함하거나 숙박을 변경하세요.'}
                           </div>
                         </div>
                       </div>
                       <span className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-white text-[#0A7E54] shadow-2xs whitespace-nowrap shrink-0">
-                        숙박 선택 ▾
+                        숙박 변경
                       </span>
                     </button>
 
-                    {/* Include / Exclude Checkbox Row (Matches Step 6 Guide Style) */}
+                    {/* Box 2: 포함 여부 체크 및 총액 요약 카드 */}
                     <div
                       onClick={() => setDiyIncludeHotel(prev => !prev)}
-                      className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-2.5 ${
+                      className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 ${
                         diyIncludeHotel
                           ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
                           : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <input
                           type="checkbox"
                           checked={diyIncludeHotel}
-                          onChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => setDiyIncludeHotel(prev => !prev)}
                           aria-label="숙박 포함 여부"
                           className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                         />
@@ -1968,8 +1970,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
                             <span>🏨</span>
                             <span>숙박 포함</span>
-                            <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
-                              {hotelDisplayName} · 1박 ${hotelNightRate.toLocaleString()}
+                            <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs tabular-nums whitespace-nowrap">
+                              1박 ${hotelNightRate.toLocaleString()}
                             </span>
                           </div>
                           <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
@@ -1979,35 +1981,16 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           </div>
                         </div>
                       </div>
-                      <span className={`text-xs md:text-sm font-bold shrink-0 whitespace-nowrap ${diyIncludeHotel ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
-                        {diyIncludeHotel ? `포함 ($${hotelTotalUSD.toLocaleString()})` : '미포함'}
-                      </span>
+                      {diyIncludeHotel ? (
+                        <span className="px-3 py-1 bg-[#0A7E54] text-white rounded-xl text-xs md:text-sm font-bold tabular-nums whitespace-nowrap shrink-0 ml-auto">
+                          {diyNights}박 총 ${hotelTotalUSD.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-xs md:text-sm font-bold text-[#8E8E93] shrink-0 whitespace-nowrap ml-auto">
+                          미포함
+                        </span>
+                      )}
                     </div>
-
-                    {/* Selected Hotel Summary Strip (shown when included) */}
-                    {diyIncludeHotel && (
-                      <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                          <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 숙박</span>
-                          <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-2xs whitespace-nowrap">
-                            {hotelDisplayName}
-                          </span>
-                          <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#0A7E54] tabular-nums shadow-2xs whitespace-nowrap">
-                            1박 ${hotelNightRate.toLocaleString()}
-                          </span>
-                          <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
-                            {diyNights}박 총 ${hotelTotalUSD.toLocaleString()}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowHotelModal(true)}
-                          className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
-                        >
-                          숙박 변경
-                        </button>
-                      </div>
-                    )}
                   </div>
                 );
               })()}
@@ -2026,7 +2009,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <span>차량</span>
                         </h3>
                         <p className="text-xs text-[#8E8E93] mt-0.5">
-                          버튼을 클릭하면 전 일정({diyDays}일) 단독 전용 차량 선택 팝업이 열립니다.
+                          우측 [차량 변경] 버튼을 클릭하면 전 일정({diyDays}일) 단독 전용 차량 선택 팝업이 열립니다.
                         </p>
                       </div>
                       <span
@@ -2040,13 +2023,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </span>
                     </div>
 
+                    {/* Box 1: 옵션 정보 및 [차량 변경] 통합 카드 */}
                     <button
                       type="button"
                       onClick={() => setShowVehicleModal(true)}
                       className={`w-full p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer ${
                         diyIncludeVehicle
                           ? 'bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20'
-                          : 'bg-[#F2F2F7]/75 hover:bg-[#ECFDF5]/60 opacity-80'
+                          : 'bg-[#F2F2F7]/75 hover:bg-[#ECFDF5]/60 opacity-85'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -2068,29 +2052,30 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
                             {diyIncludeVehicle
                               ? `전 일정(${diyDays}일) 단독 전용 · 차량 1대 (인원 무관) · ${selectedVehicleItem?.description || ''}`
-                              : '차량 미포함 상태입니다 · 아래 체크박스로 포함하거나 차량을 선택하세요.'}
+                              : '차량 미포함 상태입니다 · 아래 체크박스로 포함하거나 차량을 변경하세요.'}
                           </div>
                         </div>
                       </div>
                       <span className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-white text-[#0A7E54] shadow-2xs whitespace-nowrap shrink-0">
-                        차량 선택 ▾
+                        차량 변경
                       </span>
                     </button>
 
-                    {/* Include / Exclude Checkbox Row (Matches Step 6 Guide Style) */}
+                    {/* Box 2: 포함 여부 체크 및 총액 요약 카드 */}
                     <div
                       onClick={() => setDiyIncludeVehicle(prev => !prev)}
-                      className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-2.5 ${
+                      className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 ${
                         diyIncludeVehicle
                           ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
                           : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <input
                           type="checkbox"
                           checked={diyIncludeVehicle}
-                          onChange={() => {}}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => setDiyIncludeVehicle(prev => !prev)}
                           aria-label="차량 포함 여부"
                           className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                         />
@@ -2098,8 +2083,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
                             <span>🚐</span>
                             <span>차량 포함</span>
-                            <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
-                              {vehDisplayName} · 1일 ${vehDayRate.toLocaleString()} (팀 기준)
+                            <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs tabular-nums whitespace-nowrap">
+                              1일 ${vehDayRate.toLocaleString()} (팀 기준)
                             </span>
                           </div>
                           <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
@@ -2109,35 +2094,16 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           </div>
                         </div>
                       </div>
-                      <span className={`text-xs md:text-sm font-bold shrink-0 whitespace-nowrap ${diyIncludeVehicle ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
-                        {diyIncludeVehicle ? `포함 ($${vehTotalUSD.toLocaleString()})` : '미포함'}
-                      </span>
+                      {diyIncludeVehicle ? (
+                        <span className="px-3 py-1 bg-[#0A7E54] text-white rounded-xl text-xs md:text-sm font-bold tabular-nums whitespace-nowrap shrink-0 ml-auto">
+                          {diyDays}일 총 ${vehTotalUSD.toLocaleString()} (인원 무관)
+                        </span>
+                      ) : (
+                        <span className="text-xs md:text-sm font-bold text-[#8E8E93] shrink-0 whitespace-nowrap ml-auto">
+                          미포함
+                        </span>
+                      )}
                     </div>
-
-                    {/* Selected Vehicle Summary Strip (shown when included) */}
-                    {diyIncludeVehicle && (
-                      <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                          <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 차량</span>
-                          <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-2xs whitespace-nowrap">
-                            {vehDisplayName}
-                          </span>
-                          <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#0A7E54] tabular-nums shadow-2xs whitespace-nowrap">
-                            1일 ${vehDayRate.toLocaleString()}
-                          </span>
-                          <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
-                            {diyDays}일 총 ${vehTotalUSD.toLocaleString()} (인원 무관)
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowVehicleModal(true)}
-                          className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
-                        >
-                          차량 변경
-                        </button>
-                      </div>
-                    )}
                   </div>
                 );
               })()}
