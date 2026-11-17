@@ -1359,21 +1359,15 @@ const App: React.FC = () => {
         ) : (
           <>
             {currentPage === 'home' && (
-              <div className="flex-1 flex flex-col justify-evenly py-1.5">
-                <div className="my-1.5">
-                  <HeroSlider 
-                    images={heroImages} 
-                    onActionClick={() => handleMenuClick('여행 만들기')} 
-                  />
-                </div>
+              <div className="flex-1 flex flex-col justify-center gap-3.5 sm:gap-4 py-3.5 sm:py-4">
+                <HeroSlider 
+                  images={heroImages} 
+                  onActionClick={() => handleMenuClick('여행 만들기')} 
+                />
                 {notices.some(n => n.isActive !== false) && (
-                  <div className="my-1.5">
-                    <NoticeBar notices={notices} />
-                  </div>
+                  <NoticeBar notices={notices} />
                 )}
-                <div className="my-1.5">
-                  <IconMenu items={menuItems} onItemClick={handleMenuClick} />
-                </div>
+                <IconMenu items={menuItems} onItemClick={handleMenuClick} />
               </div>
             )}
 

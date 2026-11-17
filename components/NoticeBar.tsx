@@ -47,7 +47,7 @@ const NoticeBar: React.FC<Props> = ({ notices }) => {
 
   return (
     <>
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 shrink-0">
         <button
           type="button"
           onClick={() => setSelectedNotice(currentNotice)}
@@ -56,37 +56,37 @@ const NoticeBar: React.FC<Props> = ({ notices }) => {
           onFocus={() => setIsPaused(true)}
           onBlur={() => setIsPaused(false)}
           aria-label={`공지사항 보기: ${currentNotice.title}`}
-          className="w-full rounded-xl bg-gray-200/75 hover:bg-gray-200 border border-gray-300/70 px-3.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2.5 text-left transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-deepgreen/50"
+          className="w-full rounded-2xl bg-[#E5E7EB]/85 hover:bg-[#DFE3E8] border border-gray-300/80 shadow-2xs px-4 sm:px-5 py-3 sm:py-3.5 md:py-4 flex items-center justify-between gap-3 text-left transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-deepgreen/50"
         >
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-            <span className="text-xs sm:text-[13px] font-extrabold text-gray-900 shrink-0 whitespace-nowrap">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+            <span className="text-[13px] sm:text-sm md:text-[15px] font-black text-gray-900 shrink-0 whitespace-nowrap tracking-tight">
               공지
             </span>
-            <span className="w-px h-3.5 bg-gray-400/60 shrink-0" aria-hidden="true" />
-            <div key={currentNotice.id} className="flex items-center gap-1.5 min-w-0 flex-1 animate-fade-in">
+            <span className="w-px h-4 bg-gray-400/70 shrink-0" aria-hidden="true" />
+            <div key={currentNotice.id} className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1 animate-fade-in">
               {currentNotice.isImportant && (
-                <span className="text-xs sm:text-[13px] font-extrabold text-[#065f46] shrink-0 whitespace-nowrap">
+                <span className="text-[13px] sm:text-sm md:text-[15px] font-extrabold text-[#065f46] shrink-0 whitespace-nowrap">
                   [중요]
                 </span>
               )}
-              <span className="text-xs sm:text-[13px] font-medium text-gray-800 truncate">
+              <span className="text-[13px] sm:text-sm md:text-[15px] font-semibold text-gray-800 truncate">
                 {currentNotice.title}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {activeNotices.length > 1 && (
-              <span className="text-[11px] font-semibold text-gray-500 tabular-nums hidden xs:inline">
+              <span className="text-xs font-semibold text-gray-500 tabular-nums hidden xs:inline">
                 {safeIndex + 1}/{activeNotices.length}
               </span>
             )}
             <svg
-              className="w-4 h-4 text-gray-500 shrink-0"
+              className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 shrink-0"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.2"
+              strokeWidth="2.3"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
