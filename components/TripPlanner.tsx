@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import { CustomTripPackage, PackageOptionItem, MasterOptionPool, Product } from '../types';
 import { INITIAL_MASTER_OPTION_POOL } from '../constants';
 import BackButton from './BackButton';
 import { supabaseService } from '../services/supabaseService';
 import { A4QuotationDocument, CostItem, ItineraryDay, ReservationNoticeData } from './A4QuotationDocument';
 import { getFreshImageUrl, isImageIconUrl } from '../utils/imageUtils';
+import {
+  CapturedQuotationResult,
+  captureQuotationDocument,
+  buildQuotationPdfBlob,
+  triggerBlobDownload,
+} from '../utils/quotationExportUtils';
+import { appAlert } from '../services/dialogService';
 
 interface Props {
   packages?: CustomTripPackage[];
@@ -73,6 +78,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   const [submissionNotice, setSubmissionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSubmittingEmail, setIsSubmittingEmail] = useState<boolean>(false);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
+  const [downloadingType, setDownloadingType] = useState<'png' | 'pdf' | null>(null);
   const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState<string | null>(null);
   const [viewTab, setViewTab] = useState<'options' | 'itinerary'>('options');
@@ -1263,110 +1269,108 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     };
   };
 
-  // Image Capture via html2canvas (Captures the pristine A4 PDF Quotation Sheet)
-  const captureQuotationImage = async (): Promise<string | null> => {
+  const buildQuotationFileName = (ext: 'png' | 'pdf') => {
+    const sanitizedTitle = (activePackage?.title || '맞춤골프견적').replace(/[^a-zA-Z0-9가-힣]/g, '_');
+    const sanitizedCustomer = (customerName.trim() || '고객').replace(/[^a-zA-Z0-9가-힣]/g, '_');
+    const dateStr = new Date().toISOString().split('T')[0];
+    return `망고투어_정식A4견적서_${sanitizedTitle}_${sanitizedCustomer}_${dateStr}.${ext}`;
+  };
+
+  // Image Capture via isolated iframe (Captures the pristine #a4-exact-print-sheet safely)
+  const captureQuotationSheetResult = async (options?: {
+    copyToClipboard?: boolean;
+    throwOnError?: boolean;
+  }): Promise<CapturedQuotationResult | null> => {
     const targetElement = a4QuotationPrintRef.current || quotationCardRef.current;
-    if (!targetElement) return null;
-    setIsCapturing(true);
-    try {
-      await new Promise(r => setTimeout(r, 120));
-      const canvas = await html2canvas(targetElement, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        allowTaint: true,
-      });
-      const dataUrl = canvas.toDataURL('image/png');
-      setCapturedImageUrl(dataUrl);
-
-      // Attempt to write image to system clipboard
-      try {
-        canvas.toBlob(async (blob) => {
-          if (blob && navigator.clipboard && (window as any).ClipboardItem) {
-            try {
-              const item = new (window as any).ClipboardItem({ 'image/png': blob });
-              await navigator.clipboard.write([item]);
-            } catch (e) {
-              console.log('ClipboardItem write skipped:', e);
-            }
-          }
-        }, 'image/png');
-      } catch (clipErr) {
-        console.log('Blob clipboard error:', clipErr);
+    if (!targetElement) {
+      const msg = '견적서 양식을 찾을 수 없습니다. 화면을 새로고침한 후 다시 시도해주세요.';
+      if (options?.throwOnError) {
+        throw new Error(msg);
       }
-
-      setIsCapturing(false);
-      return dataUrl;
-    } catch (err) {
-      console.error('Failed to capture quote image:', err);
-      setIsCapturing(false);
+      showToast(`⚠️ ${msg}`);
       return null;
     }
+
+    setIsCapturing(true);
+    try {
+      const result = await captureQuotationDocument(targetElement);
+      setCapturedImageUrl(result.dataUrl);
+
+      if (options?.copyToClipboard) {
+        try {
+          if (result.blob && navigator.clipboard && (window as any).ClipboardItem) {
+            const item = new (window as any).ClipboardItem({ 'image/png': result.blob });
+            await navigator.clipboard.write([item]);
+          }
+        } catch (clipErr) {
+          console.log('ClipboardItem write skipped:', clipErr);
+        }
+      }
+
+      return result;
+    } catch (err) {
+      console.error('Failed to capture quote image:', err);
+      if (options?.throwOnError) {
+        throw err;
+      }
+      return null;
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const captureQuotationImage = async (): Promise<string | null> => {
+    const res = await captureQuotationSheetResult({ copyToClipboard: true, throwOnError: false });
+    return res?.dataUrl || null;
   };
 
   // Direct PNG Download of A4 Quotation Sheet
-  const handleDownloadImage = (imgUrl?: string | null) => {
-    const targetUrl = imgUrl || capturedImageUrl;
-    if (!targetUrl) return;
-    const a = document.createElement('a');
-    a.href = targetUrl;
-    const sanitizedTitle = (activePackage?.title || '맞춤골프견적').replace(/[^a-zA-Z0-9가-힣]/g, '_');
-    a.download = `망고투어_정식A4견적서_${sanitizedTitle}_${customerName || '고객'}_${new Date().toISOString().split('T')[0]}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showToast('📥 A4 정식 견적서 이미지가 기기에 다운로드되었습니다.');
+  const handleDownloadImage = async () => {
+    if (downloadingType || isCapturing) return;
+    setDownloadingType('png');
+    try {
+      const captured = await captureQuotationSheetResult({ throwOnError: true });
+      if (!captured) {
+        throw new Error('견적서 이미지를 생성하지 못했습니다.');
+      }
+      triggerBlobDownload(captured.blob, buildQuotationFileName('png'));
+      showToast('📥 A4 정식 견적서 이미지(PNG)가 다운로드되었습니다.');
+    } catch (err) {
+      console.error('PNG download error:', err);
+      const errMsg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
+      showToast('⚠️ 이미지 저장에 실패했습니다.');
+      await appAlert(`견적서 이미지(PNG) 저장 중 오류가 발생했습니다.\n\n사유: ${errMsg}`, {
+        title: '이미지 저장 실패',
+        tone: 'error',
+      });
+    } finally {
+      setDownloadingType(null);
+    }
   };
 
   // Direct PDF Download of A4 Quotation Sheet using jsPDF
-  const handleDownloadPDF = async (imgUrl?: string | null) => {
-    let dataUrl = imgUrl || capturedImageUrl;
-    if (!dataUrl) {
-      dataUrl = await captureQuotationImage();
-    }
-    if (!dataUrl) {
-      showToast('⚠️ PDF 생성에 실패했습니다.');
-      return;
-    }
-
+  const handleDownloadPDF = async () => {
+    if (downloadingType || isCapturing) return;
+    setDownloadingType('pdf');
     try {
       showToast('📄 A4 규격 PDF 문서를 생성 중입니다...');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-
-      const img = new Image();
-      img.src = dataUrl;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-
-      const imgHeight = (img.height * imgWidth) / img.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(dataUrl, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
+      const captured = await captureQuotationSheetResult({ throwOnError: true });
+      if (!captured) {
+        throw new Error('견적서 화면 캡처에 실패했습니다.');
       }
-
-      const sanitizedTitle = (activePackage?.title || '맞춤골프견적').replace(/[^a-zA-Z0-9가-힣]/g, '_');
-      const fileName = `망고투어_정식A4견적서_${sanitizedTitle}_${customerName || '고객'}_${new Date().toISOString().split('T')[0]}.pdf`;
-      pdf.save(fileName);
+      const pdfBlob = await buildQuotationPdfBlob(captured);
+      triggerBlobDownload(pdfBlob, buildQuotationFileName('pdf'));
       showToast('📥 A4 PDF 견적서 다운로드가 완료되었습니다.');
     } catch (err) {
       console.error('PDF export error:', err);
-      showToast('⚠️ PDF 생성에 실패했습니다. 이미지 저장을 이용해주세요.');
+      const errMsg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
+      showToast('⚠️ PDF 생성에 실패했습니다.');
+      await appAlert(`A4 PDF 견적서 생성 중 오류가 발생했습니다.\n\n사유: ${errMsg}`, {
+        title: 'PDF 다운로드 실패',
+        tone: 'error',
+      });
+    } finally {
+      setDownloadingType(null);
     }
   };
 
@@ -1382,22 +1386,34 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     } catch (e) {
       console.warn('Text clipboard write error:', e);
     }
-    
-    // 2. 백그라운드에서 A4 PDF 양식 고해상도 이미지 캡처 및 자동 다운로드 진행
-    captureQuotationImage().then((imgUrl) => {
-      if (imgUrl) {
-        handleDownloadImage(imgUrl);
+
+    // 2. 백그라운드에서 A4 PDF 양식 고해상도 이미지 캡처 및 자동 다운로드 시도
+    try {
+      const captured = await captureQuotationSheetResult({ copyToClipboard: true, throwOnError: true });
+      if (captured) {
+        triggerBlobDownload(captured.blob, buildQuotationFileName('png'));
+        showToast('📥 A4 정식 견적서 이미지(PNG)가 다운로드되었습니다.');
       }
-    });
+    } catch (err) {
+      console.error('Kakao background image capture failed:', err);
+      showToast('⚠️ 이미지 자동 저장에 실패했습니다. 아래 [이미지 다시 다운로드]를 눌러주세요.');
+    }
   };
 
-  // Open Direct Image Preview & Download Modal (A4 PDF Form - Same structure as 1:1 Online Inquiry)
+  // Open Direct Image Preview & Download Modal (A4 PDF Form)
   const handleSaveQuoteImage = async () => {
     setShowImagePreviewModal(true);
-    showToast('📸 A4 정식 견적서(PDF 양식)를 캡처 중입니다...');
-    const imgUrl = await captureQuotationImage();
-    if (imgUrl) {
-      handleDownloadImage(imgUrl);
+    showToast('📸 A4 정식 견적서(PDF 양식)를 생성 중입니다...');
+    try {
+      await captureQuotationSheetResult({ throwOnError: true });
+      showToast('📸 정식 A4 견적서가 준비되었습니다. 아래 버튼으로 저장하세요.');
+    } catch (err) {
+      console.error('Preview capture error:', err);
+      const errMsg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
+      await appAlert(`견적서 미리보기 생성에 실패했습니다.\n\n사유: ${errMsg}`, {
+        title: '견적서 생성 오류',
+        tone: 'error',
+      });
     }
   };
 
@@ -1406,9 +1422,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     setShowInquiryModal(true);
     setInquirySuccess(false);
     setInquiryError(null);
-    if (!capturedImageUrl) {
-      await captureQuotationImage();
-    }
+    await captureQuotationImage();
   };
 
   // Submit Online Inquiry & Send via Web3Forms API (Text/Table format - no file attachments)
@@ -3186,17 +3200,19 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         <div className="flex items-center gap-2.5">
                           <button
                             type="button"
-                            onClick={() => handleDownloadPDF(capturedImageUrl)}
-                            className="text-[11px] text-[#0A7E54] font-semibold hover:underline cursor-pointer"
+                            onClick={() => handleDownloadPDF()}
+                            disabled={downloadingType !== null || isCapturing}
+                            className="text-[11px] text-[#0A7E54] font-semibold hover:underline cursor-pointer disabled:opacity-50"
                           >
-                            PDF 다운로드
+                            {downloadingType === 'pdf' ? '저장 중...' : 'PDF 다운로드'}
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDownloadImage(capturedImageUrl)}
-                            className="text-[11px] text-[#3A3A3C] font-semibold hover:underline cursor-pointer"
+                            onClick={() => handleDownloadImage()}
+                            disabled={downloadingType !== null || isCapturing}
+                            className="text-[11px] text-[#3A3A3C] font-semibold hover:underline cursor-pointer disabled:opacity-50"
                           >
-                            이미지 저장
+                            {downloadingType === 'png' ? '저장 중...' : '이미지 저장'}
                           </button>
                         </div>
                       </div>
@@ -3335,19 +3351,21 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 <div className="pt-2 flex flex-col gap-2 w-full max-w-full">
                   <button
                     type="button"
-                    onClick={() => handleDownloadPDF(capturedImageUrl)}
-                    className="w-full py-3.5 md:py-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white font-extrabold rounded-2xl transition text-xs md:text-sm flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                    onClick={() => handleDownloadPDF()}
+                    disabled={downloadingType !== null || isCapturing}
+                    className="w-full py-3.5 md:py-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white font-extrabold rounded-2xl transition text-xs md:text-sm flex items-center justify-center gap-1.5 shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <span>📄</span>
-                    <span>정식 A4 견적서 (PDF) 파일 다운로드</span>
+                    <span>{downloadingType === 'pdf' ? '⏳' : '📄'}</span>
+                    <span>{downloadingType === 'pdf' ? '저장 중...' : '정식 A4 견적서 (PDF) 파일 다운로드'}</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDownloadImage(capturedImageUrl)}
-                    className="w-full py-3 md:py-3.5 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs md:text-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                    onClick={() => handleDownloadImage()}
+                    disabled={downloadingType !== null || isCapturing}
+                    className="w-full py-3 md:py-3.5 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs md:text-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <span>📥</span>
-                    <span>견적서 고해상도 이미지(PNG) 다운로드</span>
+                    <span>{downloadingType === 'png' ? '⏳' : '📥'}</span>
+                    <span>{downloadingType === 'png' ? '저장 중...' : '견적서 고해상도 이미지(PNG) 다운로드'}</span>
                   </button>
                   <button
                     type="button"
@@ -3596,11 +3614,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                 <div className="grid grid-cols-2 gap-2 w-full max-w-full box-border">
                   <button
                     type="button"
-                    onClick={() => handleDownloadImage(capturedImageUrl)}
-                    className="py-3 md:py-3.5 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs md:text-sm flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                    onClick={() => handleDownloadImage()}
+                    disabled={downloadingType !== null || isCapturing}
+                    className="py-3 md:py-3.5 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs md:text-sm flex items-center justify-center gap-1 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    <span>📥</span>
-                    <span>이미지 다시 다운로드</span>
+                    <span>{downloadingType === 'png' || isCapturing ? '⏳' : '📥'}</span>
+                    <span>{downloadingType === 'png' || isCapturing ? '저장 중...' : '이미지 다시 다운로드'}</span>
                   </button>
                   <button
                     type="button"
@@ -3695,17 +3714,19 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => handleDownloadPDF(capturedImageUrl)}
-                        className="text-[10px] md:text-xs text-gold-700 font-bold hover:underline cursor-pointer"
+                        onClick={() => handleDownloadPDF()}
+                        disabled={downloadingType !== null || isCapturing}
+                        className="text-[10px] md:text-xs text-gold-700 font-bold hover:underline cursor-pointer disabled:opacity-50"
                       >
-                        📄 PDF 다운로드
+                        {downloadingType === 'pdf' ? '⏳ 저장 중...' : '📄 PDF 다운로드'}
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDownloadImage(capturedImageUrl)}
-                        className="text-[10px] md:text-xs text-deepgreen font-bold hover:underline cursor-pointer"
+                        onClick={() => handleDownloadImage()}
+                        disabled={downloadingType !== null || isCapturing}
+                        className="text-[10px] md:text-xs text-deepgreen font-bold hover:underline cursor-pointer disabled:opacity-50"
                       >
-                        📥 이미지 저장
+                        {downloadingType === 'png' ? '⏳ 저장 중...' : '📥 이미지 저장'}
                       </button>
                     </div>
                   </div>
@@ -3794,19 +3815,21 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleDownloadPDF(capturedImageUrl)}
-                  className="w-full py-3.5 md:py-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white font-extrabold rounded-2xl shadow-md text-xs sm:text-sm md:text-base active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition"
+                  onClick={() => handleDownloadPDF()}
+                  disabled={downloadingType !== null || isCapturing}
+                  className="w-full py-3.5 md:py-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white font-extrabold rounded-2xl shadow-md text-xs sm:text-sm md:text-base active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer transition"
                 >
-                  <span>📄</span>
-                  <span>A4 PDF 다운로드</span>
+                  <span>{downloadingType === 'pdf' ? '⏳' : '📄'}</span>
+                  <span>{downloadingType === 'pdf' ? '저장 중...' : 'A4 PDF 다운로드'}</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDownloadImage(capturedImageUrl)}
-                  className="w-full py-3.5 md:py-4 bg-deepgreen hover:bg-[#00382e] text-white font-black rounded-2xl shadow-md text-xs sm:text-sm md:text-base active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition"
+                  onClick={() => handleDownloadImage()}
+                  disabled={downloadingType !== null || isCapturing}
+                  className="w-full py-3.5 md:py-4 bg-deepgreen hover:bg-[#00382e] text-white font-black rounded-2xl shadow-md text-xs sm:text-sm md:text-base active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer transition"
                 >
-                  <span>📥</span>
-                  <span>이미지(PNG) 저장</span>
+                  <span>{downloadingType === 'png' ? '⏳' : '📥'}</span>
+                  <span>{downloadingType === 'png' ? '저장 중...' : '이미지(PNG) 저장'}</span>
                 </button>
               </div>
 

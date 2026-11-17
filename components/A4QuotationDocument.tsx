@@ -1,6 +1,10 @@
 import React, { useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import {
+  captureQuotationDocument,
+  buildQuotationPdfBlob,
+  triggerBlobDownload,
+} from '../utils/quotationExportUtils';
+import { appAlert } from '../services/dialogService';
 
 export interface CostItem {
   category: string;
@@ -74,7 +78,8 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
 }) => {
   const documentRef = useRef<HTMLDivElement>(null);
   const exactA4Ref = useRef<HTMLDivElement>(null);
-  const [isExporting, setIsExporting] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'png' | null>(null);
+  const isExporting = exportingFormat !== null;
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [internalUncheckedKeys, setInternalUncheckedKeys] = useState<Record<string, boolean>>({});
   const uncheckedKeys = controlledUncheckedKeys ?? internalUncheckedKeys;
@@ -147,84 +152,55 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     window.print();
   };
 
-  // Export PDF using jsPDF + html2canvas (Targets the exact A4 layout matching user PDF sample)
+  const buildExportFileName = (ext: 'pdf' | 'png') => {
+    const safeName = (customerName || '고객').replace(/[^a-zA-Z0-9가-힣]/g, '_');
+    return `망고투어_정식견적서_${safeName}_${new Date().toISOString().split('T')[0]}.${ext}`;
+  };
+
+  // Export PDF using isolated capture + jsPDF
   const handleExportPDF = async () => {
     const targetElement = exactA4Ref.current || documentRef.current;
-    if (!targetElement || isExporting) return;
-    setIsExporting(true);
+    if (!targetElement || exportingFormat !== null) return;
+    setExportingFormat('pdf');
     showToast('📄 정식 A4 규격 PDF를 생성 중입니다...');
     try {
-      await new Promise((r) => setTimeout(r, 150));
-      const canvas = await html2canvas(targetElement, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        windowWidth: 794,
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
-      }
-
-      const fileName = `망고투어_정식견적서_${customerName}_${new Date().toISOString().split('T')[0]}.pdf`;
-      pdf.save(fileName);
+      const captured = await captureQuotationDocument(targetElement);
+      const pdfBlob = await buildQuotationPdfBlob(captured);
+      triggerBlobDownload(pdfBlob, buildExportFileName('pdf'));
       showToast('📥 정식 A4 PDF 다운로드가 완료되었습니다.');
     } catch (err) {
       console.error('PDF export error:', err);
-      showToast('⚠️ PDF 생성 중 오류가 발생했습니다. A4 인쇄 기능을 이용해주세요.');
+      const errMsg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
+      showToast('⚠️ PDF 생성 중 오류가 발생했습니다.');
+      await appAlert(`A4 PDF 견적서 생성 중 오류가 발생했습니다.\n\n사유: ${errMsg}`, {
+        title: 'PDF 다운로드 실패',
+        tone: 'error',
+      });
     } finally {
-      setIsExporting(false);
+      setExportingFormat(null);
     }
   };
 
-  // Download high-resolution PNG (Targets exact A4 layout)
+  // Download high-resolution PNG using isolated capture + Blob URL
   const handleDownloadPNG = async () => {
     const targetElement = exactA4Ref.current || documentRef.current;
-    if (!targetElement || isExporting) return;
-    setIsExporting(true);
+    if (!targetElement || exportingFormat !== null) return;
+    setExportingFormat('png');
     showToast('📸 정식 견적서 고해상도 이미지를 생성 중입니다...');
     try {
-      await new Promise((r) => setTimeout(r, 150));
-      const canvas = await html2canvas(targetElement, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        windowWidth: 794,
-      });
-      const dataUrl = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `망고투어_정식견적서_${customerName}_${new Date().toISOString().split('T')[0]}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const captured = await captureQuotationDocument(targetElement);
+      triggerBlobDownload(captured.blob, buildExportFileName('png'));
       showToast('📥 정식 견적서 이미지가 저장되었습니다.');
     } catch (err) {
       console.error('PNG download error:', err);
+      const errMsg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
       showToast('⚠️ 이미지 생성에 실패했습니다.');
+      await appAlert(`견적서 이미지(PNG) 저장 중 오류가 발생했습니다.\n\n사유: ${errMsg}`, {
+        title: '이미지 저장 실패',
+        tone: 'error',
+      });
     } finally {
-      setIsExporting(false);
+      setExportingFormat(null);
     }
   };
 
@@ -520,18 +496,18 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
               disabled={isExporting}
               className="py-1.5 px-2 sm:px-4 sm:py-2 bg-gold-500 text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-gold-600 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
             >
-              <span>📄</span>
-              <span>PDF</span>
+              <span>{exportingFormat === 'pdf' ? '⏳' : '📄'}</span>
+              <span>{exportingFormat === 'pdf' ? '저장 중...' : 'PDF'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleDownloadPNG}
               disabled={isExporting}
-              className="py-1.5 px-2 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
+              className="py-1.5 px-2 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
             >
-              <span>📥</span>
-              <span>이미지</span>
+              <span>{exportingFormat === 'png' ? '⏳' : '📥'}</span>
+              <span>{exportingFormat === 'png' ? '저장 중...' : '이미지'}</span>
             </button>
 
             <button
