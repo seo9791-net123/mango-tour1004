@@ -1,5 +1,6 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Eye, Lock, Pencil, Trash2, Image as ImageIcon } from 'lucide-react';
 import { CommunityPost, User, Comment } from '../types';
 import { uploadFile } from '../services/uploadService';
 import BackButton from './BackButton';
@@ -66,6 +67,18 @@ const CommunityBoard: React.FC<Props> = ({
   const [showHeroEditor, setShowHeroEditor] = useState(false);
   const [heroUrlDraft, setHeroUrlDraft] = useState(heroImage || DEFAULT_COMMUNITY_HERO);
   const [isUploadingHero, setIsUploadingHero] = useState(false);
+
+  // Category Filter & Card Image Fallback State
+  const FILTER_TABS = ['전체', '호치민', '붕따우', '무이네', '달랏', '골프 여행', '자유 여행', '단체 여행'] as const;
+  const [selectedFilter, setSelectedFilter] = useState<string>('전체');
+  const [brokenCardImageIds, setBrokenCardImageIds] = useState<Record<string, boolean>>({});
+
+  const filteredPosts = useMemo(() => {
+    if (selectedFilter === '전체') return posts;
+    return posts.filter(
+      (post) => post.region === selectedFilter || post.theme === selectedFilter
+    );
+  }, [posts, selectedFilter]);
 
   // Handle internal step-by-step back
   const handleTopBack = () => {
@@ -495,29 +508,64 @@ const CommunityBoard: React.FC<Props> = ({
       <section className="pt-0 pb-0">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 space-y-3 sm:space-y-4">
           
-          {/* Action Bar */}
-          <div className="flex flex-row justify-between items-center gap-3 bg-white p-4 sm:p-5 rounded-[20px] shadow-sm">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 tracking-tight truncate">
-                생생한 여행 이야기
-              </h2>
-              <p className="text-xs md:text-sm text-[#8E8E93] font-normal mt-0.5 break-keep">
-                회원님들의 실제 여행 사진과 꿀팁을 확인하고 자유롭게 소통해보세요.
-              </p>
+          {/* Header & Category Filter Bar */}
+          <div className="bg-white rounded-[20px] shadow-sm p-4 sm:p-5 space-y-4">
+            <div className="flex flex-row justify-between items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 tracking-tight truncate">
+                  생생한 여행 이야기
+                </h2>
+                <p className="text-xs md:text-sm text-[#8E8E93] font-normal mt-0.5 break-keep">
+                  회원님들의 실제 여행 사진과 꿀팁을 확인하고 자유롭게 소통해보세요.
+                </p>
+              </div>
+              
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!user) {
+                    if (await appConfirm('로그인 후 작성 가능합니다. 로그인 하시겠습니까?')) onReqLogin();
+                  } else {
+                    setIsAdding(true);
+                  }
+                }}
+                className="bg-[#0A7E54] hover:bg-[#086945] text-white px-4 sm:px-5 py-2.5 rounded-2xl font-semibold transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm shrink-0 active:scale-95 whitespace-nowrap cursor-pointer"
+              >
+                <span>글쓰기</span>
+              </button>
             </div>
-            
-            <button
-              onClick={async () => {
-                if(!user) {
-                  if(await appConfirm('로그인 후 작성 가능합니다. 로그인 하시겠습니까?')) onReqLogin();
-                } else {
-                  setIsAdding(true);
-                }
-              }}
-              className="bg-[#0A7E54] hover:bg-[#086945] text-white px-4 sm:px-5 py-2.5 rounded-2xl font-semibold transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm shrink-0 active:scale-95 whitespace-nowrap cursor-pointer"
-            >
-              <span>글쓰기</span>
-            </button>
+
+            {/* Interactive Category Filter Tabs */}
+            <div className="pt-3 border-t border-black/[0.06] flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+              {FILTER_TABS.map((tab) => {
+                const isActive = selectedFilter === tab;
+                const count =
+                  tab === '전체'
+                    ? posts.length
+                    : posts.filter((p) => p.region === tab || p.theme === tab).length;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setSelectedFilter(tab)}
+                    className={`px-3.5 py-2 rounded-xl text-xs sm:text-[13px] font-semibold transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-[#0A7E54] text-white shadow-xs'
+                        : 'bg-[#F2F2F7] text-[#3A3A3C] hover:bg-emerald-50 hover:text-[#0A7E54]'
+                    }`}
+                  >
+                    <span>{tab}</span>
+                    <span
+                      className={`text-[10px] sm:text-[11px] tabular-nums ${
+                        isActive ? 'text-emerald-100' : 'text-gray-400'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
         {/* Write Post Form */}
@@ -624,174 +672,125 @@ const CommunityBoard: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Post List Row Layout */}
-        <div className="bg-white rounded-[20px] shadow-sm overflow-hidden">
-          {posts.length === 0 ? (
-            <div className="py-20 text-center text-[#8E8E93]">
-              <span className="text-4xl block mb-3">💬</span>
-              <p className="text-base font-bold text-gray-900">등록된 게시글이 없습니다.</p>
-              <p className="text-xs text-[#8E8E93] mt-1">첫 번째 여행 이야기나 후기를 남겨보세요!</p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop Table Header */}
-              <div className="hidden md:grid grid-cols-12 px-6 py-4 bg-[#F2F2F7]/60 text-xs md:text-sm font-semibold text-[#8E8E93] border-b border-black/[0.06] select-none">
-                <div className="col-span-1 text-center">번호</div>
-                <div className="col-span-7">제목</div>
-                <div className="col-span-2 text-center">작성자</div>
-                <div className="col-span-1 text-center">작성일</div>
-                <div className="col-span-1 text-center">조회</div>
-              </div>
+        {/* Photo-First 3-Column Card Gallery Grid */}
+        {filteredPosts.length === 0 ? (
+          <div className="bg-white rounded-[20px] shadow-sm py-20 px-4 text-center text-[#8E8E93]">
+            <span className="text-4xl block mb-3">🧳</span>
+            <p className="text-base font-bold text-gray-900">
+              {selectedFilter === '전체'
+                ? '등록된 게시글이 없습니다.'
+                : `'${selectedFilter}' 카테고리의 게시글이 아직 없습니다.`}
+            </p>
+            <p className="text-xs text-[#8E8E93] mt-1">
+              {selectedFilter === '전체'
+                ? '첫 번째 여행 이야기나 후기를 남겨보세요!'
+                : '다른 카테고리를 선택하거나 첫 후기를 작성해 보세요.'}
+            </p>
+            {selectedFilter !== '전체' && (
+              <button
+                type="button"
+                onClick={() => setSelectedFilter('전체')}
+                className="mt-4 px-4 py-2 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-xl transition cursor-pointer"
+              >
+                전체 게시글 보기
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 pb-4">
+            {filteredPosts.map((post) => {
+              const commentCount = post.comments ? post.comments.length : 0;
+              const categoryText = [post.region, post.theme].filter(Boolean).join('·');
+              const hasValidImage = Boolean(post.image) && !brokenCardImageIds[post.id];
 
-              {/* Rows List */}
-              <div className="divide-y divide-gray-100">
-                {posts.map((post, idx) => {
-                  const postNumber = posts.length - idx;
-                  const hasComments = post.comments && post.comments.length > 0;
+              return (
+                <article
+                  key={post.id}
+                  onClick={() => handlePostClick(post)}
+                  className="group bg-white rounded-2xl overflow-hidden border border-black/[0.06] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer"
+                >
+                  {/* Top Image Area (16:9 Widescreen) */}
+                  <div className="relative aspect-video w-full overflow-hidden bg-gray-100 shrink-0">
+                    {hasValidImage ? (
+                      <img
+                        src={getFreshImageUrl(post.image!)}
+                        alt={post.title}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        onError={() =>
+                          setBrokenCardImageIds((prev) => ({ ...prev, [post.id]: true }))
+                        }
+                        className="w-full h-full object-cover object-center transition-transform duration-300 ease-out group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-50 via-teal-50/70 to-amber-50/60 flex flex-col items-center justify-center text-[#0A7E54]/70 gap-1 px-4 text-center">
+                        <ImageIcon className="w-7 h-7 stroke-[1.5]" />
+                        <span className="text-[11px] font-semibold text-gray-500 line-clamp-1">
+                          {categoryText || 'MANGO TOUR STORY'}
+                        </span>
+                      </div>
+                    )}
 
-                  return (
-                    <div
-                      key={post.id}
-                      onClick={() => handlePostClick(post)}
-                      className="group transition-colors duration-150 cursor-pointer hover:bg-amber-50/40 active:bg-gray-50"
-                    >
-                      {/* Desktop Row */}
-                      <div className="hidden md:grid grid-cols-12 items-center px-6 py-4">
-                        <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 font-medium">
-                          {postNumber}
-                        </div>
-                        <div className="col-span-7 min-w-0 pr-4">
-                          <div className="flex items-center gap-1.5">
-                            {post.isPrivate && (
-                              <span className="text-xs md:text-sm text-amber-600 shrink-0" title="비공개 글">🔒</span>
-                            )}
-                            {post.image && (
-                              <span className="text-xs md:text-sm shrink-0" title="사진 포함">📷</span>
-                            )}
-                            {(post.region || post.theme) && (
-                              <span className="text-[11px] font-bold text-[#0A7E54] shrink-0 whitespace-nowrap">
-                                [{[post.region, post.theme].filter(Boolean).join(' · ')}]
-                              </span>
-                            )}
-                            <h3 className="font-bold text-sm md:text-base text-gray-900 group-hover:text-deepgreen transition-colors truncate">
-                              {post.title}
-                            </h3>
-                            {hasComments && (
-                              <span className="text-[11px] md:text-xs font-bold text-gold-600 shrink-0 ml-1.5">
-                                [{post.comments.length}]
-                              </span>
-                            )}
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openPost(post, true);
-                                }}
-                                className="ml-2 px-2 py-0.5 bg-emerald-50 hover:bg-[#0A7E54] text-[#0A7E54] hover:text-white border border-emerald-200 rounded-md text-[11px] font-bold transition shrink-0 cursor-pointer"
-                                title="게시글 및 사진 바로 수정"
-                              >
-                                ✏️ 사진·글 편집
-                              </button>
-                            )}
-                          </div>
-                          {post.content && (
-                            <p className="text-xs md:text-sm text-gray-500 truncate mt-1 leading-normal font-normal">
-                              {post.content}
-                            </p>
-                          )}
-                        </div>
-                        <div className="col-span-2 text-center text-xs md:text-sm font-medium text-gray-700 truncate px-2">
-                          <span className="bg-gray-100/80 group-hover:bg-white text-gray-700 px-2.5 md:px-3 py-0.5 md:py-1 rounded-full inline-block truncate max-w-full text-xs md:text-sm">
-                            {post.author}
-                          </span>
-                        </div>
-                        <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 whitespace-nowrap">
+                    {post.isPrivate && (
+                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-xs text-white text-[10px] font-semibold flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" />
+                        <span>비공개</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Middle & Bottom Content */}
+                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col">
+                    {categoryText && (
+                      <span className="inline-flex items-center self-start px-2 py-0.5 rounded-full bg-emerald-50 text-[#0A7E54] text-[10px] sm:text-[11px] font-bold tracking-tight mb-1.5">
+                        {categoryText}
+                      </span>
+                    )}
+
+                    <h3 className="font-bold text-sm sm:text-[15px] text-gray-900 group-hover:text-[#0A7E54] transition-colors line-clamp-2 leading-snug break-keep">
+                      {post.title}
+                    </h3>
+
+                    {post.content && (
+                      <p className="text-xs text-gray-400 line-clamp-1 leading-normal mt-1 mb-2.5 font-normal">
+                        {post.content}
+                      </p>
+                    )}
+
+                    {/* Card Footer Meta */}
+                    <div className="mt-auto pt-2.5 border-t border-black/[0.05] flex items-center justify-between gap-2 text-[11px] text-gray-500">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-4.5 h-4.5 rounded-full bg-emerald-50 text-[#0A7E54] font-bold text-[10px] flex items-center justify-center shrink-0">
+                          {post.author.slice(0, 1)}
+                        </span>
+                        <span className="font-semibold text-gray-700 truncate">
+                          {post.author}
+                        </span>
+                        <span className="text-gray-300 shrink-0" aria-hidden="true">·</span>
+                        <span className="text-gray-400 tabular-nums shrink-0 whitespace-nowrap">
                           {post.date}
-                        </div>
-                        <div className="col-span-1 text-center text-xs md:text-sm text-gray-500 font-medium whitespace-nowrap">
-                          <span>{post.views}</span>
-                          {typeof post.likes === 'number' && (
-                            <span className="ml-1.5 text-[11px] text-rose-500 font-semibold">♥{post.likes}</span>
-                          )}
-                        </div>
+                        </span>
                       </div>
 
-                      {/* Mobile Row */}
-                      <div className="md:hidden px-3 py-3 flex flex-col gap-1.5">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                            {post.isPrivate && (
-                              <span className="text-xs text-amber-600 shrink-0">🔒</span>
-                            )}
-                            {post.image && (
-                              <span className="text-xs shrink-0">📷</span>
-                            )}
-                            <h3 className="font-bold text-sm text-gray-900 group-hover:text-deepgreen transition-colors truncate">
-                              {post.title}
-                            </h3>
-                            {hasComments && (
-                              <span className="text-[11px] font-bold text-gold-600 shrink-0">
-                                [{post.comments.length}]
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-gray-400 shrink-0 whitespace-nowrap mt-0.5">
-                            {post.date}
-                          </span>
-                        </div>
-
-                        {post.content && (
-                          <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed font-normal">
-                            {post.content}
-                          </p>
-                        )}
-
-                        <div className="flex items-center gap-2 text-[11px] text-gray-400 pt-0.5 flex-wrap">
-                          {(post.region || post.theme) && (
-                            <>
-                              <span className="font-semibold text-[#0A7E54] whitespace-nowrap">
-                                {[post.region, post.theme].filter(Boolean).join(' · ')}
-                              </span>
-                              <span>·</span>
-                            </>
-                          )}
-                          <span className="font-medium text-gray-600 whitespace-nowrap">{post.author}</span>
-                          <span>·</span>
-                          <span className="whitespace-nowrap">조회 {post.views}</span>
-                          {typeof post.likes === 'number' && (
-                            <>
-                              <span>·</span>
-                              <span className="text-rose-500 font-medium whitespace-nowrap">좋아요 {post.likes}</span>
-                            </>
-                          )}
-                          {hasComments && (
-                            <>
-                              <span>·</span>
-                              <span className="whitespace-nowrap">댓글 {post.comments.length}</span>
-                            </>
-                          )}
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openPost(post, true);
-                              }}
-                              className="ml-auto px-2 py-0.5 bg-emerald-50 text-[#0A7E54] border border-emerald-200 rounded text-[10px] font-bold"
-                            >
-                              ✏️ 편집
-                            </button>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-2 shrink-0 tabular-nums whitespace-nowrap">
+                        <span className="inline-flex items-center gap-0.5 text-gray-400 font-medium" title="조회수">
+                          <Eye className="w-3 h-3" />
+                          <span>{post.views}</span>
+                        </span>
+                        <span className="text-amber-600 font-bold" title="댓글수">
+                          [{commentCount}]
+                        </span>
+                        <span className="text-rose-500 font-semibold" title="좋아요">
+                          ♥{post.likes ?? 0}
+                        </span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
 
@@ -845,14 +844,14 @@ const CommunityBoard: React.FC<Props> = ({
           onClick={() => setViewingPost(null)}
         >
           <div
-            className="bg-white w-full max-w-none md:max-w-3xl max-h-[90vh] md:h-[80vh] rounded-t-3xl md:rounded-[20px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-ios-sheet-up"
+            className="bg-white w-full max-w-none md:max-w-4xl max-h-[90vh] md:h-[82vh] rounded-t-3xl md:rounded-[22px] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-ios-sheet-up"
             onClick={(e) => e.stopPropagation()}
           >
             
             {/* Left/Top: Content & Image */}
-            <div className="flex-1 overflow-y-auto bg-white px-4 py-4 md:p-6 scrollbar-hide">
-              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-3 md:hidden"></div>
-                <div className="flex justify-between items-start mb-4">
+            <div className="flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-7 sm:py-6 md:px-9 md:py-8 scrollbar-hide">
+              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 md:hidden"></div>
+                <div className="flex justify-between items-start gap-3 mb-5 sm:mb-6">
                      {isEditing && editForm ? (
                        <div className="w-full space-y-2.5">
                          <div className="grid grid-cols-2 gap-2">
@@ -884,25 +883,26 @@ const CommunityBoard: React.FC<Props> = ({
                          />
                        </div>
                      ) : (
-                       <div>
+                       <div className="min-w-0 flex-1">
                           {(viewingPost.region || viewingPost.theme) && (
-                            <p className="text-[11px] sm:text-xs font-bold text-[#0A7E54] mb-1">
-                              {[viewingPost.region, viewingPost.theme].filter(Boolean).join(' · ')}
-                            </p>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-50 text-[#0A7E54] text-[11px] sm:text-xs font-bold mb-2.5">
+                              {[viewingPost.region, viewingPost.theme].filter(Boolean).join('·')}
+                            </span>
                           )}
-                          <h2 className="text-base sm:text-xl md:text-2xl font-extrabold text-gray-900 mb-2 leading-snug break-keep">{viewingPost.title}</h2>
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs md:text-sm text-gray-500">
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold text-gray-900 mb-3 leading-snug break-keep">{viewingPost.title}</h2>
+                          <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs md:text-sm text-gray-500">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                               <div className="flex items-center gap-1.5">
-                                  <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-[10px] md:text-xs">
+                                  <div className="w-6 h-6 rounded-full bg-deepgreen text-white flex items-center justify-center font-bold text-xs">
                                       {viewingPost.author.slice(0,1)}
                                   </div>
-                                  <span className="font-semibold text-gray-700">{viewingPost.author}</span>
+                                  <span className="font-semibold text-gray-800">{viewingPost.author}</span>
                               </div>
-                              <span>•</span>
-                              <span className="font-normal text-gray-400">{viewingPost.date}</span>
-                              <span>•</span>
-                              <span className="font-normal text-gray-400">조회 {viewingPost.views}</span>
-                              <span>•</span>
+                              <span className="text-gray-300">·</span>
+                              <span className="font-normal text-gray-400 tabular-nums">{viewingPost.date}</span>
+                              <span className="text-gray-300">·</span>
+                              <span className="font-normal text-gray-400 tabular-nums">조회 {viewingPost.views}</span>
+                              <span className="text-gray-300">·</span>
                               <button
                                 type="button"
                                 onClick={() => handleToggleLike(viewingPost)}
@@ -911,19 +911,49 @@ const CommunityBoard: React.FC<Props> = ({
                                 }`}
                               >
                                 <span>{likedPostIds[viewingPost.id] ? '❤️' : '🤍'}</span>
-                                <span>좋아요 {viewingPost.likes ?? 0}</span>
+                                <span className="tabular-nums">좋아요 {viewingPost.likes ?? 0}</span>
                               </button>
+                            </div>
+
+                            {/* Author / Admin Quick Edit & Delete inside Modal */}
+                            {(isAdmin || viewingPost.author === user.nickname || viewingPost.author === user.username) && (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={startEdit}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-[#0A7E54] text-[#0A7E54] hover:text-white border border-emerald-200 rounded-lg text-[11px] font-bold transition cursor-pointer whitespace-nowrap"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  <span>사진·글 편집</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(viewingPost.id)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-200 rounded-lg text-[11px] font-bold transition cursor-pointer whitespace-nowrap"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>삭제</span>
+                                </button>
+                              </div>
+                            )}
                           </div>
                        </div>
                      )}
                      
                      {!isEditing && (
-                        <button onClick={() => setViewingPost(null)} className="md:hidden text-gray-500 text-lg">✕</button>
+                        <button
+                          type="button"
+                          onClick={() => setViewingPost(null)}
+                          className="md:hidden w-8 h-8 rounded-full bg-[#F2F2F7] text-gray-500 hover:text-gray-800 flex items-center justify-center text-base shrink-0 cursor-pointer"
+                          aria-label="닫기"
+                        >
+                          ✕
+                        </button>
                      )}
                 </div>
 
                 {/* Image Section */}
-                <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-gray-200 bg-gray-50">
+                <div className="mb-6 rounded-2xl overflow-hidden shadow-xs border border-gray-200 bg-gray-50">
                     {isEditing && editForm ? (
                        <div className="space-y-3 p-3">
                           <div className="relative rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
@@ -1058,20 +1088,20 @@ const CommunityBoard: React.FC<Props> = ({
                 {/* Content Section */}
                 {isEditing && editForm ? (
                    <textarea
-                      className="w-full h-60 p-3 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 resize-none text-xs md:text-sm leading-relaxed"
+                      className="w-full h-60 p-3.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gold-500 resize-none text-xs md:text-sm leading-relaxed"
                       value={editForm.content}
                       onChange={(e) => setEditForm({...editForm, content: e.target.value})}
                       placeholder="내용을 입력하세요"
                    />
                 ) : (
-                   <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed text-xs sm:text-sm md:text-base font-normal break-keep">
+                   <div className="prose max-w-none text-gray-800 whitespace-pre-wrap leading-relaxed sm:leading-7 text-sm sm:text-[15px] md:text-base font-normal break-keep">
                        {viewingPost.content}
                    </div>
                 )}
 
                 {/* Admin Reply Section */}
                 {viewingPost.adminReply && !isEditing && (
-                  <div className="mt-8 bg-deepgreen/5 border-l-4 border-deepgreen p-4 rounded-r-xl">
+                  <div className="mt-8 bg-emerald-50/70 border border-emerald-200/80 p-5 rounded-2xl">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-deepgreen font-bold text-xs md:text-sm">👑 관리자 답변</span>
                     </div>
@@ -1081,18 +1111,19 @@ const CommunityBoard: React.FC<Props> = ({
 
                 {/* Admin Reply Input (Only for Admins) */}
                 {isAdmin && !isEditing && (
-                  <div className="mt-8 pt-6 border-t">
+                  <div className="mt-8 pt-6 border-t border-gray-100">
                     <label className="block text-xs md:text-sm font-bold text-gray-600 mb-2">답변 작성 (관리자 전용)</label>
                     <textarea 
-                      className="w-full p-3 border border-gray-200 rounded-xl text-xs md:text-sm outline-none focus:ring-2 focus:ring-deepgreen h-24 resize-none bg-gray-50"
+                      className="w-full p-3.5 border border-gray-200 rounded-xl text-xs md:text-sm outline-none focus:ring-2 focus:ring-deepgreen h-24 resize-none bg-gray-50"
                       placeholder="답변 내용을 입력하세요..."
                       value={adminReplyInput}
                       onChange={(e) => setAdminReplyInput(e.target.value)}
                     />
                     <div className="flex justify-end mt-2">
                       <button 
+                        type="button"
                         onClick={handleSaveAdminReply}
-                        className="bg-deepgreen text-white px-4 md:px-5 py-2 rounded-lg text-[10px] md:text-xs font-bold hover:bg-opacity-90 transition"
+                        className="bg-deepgreen text-white px-4 md:px-5 py-2 rounded-lg text-[11px] md:text-xs font-bold hover:bg-opacity-90 transition cursor-pointer"
                       >
                         답변 저장하기
                       </button>
@@ -1101,19 +1132,21 @@ const CommunityBoard: React.FC<Props> = ({
                 )}
                 
                 {/* Action Buttons */}
-                <div className="mt-6 pt-3 border-t flex justify-end gap-2">
+                <div className="mt-7 pt-4 border-t border-gray-100 flex justify-end gap-2">
                    {isEditing ? (
                       <>
                         <button 
+                          type="button"
                           onClick={cancelEdit}
-                          className="px-3.5 md:px-4 py-1.5 md:py-2 bg-gray-200 text-gray-700 rounded-lg font-bold text-[10px] md:text-xs hover:bg-gray-300 whitespace-nowrap"
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl font-bold text-xs hover:bg-gray-300 whitespace-nowrap cursor-pointer"
                         >
                           취소
                         </button>
                         <button 
+                          type="button"
                           onClick={saveEdit}
                           disabled={isUploading}
-                          className="px-4 md:px-5 py-1.5 md:py-2 bg-gold-500 text-white rounded-lg font-bold text-[10px] md:text-xs hover:bg-gold-600 shadow-md disabled:opacity-50 whitespace-nowrap"
+                          className="px-5 py-2 bg-gold-500 text-white rounded-xl font-bold text-xs hover:bg-gold-600 shadow-md disabled:opacity-50 whitespace-nowrap cursor-pointer"
                         >
                           {isUploading ? '저장 중...' : '저장 완료'}
                         </button>
@@ -1122,16 +1155,20 @@ const CommunityBoard: React.FC<Props> = ({
                       (isAdmin || viewingPost.author === user.nickname || viewingPost.author === user.username) && (
                           <>
                              <button 
+                                type="button"
                                 onClick={startEdit}
-                                className="text-blue-600 hover:text-blue-800 font-bold text-[10px] md:text-xs bg-blue-50 px-3 md:px-3.5 py-1.5 md:py-2 rounded transition whitespace-nowrap"
+                                className="inline-flex items-center gap-1 text-[#0A7E54] hover:text-white hover:bg-[#0A7E54] font-bold text-xs bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl transition whitespace-nowrap cursor-pointer"
                              >
-                                 ✏️ 수정하기
+                                 <Pencil className="w-3.5 h-3.5" />
+                                 <span>사진·글 편집</span>
                              </button>
                              <button 
+                                type="button"
                                 onClick={() => handleDelete(viewingPost.id)}
-                                className="text-red-500 hover:text-red-700 font-bold text-[10px] md:text-xs bg-red-50 px-3 md:px-3.5 py-1.5 md:py-2 rounded transition whitespace-nowrap"
+                                className="inline-flex items-center gap-1 text-red-500 hover:text-white hover:bg-red-500 font-bold text-xs bg-red-50 border border-red-200 px-3.5 py-2 rounded-xl transition whitespace-nowrap cursor-pointer"
                              >
-                                 🗑 삭제하기
+                                 <Trash2 className="w-3.5 h-3.5" />
+                                 <span>삭제하기</span>
                              </button>
                           </>
                       )
