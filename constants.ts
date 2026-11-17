@@ -1,5 +1,5 @@
 
-import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, RecommendedDiscountPopup, CustomTripPackage, MasterOptionPool } from './types';
+import { Product, VideoItem, CommunityPost, PageContent, PopupNotification, RecommendedDiscountPopup, CustomTripPackage, MasterOptionPool, NoticeItem } from './types';
 
 export const LOCATIONS = ['호치민', '붕따우', '무이네', '나트랑', '달랏'];
 export const THEMES = ['골프', '관광', '먹거리', '비지니스'];
@@ -1379,6 +1379,25 @@ export const INITIAL_RECOMMENDED_DISCOUNT_POPUP: RecommendedDiscountPopup = {
   deadline: '2026년 11월 30일 예약분까지',
   link: 'https://open.kakao.com/o/gprQnKSi'
 };
+
+export const INITIAL_NOTICES: NoticeItem[] = [
+  {
+    id: 'notice-1',
+    title: '2026 베트남 남부 골프 투어 성수기 사전 예약 안내',
+    content: '호치민·붕따우·달랏 명문 골프장 성수기 티타임 조기 마감 안내입니다.\n\n• 최소 출발 3~4주 전 사전 예약 시 희망 티타임 우선 배정\n• 4인 이상 단독 VIP 리무진 및 한국어 전문 가이드 맞춤 배정 가능\n• 실시간 채팅 또는 오픈카카오(MANGO TOUR)로 문의주시면 빠르게 견적을 안내해 드립니다.',
+    isImportant: true,
+    isActive: true,
+    createdAt: '2026-11-15'
+  },
+  {
+    id: 'notice-2',
+    title: '나만의 여행 만들기(DIY) 숙박·차량 포함/미포함 자유 선택 기능 오픈',
+    content: '고객님 일정에 맞춰 숙박과 전용 차량도 자유롭게 포함 또는 미포함(제외)으로 선택하여 실시간 견적을 산출하실 수 있습니다.\n\n원하는 골프장, 일정, 옵션을 직접 조합해 스마트한 베트남 여행을 계획해 보세요!',
+    isImportant: false,
+    isActive: true,
+    createdAt: '2026-11-17'
+  }
+];
 
 export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
   {

@@ -22,8 +22,8 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
 
   if (images.length === 0) {
     return (
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-0">
-        <div className="w-full h-[200px] xs:h-[228px] sm:h-[285px] md:h-[340px] lg:h-[380px] bg-gray-900 rounded-[20px] flex items-center justify-center text-white shadow-sm">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4">
+        <div className="w-full h-[180px] xs:h-[205px] sm:h-[256px] md:h-[306px] lg:h-[342px] bg-gray-900 rounded-[20px] flex items-center justify-center text-white shadow-sm">
           이미지가 없습니다.
         </div>
       </div>
@@ -31,11 +31,11 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 pb-0">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4">
       <div
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
-        className="relative w-full h-[200px] xs:h-[228px] sm:h-[285px] md:h-[340px] lg:h-[380px] overflow-hidden bg-gray-900 select-none rounded-[20px] shadow-sm"
+        className="relative w-full h-[180px] xs:h-[205px] sm:h-[256px] md:h-[306px] lg:h-[342px] overflow-hidden bg-gray-900 select-none rounded-[20px] shadow-sm"
       >
         {images.map((img, index) => (
           <div

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import HeroSlider from './components/HeroSlider';
+import NoticeBar from './components/NoticeBar';
 import IconMenu from './components/IconMenu';
 import VideoGallery from './components/VideoGallery';
 import CommunityBoard from './components/CommunityBoard';
@@ -22,8 +23,8 @@ import BottomNav from './components/BottomNav';
 import Privacy from './components/Privacy';
 import Terms from './components/Terms';
 import SplashScreen from './components/SplashScreen';
-import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
-import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
+import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_NOTICES, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { supabaseService } from './services/supabaseService';
 import { updateSupabaseCredentials, clearAdminSessionToken } from './services/supabaseClient';
 import { setCloudinaryConfig } from './services/uploadService';
@@ -468,6 +469,16 @@ const App: React.FC = () => {
       return INITIAL_RECOMMENDED_DISCOUNT_POPUP;
     }
   });
+  const [notices, setNotices] = useState<NoticeItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mango_notices_db');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return INITIAL_NOTICES;
+  });
   const [customPackages, setCustomPackages] = useState<CustomTripPackage[]>(() => {
     const saved = localStorage.getItem('mango_custom_packages_db');
     const raw = saved ? JSON.parse(saved) : INITIAL_CUSTOM_PACKAGES;
@@ -711,6 +722,16 @@ const App: React.FC = () => {
     }
   }, 1500)).current;
 
+  const debouncedSyncNotices = useRef(debounce(async (newNotices: NoticeItem[]) => {
+    if (isSyncing.current['notices']) return;
+    isSyncing.current['notices'] = true;
+    try {
+      await supabaseService.saveNotices(newNotices);
+    } finally {
+      isSyncing.current['notices'] = false;
+    }
+  }, 1000)).current;
+
   const debouncedSyncCustomPackages = useRef(debounce(async (newPkgs: CustomTripPackage[]) => {
     if (isSyncing.current['custom_packages']) return;
     isSyncing.current['custom_packages'] = true;
@@ -809,6 +830,12 @@ const App: React.FC = () => {
             setRecommendedDiscountPopup(loadedRecPopup);
             try {
               localStorage.setItem('mango_recommended_discount_popup_db', JSON.stringify(loadedRecPopup));
+            } catch {}
+          }
+          if (Array.isArray((data as any).notices)) {
+            setNotices((data as any).notices);
+            try {
+              localStorage.setItem('mango_notices_db', JSON.stringify((data as any).notices));
             } catch {}
           }
           if (data.customPackages && data.customPackages.length > 0) {
@@ -925,6 +952,16 @@ const App: React.FC = () => {
       console.warn("Failed to write recommended discount popup to localStorage:", e);
     }
     debouncedSyncRecommendedDiscountPopup(newDiscountPopup);
+  };
+
+  const handleUpdateNotices = async (newNotices: NoticeItem[]) => {
+    setNotices(newNotices);
+    try {
+      localStorage.setItem('mango_notices_db', JSON.stringify(newNotices));
+    } catch (e) {
+      console.warn("Failed to write notices to localStorage:", e);
+    }
+    debouncedSyncNotices(newNotices);
   };
 
   const handleUpdateCustomPackages = async (newPkgs: CustomTripPackage[]) => {
@@ -1315,17 +1352,26 @@ const App: React.FC = () => {
             popup={popup} setPopup={handleUpdatePopup}
             recommendedDiscountPopup={recommendedDiscountPopup}
             setRecommendedDiscountPopup={handleUpdateRecommendedDiscountPopup}
+            notices={notices}
+            setNotices={handleUpdateNotices}
             setCurrentPage={setCurrentPage}
           />
         ) : (
           <>
             {currentPage === 'home' && (
-              <div className="flex-1 flex flex-col">
-                <HeroSlider 
-                  images={heroImages} 
-                  onActionClick={() => handleMenuClick('여행 만들기')} 
-                />
-                <div className="my-auto py-2.5 sm:py-3 w-full">
+              <div className="flex-1 flex flex-col justify-evenly py-1.5">
+                <div className="my-1.5">
+                  <HeroSlider 
+                    images={heroImages} 
+                    onActionClick={() => handleMenuClick('여행 만들기')} 
+                  />
+                </div>
+                {notices.some(n => n.isActive !== false) && (
+                  <div className="my-1.5">
+                    <NoticeBar notices={notices} />
+                  </div>
+                )}
+                <div className="my-1.5">
                   <IconMenu items={menuItems} onItemClick={handleMenuClick} />
                 </div>
               </div>
@@ -1387,7 +1433,7 @@ const App: React.FC = () => {
       </main>
 
       <div className={`mt-auto w-full max-w-7xl mx-auto px-3 sm:px-4 no-print ${currentPage === 'home' ? 'pt-0' : 'pt-2.5 sm:pt-3'}`}>
-        <footer className="bg-gray-800 text-gray-400 py-6 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
+        <footer className="bg-gray-800 text-gray-400 py-4 sm:py-5 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
           <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
             <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
               Kakao: <span className="font-bold">MANGO TOUR</span>

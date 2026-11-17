@@ -11,7 +11,8 @@ import {
   CustomTripPackage,
   ChatMessage,
   User,
-  MasterOptionPool
+  MasterOptionPool,
+  NoticeItem
 } from '../types';
 import { 
   INITIAL_PRODUCTS, 
@@ -23,7 +24,8 @@ import {
   INITIAL_POPUP, 
   INITIAL_RECOMMENDED_DISCOUNT_POPUP,
   INITIAL_CUSTOM_PACKAGES,
-  INITIAL_MASTER_OPTION_POOL
+  INITIAL_MASTER_OPTION_POOL,
+  INITIAL_NOTICES
 } from '../constants';
 
 const encodeLegacyBase64 = (password: string): string => {
@@ -199,6 +201,16 @@ export const supabaseService = {
       pageContents: INITIAL_PAGE_CONTENTS,
       popup: INITIAL_POPUP,
       recommendedDiscountPopup: INITIAL_RECOMMENDED_DISCOUNT_POPUP,
+      notices: (() => {
+        try {
+          const localNotices = localStorage.getItem('mango_notices_db');
+          if (localNotices) {
+            const parsed = JSON.parse(localNotices);
+            if (Array.isArray(parsed)) return parsed as NoticeItem[];
+          }
+        } catch {}
+        return INITIAL_NOTICES;
+      })(),
       customPackages: INITIAL_CUSTOM_PACKAGES,
       masterOptionPool: INITIAL_MASTER_OPTION_POOL,
       cloudinaryConfig: { cloudName: 'ducor31pp', uploadPreset: 'mangotour' },
@@ -338,13 +350,21 @@ export const supabaseService = {
         });
       }
 
-      // 6. Popup & Recommended Discount Popup
+      // 6. Popup, Recommended Discount Popup & Homepage Notices
       let popup = INITIAL_POPUP;
       let recommendedDiscountPopup = INITIAL_RECOMMENDED_DISCOUNT_POPUP;
+      let notices: NoticeItem[] = INITIAL_NOTICES;
       try {
         const localRecPopup = localStorage.getItem('mango_recommended_discount_popup_db');
         if (localRecPopup) {
           recommendedDiscountPopup = { ...INITIAL_RECOMMENDED_DISCOUNT_POPUP, ...JSON.parse(localRecPopup) };
+        }
+        const localNotices = localStorage.getItem('mango_notices_db');
+        if (localNotices) {
+          const parsedNotices = JSON.parse(localNotices);
+          if (Array.isArray(parsedNotices)) {
+            notices = parsedNotices;
+          }
         }
       } catch {
         // ignore
@@ -352,7 +372,7 @@ export const supabaseService = {
       const { data: popupRows } = await supabase
         .from('popup')
         .select('*')
-        .in('id', ['main', 'recommended_discount']);
+        .in('id', ['main', 'recommended_discount', 'notices']);
       if (popupRows && popupRows.length > 0) {
         const mainRow = popupRows.find((r: any) => r.id === 'main');
         if (mainRow) {
@@ -361,6 +381,17 @@ export const supabaseService = {
         const recRow = popupRows.find((r: any) => r.id === 'recommended_discount');
         if (recRow) {
           recommendedDiscountPopup = { ...INITIAL_RECOMMENDED_DISCOUNT_POPUP, ...(recRow.data || recRow) };
+        }
+        const noticesRow = popupRows.find((r: any) => r.id === 'notices');
+        if (noticesRow && noticesRow.data) {
+          const rawItems = Array.isArray(noticesRow.data)
+            ? noticesRow.data
+            : Array.isArray(noticesRow.data.items)
+              ? noticesRow.data.items
+              : null;
+          if (rawItems) {
+            notices = rawItems;
+          }
         }
       }
 
@@ -383,6 +414,7 @@ export const supabaseService = {
         pageContents,
         popup,
         recommendedDiscountPopup,
+        notices,
         customPackages,
         masterOptionPool,
         cloudinaryConfig,
@@ -588,6 +620,32 @@ export const supabaseService = {
         }, { onConflict: 'id' });
     } catch (e) {
       console.warn("Failed to save recommended discount popup to Supabase:", e);
+    }
+  },
+
+  /**
+   * 메인 공지사항 바 목록 저장
+   */
+  async saveNotices(notices: NoticeItem[]) {
+    try {
+      localStorage.setItem('mango_notices_db', JSON.stringify(notices));
+    } catch {
+      // ignore
+    }
+
+    const supabase = getSupabase();
+    if (!supabase || !isSupabaseConfigured) return;
+
+    try {
+      await supabase
+        .from('popup')
+        .upsert({
+          id: 'notices',
+          data: { items: notices },
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+    } catch (e) {
+      console.warn("Failed to save notices to Supabase:", e);
     }
   },
 
@@ -1280,6 +1338,7 @@ export const supabaseService = {
     cloudinaryConfig: { cloudName: string; uploadPreset: string };
     popup: PopupNotification;
     recommendedDiscountPopup?: RecommendedDiscountPopup;
+    notices?: NoticeItem[];
     pageContents: Record<string, PageContent>;
   }) {
     const supabase = getSupabase();
@@ -1298,7 +1357,7 @@ export const supabaseService = {
       updated_at: new Date().toISOString()
     }, { onConflict: 'id' });
 
-    // 2. Popup & Recommended Discount Popup
+    // 2. Popup, Recommended Discount Popup & Notices
     const popupRows: Array<{ id: string; data: any; updated_at: string }> = [
       {
         id: 'main',
@@ -1310,6 +1369,13 @@ export const supabaseService = {
       popupRows.push({
         id: 'recommended_discount',
         data: payload.recommendedDiscountPopup,
+        updated_at: new Date().toISOString()
+      });
+    }
+    if (payload.notices) {
+      popupRows.push({
+        id: 'notices',
+        data: { items: payload.notices },
         updated_at: new Date().toISOString()
       });
     }

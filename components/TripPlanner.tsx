@@ -219,9 +219,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   ]);
   const [diySelectedTourIds, setDiySelectedTourIds] = useState<string[]>(['tour-free']);
   const [diyHotelType, setDiyHotelType] = useState<string>(diyAccommodations[0]?.id || 'hotel_5star');
+  const [diyIncludeHotel, setDiyIncludeHotel] = useState<boolean>(true);
   const [diyVehicleType, setDiyVehicleType] = useState<string>(
     diyVehicles.find(v => v.shortName === '9인승' || v.id === 'veh-1')?.id || diyVehicles[0]?.id || 'veh-1'
   );
+  const [diyIncludeVehicle, setDiyIncludeVehicle] = useState<boolean>(true);
   const [diySelectedExtraIds, setDiySelectedExtraIds] = useState<string[]>(() =>
     diyExtraServices.filter(e => e.defaultSelected).map(e => e.id)
   );
@@ -408,10 +410,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     }
 
     const nightRate = selectedHotelTier?.pricePerNightUSD ?? 90;
-    const hotelTotal = diyNights * nightRate;
+    const hotelTotal = diyIncludeHotel ? diyNights * nightRate : 0;
 
     const dayVehRate = selectedVehicleItem?.pricePerDayUSD ?? Math.max(15, 25 + (selectedVehicleItem?.priceDeltaUSD || 0));
-    const vehicleTotal = Math.round(diyDays * dayVehRate); // 일정(일수) 기준 1대 총액 (인원수 무관)
+    const vehicleTotal = diyIncludeVehicle ? Math.round(diyDays * dayVehRate) : 0; // 일정(일수) 기준 1대 총액 (인원수 무관)
 
     let guideTotal = 0;
     let nonGuideExtraPerPersonTotal = 0;
@@ -474,11 +476,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     const itinerary = [];
     itinerary.push({
       day: 1,
-      title: `${diyLocation} 도착 & 전용 픽업 미팅 & 숙소 체크인`,
+      title: `${diyLocation} 도착 & ${diyIncludeVehicle ? '전용 픽업 미팅 & ' : ''}${diyIncludeHotel ? '숙소 체크인' : '자유 일정'}`,
       activities: [
-        `${diyLocation} 도착 및 MANGO TOUR VIP 전담 기사 미팅`,
-        `${vehicleTitle} 탑승 후 숙소로 편안한 이동`,
-        `${hotelName} 체크인 및 객실 배정 후 휴식`,
+        diyIncludeVehicle
+          ? `${diyLocation} 도착 및 MANGO TOUR VIP 전담 기사 미팅`
+          : `${diyLocation} 도착 후 개별 이동 (차량 미포함)`,
+        diyIncludeVehicle
+          ? `${vehicleTitle} 탑승 후 숙소로 편안한 이동`
+          : '공항에서 개별 교통편으로 숙소 이동',
+        diyIncludeHotel
+          ? `${hotelName} 체크인 및 객실 배정 후 휴식`
+          : '개별 예약 숙소 체크인 및 자유 휴식 (숙박 미포함)',
         getDinnerActivityText(1, '자유 석식 및 휴식 (석식 미포함)')
       ]
     });
@@ -492,10 +500,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
           day: d,
           title: `${c} ${d - 1}회차 라운딩 & 휴식/미식`,
           activities: [
-            '숙소 조식 뷔페 후 골프장으로 전용 차량 이동',
+            `${diyIncludeHotel ? '숙소 조식 뷔페 후' : '조식 후'} ${diyIncludeVehicle ? '골프장으로 전용 차량 이동' : '골프장 개별 이동'}`,
             `${c} 18홀 라운딩 (골프 체크인/아웃 케어)`,
             '라운딩 후 클럽하우스 중식 및 휴식',
-            hasMassage && rIdx < 2 ? '골프 피로 회복 VIP 전신 마사지 (90분)' : '숙소 휴식 또는 시내 쇼핑/자유 일정',
+            hasMassage && rIdx < 2 ? '골프 피로 회복 VIP 전신 마사지 (90분)' : '휴식 또는 시내 쇼핑/자유 일정',
             getDinnerActivityText(d, '자유 석식 및 나이트라이프 (석식 미포함)')
           ]
         });
@@ -508,7 +516,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
           day: d,
           title: tItem.isFreeTravel ? `${diyLocation} 자유 여행 & 힐링 데이` : `${tItem.name}`,
           activities: [
-            '숙소 조식 뷔페 후 전용 차량 미팅',
+            `${diyIncludeHotel ? '숙소 조식 뷔페 후' : '조식 후'} ${diyIncludeVehicle ? '전용 차량 미팅' : '자유 일정 시작'}`,
             tItem.isFreeTravel ? `${diyLocation} 내 맘대로 자유 일정 (카페, 쇼핑, 해변 휴양)` : `${tItem.name} 진행 (${tItem.description})`,
             hasMassage && d === 2 ? '여행 피로 회복 VIP 전신 마사지 (90분)' : '여유로운 휴식 및 시내 자유 탐방',
             getDinnerActivityText(d, '자유 석식 및 자유 휴식 (석식 미포함)')
@@ -519,11 +527,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
     itinerary.push({
       day: days,
-      title: '호텔 체크아웃 & 기념품 쇼핑 & 공항 샌딩 (귀국)',
+      title: `${diyIncludeHotel ? '호텔 체크아웃 & ' : ''}기념품 쇼핑 & 공항 샌딩 (귀국)`,
       activities: [
-        '숙소 조식 뷔페 및 여유로운 체크아웃 준비',
+        diyIncludeHotel ? '숙소 조식 뷔페 및 여유로운 체크아웃 준비' : '개별 숙소 체크아웃 및 마지막 날 일정 준비',
         '현지 인기 기념품 마켓 및 커피/특산품 쇼핑',
-        '마지막 일정 후 공항으로 전용 차량 이동',
+        diyIncludeVehicle ? '마지막 일정 후 공항으로 전용 차량 이동' : '마지막 일정 후 공항으로 개별 이동',
         '공항 도착 및 출국 수속, 귀국'
       ]
     });
@@ -584,7 +592,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       name: hotelName,
       description: selectedHotelTier?.description || '시내 중심가 위치, 1인 1실 단독 객실 & 조식 뷔페 포함',
       priceUSD: diyNights * nightRate,
-      isDefaultIncluded: true,
+      isDefaultIncluded: diyIncludeHotel,
       isRequired: false,
       allowCustomSelection: true
     });
@@ -595,7 +603,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       name: vehicleName,
       description: `${selectedVehicleItem?.description || '전 일정 전용 기사 및 유류비 포함'} (1일 $${dayVehRate} × ${days}일 = 총 $${days * dayVehRate} · 인원수 무관 1대 기준)`,
       priceUSD: days * dayVehRate,
-      isDefaultIncluded: true,
+      isDefaultIncluded: diyIncludeVehicle,
       isRequired: false,
       allowCustomSelection: true
     });
@@ -955,6 +963,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   // Helper to get selected accommodation name
   const getChosenAccommodationName = () => {
     const hotelOpt = activePackage?.options.find(o => o.category === 'hotel');
+    if (hotelOpt && !selectedOptionIds.has(hotelOpt.id)) {
+      return '숙박 미포함 (개별 예약)';
+    }
     if (hotelOpt && customOptionSelections[hotelOpt.id]) {
       return customOptionSelections[hotelOpt.id].name;
     }
@@ -1875,6 +1886,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               {(() => {
                 const hotelNightRate = selectedHotelTier?.pricePerNightUSD ?? 90;
                 const hotelTotalUSD = Math.round(hotelNightRate * diyNights);
+                const hotelDisplayName = selectedHotelTier?.name || '고급 호텔';
                 return (
                   <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
                     <div className="flex justify-between items-start sm:items-center pb-2.5 border-b border-black/[0.06] gap-2">
@@ -1887,30 +1899,46 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           버튼을 클릭하면 선택된 여행 기간({diyNights}박 기준 · 1인 1실) 맞춤 숙박 팝업이 열립니다.
                         </p>
                       </div>
-                      <span className="text-xs md:text-sm font-semibold text-[#0A7E54] bg-[#ECFDF5] px-3 py-1 rounded-full whitespace-nowrap shrink-0">
-                        {selectedHotelTier?.name || '고급 호텔'}
+                      <span
+                        className={`text-xs md:text-sm font-semibold px-3 py-1 rounded-full whitespace-nowrap shrink-0 ${
+                          diyIncludeHotel
+                            ? 'text-[#0A7E54] bg-[#ECFDF5]'
+                            : 'text-[#8E8E93] bg-[#F2F2F7]'
+                        }`}
+                      >
+                        {diyIncludeHotel ? hotelDisplayName : '미포함'}
                       </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setShowHotelModal(true)}
-                      className="w-full p-4 md:p-5 rounded-2xl bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20 text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer"
+                      className={`w-full p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer ${
+                        diyIncludeHotel
+                          ? 'bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20'
+                          : 'bg-[#F2F2F7]/75 hover:bg-[#ECFDF5]/60 opacity-80'
+                      }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-11 h-11 rounded-xl bg-[#0A7E54] text-white text-xl flex items-center justify-center shrink-0">
+                        <span
+                          className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
+                            diyIncludeHotel ? 'bg-[#0A7E54] text-white' : 'bg-gray-300 text-white'
+                          }`}
+                        >
                           {isImageIconUrl(selectedHotelTier?.icon) ? (
-                            <img src={getFreshImageUrl(selectedHotelTier?.icon || '')} alt={selectedHotelTier?.name || '숙박'} className="w-7 h-7 object-contain rounded" />
+                            <img src={getFreshImageUrl(selectedHotelTier?.icon || '')} alt={hotelDisplayName} className="w-7 h-7 object-contain rounded" />
                           ) : (
                             selectedHotelTier?.icon || '🏨'
                           )}
                         </span>
                         <div className="min-w-0">
                           <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
-                            {selectedHotelTier?.name || '고급 호텔'}
+                            {diyIncludeHotel ? hotelDisplayName : `${hotelDisplayName} (미포함)`}
                           </div>
                           <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
-                            {diyNights}박 기준 · 1인 1실 · {selectedHotelTier?.description || '엄선된 숙박 옵션'}
+                            {diyIncludeHotel
+                              ? `${diyNights}박 기준 · 1인 1실 · ${selectedHotelTier?.description || '엄선된 숙박 옵션'}`
+                              : '숙박 미포함 상태입니다 · 아래 체크박스로 포함하거나 숙박을 선택하세요.'}
                           </div>
                         </div>
                       </div>
@@ -1919,28 +1947,67 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </span>
                     </button>
 
-                    {/* Selected Hotel Summary Strip */}
-                    <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                        <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 숙박</span>
-                        <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-2xs whitespace-nowrap">
-                          {selectedHotelTier?.name || '고급 호텔'}
-                        </span>
-                        <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#0A7E54] tabular-nums shadow-2xs whitespace-nowrap">
-                          1박 ${hotelNightRate.toLocaleString()}
-                        </span>
-                        <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
-                          {diyNights}박 총 ${hotelTotalUSD.toLocaleString()}
-                        </span>
+                    {/* Include / Exclude Checkbox Row (Matches Step 6 Guide Style) */}
+                    <div
+                      onClick={() => setDiyIncludeHotel(prev => !prev)}
+                      className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-2.5 ${
+                        diyIncludeHotel
+                          ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                          : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={diyIncludeHotel}
+                          onChange={() => {}}
+                          aria-label="숙박 포함 여부"
+                          className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
+                            <span>🏨</span>
+                            <span>숙박 포함</span>
+                            <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
+                              {hotelDisplayName} · 1박 ${hotelNightRate.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
+                            {diyIncludeHotel
+                              ? `${diyNights}박 기준 · 1인 1실 단독 객실 요금이 견적에 포함됩니다.`
+                              : '개별 숙박 예약 시 체크 해제하세요 (견적에서 제외됩니다).'}
+                          </div>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowHotelModal(true)}
-                        className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
-                      >
-                        숙박 변경
-                      </button>
+                      <span className={`text-xs md:text-sm font-bold shrink-0 whitespace-nowrap ${diyIncludeHotel ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
+                        {diyIncludeHotel ? `포함 ($${hotelTotalUSD.toLocaleString()})` : '미포함'}
+                      </span>
                     </div>
+
+                    {/* Selected Hotel Summary Strip (shown when included) */}
+                    {diyIncludeHotel && (
+                      <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
+                          <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 숙박</span>
+                          <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-2xs whitespace-nowrap">
+                            {hotelDisplayName}
+                          </span>
+                          <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#0A7E54] tabular-nums shadow-2xs whitespace-nowrap">
+                            1박 ${hotelNightRate.toLocaleString()}
+                          </span>
+                          <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
+                            {diyNights}박 총 ${hotelTotalUSD.toLocaleString()}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowHotelModal(true)}
+                          className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
+                        >
+                          숙박 변경
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1962,18 +2029,32 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           버튼을 클릭하면 전 일정({diyDays}일) 단독 전용 차량 선택 팝업이 열립니다.
                         </p>
                       </div>
-                      <span className="text-xs md:text-sm font-semibold text-[#0A7E54] bg-[#ECFDF5] px-3 py-1 rounded-full whitespace-nowrap shrink-0">
-                        {vehDisplayName}
+                      <span
+                        className={`text-xs md:text-sm font-semibold px-3 py-1 rounded-full whitespace-nowrap shrink-0 ${
+                          diyIncludeVehicle
+                            ? 'text-[#0A7E54] bg-[#ECFDF5]'
+                            : 'text-[#8E8E93] bg-[#F2F2F7]'
+                        }`}
+                      >
+                        {diyIncludeVehicle ? vehDisplayName : '미포함'}
                       </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setShowVehicleModal(true)}
-                      className="w-full p-4 md:p-5 rounded-2xl bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20 text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer"
+                      className={`w-full p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer ${
+                        diyIncludeVehicle
+                          ? 'bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20'
+                          : 'bg-[#F2F2F7]/75 hover:bg-[#ECFDF5]/60 opacity-80'
+                      }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-11 h-11 rounded-xl bg-[#0A7E54] text-white text-xl flex items-center justify-center shrink-0">
+                        <span
+                          className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
+                            diyIncludeVehicle ? 'bg-[#0A7E54] text-white' : 'bg-gray-300 text-white'
+                          }`}
+                        >
                           {isImageIconUrl(selectedVehicleItem?.icon) ? (
                             <img src={getFreshImageUrl(selectedVehicleItem?.icon || '')} alt={vehDisplayName} className="w-7 h-7 object-contain rounded" />
                           ) : (
@@ -1982,10 +2063,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         </span>
                         <div className="min-w-0">
                           <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
-                            {vehDisplayName}
+                            {diyIncludeVehicle ? vehDisplayName : `${vehDisplayName} (미포함)`}
                           </div>
                           <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
-                            전 일정({diyDays}일) 단독 전용 · 차량 1대 (인원 무관) · {selectedVehicleItem?.description || ''}
+                            {diyIncludeVehicle
+                              ? `전 일정(${diyDays}일) 단독 전용 · 차량 1대 (인원 무관) · ${selectedVehicleItem?.description || ''}`
+                              : '차량 미포함 상태입니다 · 아래 체크박스로 포함하거나 차량을 선택하세요.'}
                           </div>
                         </div>
                       </div>
@@ -1994,28 +2077,67 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </span>
                     </button>
 
-                    {/* Selected Vehicle Summary Strip */}
-                    <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                        <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 차량</span>
-                        <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-2xs whitespace-nowrap">
-                          {vehDisplayName}
-                        </span>
-                        <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#0A7E54] tabular-nums shadow-2xs whitespace-nowrap">
-                          1일 ${vehDayRate.toLocaleString()}
-                        </span>
-                        <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
-                          {diyDays}일 총 ${vehTotalUSD.toLocaleString()} (인원 무관)
-                        </span>
+                    {/* Include / Exclude Checkbox Row (Matches Step 6 Guide Style) */}
+                    <div
+                      onClick={() => setDiyIncludeVehicle(prev => !prev)}
+                      className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-2.5 ${
+                        diyIncludeVehicle
+                          ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
+                          : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={diyIncludeVehicle}
+                          onChange={() => {}}
+                          aria-label="차량 포함 여부"
+                          className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
+                            <span>🚐</span>
+                            <span>차량 포함</span>
+                            <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
+                              {vehDisplayName} · 1일 ${vehDayRate.toLocaleString()} (팀 기준)
+                            </span>
+                          </div>
+                          <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
+                            {diyIncludeVehicle
+                              ? `전 일정(${diyDays}일) 단독 전용 차량 1대 · 기사/유류비가 견적에 포함됩니다.`
+                              : '개별 이동 시 체크 해제하세요 (차량 비용이 견적에서 제외됩니다).'}
+                          </div>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowVehicleModal(true)}
-                        className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
-                      >
-                        차량 변경
-                      </button>
+                      <span className={`text-xs md:text-sm font-bold shrink-0 whitespace-nowrap ${diyIncludeVehicle ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
+                        {diyIncludeVehicle ? `포함 ($${vehTotalUSD.toLocaleString()})` : '미포함'}
+                      </span>
                     </div>
+
+                    {/* Selected Vehicle Summary Strip (shown when included) */}
+                    {diyIncludeVehicle && (
+                      <div className="p-3.5 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
+                          <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 차량</span>
+                          <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-2xs whitespace-nowrap">
+                            {vehDisplayName}
+                          </span>
+                          <span className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#0A7E54] tabular-nums shadow-2xs whitespace-nowrap">
+                            1일 ${vehDayRate.toLocaleString()}
+                          </span>
+                          <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
+                            {diyDays}일 총 ${vehTotalUSD.toLocaleString()} (인원 무관)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowVehicleModal(true)}
+                          className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
+                        >
+                          차량 변경
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -2165,17 +2287,21 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     </h3>
                     <p className="text-xs md:text-sm text-emerald-100/90 mt-1">
                       {diyActivityMode === 'golf'
-                        ? `${diyGolfCourses.slice(0, diyRounds).join(' · ')} 라운딩 & 맞춤 구성`
-                        : `${selectedTourItems.map(t => t.name).join(' · ') || '자유 여행'} & ${selectedHotelTier?.name || '숙박'} · ${selectedVehicleItem?.shortName || selectedVehicleItem?.name || '전용 차량'}`}
+                        ? `${diyGolfCourses.slice(0, diyRounds).join(' · ')} 라운딩 & ${diyIncludeHotel ? (selectedHotelTier?.name || '숙박') : '숙박 미포함'} · ${diyIncludeVehicle ? (selectedVehicleItem?.shortName || selectedVehicleItem?.name || '전용 차량') : '차량 미포함'}`
+                        : `${selectedTourItems.map(t => t.name).join(' · ') || '자유 여행'} & ${diyIncludeHotel ? (selectedHotelTier?.name || '숙박') : '숙박 미포함'} · ${diyIncludeVehicle ? (selectedVehicleItem?.shortName || selectedVehicleItem?.name || '전용 차량') : '차량 미포함'}`}
                     </p>
                   </div>
 
                   {(() => {
                     const bd = getDIYPriceBreakdown();
+                    const teamParts: string[] = [];
+                    if (diyIncludeVehicle) teamParts.push('차량');
+                    if (bd.guideTotal > 0) teamParts.push('가이드');
+                    const teamIncludedSuffix = teamParts.length > 0 ? ` · ${teamParts.join('·')} 포함` : ' · 차량·가이드 미포함';
                     return (
                       <div className="text-left sm:text-right shrink-0">
                         <span className="text-xs text-emerald-100 block font-medium">
-                          1인당 예상 경비 ({personCount}인 기준 · 차량·가이드 포함)
+                          1인당 예상 경비 ({personCount}인 기준{teamIncludedSuffix})
                         </span>
                         <span className="text-2xl sm:text-3xl md:text-4xl font-black text-white tabular-nums tracking-tight">
                           ${bd.perPersonWithShareUSD.toLocaleString()}
@@ -2184,7 +2310,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           (1인 약 {(bd.perPersonWithShareUSD * USD_TO_KRW).toLocaleString()}원 · {personCount}인 총액 ${bd.groupTotalUSD.toLocaleString()})
                         </span>
                         <span className="text-[11px] text-emerald-200/80 block mt-0.5">
-                          1인 기본 ${bd.perPersonOnlyUSD.toLocaleString()} + 차량·가이드({diyDays}일) ${bd.teamFixedUSD.toLocaleString()}
+                          1인 기본 ${bd.perPersonOnlyUSD.toLocaleString()}
+                          {bd.teamFixedUSD > 0 ? ` + ${teamParts.join('·')}(${diyDays}일) $${bd.teamFixedUSD.toLocaleString()}` : ''}
                         </span>
                       </div>
                     );
@@ -3426,9 +3553,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       })
                     ) : (
                       <div className="text-xs md:text-sm text-gray-600 space-y-1">
-                        <div>• 전 일정 단독 차량: {selectedVehicleItem?.shortName || selectedVehicleItem?.name}</div>
+                        <div>• 전 일정 단독 차량: {diyIncludeVehicle ? (selectedVehicleItem?.shortName || selectedVehicleItem?.name) : '미포함'}</div>
                         <div>• {diyActivityMode === 'golf' ? `${diyRounds}회 18홀 명문 골프장 그린피 포함` : `여행 구성: ${selectedTourItems.map(t => t.name).join(', ') || '자유 여행'}`}</div>
-                        <div>• {selectedHotelTier?.name || '고급 호텔'} (1인 1실) 숙박 포함</div>
+                        <div>• 숙박: {diyIncludeHotel ? `${selectedHotelTier?.name || '고급 호텔'} (1인 1실) 포함` : '미포함 (개별 예약)'}</div>
                         {diyExtraServices.map(svc => {
                           const isChecked = diySelectedExtraIds.includes(svc.id);
                           return (
@@ -4724,6 +4851,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     key={item.id}
                     onClick={() => {
                       setDiyHotelType(item.id);
+                      setDiyIncludeHotel(true);
                       setShowHotelModal(false);
                       showToast(`🏨 '${item.name}' 숙박이 선택되었습니다.`);
                     }}
@@ -4831,6 +4959,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     key={item.id}
                     onClick={() => {
                       setDiyVehicleType(item.id);
+                      setDiyIncludeVehicle(true);
                       setShowVehicleModal(false);
                       showToast(`🚐 '${displayName}' 차량이 선택되었습니다.`);
                     }}

@@ -123,6 +123,16 @@ export interface PopupNotification {
   imageHeight?: 'auto' | 'compact' | 'medium' | 'large' | '16:9';
 }
 
+export interface NoticeItem {
+  id: string;
+  title: string;
+  content: string;
+  isImportant?: boolean;
+  isActive?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface RecommendedDiscountPopup {
   isActive: boolean;
   badgeText: string;

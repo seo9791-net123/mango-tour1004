@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, ProductCostBreakdownItem, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, RecommendedDiscountPopup, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
+import { User, Product, ProductCostBreakdownItem, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, RecommendedDiscountPopup, NoticeItem, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
 import { 
   INITIAL_PRODUCTS, 
   INITIAL_VIDEOS, 
@@ -10,6 +10,7 @@ import {
   INITIAL_PAGE_CONTENTS,
   INITIAL_POPUP,
   INITIAL_RECOMMENDED_DISCOUNT_POPUP,
+  INITIAL_NOTICES,
   INITIAL_CUSTOM_PACKAGES,
   INITIAL_MASTER_OPTION_POOL,
   VERIFIED_IMAGE_PRESETS 
@@ -49,6 +50,8 @@ interface Props {
   setPopup: (popup: PopupNotification) => void;
   recommendedDiscountPopup?: RecommendedDiscountPopup;
   setRecommendedDiscountPopup?: (popup: RecommendedDiscountPopup) => void;
+  notices?: NoticeItem[];
+  setNotices?: (notices: NoticeItem[]) => void;
   setCurrentPage: (page: 'home' | 'admin' | 'category') => void;
 }
 
@@ -76,9 +79,17 @@ const AdminDashboard: React.FC<Props> = ({
   setPopup,
   recommendedDiscountPopup = INITIAL_RECOMMENDED_DISCOUNT_POPUP,
   setRecommendedDiscountPopup,
+  notices = INITIAL_NOTICES,
+  setNotices,
   setCurrentPage
 }) => {
-  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'posts' | 'menu' | 'popup' | 'discountPopup'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'posts' | 'notices' | 'menu' | 'popup' | 'discountPopup'>('users');
+  const [noticeFormOpen, setNoticeFormOpen] = useState(false);
+  const [editingNoticeId, setEditingNoticeId] = useState<string | null>(null);
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeContent, setNoticeContent] = useState('');
+  const [noticeIsImportant, setNoticeIsImportant] = useState(false);
+  const [noticeIsActive, setNoticeIsActive] = useState(true);
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
   const markImageBroken = (key: string) => setBrokenImages(prev => (prev[key] ? prev : { ...prev, [key]: true }));
   const clearImageBroken = (key: string) => setBrokenImages(prev => {
@@ -1695,6 +1706,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
         cloudinaryConfig: { cloudName, uploadPreset },
         popup,
         recommendedDiscountPopup,
+        notices,
         pageContents
       });
       await appAlert('🎉 축하합니다! 웹사이트의 모든 상품/투어/페이지/슬라이드 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 www.mangotour.co.kr에 접속하는 모든 고객이 이 클라우드 데이터를 실시간으로 보게 됩니다.');
@@ -2281,7 +2293,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
       
       {/* Navigation Tabs (좌우 여백 없이 칸에 딱 맞게 배치된 세련된 탭 바) */}
       <div className="w-full mb-3 sm:mb-5 bg-gray-100/90 p-1.5 rounded-none sm:rounded-2xl border-y sm:border border-gray-200/80 shadow-xs">
-        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1 sm:gap-1.5 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1 sm:gap-1.5 w-full">
           {[
             { id: 'users', icon: '👥', label: '회원' },
             { id: 'hero', icon: '🖼️', label: '슬라이드' },
@@ -2289,6 +2301,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
             { id: 'planner', icon: '⛳', label: '맞춤 여행' },
             { id: 'pages', icon: '📄', label: '페이지' },
             { id: 'posts', icon: '💬', label: '커뮤니티' },
+            { id: 'notices', icon: '📢', label: '공지사항' },
             { id: 'popup', icon: '🔔', label: '팝업' },
             { id: 'discountPopup', icon: '🏷️', label: '추천할인 팝업' },
             { id: 'menu', icon: '🔘', label: '메뉴' },
@@ -6035,6 +6048,304 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
               </button>
             </div>
             <p className="text-center text-gray-400 text-xs mt-6 sm:mt-8 bg-gray-50 p-3 rounded-xl inline-block mx-auto">※ 아이콘 메뉴의 이름과 이미지를 자유롭게 수정하거나 추가/삭제할 수 있습니다. 변경사항은 실시간으로 저장됩니다.</p>
+          </div>
+        )}
+
+        {/* Notice Management (공지사항 관리) */}
+        {activeTab === 'notices' && (
+          <div className="animate-fade-in-up w-full px-2.5 sm:px-0 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <h3 className="text-lg sm:text-2xl font-bold text-gray-800">
+                  공지사항 관리 (총 {notices.length}건)
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  메인 페이지 상단 슬라이드 아래 공지사항 바에 노출될 공지를 등록·수정·삭제할 수 있습니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingNoticeId(null);
+                  setNoticeTitle('');
+                  setNoticeContent('');
+                  setNoticeIsImportant(false);
+                  setNoticeIsActive(true);
+                  setNoticeFormOpen(true);
+                }}
+                className="px-4 py-2.5 bg-deepgreen hover:bg-[#054e3a] text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5 self-start sm:self-auto whitespace-nowrap"
+              >
+                <span>＋</span>
+                <span>새 공지 등록</span>
+              </button>
+            </div>
+
+            {/* Create / Edit Notice Form */}
+            {noticeFormOpen && (
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs">
+                <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                  <h4 className="text-sm sm:text-base font-extrabold text-gray-900">
+                    {editingNoticeId ? '공지사항 수정' : '새 공지사항 등록'}
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNoticeFormOpen(false);
+                      setEditingNoticeId(null);
+                    }}
+                    className="text-xs font-bold text-gray-500 hover:text-gray-800 cursor-pointer"
+                  >
+                    닫기 ✕
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">공지 제목 *</label>
+                    <input
+                      type="text"
+                      value={noticeTitle}
+                      onChange={(e) => setNoticeTitle(e.target.value)}
+                      placeholder="예: [안내] 2026 성수기 베트남 골프 투어 예약 안내"
+                      className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-deepgreen focus:ring-2 focus:ring-deepgreen/15"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">상세 내용 *</label>
+                    <textarea
+                      value={noticeContent}
+                      onChange={(e) => setNoticeContent(e.target.value)}
+                      placeholder="공지사항 바를 클릭했을 때 모달에 표시될 전체 공지 내용을 입력하세요."
+                      rows={5}
+                      className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 outline-none focus:border-deepgreen focus:ring-2 focus:ring-deepgreen/15 resize-y leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs sm:text-sm font-bold text-gray-800">
+                      <input
+                        type="checkbox"
+                        checked={noticeIsImportant}
+                        onChange={(e) => setNoticeIsImportant(e.target.checked)}
+                        className="w-4 h-4 accent-[#065f46] rounded cursor-pointer"
+                      />
+                      <span>[중요] 공지로 강조 표시</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs sm:text-sm font-bold text-gray-800">
+                      <input
+                        type="checkbox"
+                        checked={noticeIsActive}
+                        onChange={(e) => setNoticeIsActive(e.target.checked)}
+                        className="w-4 h-4 accent-[#065f46] rounded cursor-pointer"
+                      />
+                      <span>메인 공지 바에 노출</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNoticeFormOpen(false);
+                      setEditingNoticeId(null);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs sm:text-sm font-bold hover:bg-gray-100 transition cursor-pointer whitespace-nowrap"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const trimmedTitle = noticeTitle.trim();
+                      const trimmedContent = noticeContent.trim();
+                      if (!trimmedTitle) {
+                        await appAlert('공지 제목을 입력해 주세요.');
+                        return;
+                      }
+                      if (!trimmedContent) {
+                        await appAlert('공지 상세 내용을 입력해 주세요.');
+                        return;
+                      }
+
+                      const today = new Date().toISOString().slice(0, 10);
+                      let nextNotices: NoticeItem[];
+                      if (editingNoticeId) {
+                        nextNotices = notices.map(item =>
+                          item.id === editingNoticeId
+                            ? {
+                                ...item,
+                                title: trimmedTitle,
+                                content: trimmedContent,
+                                isImportant: noticeIsImportant,
+                                isActive: noticeIsActive,
+                                updatedAt: today
+                              }
+                            : item
+                        );
+                        showToast('✅ 공지사항이 수정되어 메인 페이지에 반영되었습니다.');
+                      } else {
+                        const newNotice: NoticeItem = {
+                          id: `notice-${Date.now()}`,
+                          title: trimmedTitle,
+                          content: trimmedContent,
+                          isImportant: noticeIsImportant,
+                          isActive: noticeIsActive,
+                          createdAt: today
+                        };
+                        nextNotices = [newNotice, ...notices];
+                        showToast('✅ 새 공지사항이 등록되어 메인 페이지에 반영되었습니다.');
+                      }
+
+                      if (setNotices) {
+                        setNotices(nextNotices);
+                      }
+                      setNoticeFormOpen(false);
+                      setEditingNoticeId(null);
+                      setNoticeTitle('');
+                      setNoticeContent('');
+                      setNoticeIsImportant(false);
+                      setNoticeIsActive(true);
+                    }}
+                    className="px-5 py-2 rounded-xl bg-deepgreen hover:bg-[#054e3a] text-white text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer whitespace-nowrap"
+                  >
+                    {editingNoticeId ? '수정 저장' : '공지 등록'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Notice List */}
+            <div className="space-y-3">
+              {notices.length === 0 ? (
+                <div className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-8 text-center space-y-2">
+                  <p className="text-sm font-bold text-gray-600">등록된 공지사항이 없습니다.</p>
+                  <p className="text-xs text-gray-400">상단의 [+ 새 공지 등록] 버튼을 눌러 첫 공지사항을 등록해 보세요.</p>
+                </div>
+              ) : (
+                notices.map((notice, idx) => {
+                  const isActiveNotice = notice.isActive !== false;
+                  return (
+                    <div
+                      key={notice.id}
+                      className={`p-4 rounded-2xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        isActiveNotice
+                          ? 'bg-white border-gray-200 shadow-xs hover:border-deepgreen/40'
+                          : 'bg-gray-50 border-gray-200/80 opacity-75'
+                      }`}
+                    >
+                      <div className="space-y-1.5 min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          <span className="font-bold text-gray-400 tabular-nums">#{idx + 1}</span>
+                          {notice.isImportant && (
+                            <span className="font-extrabold text-[#065f46]">[중요]</span>
+                          )}
+                          <span
+                            className={`font-bold ${
+                              isActiveNotice ? 'text-emerald-700' : 'text-gray-500'
+                            }`}
+                          >
+                            {isActiveNotice ? '노출 중' : '숨김'}
+                          </span>
+                          <span className="text-gray-300" aria-hidden="true">·</span>
+                          <span className="text-gray-500 tabular-nums">
+                            {notice.createdAt}
+                            {notice.updatedAt && notice.updatedAt !== notice.createdAt ? ` (수정 ${notice.updatedAt})` : ''}
+                          </span>
+                        </div>
+                        <h4 className="text-sm sm:text-base font-extrabold text-gray-900 truncate">
+                          {notice.title}
+                        </h4>
+                        <p className="text-xs text-gray-600 line-clamp-2 whitespace-pre-line">
+                          {notice.content}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => {
+                            if (idx === 0 || !setNotices) return;
+                            const next = [...notices];
+                            [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                            setNotices(next);
+                          }}
+                          title="위로 이동"
+                          className="px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-35 text-gray-700 text-xs font-bold transition cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === notices.length - 1}
+                          onClick={() => {
+                            if (idx === notices.length - 1 || !setNotices) return;
+                            const next = [...notices];
+                            [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                            setNotices(next);
+                          }}
+                          title="아래로 이동"
+                          className="px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-35 text-gray-700 text-xs font-bold transition cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          ▼
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!setNotices) return;
+                            const next = notices.map(item =>
+                              item.id === notice.id ? { ...item, isActive: !isActiveNotice } : item
+                            );
+                            setNotices(next);
+                            showToast(isActiveNotice ? '공지사항이 숨김 처리되었습니다.' : '공지사항이 메인 페이지에 노출됩니다.');
+                          }}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer whitespace-nowrap ${
+                            isActiveNotice
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                          }`}
+                        >
+                          {isActiveNotice ? '숨기기' : '노출하기'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingNoticeId(notice.id);
+                            setNoticeTitle(notice.title);
+                            setNoticeContent(notice.content);
+                            setNoticeIsImportant(Boolean(notice.isImportant));
+                            setNoticeIsActive(notice.isActive !== false);
+                            setNoticeFormOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition cursor-pointer whitespace-nowrap"
+                        >
+                          수정
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!(await appConfirm(`'${notice.title}' 공지사항을 삭제하시겠습니까?`))) return;
+                            if (setNotices) {
+                              setNotices(notices.filter(item => item.id !== notice.id));
+                            }
+                            if (editingNoticeId === notice.id) {
+                              setNoticeFormOpen(false);
+                              setEditingNoticeId(null);
+                            }
+                            showToast('🗑️ 공지사항이 삭제되었습니다.');
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-200 text-xs font-bold transition cursor-pointer whitespace-nowrap"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         )}
 
