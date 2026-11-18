@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
+  const [email, setEmail] = useState('');
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   
   // Routing State & Privacy / Terms Route Detection
@@ -526,6 +527,87 @@ const App: React.FC = () => {
 
   const tawkOpenTimerRef = useRef<number | null>(null);
 
+  const readStoredUserEmail = (targetUsername?: string): string => {
+    if (!targetUsername) return '';
+    try {
+      const raw = localStorage.getItem('mango_user_emails_v1');
+      if (!raw) return '';
+      const map = JSON.parse(raw) as Record<string, string>;
+      return map[targetUsername.trim().toLowerCase()] || '';
+    } catch {
+      return '';
+    }
+  };
+
+  const persistStoredUserEmail = (targetUsername?: string, targetEmail?: string) => {
+    if (!targetUsername || !targetEmail) return;
+    try {
+      const raw = localStorage.getItem('mango_user_emails_v1');
+      const map: Record<string, string> = raw ? JSON.parse(raw) : {};
+      map[targetUsername.trim().toLowerCase()] = targetEmail.trim();
+      localStorage.setItem('mango_user_emails_v1', JSON.stringify(map));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const syncTawkVisitor = useCallback((currentUser: User | null) => {
+    const win = window as Window & {
+      Tawk_API?: {
+        visitor?: { name?: string; email?: string };
+        setAttributes?: (attrs: Record<string, string>, callback?: (error?: unknown) => void) => void;
+        hideWidget?: () => void;
+      };
+      __mangoTawkVisitor?: { name?: string; email?: string } | null;
+      __mangoIsLoggedIn?: boolean;
+      __mangoTawkLoaded?: boolean;
+      __mangoOpenTawkOnLoad?: boolean;
+    };
+
+    const api = win.Tawk_API;
+    win.__mangoIsLoggedIn = Boolean(currentUser);
+
+    if (!currentUser) {
+      win.__mangoTawkVisitor = null;
+      win.__mangoOpenTawkOnLoad = false;
+      try {
+        api?.hideWidget?.();
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const displayName = (currentUser.nickname || currentUser.username || '').trim();
+    const resolvedEmail = (
+      currentUser.email ||
+      readStoredUserEmail(currentUser.username) ||
+      (emailRegex.test((currentUser.username || '').trim()) ? currentUser.username.trim() : '')
+    ).trim();
+
+    const attrs: { name?: string; email?: string } = {};
+    if (displayName) attrs.name = displayName;
+    if (resolvedEmail && emailRegex.test(resolvedEmail)) attrs.email = resolvedEmail;
+
+    win.__mangoTawkVisitor = Object.keys(attrs).length > 0 ? attrs : null;
+
+    if (api && Object.keys(attrs).length > 0) {
+      api.visitor = attrs;
+      if (win.__mangoTawkLoaded && typeof api.setAttributes === 'function') {
+        try {
+          api.setAttributes(attrs, () => {});
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    syncTawkVisitor(user);
+  }, [user, syncTawkVisitor]);
+
   useEffect(() => {
     const handleUnread = (e: Event) => {
       const customEvent = e as CustomEvent<number>;
@@ -537,6 +619,7 @@ const App: React.FC = () => {
         tawkOpenTimerRef.current = null;
       }
       setIsOpeningTawk(false);
+      syncTawkVisitor(user);
     };
     window.addEventListener('mango_tawk_unread', handleUnread);
     window.addEventListener('mango_tawk_ready', handleReady);
@@ -548,9 +631,18 @@ const App: React.FC = () => {
       window.removeEventListener('mango_tawk_unread', handleUnread);
       window.removeEventListener('mango_tawk_ready', handleReady);
     };
-  }, []);
+  }, [user, syncTawkVisitor]);
 
-  const handleOpenTawkChat = () => {
+  const handleOpenTawkChat = async () => {
+    if (!user) {
+      await appAlert('실시간 1:1 상담은 회원 전용 서비스입니다. 로그인 또는 회원가입 후 이용해 주세요.');
+      setAuthMode('login');
+      setShowAuthModal(true);
+      return;
+    }
+
+    syncTawkVisitor(user);
+
     const win = window as Window & {
       Tawk_API?: {
         showWidget?: () => void;
@@ -561,10 +653,14 @@ const App: React.FC = () => {
       __mangoTawkLoaded?: boolean;
     };
     const api = win.Tawk_API;
-    if (api && win.__mangoTawkLoaded && typeof api.maximize === 'function') {
+    if (api && win.__mangoTawkLoaded && (typeof api.maximize === 'function' || typeof api.toggle === 'function')) {
       try {
         api.showWidget?.();
-        api.maximize();
+        if (typeof api.maximize === 'function') {
+          api.maximize();
+        } else {
+          api.toggle?.();
+        }
         setTawkUnreadCount(0);
         return;
       } catch {
@@ -585,10 +681,14 @@ const App: React.FC = () => {
     tawkOpenTimerRef.current = window.setTimeout(() => {
       tawkOpenTimerRef.current = null;
       const retryApi = win.Tawk_API;
-      if (retryApi && typeof retryApi.maximize === 'function') {
+      if (retryApi && (typeof retryApi.maximize === 'function' || typeof retryApi.toggle === 'function')) {
         try {
           retryApi.showWidget?.();
-          retryApi.maximize();
+          if (typeof retryApi.maximize === 'function') {
+            retryApi.maximize();
+          } else {
+            retryApi.toggle?.();
+          }
           setTawkUnreadCount(0);
         } catch {
           // ignore
@@ -1092,6 +1192,7 @@ const App: React.FC = () => {
 
     const cleanUsername = username.trim();
     const cleanNickname = nickname.trim();
+    const cleanEmail = email.trim();
 
     if (!cleanUsername || !password.trim()) {
       await appAlert('아이디와 비밀번호를 입력해주세요.');
@@ -1114,11 +1215,16 @@ const App: React.FC = () => {
         return;
       }
 
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const resolvedSignupEmail =
+        cleanEmail || (emailRegex.test(cleanUsername) ? cleanUsername : '');
+
       const newUser: User = {
         id: `u_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         username: cleanUsername,
         role: 'user',
-        nickname: cleanNickname
+        nickname: cleanNickname,
+        ...(resolvedSignupEmail ? { email: resolvedSignupEmail } : {})
       };
 
       setIsAuthSubmitting(true);
@@ -1132,7 +1238,13 @@ const App: React.FC = () => {
           return;
         }
 
-        const savedUser = result.user;
+        if (resolvedSignupEmail) {
+          persistStoredUserEmail(cleanUsername, resolvedSignupEmail);
+        }
+        const savedUser: User = resolvedSignupEmail
+          ? { ...result.user, email: result.user.email || resolvedSignupEmail }
+          : result.user;
+
         setUsers(prev => {
           const filtered = prev.filter(u => u.username !== savedUser.username);
           return [savedUser, ...filtered];
@@ -1153,7 +1265,17 @@ const App: React.FC = () => {
           return;
         }
 
-        const authenticatedUser = result.user;
+        const storedEmail = readStoredUserEmail(result.user.username);
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const inferredEmail =
+          result.user.email ||
+          storedEmail ||
+          (emailRegex.test(result.user.username) ? result.user.username : '');
+
+        const authenticatedUser: User = inferredEmail
+          ? { ...result.user, email: inferredEmail }
+          : result.user;
+
         setUsers(prev => {
           const exists = prev.some(u => u.id === authenticatedUser.id || u.username === authenticatedUser.username);
           return exists
@@ -1169,7 +1291,7 @@ const App: React.FC = () => {
     }
   };
 
-  const resetAuthFields = () => { setUsername(''); setPassword(''); setNickname(''); };
+  const resetAuthFields = () => { setUsername(''); setPassword(''); setNickname(''); setEmail(''); };
 
   const navigateTo = (page: PageType, category: string | null = null, pushHistory: boolean = true) => {
     if (page === currentPage && category === selectedCategory) {
@@ -1517,14 +1639,14 @@ const App: React.FC = () => {
               type="button"
               onClick={handleOpenTawkChat}
               disabled={isOpeningTawk}
-              className="relative inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#0A7E54] hover:bg-[#086945] disabled:opacity-75 text-white rounded-full shadow-lg font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-[1.03] cursor-pointer whitespace-nowrap"
+              className="relative flex items-center gap-2 px-5 py-3.5 bg-[#0A7E54] hover:bg-[#086945] disabled:opacity-75 text-white rounded-full shadow-lg font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-[1.03] group cursor-pointer whitespace-nowrap"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
               <span>{isOpeningTawk ? '채팅 연결 중...' : '실시간 채팅'}</span>
-              {tawkUnreadCount > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-2 ring-white tabular-nums">
+              {user && tawkUnreadCount > 0 && (
+                <span className="flex items-center gap-1 bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm ring-2 ring-white tabular-nums">
                   {tawkUnreadCount > 9 ? '9+' : tawkUnreadCount}
                 </span>
               )}
@@ -1614,10 +1736,16 @@ const App: React.FC = () => {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="비밀번호를 입력하세요" required />
               </div>
               {authMode === 'signup' && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[#8E8E93] ml-1">닉네임</label>
-                  <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="사용하실 닉네임을 입력하세요" required />
-                </div>
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#8E8E93] ml-1">닉네임</label>
+                    <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="사용하실 닉네임을 입력하세요" required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[#8E8E93] ml-1">이메일 (선택)</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="상담 안내를 받으실 이메일 (선택)" />
+                  </div>
+                </>
               )}
               <button
                 type="submit"

@@ -122,21 +122,30 @@
       try {
         window.dispatchEvent(new CustomEvent('mango_tawk_ready'));
       } catch (e) {}
-      if (window.__mangoOpenTawkOnLoad) {
+      try {
+        if (window.__mangoTawkVisitor && typeof Tawk_API.setAttributes === 'function') {
+          Tawk_API.setAttributes(window.__mangoTawkVisitor, function () {});
+        }
+      } catch (e) {}
+      if (window.__mangoOpenTawkOnLoad && window.__mangoIsLoggedIn) {
         window.__mangoOpenTawkOnLoad = false;
         try {
           Tawk_API.showWidget();
           Tawk_API.maximize();
         } catch (e) {}
       } else {
+        window.__mangoOpenTawkOnLoad = false;
         try {
-          if (typeof Tawk_API.isChatOngoing !== 'function' || !Tawk_API.isChatOngoing()) {
-            Tawk_API.hideWidget();
-          }
+          Tawk_API.hideWidget();
         } catch (e) {}
       }
     };
     Tawk_API.onChatMinimized = function () {
+      try {
+        Tawk_API.hideWidget();
+      } catch (e) {}
+    };
+    Tawk_API.onChatEnded = function () {
       try {
         Tawk_API.hideWidget();
       } catch (e) {}
