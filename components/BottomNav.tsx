@@ -4,7 +4,10 @@ interface Props {
   currentPage: string;
   selectedCategory: string | null;
   onNavigate: (page: string, category?: string) => void;
+  isChatOpen: boolean;
+  setIsChatOpen: (open: boolean) => void;
   onBack?: () => void;
+  unreadChatCount?: number;
 }
 
 const TabIcon: React.FC<{ id: string; active: boolean }> = ({ id, active }) => {
@@ -56,32 +59,25 @@ const TabIcon: React.FC<{ id: string; active: boolean }> = ({ id, active }) => {
         </svg>
       );
 
-    case 'community':
+    case 'chat':
       return active ? (
         <svg className="w-[25px] h-[25px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M4.5 4.5h15A2.5 2.5 0 0 1 22 7v10a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17V7a2.5 2.5 0 0 1 2.5-2.5Zm3 5.25a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm11 6.75-3.95-4.35a1 1 0 0 0-1.46-.03l-2.6 2.66-1.52-1.45a1 1 0 0 0-1.37-.01L5.25 15.5v1h13.25Z" />
+          <path d="M12 3C6.75 3 2.5 6.72 2.5 11.3c0 2.13.92 4.07 2.43 5.53-.15 1.38-.68 2.83-1.48 3.92a.75.75 0 0 0 .74 1.18c1.92-.34 3.63-1.15 4.91-2.06.92.22 1.89.33 2.9.33 5.25 0 9.5-3.72 9.5-8.3S17.25 3 12 3Zm-3.6 9.45a1.15 1.15 0 1 1 0-2.3 1.15 1.15 0 0 1 0 2.3Zm3.6 0a1.15 1.15 0 1 1 0-2.3 1.15 1.15 0 0 1 0 2.3Zm3.6 0a1.15 1.15 0 1 1 0-2.3 1.15 1.15 0 0 1 0 2.3Z" />
         </svg>
       ) : (
         <svg className="w-[25px] h-[25px]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect
-            x="3"
-            y="4.75"
-            width="18"
-            height="14.5"
-            rx="2.5"
-            fill="currentColor"
-            fillOpacity="0.14"
-            stroke="currentColor"
-            strokeWidth="2.05"
-          />
-          <circle cx="8.25" cy="9.75" r="1.35" fill="currentColor" />
           <path
-            d="m4.75 16.25 3.6-3.35a.9.9 0 0 1 1.24.02l1.85 1.78 2.95-3.05a.9.9 0 0 1 1.32.02l3.54 3.93"
+            d="M12 3.5c-4.97 0-9 3.45-9 7.7 0 2 .9 3.82 2.37 5.18-.18 1.25-.67 2.45-1.37 3.42 1.68-.28 3.22-.94 4.38-1.78 1.12.31 2.34.48 3.62.48 4.97 0 9-3.45 9-7.7S16.97 3.5 12 3.5Z"
+            fill="currentColor"
+            fillOpacity="0.16"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="2.1"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+          <circle cx="8.5" cy="11.2" r="1.15" fill="currentColor" />
+          <circle cx="12" cy="11.2" r="1.15" fill="currentColor" />
+          <circle cx="15.5" cy="11.2" r="1.15" fill="currentColor" />
         </svg>
       );
 
@@ -114,13 +110,16 @@ const BottomNav: React.FC<Props> = ({
   currentPage,
   selectedCategory,
   onNavigate,
+  isChatOpen,
+  setIsChatOpen,
   onBack,
+  unreadChatCount = 0
 }) => {
   const navItems = [
     { id: 'home', label: '홈' },
     { id: 'recommended', label: '추천상품', category: '추천 상품' },
     { id: 'custom', label: '나만의 여행', category: '여행 만들기', isCenter: true },
-    { id: 'community', label: '커뮤니티', category: '커뮤니티' },
+    { id: 'chat', label: '채팅방' },
     { id: 'back', label: '뒤로가기' },
   ];
 
@@ -128,15 +127,21 @@ const BottomNav: React.FC<Props> = ({
     if (item.id === 'back') {
       if (onBack) {
         onBack();
+      } else if (isChatOpen) {
+        setIsChatOpen(false);
       } else if (currentPage !== 'home') {
         onNavigate('home');
       } else if (typeof window !== 'undefined' && window.history.length > 1) {
         window.history.back();
       }
+    } else if (item.id === 'chat') {
+      setIsChatOpen(!isChatOpen);
     } else if (item.id === 'home') {
       onNavigate('home');
+      setIsChatOpen(false);
     } else if (item.category) {
       onNavigate('category', item.category);
+      setIsChatOpen(false);
     }
   };
 
@@ -148,11 +153,13 @@ const BottomNav: React.FC<Props> = ({
     >
       <div className="grid grid-cols-5 items-end h-[64px] max-w-lg mx-auto px-1 pb-2">
         {navItems.map((item) => {
-          const isActive = item.id === 'home'
-            ? currentPage === 'home'
-            : item.id === 'back'
-              ? false
-              : currentPage === 'category' && selectedCategory === item.category;
+          const isActive = item.id === 'chat'
+            ? isChatOpen
+            : item.id === 'home'
+              ? currentPage === 'home' && !isChatOpen
+              : item.id === 'back'
+                ? false
+                : currentPage === 'category' && selectedCategory === item.category && !isChatOpen;
 
           if (item.isCenter) {
             return (
@@ -191,6 +198,11 @@ const BottomNav: React.FC<Props> = ({
             >
               <span className="relative flex items-center justify-center h-[28px]">
                 <TabIcon id={item.id} active={isActive} />
+                {item.id === 'chat' && unreadChatCount > 0 && !isChatOpen && (
+                  <span className="absolute -top-1 -right-2.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full min-w-4 text-center shadow-sm ring-2 ring-white tabular-nums">
+                    {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                  </span>
+                )}
               </span>
               <span
                 className={`text-[11px] mt-1 tracking-tight leading-none whitespace-nowrap shrink-0 transition-colors duration-200 ${

@@ -5,6 +5,8 @@ import NoticeBar from './components/NoticeBar';
 import IconMenu from './components/IconMenu';
 import VideoGallery from './components/VideoGallery';
 import CommunityBoard from './components/CommunityBoard';
+import ChatRoom from './components/ChatRoom';
+import ChatNotificationToast from './components/ChatNotificationToast';
 import QuotationModal from './components/QuotationModal';
 import AdminDashboard from './components/AdminDashboard';
 import CategoryPage from './components/CategoryPage';
@@ -22,7 +24,7 @@ import Privacy from './components/Privacy';
 import Terms from './components/Terms';
 import SplashScreen from './components/SplashScreen';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_NOTICES, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
-import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool } from './types';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
 import { supabaseService } from './services/supabaseService';
 import { updateSupabaseCredentials, clearAdminSessionToken } from './services/supabaseClient';
 import { setCloudinaryConfig } from './services/uploadService';
@@ -38,7 +40,6 @@ const App: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
-  const [email, setEmail] = useState('');
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   
   // Routing State & Privacy / Terms Route Detection
@@ -489,8 +490,9 @@ const App: React.FC = () => {
     return cleanMasterOptionPool(raw);
   });
   const [showPopup, setShowPopup] = useState(false);
-  const [tawkUnreadCount, setTawkUnreadCount] = useState(0);
-  const [isOpeningTawk, setIsOpeningTawk] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [incomingChatToast, setIncomingChatToast] = useState<ChatMessage | null>(null);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashExiting, setIsSplashExiting] = useState(false);
@@ -525,180 +527,17 @@ const App: React.FC = () => {
     };
   }, [isDataLoaded]);
 
-  const tawkOpenTimerRef = useRef<number | null>(null);
-
-  const readStoredUserEmail = (targetUsername?: string): string => {
-    if (!targetUsername) return '';
-    try {
-      const raw = localStorage.getItem('mango_user_emails_v1');
-      if (!raw) return '';
-      const map = JSON.parse(raw) as Record<string, string>;
-      return map[targetUsername.trim().toLowerCase()] || '';
-    } catch {
-      return '';
+  const handleIncomingChatMessage = (msg: ChatMessage) => {
+    if (!isChatOpen) {
+      setUnreadChatCount(prev => prev + 1);
+      setIncomingChatToast(msg);
     }
   };
 
-  const persistStoredUserEmail = (targetUsername?: string, targetEmail?: string) => {
-    if (!targetUsername || !targetEmail) return;
-    try {
-      const raw = localStorage.getItem('mango_user_emails_v1');
-      const map: Record<string, string> = raw ? JSON.parse(raw) : {};
-      map[targetUsername.trim().toLowerCase()] = targetEmail.trim();
-      localStorage.setItem('mango_user_emails_v1', JSON.stringify(map));
-    } catch {
-      // ignore storage errors
-    }
-  };
-
-  const syncTawkVisitor = useCallback((currentUser: User | null) => {
-    const win = window as Window & {
-      Tawk_API?: {
-        visitor?: { name?: string; email?: string };
-        setAttributes?: (attrs: Record<string, string>, callback?: (error?: unknown) => void) => void;
-        hideWidget?: () => void;
-      };
-      __mangoTawkVisitor?: { name?: string; email?: string } | null;
-      __mangoIsLoggedIn?: boolean;
-      __mangoTawkLoaded?: boolean;
-      __mangoOpenTawkOnLoad?: boolean;
-    };
-
-    const api = win.Tawk_API;
-    win.__mangoIsLoggedIn = Boolean(currentUser);
-
-    if (!currentUser) {
-      win.__mangoTawkVisitor = null;
-      win.__mangoOpenTawkOnLoad = false;
-      try {
-        api?.hideWidget?.();
-      } catch {
-        // ignore
-      }
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const displayName = (currentUser.nickname || currentUser.username || '').trim();
-    const resolvedEmail = (
-      currentUser.email ||
-      readStoredUserEmail(currentUser.username) ||
-      (emailRegex.test((currentUser.username || '').trim()) ? currentUser.username.trim() : '')
-    ).trim();
-
-    const attrs: { name?: string; email?: string } = {};
-    if (displayName) attrs.name = displayName;
-    if (resolvedEmail && emailRegex.test(resolvedEmail)) attrs.email = resolvedEmail;
-
-    win.__mangoTawkVisitor = Object.keys(attrs).length > 0 ? attrs : null;
-
-    if (api && Object.keys(attrs).length > 0) {
-      api.visitor = attrs;
-      if (win.__mangoTawkLoaded && typeof api.setAttributes === 'function') {
-        try {
-          api.setAttributes(attrs, () => {});
-        } catch {
-          // ignore
-        }
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    syncTawkVisitor(user);
-  }, [user, syncTawkVisitor]);
-
-  useEffect(() => {
-    const handleUnread = (e: Event) => {
-      const customEvent = e as CustomEvent<number>;
-      setTawkUnreadCount(typeof customEvent.detail === 'number' ? customEvent.detail : 0);
-    };
-    const handleReady = () => {
-      if (tawkOpenTimerRef.current !== null) {
-        window.clearTimeout(tawkOpenTimerRef.current);
-        tawkOpenTimerRef.current = null;
-      }
-      setIsOpeningTawk(false);
-      syncTawkVisitor(user);
-    };
-    window.addEventListener('mango_tawk_unread', handleUnread);
-    window.addEventListener('mango_tawk_ready', handleReady);
-    return () => {
-      if (tawkOpenTimerRef.current !== null) {
-        window.clearTimeout(tawkOpenTimerRef.current);
-        tawkOpenTimerRef.current = null;
-      }
-      window.removeEventListener('mango_tawk_unread', handleUnread);
-      window.removeEventListener('mango_tawk_ready', handleReady);
-    };
-  }, [user, syncTawkVisitor]);
-
-  const handleOpenTawkChat = async () => {
-    if (!user) {
-      await appAlert('실시간 1:1 상담은 회원 전용 서비스입니다. 로그인 또는 회원가입 후 이용해 주세요.');
-      setAuthMode('login');
-      setShowAuthModal(true);
-      return;
-    }
-
-    syncTawkVisitor(user);
-
-    const win = window as Window & {
-      Tawk_API?: {
-        showWidget?: () => void;
-        maximize?: () => void;
-        toggle?: () => void;
-      };
-      __mangoOpenTawkOnLoad?: boolean;
-      __mangoTawkLoaded?: boolean;
-    };
-    const api = win.Tawk_API;
-    if (api && win.__mangoTawkLoaded && (typeof api.maximize === 'function' || typeof api.toggle === 'function')) {
-      try {
-        api.showWidget?.();
-        if (typeof api.maximize === 'function') {
-          api.maximize();
-        } else {
-          api.toggle?.();
-        }
-        setTawkUnreadCount(0);
-        return;
-      } catch {
-        try {
-          api.toggle?.();
-          setTawkUnreadCount(0);
-          return;
-        } catch {
-          // fallback below
-        }
-      }
-    }
-    win.__mangoOpenTawkOnLoad = true;
-    setIsOpeningTawk(true);
-    if (tawkOpenTimerRef.current !== null) {
-      window.clearTimeout(tawkOpenTimerRef.current);
-    }
-    tawkOpenTimerRef.current = window.setTimeout(() => {
-      tawkOpenTimerRef.current = null;
-      const retryApi = win.Tawk_API;
-      if (retryApi && (typeof retryApi.maximize === 'function' || typeof retryApi.toggle === 'function')) {
-        try {
-          retryApi.showWidget?.();
-          if (typeof retryApi.maximize === 'function') {
-            retryApi.maximize();
-          } else {
-            retryApi.toggle?.();
-          }
-          setTawkUnreadCount(0);
-        } catch {
-          // ignore
-        }
-        setIsOpeningTawk(false);
-      } else {
-        setIsOpeningTawk(false);
-        void appAlert('실시간 채팅 위젯을 불러오는 중입니다. 광고 차단 기능이 켜져 있다면 해제 후 다시 시도해주세요.');
-      }
-    }, 3500);
+  const handleOpenChatFromToast = () => {
+    setIsChatOpen(true);
+    setUnreadChatCount(0);
+    setIncomingChatToast(null);
   };
 
   // --- Session Persistence & URL Sync Handling ---
@@ -1192,7 +1031,6 @@ const App: React.FC = () => {
 
     const cleanUsername = username.trim();
     const cleanNickname = nickname.trim();
-    const cleanEmail = email.trim();
 
     if (!cleanUsername || !password.trim()) {
       await appAlert('아이디와 비밀번호를 입력해주세요.');
@@ -1215,16 +1053,11 @@ const App: React.FC = () => {
         return;
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const resolvedSignupEmail =
-        cleanEmail || (emailRegex.test(cleanUsername) ? cleanUsername : '');
-
       const newUser: User = {
         id: `u_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         username: cleanUsername,
         role: 'user',
-        nickname: cleanNickname,
-        ...(resolvedSignupEmail ? { email: resolvedSignupEmail } : {})
+        nickname: cleanNickname
       };
 
       setIsAuthSubmitting(true);
@@ -1238,13 +1071,7 @@ const App: React.FC = () => {
           return;
         }
 
-        if (resolvedSignupEmail) {
-          persistStoredUserEmail(cleanUsername, resolvedSignupEmail);
-        }
-        const savedUser: User = resolvedSignupEmail
-          ? { ...result.user, email: result.user.email || resolvedSignupEmail }
-          : result.user;
-
+        const savedUser = result.user;
         setUsers(prev => {
           const filtered = prev.filter(u => u.username !== savedUser.username);
           return [savedUser, ...filtered];
@@ -1265,17 +1092,7 @@ const App: React.FC = () => {
           return;
         }
 
-        const storedEmail = readStoredUserEmail(result.user.username);
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const inferredEmail =
-          result.user.email ||
-          storedEmail ||
-          (emailRegex.test(result.user.username) ? result.user.username : '');
-
-        const authenticatedUser: User = inferredEmail
-          ? { ...result.user, email: inferredEmail }
-          : result.user;
-
+        const authenticatedUser = result.user;
         setUsers(prev => {
           const exists = prev.some(u => u.id === authenticatedUser.id || u.username === authenticatedUser.username);
           return exists
@@ -1291,7 +1108,7 @@ const App: React.FC = () => {
     }
   };
 
-  const resetAuthFields = () => { setUsername(''); setPassword(''); setNickname(''); setEmail(''); };
+  const resetAuthFields = () => { setUsername(''); setPassword(''); setNickname(''); };
 
   const navigateTo = (page: PageType, category: string | null = null, pushHistory: boolean = true) => {
     if (page === currentPage && category === selectedCategory) {
@@ -1324,6 +1141,7 @@ const App: React.FC = () => {
 
     setCurrentPage(page);
     setSelectedCategory(category);
+    setIsChatOpen(false);
     setSelectedProduct(undefined);
     setShowAuthModal(false);
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
@@ -1347,6 +1165,10 @@ const App: React.FC = () => {
     // 1. App-level modal & drawer overlays
     if (showAuthModal) {
       setShowAuthModal(false);
+      return;
+    }
+    if (isChatOpen) {
+      setIsChatOpen(false);
       return;
     }
     if (showPopup) {
@@ -1605,61 +1427,95 @@ const App: React.FC = () => {
       </main>
 
       <div className={`mt-auto w-full max-w-7xl mx-auto px-3 sm:px-4 no-print ${currentPage === 'home' ? 'pt-0' : 'pt-2.5 sm:pt-3'}`}>
-        <footer className="relative bg-gray-800 text-gray-400 py-4 sm:py-5 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
-          <div className="md:px-40">
-            <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
-              <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
-                Kakao: <span className="font-bold">MANGO TOUR</span>
-              </a>
-            </p>
-            <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
-              <button 
-                type="button"
-                onClick={() => navigateTo('privacy')} 
-                className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
-              >
-                개인정보처리방침
-              </button>
-              <span className="text-gray-600">|</span>
-              <button 
-                type="button"
-                onClick={() => navigateTo('terms')} 
-                className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
-              >
-                이용약관
-              </button>
-              <span className="text-gray-600">|</span>
-              <span className="whitespace-nowrap">대표자: 김일선</span>
-            </div>
-            <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
+        <footer className="bg-gray-800 text-gray-400 py-4 sm:py-5 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
+          <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
+            <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
+              Kakao: <span className="font-bold">MANGO TOUR</span>
+            </a>
+          </p>
+          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
+            <button 
+              type="button"
+              onClick={() => navigateTo('privacy')} 
+              className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
+            >
+              개인정보처리방침
+            </button>
+            <span className="text-gray-600">|</span>
+            <button 
+              type="button"
+              onClick={() => navigateTo('terms')} 
+              className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
+            >
+              이용약관
+            </button>
+            <span className="text-gray-600">|</span>
+            <span className="whitespace-nowrap">대표자: 김일선</span>
           </div>
+          <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
+        </footer>
+      </div>
 
-          <div className="mt-3 md:mt-0 md:absolute md:right-6 md:top-1/2 md:-translate-y-1/2 flex justify-center">
+      {/* Real-time Chat Notification Toast */}
+      {incomingChatToast && !isChatOpen && (
+        <ChatNotificationToast 
+          message={incomingChatToast}
+          unreadCount={unreadChatCount}
+          onOpenChat={handleOpenChatFromToast}
+          onDismiss={() => setIncomingChatToast(null)}
+        />
+      )}
+
+      <ChatRoom 
+        user={user} 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }}
+        onNewIncomingMessage={handleIncomingChatMessage}
+        onResetUnread={() => setUnreadChatCount(0)}
+      />
+
+      {/* Desktop Floating Chat Trigger (Aligned inside max-w-7xl container right edge) */}
+      {!isChatOpen && (
+        <div className="hidden md:block fixed inset-x-0 bottom-6 z-[9990] pointer-events-none no-print">
+          <div className="max-w-7xl mx-auto px-4 flex justify-end items-center">
             <button
               type="button"
-              onClick={handleOpenTawkChat}
-              disabled={isOpeningTawk}
-              className="relative flex items-center gap-2 px-5 py-3.5 bg-[#0A7E54] hover:bg-[#086945] disabled:opacity-75 text-white rounded-full shadow-lg font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-[1.03] group cursor-pointer whitespace-nowrap"
+              onClick={() => {
+                setIsChatOpen(true);
+                setUnreadChatCount(0);
+                setIncomingChatToast(null);
+              }}
+              className="pointer-events-auto relative flex items-center gap-2 px-5 py-3.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-full shadow-lg font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-[1.03] group cursor-pointer"
             >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
-              <span>{isOpeningTawk ? '채팅 연결 중...' : '실시간 채팅'}</span>
-              {user && tawkUnreadCount > 0 && (
+              <span>실시간 채팅</span>
+              {unreadChatCount > 0 && (
                 <span className="flex items-center gap-1 bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm ring-2 ring-white tabular-nums">
-                  {tawkUnreadCount > 9 ? '9+' : tawkUnreadCount}
+                  {unreadChatCount > 9 ? '9+' : unreadChatCount}
                 </span>
               )}
             </button>
           </div>
-        </footer>
-      </div>
+        </div>
+      )}
 
       <BottomNav 
         currentPage={currentPage} 
         selectedCategory={selectedCategory}
         onNavigate={(page, cat) => navigateTo(page as any, cat || null)}
+        isChatOpen={isChatOpen} 
+        setIsChatOpen={(open) => {
+          setIsChatOpen(open);
+          if (open) {
+            setUnreadChatCount(0);
+            setIncomingChatToast(null);
+          }
+        }} 
         onBack={handleBackOneStep}
+        unreadChatCount={unreadChatCount}
       />
 
       {/* Popup Notification */}
@@ -1736,16 +1592,10 @@ const App: React.FC = () => {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="비밀번호를 입력하세요" required />
               </div>
               {authMode === 'signup' && (
-                <>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#8E8E93] ml-1">닉네임</label>
-                    <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="사용하실 닉네임을 입력하세요" required />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#8E8E93] ml-1">이메일 (선택)</label>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="상담 안내를 받으실 이메일 (선택)" />
-                  </div>
-                </>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#8E8E93] ml-1">닉네임</label>
+                  <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="w-full bg-[#F2F2F7] p-3.5 rounded-2xl outline-none focus:ring-2 focus:ring-[#0A7E54]/40 focus:bg-white transition text-gray-900" placeholder="사용하실 닉네임을 입력하세요" required />
+                </div>
               )}
               <button
                 type="submit"
