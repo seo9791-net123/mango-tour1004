@@ -5,8 +5,6 @@ import NoticeBar from './components/NoticeBar';
 import IconMenu from './components/IconMenu';
 import VideoGallery from './components/VideoGallery';
 import CommunityBoard from './components/CommunityBoard';
-import ChatRoom from './components/ChatRoom';
-import ChatNotificationToast from './components/ChatNotificationToast';
 import QuotationModal from './components/QuotationModal';
 import AdminDashboard from './components/AdminDashboard';
 import CategoryPage from './components/CategoryPage';
@@ -24,7 +22,7 @@ import Privacy from './components/Privacy';
 import Terms from './components/Terms';
 import SplashScreen from './components/SplashScreen';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_NOTICES, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
-import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool } from './types';
 import { supabaseService } from './services/supabaseService';
 import { updateSupabaseCredentials, clearAdminSessionToken } from './services/supabaseClient';
 import { setCloudinaryConfig } from './services/uploadService';
@@ -490,9 +488,8 @@ const App: React.FC = () => {
     return cleanMasterOptionPool(raw);
   });
   const [showPopup, setShowPopup] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [unreadChatCount, setUnreadChatCount] = useState(0);
-  const [incomingChatToast, setIncomingChatToast] = useState<ChatMessage | null>(null);
+  const [tawkUnreadCount, setTawkUnreadCount] = useState(0);
+  const [isOpeningTawk, setIsOpeningTawk] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [isSplashExiting, setIsSplashExiting] = useState(false);
@@ -527,17 +524,81 @@ const App: React.FC = () => {
     };
   }, [isDataLoaded]);
 
-  const handleIncomingChatMessage = (msg: ChatMessage) => {
-    if (!isChatOpen) {
-      setUnreadChatCount(prev => prev + 1);
-      setIncomingChatToast(msg);
-    }
-  };
+  const tawkOpenTimerRef = useRef<number | null>(null);
 
-  const handleOpenChatFromToast = () => {
-    setIsChatOpen(true);
-    setUnreadChatCount(0);
-    setIncomingChatToast(null);
+  useEffect(() => {
+    const handleUnread = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      setTawkUnreadCount(typeof customEvent.detail === 'number' ? customEvent.detail : 0);
+    };
+    const handleReady = () => {
+      if (tawkOpenTimerRef.current !== null) {
+        window.clearTimeout(tawkOpenTimerRef.current);
+        tawkOpenTimerRef.current = null;
+      }
+      setIsOpeningTawk(false);
+    };
+    window.addEventListener('mango_tawk_unread', handleUnread);
+    window.addEventListener('mango_tawk_ready', handleReady);
+    return () => {
+      if (tawkOpenTimerRef.current !== null) {
+        window.clearTimeout(tawkOpenTimerRef.current);
+        tawkOpenTimerRef.current = null;
+      }
+      window.removeEventListener('mango_tawk_unread', handleUnread);
+      window.removeEventListener('mango_tawk_ready', handleReady);
+    };
+  }, []);
+
+  const handleOpenTawkChat = () => {
+    const win = window as Window & {
+      Tawk_API?: {
+        showWidget?: () => void;
+        maximize?: () => void;
+        toggle?: () => void;
+      };
+      __mangoOpenTawkOnLoad?: boolean;
+      __mangoTawkLoaded?: boolean;
+    };
+    const api = win.Tawk_API;
+    if (api && win.__mangoTawkLoaded && typeof api.maximize === 'function') {
+      try {
+        api.showWidget?.();
+        api.maximize();
+        setTawkUnreadCount(0);
+        return;
+      } catch {
+        try {
+          api.toggle?.();
+          setTawkUnreadCount(0);
+          return;
+        } catch {
+          // fallback below
+        }
+      }
+    }
+    win.__mangoOpenTawkOnLoad = true;
+    setIsOpeningTawk(true);
+    if (tawkOpenTimerRef.current !== null) {
+      window.clearTimeout(tawkOpenTimerRef.current);
+    }
+    tawkOpenTimerRef.current = window.setTimeout(() => {
+      tawkOpenTimerRef.current = null;
+      const retryApi = win.Tawk_API;
+      if (retryApi && typeof retryApi.maximize === 'function') {
+        try {
+          retryApi.showWidget?.();
+          retryApi.maximize();
+          setTawkUnreadCount(0);
+        } catch {
+          // ignore
+        }
+        setIsOpeningTawk(false);
+      } else {
+        setIsOpeningTawk(false);
+        void appAlert('실시간 채팅 위젯을 불러오는 중입니다. 광고 차단 기능이 켜져 있다면 해제 후 다시 시도해주세요.');
+      }
+    }, 3500);
   };
 
   // --- Session Persistence & URL Sync Handling ---
@@ -1141,7 +1202,6 @@ const App: React.FC = () => {
 
     setCurrentPage(page);
     setSelectedCategory(category);
-    setIsChatOpen(false);
     setSelectedProduct(undefined);
     setShowAuthModal(false);
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
@@ -1165,10 +1225,6 @@ const App: React.FC = () => {
     // 1. App-level modal & drawer overlays
     if (showAuthModal) {
       setShowAuthModal(false);
-      return;
-    }
-    if (isChatOpen) {
-      setIsChatOpen(false);
       return;
     }
     if (showPopup) {
@@ -1427,95 +1483,61 @@ const App: React.FC = () => {
       </main>
 
       <div className={`mt-auto w-full max-w-7xl mx-auto px-3 sm:px-4 no-print ${currentPage === 'home' ? 'pt-0' : 'pt-2.5 sm:pt-3'}`}>
-        <footer className="bg-gray-800 text-gray-400 py-4 sm:py-5 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
-          <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
-            <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
-              Kakao: <span className="font-bold">MANGO TOUR</span>
-            </a>
-          </p>
-          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
-            <button 
-              type="button"
-              onClick={() => navigateTo('privacy')} 
-              className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
-            >
-              개인정보처리방침
-            </button>
-            <span className="text-gray-600">|</span>
-            <button 
-              type="button"
-              onClick={() => navigateTo('terms')} 
-              className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
-            >
-              이용약관
-            </button>
-            <span className="text-gray-600">|</span>
-            <span className="whitespace-nowrap">대표자: 김일선</span>
+        <footer className="relative bg-gray-800 text-gray-400 py-4 sm:py-5 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
+          <div className="md:px-40">
+            <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
+              <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
+                Kakao: <span className="font-bold">MANGO TOUR</span>
+              </a>
+            </p>
+            <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-[11px] text-gray-400 px-2">
+              <button 
+                type="button"
+                onClick={() => navigateTo('privacy')} 
+                className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
+              >
+                개인정보처리방침
+              </button>
+              <span className="text-gray-600">|</span>
+              <button 
+                type="button"
+                onClick={() => navigateTo('terms')} 
+                className="text-gray-300 hover:text-gold-400 font-bold underline transition cursor-pointer whitespace-nowrap"
+              >
+                이용약관
+              </button>
+              <span className="text-gray-600">|</span>
+              <span className="whitespace-nowrap">대표자: 김일선</span>
+            </div>
+            <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
           </div>
-          <p className="mt-2 text-[10px] text-gray-500">© MANGO TOUR. All rights reserved.</p>
-        </footer>
-      </div>
 
-      {/* Real-time Chat Notification Toast */}
-      {incomingChatToast && !isChatOpen && (
-        <ChatNotificationToast 
-          message={incomingChatToast}
-          unreadCount={unreadChatCount}
-          onOpenChat={handleOpenChatFromToast}
-          onDismiss={() => setIncomingChatToast(null)}
-        />
-      )}
-
-      <ChatRoom 
-        user={user} 
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        onReqLogin={() => { setShowAuthModal(true); setAuthMode('login'); }}
-        onNewIncomingMessage={handleIncomingChatMessage}
-        onResetUnread={() => setUnreadChatCount(0)}
-      />
-
-      {/* Desktop Floating Chat Trigger (Aligned inside max-w-7xl container right edge) */}
-      {!isChatOpen && (
-        <div className="hidden md:block fixed inset-x-0 bottom-6 z-[9990] pointer-events-none no-print">
-          <div className="max-w-7xl mx-auto px-4 flex justify-end items-center">
+          <div className="mt-3 md:mt-0 md:absolute md:right-6 md:top-1/2 md:-translate-y-1/2 flex justify-center">
             <button
               type="button"
-              onClick={() => {
-                setIsChatOpen(true);
-                setUnreadChatCount(0);
-                setIncomingChatToast(null);
-              }}
-              className="pointer-events-auto relative flex items-center gap-2 px-5 py-3.5 bg-[#0A7E54] hover:bg-[#086945] text-white rounded-full shadow-lg font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-[1.03] group cursor-pointer"
+              onClick={handleOpenTawkChat}
+              disabled={isOpeningTawk}
+              className="relative inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 bg-[#0A7E54] hover:bg-[#086945] disabled:opacity-75 text-white rounded-full shadow-lg font-bold text-xs sm:text-sm transition-all duration-200 active:scale-95 hover:scale-[1.03] cursor-pointer whitespace-nowrap"
             >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
-              <span>실시간 채팅</span>
-              {unreadChatCount > 0 && (
-                <span className="flex items-center gap-1 bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm ring-2 ring-white tabular-nums">
-                  {unreadChatCount > 9 ? '9+' : unreadChatCount}
+              <span>{isOpeningTawk ? '채팅 연결 중...' : '실시간 채팅'}</span>
+              {tawkUnreadCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ring-2 ring-white tabular-nums">
+                  {tawkUnreadCount > 9 ? '9+' : tawkUnreadCount}
                 </span>
               )}
             </button>
           </div>
-        </div>
-      )}
+        </footer>
+      </div>
 
       <BottomNav 
         currentPage={currentPage} 
         selectedCategory={selectedCategory}
         onNavigate={(page, cat) => navigateTo(page as any, cat || null)}
-        isChatOpen={isChatOpen} 
-        setIsChatOpen={(open) => {
-          setIsChatOpen(open);
-          if (open) {
-            setUnreadChatCount(0);
-            setIncomingChatToast(null);
-          }
-        }} 
         onBack={handleBackOneStep}
-        unreadChatCount={unreadChatCount}
       />
 
       {/* Popup Notification */}
