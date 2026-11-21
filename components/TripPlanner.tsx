@@ -972,6 +972,134 @@ export const TripPlanner: React.FC<Props> = ({
     return opt.name;
   };
 
+  // Concise option title & subtitle for mobile (< sm) checklist cards
+  const getMobileOptionSummary = (opt: PackageOptionItem, fullDisplayName: string): { title: string; subtitle: string } => {
+    const isGolfOpt = opt.category === 'golf';
+    const canShowPrice = showDetailedCosts || isGolfOpt;
+    const isFastTrack = opt.name.includes('패스트 트랙') || opt.id.includes('fasttrack');
+    const isMassage = opt.category === 'activity' && opt.name.includes('마사지');
+    const customSel = customOptionSelections[opt.id];
+
+    if (isGolfOpt) {
+      if (customGolfCourses.length > 0 && (opt.name.includes('그린피') || opt.name.includes('코스') || opt.id.includes('golf'))) {
+        return {
+          title: customGolfCourses.map(c => c.split(' ')[0]).join(' + '),
+          subtitle: `${customGolfCourses.length}회 18홀 라운딩`,
+        };
+      }
+      const simplifiedGolf = fullDisplayName
+        .replace(/^\d+대\s*명문\s*코스\s*그린피\s*/g, '')
+        .replace(/\[[^\]]*\]\s*/g, '')
+        .replace(/^\((.+)\)$/, '$1')
+        .trim();
+      return {
+        title: simplifiedGolf || fullDisplayName,
+        subtitle: '정규 18홀 그린피',
+      };
+    }
+
+    if (opt.category === 'vehicle') {
+      const src = customSel?.name || fullDisplayName;
+      let shortTitle = '';
+      if (src.includes('9인승')) shortTitle = '9인승 VIP 리무진';
+      else if (src.includes('7인승')) shortTitle = '7인승 프리미엄 SUV';
+      else if (src.includes('16인승')) shortTitle = '16인승 전용 밴';
+      else if (src.includes('26인승')) shortTitle = '26인승 리무진 버스';
+      else {
+        shortTitle = src
+          .replace(/전\s*일정\s*단독\s*/g, '')
+          .replace(/\s*\([^)]*(일간|기준|총액|시트|\$)[^)]*\)/g, '')
+          .replace(/\s+/g, ' ')
+          .trim() || '전용 VIP 리무진';
+      }
+      return {
+        title: shortTitle,
+        subtitle: `${pkgTravelDays}일 단독 전용 (1대)`,
+      };
+    }
+
+    if (opt.category === 'hotel') {
+      const src = customSel?.name || fullDisplayName;
+      const shortHotel = src
+        .replace(/\s*\((\d+박)\s*\/\s*1인\s*객실\s*기준\)/g, ' ($1)')
+        .replace(/\s*\([^)]*(객실\s*기준|1인\s*1실|베드룸|배정|급|독채|오션뷰|인접)[^)]*\)/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return {
+        title: shortHotel || '고급 호텔',
+        subtitle: '1인 1실 단독',
+      };
+    }
+
+    if (opt.category === 'guide') {
+      const src = customSel?.name || fullDisplayName;
+      let shortGuide = '한국어 전문 가이드';
+      if (src.includes('미포함')) shortGuide = '가이드 미포함';
+      else if (src.includes('VIP') || src.includes('비즈니스')) shortGuide = 'VIP 의전 가이드';
+      else if (src.includes('한국어') || src.includes('베테랑')) shortGuide = '한국어 전문 가이드';
+      return {
+        title: shortGuide,
+        subtitle: src.includes('미포함') ? '전용 기사만 배정' : `${pkgTravelDays}일 전 일정 동행`,
+      };
+    }
+
+    if (isFastTrack) {
+      return {
+        title: '공항 VIP 패스트 트랙',
+        subtitle: canShowPrice ? '입국 초고속 패스 (1인 $60)' : '입국 심사 초고속 패스',
+      };
+    }
+
+    if (isMassage) {
+      return {
+        title: 'VIP 전신 마사지 (90분)',
+        subtitle: canShowPrice ? '기본 포함 ($50)' : '피로 회복 힐링 스파',
+      };
+    }
+
+    if (opt.category === 'meal') {
+      const src = customSel?.name || fullDisplayName;
+      if (opt.id === 'diy-opt-dinner') {
+        const countMatch = src.match(/(\d+회)/);
+        return {
+          title: `맞춤 저녁식사${countMatch ? ` (${countMatch[1]})` : ''}`,
+          subtitle: selectedDinnerEntries.map(e => `${e.day}일차 ${e.menu.name}`).join(' · '),
+        };
+      }
+      if (src.includes('미포함') || src.includes('자유 식사')) {
+        return { title: '자유 식사 (미포함)', subtitle: '개별 자유 식사' };
+      }
+      const shortMeal = src.replace(/\s*\([^)]*(석식|1일|\$)[^)]*\)/g, '').trim();
+      return {
+        title: shortMeal || '특식 포함',
+        subtitle: canShowPrice ? '1인 1일 $50 기준' : '전 일정 특식',
+      };
+    }
+
+    if (opt.id === 'diy-opt-region') {
+      return {
+        title: `${activePackage?.location || diyLocation} 기본 수배비`,
+        subtitle: '현지 일정 관리',
+      };
+    }
+
+    if (opt.id === 'diy-opt-tour') {
+      const cleanTour = fullDisplayName
+        .replace(/^선택 여행 일정:\s*/, '')
+        .replace(/\s*\([^)]*\)/g, '')
+        .trim();
+      return {
+        title: cleanTour || '맞춤 여행 일정',
+        subtitle: '선택 투어 일정',
+      };
+    }
+
+    return {
+      title: fullDisplayName.replace(/\s*\([^)]*(기준|총액|1일\s*\$)[^)]*\)/g, '').trim() || fullDisplayName,
+      subtitle: '',
+    };
+  };
+
   // Get dynamic display description for each option item
   const getOptionDisplayDescription = (opt: PackageOptionItem) => {
     if (customOptionSelections[opt.id]?.description) {
@@ -1853,7 +1981,7 @@ export const TripPlanner: React.FC<Props> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 items-stretch">
                   {/* 골프 버튼 */}
                   <button
                     type="button"
@@ -1862,26 +1990,27 @@ export const TripPlanner: React.FC<Props> = ({
                       setShowAllCoursesInGolfModal(false);
                       setShowActivityModal('golf');
                     }}
-                    className={`p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer ${
+                    className={`p-3.5 sm:p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col sm:flex-row sm:items-center justify-between gap-3 h-full cursor-pointer ${
                       diyActivityMode === 'golf'
                         ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
                         : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-10 h-10 md:w-11 md:h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <span className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl text-lg sm:text-xl flex items-center justify-center shrink-0 ${
                         diyActivityMode === 'golf' ? 'bg-[#0A7E54] text-white' : 'bg-white text-gray-900 shadow-2xs'
                       }`}>
                         ⛳
                       </span>
-                      <div>
-                        <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight">골프</div>
-                        <div className="text-xs text-[#8E8E93]">
-                          {diyLocation} 골프장 ({diyRounds}회)
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900 tracking-tight leading-tight">골프</div>
+                        <div className="text-[11px] sm:text-xs text-[#8E8E93] truncate mt-0.5">
+                          <span className="sm:hidden">{diyLocation} {diyRounds}회</span>
+                          <span className="hidden sm:inline">{diyLocation} 골프장 ({diyRounds}회)</span>
                         </div>
                       </div>
                     </div>
-                    <span className={`self-end sm:self-center px-3 py-1.5 rounded-xl text-xs font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
+                    <span className={`w-full sm:w-auto text-center px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
                       diyActivityMode === 'golf' ? 'text-[#0A7E54]' : 'text-[#3A3A3C]'
                     }`}>
                       골프장 선택 ▾
@@ -1895,26 +2024,27 @@ export const TripPlanner: React.FC<Props> = ({
                       setDiyActivityMode('tour');
                       setShowActivityModal('tour');
                     }}
-                    className={`p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer ${
+                    className={`p-3.5 sm:p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col sm:flex-row sm:items-center justify-between gap-3 h-full cursor-pointer ${
                       diyActivityMode === 'tour'
                         ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
                         : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className={`w-10 h-10 md:w-11 md:h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <span className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl text-lg sm:text-xl flex items-center justify-center shrink-0 ${
                         diyActivityMode === 'tour' ? 'bg-[#0A7E54] text-white' : 'bg-white text-gray-900 shadow-2xs'
                       }`}>
                         🧳
                       </span>
-                      <div>
-                        <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight">여행</div>
-                        <div className="text-xs text-[#8E8E93]">
-                          자유 · {diyLocation} 관광
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900 tracking-tight leading-tight">여행</div>
+                        <div className="text-[11px] sm:text-xs text-[#8E8E93] truncate mt-0.5">
+                          <span className="sm:hidden">자유 · {diyLocation}</span>
+                          <span className="hidden sm:inline">자유 · {diyLocation} 관광</span>
                         </div>
                       </div>
                     </div>
-                    <span className={`self-end sm:self-center px-3 py-1.5 rounded-xl text-xs font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
+                    <span className={`w-full sm:w-auto text-center px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
                       diyActivityMode === 'tour' ? 'text-[#0A7E54]' : 'text-[#3A3A3C]'
                     }`}>
                       상품 선택 ▾
@@ -1923,42 +2053,64 @@ export const TripPlanner: React.FC<Props> = ({
                 </div>
 
                 {/* Current Active Golf / Tour Summary Strip */}
-                <div className="p-3.5 md:p-4 rounded-2xl bg-[#ECFDF5] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="p-3.5 md:p-4 rounded-2xl bg-[#ECFDF5] space-y-2.5">
                   {diyActivityMode === 'golf' ? (
                     <>
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                        <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">배정 골프장 ({diyRounds}회)</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs md:text-sm font-bold text-[#0A7E54] whitespace-nowrap">
+                          ⛳ 배정 골프장 ({diyRounds}회)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowActivityModal('golf')}
+                          className="px-3 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
+                        >
+                          코스/회차 변경
+                        </button>
+                      </div>
+                      <div
+                        className={`grid gap-1.5 sm:flex sm:flex-wrap ${
+                          diyRounds === 1
+                            ? 'grid-cols-1'
+                            : diyRounds === 3
+                            ? 'grid-cols-3'
+                            : 'grid-cols-2'
+                        }`}
+                      >
                         {diyGolfCourses.slice(0, diyRounds).map((c, idx) => (
-                          <span key={idx} className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#3A3A3C] shadow-2xs whitespace-nowrap">
+                          <span
+                            key={idx}
+                            className="px-2 sm:px-3 py-1.5 bg-white rounded-xl text-[11px] sm:text-xs font-semibold text-[#3A3A3C] shadow-2xs text-center truncate"
+                          >
                             {idx + 1}R {c.split(' ')[0]}
                           </span>
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowActivityModal('golf')}
-                        className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
-                      >
-                        코스/회차 변경
-                      </button>
                     </>
                   ) : (
                     <>
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs md:text-sm">
-                        <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 여행 구성</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs md:text-sm font-bold text-[#0A7E54] whitespace-nowrap">
+                          🧳 선택 여행 구성
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowActivityModal('tour')}
+                          className="px-3 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
+                        >
+                          여행 상품 변경
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
                         {selectedTourItems.map((t) => (
-                          <span key={t.id} className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#3A3A3C] shadow-2xs whitespace-nowrap">
+                          <span
+                            key={t.id}
+                            className="px-2.5 sm:px-3 py-1.5 bg-white rounded-xl text-[11px] sm:text-xs font-semibold text-[#3A3A3C] shadow-2xs"
+                          >
                             {t.name}{showDetailedCosts ? (t.priceUSD > 0 ? ` ($${t.priceUSD})` : ' (자유일정)') : (t.isFreeTravel ? ' (자유일정)' : '')}
                           </span>
                         ))}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowActivityModal('tour')}
-                        className="self-start sm:self-auto px-3.5 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap shadow-2xs transition active:scale-95"
-                      >
-                        여행 상품 변경
-                      </button>
                     </>
                   )}
                 </div>
@@ -2581,6 +2733,7 @@ export const TripPlanner: React.FC<Props> = ({
                         const canShowOptionPrice = showDetailedCosts || isGolfOpt;
                         const rawDisplayName = getOptionDisplayName(option);
                         const displayName = canShowOptionPrice ? rawDisplayName : sanitizeNonGolfPriceText(rawDisplayName);
+                        const mobileSummary = getMobileOptionSummary(option, displayName);
                         const badge = getCategoryBadge(option.category, rawDisplayName);
                         const effectivePrice = getOptionPrice(option);
                         const isCustomized = !!customOptionSelections[option.id] || (option.category === 'golf' && isGolfCoursesModified);
@@ -2597,57 +2750,124 @@ export const TripPlanner: React.FC<Props> = ({
                           : [];
 
                         const isFastTrack = option.name.includes('패스트 트랙') || option.id.includes('fasttrack');
+                        const desktopSub = isFastTrack ? (canShowOptionPrice ? '1인당 $60 선택 추가' : '공항 VIP 전용 패스트트랙 선택 추가') :
+                          option.category === 'vehicle' ? (canShowOptionPrice ? `${pkgTravelDays}일 일정 총액 (1대 · 인원 무관)` : `${pkgTravelDays}일 전 일정 단독 전용 (1대 · 인원 무관)`) :
+                          option.category === 'hotel' ? '1인 1실 단독 투숙' :
+                          option.category === 'guide' ? (canShowOptionPrice ? `${pkgTravelDays}일 일정 총액 (1명 · 인원 무관)` : `${pkgTravelDays}일 전 일정 전담 동행 (1명 · 인원 무관)`) :
+                          (option.category === 'activity' && option.name.includes('마사지')) ? (canShowOptionPrice ? '기본 선택 포함 ($50)' : '기본 선택 포함') :
+                          option.category === 'meal' ? (canShowOptionPrice ? '1인 1일 $50 기준 선택 가능' : '전 일정 특식 선택 가능') : '';
+
+                        const canCustomizeOption =
+                          option.category === 'golf' ||
+                          ['hotel', 'vehicle', 'guide', 'meal', 'activity'].includes(option.category) ||
+                          option.allowCustomSelection;
+
+                        const changeButtonLabel =
+                          option.category === 'golf'
+                            ? '골프장 변경'
+                            : option.category === 'hotel'
+                            ? '숙박 변경'
+                            : option.category === 'vehicle'
+                            ? '차량 변경'
+                            : option.category === 'guide'
+                            ? '가이드 변경'
+                            : option.category === 'meal'
+                            ? '식사 변경'
+                            : `${option.name.replace(/\s*\([^)]*\)/g, '').trim().slice(0, 8)} 변경`;
 
                         return (
                           <div
                             key={option.id}
-                            className={`rounded-2xl transition-all duration-200 ${
+                            onClick={() => handleToggleOption(option)}
+                            className={`rounded-2xl p-3.5 sm:p-4 transition-all duration-200 cursor-pointer space-y-2 ${
                               isSelected
                                 ? 'bg-[#ECFDF5] ring-1 ring-[#0A7E54]/30'
                                 : 'bg-[#F2F2F7] opacity-65 hover:opacity-100'
                             }`}
                           >
-                            <div 
-                              onClick={() => handleToggleOption(option)}
-                              className="p-3.5 sm:p-4 cursor-pointer flex items-start justify-between gap-2.5 w-full min-w-0"
-                            >
-                              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+                            {/* Top Row: Checkbox + Badge + Tags (Left) & Change Action (Right) */}
+                            <div className="flex items-center justify-between gap-2 pb-2 border-b border-black/[0.05] min-w-0">
+                              <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   disabled={option.isRequired}
                                   onChange={() => {}}
-                                  className="mt-0.5 sm:mt-1 w-4 h-4 sm:w-5 sm:h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
+                                  className="w-4 h-4 sm:w-5 sm:h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                                 />
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] md:text-xs font-semibold bg-white text-[#0A7E54]">
-                                      {badge.label}
-                                    </span>
-                                    <span className={`text-xs sm:text-sm md:text-base font-bold tracking-tight ${isSelected ? 'text-gray-900' : 'text-[#8E8E93] line-through'}`}>
-                                      {displayName}
-                                    </span>
-                                    {option.isRequired && (
-                                      <span className="text-[10px] text-[#0A7E54] font-bold bg-white/80 px-1.5 py-0.5 rounded-md">필수</span>
-                                    )}
-                                    {isCustomized && (
-                                      <span className="text-[10px] text-[#0A7E54] font-semibold bg-white px-2 py-0.5 rounded-full">
-                                        맞춤 변경
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-[11px] text-[#8E8E93] mt-1 font-normal">
-                                    {isFastTrack ? (canShowOptionPrice ? '1인당 $60 선택 추가' : '공항 VIP 전용 패스트트랙 선택 추가') :
-                                     option.category === 'vehicle' ? (canShowOptionPrice ? `${pkgTravelDays}일 일정 총액 (1대 · 인원 무관)` : `${pkgTravelDays}일 전 일정 단독 전용 (1대 · 인원 무관)`) :
-                                     option.category === 'hotel' ? '1인 1실 단독 투숙' :
-                                     option.category === 'guide' ? (canShowOptionPrice ? `${pkgTravelDays}일 일정 총액 (1명 · 인원 무관)` : `${pkgTravelDays}일 전 일정 전담 동행 (1명 · 인원 무관)`) :
-                                     (option.category === 'activity' && option.name.includes('마사지')) ? (canShowOptionPrice ? '기본 선택 포함 ($50)' : '기본 선택 포함') :
-                                     option.category === 'meal' ? (canShowOptionPrice ? '1인 1일 $50 기준 선택 가능' : '전 일정 특식 선택 가능') : ''}
-                                  </p>
-                                </div>
+                                <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-white text-[#0A7E54] whitespace-nowrap shrink-0">
+                                  {badge.label}
+                                </span>
+                                {option.isRequired && (
+                                  <span className="text-[10px] text-[#0A7E54] font-bold bg-white/80 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0">
+                                    필수
+                                  </span>
+                                )}
+                                {isCustomized && (
+                                  <span className="text-[10px] text-[#0A7E54] font-semibold bg-white px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                                    맞춤 변경
+                                  </span>
+                                )}
                               </div>
 
-                              <div className="text-right whitespace-nowrap pl-2 shrink-0">
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {customOptionSelections[option.id] && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCustomOptionSelections(prev => {
+                                        const next = { ...prev };
+                                        delete next[option.id];
+                                        return next;
+                                      });
+                                    }}
+                                    className="text-[11px] text-[#8E8E93] hover:text-red-500 underline cursor-pointer px-1 whitespace-nowrap"
+                                  >
+                                    초기화
+                                  </button>
+                                )}
+                                {canCustomizeOption && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (option.category === 'golf') {
+                                        setShowGolfModal(true);
+                                      } else {
+                                        setCustomizingOption(option);
+                                        setOptionModalFilter('전체');
+                                        setOptionModalTypeFilter('전체');
+                                      }
+                                    }}
+                                    className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-[11px] md:text-xs font-bold transition-all duration-200 flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer whitespace-nowrap"
+                                  >
+                                    <span>{changeButtonLabel} ▾</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Main Content Row: Title & Subtitle (Left) + Price / Status (Right) */}
+                            <div className="flex items-center justify-between gap-3 pl-6 sm:pl-7 min-w-0">
+                              <div className="min-w-0 flex-1">
+                                <div className={`text-xs sm:text-sm md:text-base font-bold tracking-tight leading-snug ${isSelected ? 'text-gray-900' : 'text-[#8E8E93] line-through'}`}>
+                                  <span className="sm:hidden">{mobileSummary.title}</span>
+                                  <span className="hidden sm:inline">{displayName}</span>
+                                </div>
+                                {(mobileSummary.subtitle || desktopSub) && (
+                                  <p className="text-[11px] text-[#8E8E93] mt-0.5 font-normal leading-snug">
+                                    {mobileSummary.subtitle && (
+                                      <span className="sm:hidden">{mobileSummary.subtitle}</span>
+                                    )}
+                                    {desktopSub && (
+                                      <span className="hidden sm:inline">{desktopSub}</span>
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="text-right whitespace-nowrap shrink-0">
                                 {(() => {
                                   const isTeamOpt = option.category === 'vehicle' || option.category === 'guide';
                                   const shownUSD = isTeamOpt ? getOptionGroupTotalUSD(option) : effectivePrice;
@@ -2676,69 +2896,6 @@ export const TripPlanner: React.FC<Props> = ({
                                     </>
                                   );
                                 })()}
-                              </div>
-                            </div>
-
-                            {/* Customization Action Buttons */}
-                            <div className="px-3.5 sm:px-4 pb-3 pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-black/[0.05] min-w-0 w-full">
-                              <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                                {option.category === 'golf' ? (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShowGolfModal(true);
-                                    }}
-                                    className="px-3 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-[11px] md:text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
-                                  >
-                                    <span>골프장 변경 ▾</span>
-                                  </button>
-                                ) : ['hotel', 'vehicle', 'guide', 'meal', 'activity'].includes(option.category) || option.allowCustomSelection ? (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setCustomizingOption(option);
-                                      setOptionModalFilter('전체');
-                                      setOptionModalTypeFilter('전체');
-                                    }}
-                                    className="px-3 py-1.5 bg-white hover:bg-gray-50 text-[#0A7E54] rounded-xl text-[11px] md:text-xs font-semibold transition-all duration-200 flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
-                                  >
-                                    <span>
-                                      {option.category === 'hotel' 
-                                        ? '숙박 형태 변경 ▾' 
-                                        : option.category === 'vehicle' 
-                                        ? '차량 옵션 변경 ▾' 
-                                        : option.category === 'guide' 
-                                        ? '가이드 옵션 변경 ▾' 
-                                        : option.category === 'meal'
-                                        ? '식사 구성 변경 ▾'
-                                        : `${option.name.slice(0, 10)} 변경 ▾`}
-                                    </span>
-                                  </button>
-                                ) : null}
-
-                                {customOptionSelections[option.id] && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setCustomOptionSelections(prev => {
-                                        const next = { ...prev };
-                                        delete next[option.id];
-                                        return next;
-                                      });
-                                    }}
-                                    className="text-[11px] text-[#8E8E93] hover:text-red-500 underline cursor-pointer"
-                                  >
-                                    초기화
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="text-[11px] md:text-xs text-[#8E8E93] font-medium truncate max-w-full">
-                                {option.category === 'golf' && `${customGolfCourses.map(c => c.split(' ')[0]).join(' · ')}`}
-                                {option.category === 'hotel' && `${canShowOptionPrice ? (customOptionSelections[option.id]?.name || '기본 고급 호텔') : sanitizeNonGolfPriceText(customOptionSelections[option.id]?.name || '기본 고급 호텔')}`}
                               </div>
                             </div>
 
@@ -3141,7 +3298,20 @@ export const TripPlanner: React.FC<Props> = ({
                       <div className="flex items-start gap-1.5">
                         <span className="font-semibold text-gray-900 shrink-0">숙소</span>
                         <span className="text-[#3A3A3C] font-semibold bg-white px-2 py-0.5 rounded-lg text-[11px]">
-                          {showDetailedCosts ? getChosenAccommodationName() : sanitizeNonGolfPriceText(getChosenAccommodationName())}
+                          {(() => {
+                            const fullAcc = showDetailedCosts ? getChosenAccommodationName() : sanitizeNonGolfPriceText(getChosenAccommodationName());
+                            const shortAcc = fullAcc
+                              .replace(/\s*\((\d+박)\s*\/\s*1인\s*객실\s*기준\)/g, ' ($1)')
+                              .replace(/\s*\([^)]*(객실\s*기준|1인\s*1실|베드룸|배정|급|독채|오션뷰|인접)[^)]*\)/g, '')
+                              .replace(/\s+/g, ' ')
+                              .trim();
+                            return (
+                              <>
+                                <span className="sm:hidden">{shortAcc || fullAcc}</span>
+                                <span className="hidden sm:inline">{fullAcc}</span>
+                              </>
+                            );
+                          })()}
                         </span>
                       </div>
                     </div>
