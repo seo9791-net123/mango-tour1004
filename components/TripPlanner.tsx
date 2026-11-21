@@ -12,12 +12,16 @@ import {
   triggerBlobDownload,
 } from '../utils/quotationExportUtils';
 import { appAlert } from '../services/dialogService';
+import { sanitizeNonGolfPriceText } from '../utils/costBreakdownUtils';
 
 interface Props {
   packages?: CustomTripPackage[];
   masterOptionPool?: MasterOptionPool;
   products?: Product[];
   onBack: () => void;
+  isAdmin?: boolean;
+  showDetailedCosts?: boolean;
+  onToggleAdminDetailedCosts?: (show: boolean) => void;
 }
 
 type DinnerMenuOption = NonNullable<MasterOptionPool['dinnerOptions']>[number];
@@ -33,7 +37,14 @@ const getDinnerMenusForRegion = (pool: MasterOptionPool, loc: string): DinnerMen
   return (matched.length > 0 ? matched : fallback).slice(0, 6);
 };
 
-export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], onBack }) => {
+export const TripPlanner: React.FC<Props> = ({
+  masterOptionPool,
+  products = [],
+  onBack,
+  isAdmin = false,
+  showDetailedCosts = false,
+  onToggleAdminDetailedCosts,
+}) => {
   const pool = masterOptionPool || INITIAL_MASTER_OPTION_POOL;
   const [activePackage, setActivePackage] = useState<CustomTripPackage | null>(null);
   
@@ -73,6 +84,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
   const [showInquiryModal, setShowInquiryModal] = useState<boolean>(false);
   const [showKakaoModal, setShowKakaoModal] = useState<boolean>(false);
   const [showImagePreviewModal, setShowImagePreviewModal] = useState<boolean>(false);
+  const [showQuotePreviewModal, setShowQuotePreviewModal] = useState<boolean>(false);
   const [inquirySuccess, setInquirySuccess] = useState<boolean>(false);
   const [inquiryError, setInquiryError] = useState<string | null>(null);
   const [submissionNotice, setSubmissionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -115,6 +127,10 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     }
     if (showImagePreviewModal) {
       setShowImagePreviewModal(false);
+      return;
+    }
+    if (showQuotePreviewModal) {
+      setShowQuotePreviewModal(false);
       return;
     }
     if (showGolfModal) {
@@ -170,6 +186,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       }
       if (showImagePreviewModal) {
         setShowImagePreviewModal(false);
+        e?.detail?.handled?.();
+        return;
+      }
+      if (showQuotePreviewModal) {
+        setShowQuotePreviewModal(false);
         e?.detail?.handled?.();
         return;
       }
@@ -1071,6 +1092,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     const included = activePackage.options.filter(o => selectedOptionIds.has(o.id));
     const excluded = activePackage.options.filter(o => !selectedOptionIds.has(o.id));
 
+    const maskNonGolf = (txt?: string) => (showDetailedCosts ? (txt || '') : sanitizeNonGolfPriceText(txt));
     let text = `[MANGO TOUR - ${activePackage.duration || '맞춤 일정'} 맞춤 ${customGolfCourses.length > 0 ? '골프' : ''} 여행 견적 문의]\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `📌 상품명: ${activePackage.title}\n`;
@@ -1078,9 +1100,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       text += `⛳ 선택 골프장 (${customGolfCourses.length}회 라운딩): ${customGolfCourses.join(' · ')}\n`;
     } else {
       const tourOpt = activePackage.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
-      text += `🧳 선택 여행/투어: ${tourOpt ? getOptionDisplayName(tourOpt) : `${activePackage.location} ${activePackage.duration} 맞춤 여행`}\n`;
+      text += `🧳 선택 여행/투어: ${tourOpt ? maskNonGolf(getOptionDisplayName(tourOpt)) : `${activePackage.location} ${activePackage.duration} 맞춤 여행`}\n`;
     }
-    text += `🏨 선택 숙박형태: ${getChosenAccommodationName()}\n`;
+    text += `🏨 선택 숙박형태: ${maskNonGolf(getChosenAccommodationName())}\n`;
     text += `📍 여행 지역: ${activePackage.location} (${activePackage.duration || '맞춤 일정'})\n`;
     text += `📅 출발 희망일: ${departureDate || '미정'}\n`;
     text += `👥 여행 인원: ${personCount}명\n`;
@@ -1090,18 +1112,29 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     text += `💰 [예상 견적 금액]\n`;
     text += `• 1인 예상 분담금: $${currentTotalPerPerson.toLocaleString()} (약 ${(currentTotalPerPerson * USD_TO_KRW).toLocaleString()}원)\n`;
     text += `• 총 예상 견적 (${personCount}인): $${currentTotalGroup.toLocaleString()} (약 ${(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)\n`;
-    text += `  (※ 차량·가이드는 ${pkgTravelDays}일 일정 기준 팀 총액 $${currentTeamTotalUSD.toLocaleString()} 적용 / 인원수 무관)\n`;
+    if (showDetailedCosts) {
+      text += `  (※ 차량·가이드는 ${pkgTravelDays}일 일정 기준 팀 총액 $${currentTeamTotalUSD.toLocaleString()} 적용 / 인원수 무관)\n`;
+    } else {
+      text += `  (※ 차량·가이드는 ${pkgTravelDays}일 일정 기준 팀 단위 적용 / 인원수 무관)\n`;
+    }
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `✅ [선택/포함 항목 (${included.length}개)]\n`;
     included.forEach(item => {
       const isTeam = item.category === 'vehicle' || item.category === 'guide';
       const itemTotal = getOptionGroupTotalUSD(item);
-      text += ` • [${item.category}] ${getOptionDisplayName(item)} ($${itemTotal.toLocaleString()} / ${isTeam ? `${pkgTravelDays}일 일정 총액` : `${personCount}인 합계`})\n`;
+      const canShowItem = showDetailedCosts || item.category === 'golf';
+      const itemLabel = canShowItem ? getOptionDisplayName(item) : maskNonGolf(getOptionDisplayName(item));
+      if (canShowItem) {
+        text += ` • [${item.category}] ${itemLabel} ($${itemTotal.toLocaleString()} / ${isTeam ? `${pkgTravelDays}일 일정 총액` : `${personCount}인 합계`})\n`;
+      } else {
+        text += ` • [${item.category}] ${itemLabel} (포함)\n`;
+      }
     });
     if (excluded.length > 0) {
       text += `\n❌ [제외/미선택 항목 (${excluded.length}개)]\n`;
       excluded.forEach(item => {
-        text += ` • ${getOptionDisplayName(item)}\n`;
+        const canShowItem = showDetailedCosts || item.category === 'golf';
+        text += ` • ${canShowItem ? getOptionDisplayName(item) : maskNonGolf(getOptionDisplayName(item))}\n`;
       });
     }
     if (customerNotes) {
@@ -1608,16 +1641,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
     }
   };
 
-  const handleCopyQuote = () => {
-    const text = generateQuotationText();
-    navigator.clipboard.writeText(text).then(() => {
-      showToast('📋 견적서 내용이 클립보드에 복사되었습니다.');
-    });
-  };
-
   const getCategoryBadge = (category: PackageOptionItem['category'], name?: string) => {
     if (name?.includes('패스트 트랙') || name?.includes('Fast Track')) {
-      return { label: '🛫 패스트트랙 ($60)', bg: 'bg-amber-100 text-amber-900 border-amber-300' };
+      return {
+        label: showDetailedCosts ? '🛫 패스트트랙 ($60)' : '🛫 패스트트랙',
+        bg: 'bg-amber-100 text-amber-900 border-amber-300',
+      };
     }
     switch (category) {
       case 'golf': return { label: '⛳ 골프', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
@@ -1625,7 +1654,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
       case 'vehicle': return { label: '🚐 차량', bg: 'bg-amber-100 text-amber-800 border-amber-200' };
       case 'meal': return { label: '🦞 식사', bg: 'bg-red-100 text-red-800 border-red-200' };
       case 'activity': return { label: '💆 스파/투어', bg: 'bg-purple-100 text-purple-800 border-purple-200' };
-      case 'guide': return { label: '👨‍💼 가이드 (1일 $120)', bg: 'bg-indigo-100 text-indigo-800 border-indigo-200' };
+      case 'guide':
+        return {
+          label: showDetailedCosts ? '👨‍💼 가이드 (1일 $120)' : '👨‍💼 가이드',
+          bg: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+        };
       default: return { label: '✨ 옵션/기타', bg: 'bg-gray-100 text-gray-800 border-gray-200' };
     }
   };
@@ -1686,6 +1719,41 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-0 pb-0 w-full">
+        {isAdmin && onToggleAdminDetailedCosts && (
+          <div className="mb-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-950">
+              <span>🔐</span>
+              <span>관리자 견적 금액 표시 설정</span>
+              <span className="hidden md:inline text-xs font-medium text-amber-800">
+                (일반 고객은 합산 금액과 골프비용만 표시됩니다)
+              </span>
+            </div>
+            <div className="inline-flex items-center bg-white p-0.5 rounded-xl border border-amber-200 shadow-2xs shrink-0">
+              <button
+                type="button"
+                onClick={() => onToggleAdminDetailedCosts(false)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                  !showDetailedCosts
+                    ? 'bg-[#0A7E54] text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                합산·골프만 보기
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleAdminDetailedCosts(true)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                  showDetailedCosts
+                    ? 'bg-[#0A7E54] text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                세부금액 전체 보기
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* ================= VIEW 1: 6-STEP DIY CUSTOM TRIP BUILDER ================= */}
         {!activePackage && (
@@ -1880,7 +1948,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         <span className="font-bold text-[#0A7E54] mr-1 whitespace-nowrap">선택 여행 구성</span>
                         {selectedTourItems.map((t) => (
                           <span key={t.id} className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#3A3A3C] shadow-2xs whitespace-nowrap">
-                            {t.name} {t.priceUSD > 0 ? `($${t.priceUSD})` : '(자유일정)'}
+                            {t.name}{showDetailedCosts ? (t.priceUSD > 0 ? ` ($${t.priceUSD})` : ' (자유일정)') : (t.isFreeTravel ? ' (자유일정)' : '')}
                           </span>
                         ))}
                       </div>
@@ -1984,9 +2052,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
                             <span>🏨</span>
                             <span>숙박 포함</span>
-                            <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs tabular-nums whitespace-nowrap">
-                              1박 ${hotelNightRate.toLocaleString()}
-                            </span>
+                            {showDetailedCosts && (
+                              <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs tabular-nums whitespace-nowrap">
+                                1박 ${hotelNightRate.toLocaleString()}
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
                             {diyIncludeHotel
@@ -1997,7 +2067,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </div>
                       {diyIncludeHotel ? (
                         <span className="px-3 py-1 bg-[#0A7E54] text-white rounded-xl text-xs md:text-sm font-bold tabular-nums whitespace-nowrap shrink-0 ml-auto">
-                          {diyNights}박 총 ${hotelTotalUSD.toLocaleString()}
+                          {showDetailedCosts ? `${diyNights}박 총 $${hotelTotalUSD.toLocaleString()}` : `${diyNights}박 포함`}
                         </span>
                       ) : (
                         <span className="text-xs md:text-sm font-bold text-[#8E8E93] shrink-0 whitespace-nowrap ml-auto">
@@ -2097,9 +2167,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
                             <span>🚐</span>
                             <span>차량 포함</span>
-                            <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs tabular-nums whitespace-nowrap">
-                              1일 ${vehDayRate.toLocaleString()} (팀 기준)
-                            </span>
+                            {showDetailedCosts && (
+                              <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs tabular-nums whitespace-nowrap">
+                                1일 ${vehDayRate.toLocaleString()} (팀 기준)
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
                             {diyIncludeVehicle
@@ -2110,7 +2182,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </div>
                       {diyIncludeVehicle ? (
                         <span className="px-3 py-1 bg-[#0A7E54] text-white rounded-xl text-xs md:text-sm font-bold tabular-nums whitespace-nowrap shrink-0 ml-auto">
-                          {diyDays}일 총 ${vehTotalUSD.toLocaleString()} (인원 무관)
+                          {showDetailedCosts
+                            ? `${diyDays}일 총 $${vehTotalUSD.toLocaleString()} (인원 무관)`
+                            : `${diyDays}일 포함 (인원 무관)`}
                         </span>
                       ) : (
                         <span className="text-xs md:text-sm font-bold text-[#8E8E93] shrink-0 whitespace-nowrap ml-auto">
@@ -2164,16 +2238,20 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                               ) : (
                                 <span>{svc.icon}</span>
                               )}
-                              <span>{svc.name}</span>
-                              <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
-                                {unitText}
-                              </span>
+                              <span>{showDetailedCosts ? svc.name : sanitizeNonGolfPriceText(svc.name)}</span>
+                              {showDetailedCosts && (
+                                <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
+                                  {unitText}
+                                </span>
+                              )}
                             </div>
-                            <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">{svc.description}</div>
+                            <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
+                              {showDetailedCosts ? svc.description : sanitizeNonGolfPriceText(svc.description)}
+                            </div>
                           </div>
                         </div>
                         <span className={`text-xs md:text-sm font-bold shrink-0 whitespace-nowrap ${isChecked ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
-                          {isChecked ? (isGuideSvc ? `포함 ($${appliedCost})` : `포함 ($${appliedCost})`) : '미포함'}
+                          {isChecked ? (showDetailedCosts ? `포함 ($${appliedCost})` : '포함') : '미포함'}
                         </span>
                       </div>
                     );
@@ -2214,7 +2292,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </div>
                     </div>
                     <span className={`text-xs md:text-sm font-bold shrink-0 whitespace-nowrap ${dinnerCount > 0 ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
-                      {dinnerCount > 0 ? `선택 (${dinnerCount}회 · $${dinnerPerPersonTotal.toLocaleString()})` : '미포함'}
+                      {dinnerCount > 0
+                        ? (showDetailedCosts
+                            ? `선택 (${dinnerCount}회 · $${dinnerPerPersonTotal.toLocaleString()})`
+                            : `선택 (${dinnerCount}회 · 포함)`)
+                        : '미포함'}
                     </span>
                   </div>
                 </div>
@@ -2229,12 +2311,14 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           key={day}
                           className="px-2.5 py-1 bg-white rounded-xl text-xs font-semibold text-[#3A3A3C] shadow-2xs whitespace-nowrap"
                         >
-                          {day}일차 · {menu.name} (${menu.priceUSD})
+                          {day}일차 · {menu.name}{showDetailedCosts ? ` ($${menu.priceUSD})` : ''}
                         </span>
                       ))}
-                      <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
-                        1인 ${dinnerPerPersonTotal.toLocaleString()} ({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})
-                      </span>
+                      {showDetailedCosts && (
+                        <span className="px-2.5 py-1 bg-[#0A7E54] text-white rounded-xl text-xs font-bold tabular-nums whitespace-nowrap">
+                          1인 ${dinnerPerPersonTotal.toLocaleString()} ({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})
+                        </span>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -2289,10 +2373,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         <span className="text-xs md:text-sm text-emerald-100 block font-semibold">
                           (1인 약 {(bd.perPersonWithShareUSD * USD_TO_KRW).toLocaleString()}원 · {personCount}인 총액 ${bd.groupTotalUSD.toLocaleString()})
                         </span>
-                        <span className="text-[11px] text-emerald-200/80 block mt-0.5">
-                          1인 기본 ${bd.perPersonOnlyUSD.toLocaleString()}
-                          {bd.teamFixedUSD > 0 ? ` + ${teamParts.join('·')}(${diyDays}일) $${bd.teamFixedUSD.toLocaleString()}` : ''}
-                        </span>
+                        {showDetailedCosts && (
+                          <span className="text-[11px] text-emerald-200/80 block mt-0.5">
+                            1인 기본 ${bd.perPersonOnlyUSD.toLocaleString()}
+                            {bd.teamFixedUSD > 0 ? ` + ${teamParts.join('·')}(${diyDays}일) $${bd.teamFixedUSD.toLocaleString()}` : ''}
+                          </span>
+                        )}
                       </div>
                     );
                   })()}
@@ -2491,8 +2577,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     <div className="space-y-2.5">
                       {activePackage.options.map(option => {
                         const isSelected = selectedOptionIds.has(option.id);
-                        const displayName = getOptionDisplayName(option);
-                        const badge = getCategoryBadge(option.category, displayName);
+                        const isGolfOpt = option.category === 'golf';
+                        const canShowOptionPrice = showDetailedCosts || isGolfOpt;
+                        const rawDisplayName = getOptionDisplayName(option);
+                        const displayName = canShowOptionPrice ? rawDisplayName : sanitizeNonGolfPriceText(rawDisplayName);
+                        const badge = getCategoryBadge(option.category, rawDisplayName);
                         const effectivePrice = getOptionPrice(option);
                         const isCustomized = !!customOptionSelections[option.id] || (option.category === 'golf' && isGolfCoursesModified);
                         const isExpanded = expandedOptionId === option.id;
@@ -2548,12 +2637,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                     )}
                                   </div>
                                   <p className="text-[11px] text-[#8E8E93] mt-1 font-normal">
-                                    {isFastTrack ? '1인당 $60 선택 추가' :
-                                     option.category === 'vehicle' ? `${pkgTravelDays}일 일정 총액 (1대 · 인원 무관)` :
+                                    {isFastTrack ? (canShowOptionPrice ? '1인당 $60 선택 추가' : '공항 VIP 전용 패스트트랙 선택 추가') :
+                                     option.category === 'vehicle' ? (canShowOptionPrice ? `${pkgTravelDays}일 일정 총액 (1대 · 인원 무관)` : `${pkgTravelDays}일 전 일정 단독 전용 (1대 · 인원 무관)`) :
                                      option.category === 'hotel' ? '1인 1실 단독 투숙' :
-                                     option.category === 'guide' ? `${pkgTravelDays}일 일정 총액 (1명 · 인원 무관)` :
-                                     (option.category === 'activity' && option.name.includes('마사지')) ? '기본 선택 포함 ($50)' :
-                                     option.category === 'meal' ? '1인 1일 $50 기준 선택 가능' : ''}
+                                     option.category === 'guide' ? (canShowOptionPrice ? `${pkgTravelDays}일 일정 총액 (1명 · 인원 무관)` : `${pkgTravelDays}일 전 일정 전담 동행 (1명 · 인원 무관)`) :
+                                     (option.category === 'activity' && option.name.includes('마사지')) ? (canShowOptionPrice ? '기본 선택 포함 ($50)' : '기본 선택 포함') :
+                                     option.category === 'meal' ? (canShowOptionPrice ? '1인 1일 $50 기준 선택 가능' : '전 일정 특식 선택 가능') : ''}
                                   </p>
                                 </div>
                               </div>
@@ -2562,6 +2651,18 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                 {(() => {
                                   const isTeamOpt = option.category === 'vehicle' || option.category === 'guide';
                                   const shownUSD = isTeamOpt ? getOptionGroupTotalUSD(option) : effectivePrice;
+                                  if (!canShowOptionPrice) {
+                                    return (
+                                      <>
+                                        <span className={`text-xs sm:text-sm font-extrabold ${isSelected ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
+                                          {isSelected ? '포함' : '미포함'}
+                                        </span>
+                                        <span className="block text-[10px] md:text-xs text-[#8E8E93] font-normal">
+                                          {isSelected ? '합산 금액 반영' : '견적 제외'}
+                                        </span>
+                                      </>
+                                    );
+                                  }
                                   return (
                                     <>
                                       <span className={`text-sm md:text-base font-extrabold tabular-nums ${isSelected ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
@@ -2637,7 +2738,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                               <div className="text-[11px] md:text-xs text-[#8E8E93] font-medium truncate max-w-full">
                                 {option.category === 'golf' && `${customGolfCourses.map(c => c.split(' ')[0]).join(' · ')}`}
-                                {option.category === 'hotel' && `${customOptionSelections[option.id]?.name || '기본 고급 호텔'}`}
+                                {option.category === 'hotel' && `${canShowOptionPrice ? (customOptionSelections[option.id]?.name || '기본 고급 호텔') : sanitizeNonGolfPriceText(customOptionSelections[option.id]?.name || '기본 고급 호텔')}`}
                               </div>
                             </div>
 
@@ -2681,7 +2782,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                       >
                                         <div>
                                           <div className="flex items-center justify-between gap-1 mb-1">
-                                            <span className="font-bold text-gray-900 line-clamp-1">{choice.name}</span>
+                                            <span className="font-bold text-gray-900 line-clamp-1">
+                                              {canShowOptionPrice ? choice.name : sanitizeNonGolfPriceText(choice.name)}
+                                            </span>
                                             {choice.badge && (
                                               <span className="px-1.5 py-0.5 bg-white text-[#0A7E54] rounded text-[10px] font-semibold shrink-0">
                                                 {choice.badge}
@@ -2689,7 +2792,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                             )}
                                           </div>
                                           {choice.description && (
-                                            <p className="text-[11px] text-[#8E8E93] leading-snug line-clamp-2">{choice.description}</p>
+                                            <p className="text-[11px] text-[#8E8E93] leading-snug line-clamp-2">
+                                              {canShowOptionPrice ? choice.description : sanitizeNonGolfPriceText(choice.description)}
+                                            </p>
                                           )}
                                         </div>
 
@@ -2698,9 +2803,13 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                                             {choice.type === 'pool_villa' ? '독채 풀빌라' : choice.type === 'hotel_5star' ? '고급 호텔' : (choice.type === 'vehicle' || choice.type === 'guide') ? `${pkgTravelDays}일 팀 기준` : '기본 옵션'}
                                           </span>
                                           <span className={`text-xs font-bold ${
-                                            choice.priceDeltaUSD === 0 ? 'text-[#3A3A3C]' : choice.priceDeltaUSD > 0 ? 'text-[#0A7E54]' : 'text-[#0A7E54]'
+                                            !canShowOptionPrice
+                                              ? (isChoiceActive ? 'text-[#0A7E54]' : 'text-[#3A3A3C]')
+                                              : choice.priceDeltaUSD === 0 ? 'text-[#3A3A3C]' : 'text-[#0A7E54]'
                                           }`}>
-                                            {choice.type === 'vehicle' || choice.type === 'guide'
+                                            {!canShowOptionPrice ? (
+                                              isChoiceActive ? '선택됨 (포함)' : '선택 가능'
+                                            ) : choice.type === 'vehicle' || choice.type === 'guide'
                                               ? (choice.priceDeltaUSD === 0
                                                   ? `기본 ($${choice.teamTotalUSD ?? 0})`
                                                   : choice.priceDeltaUSD > 0
@@ -2814,7 +2923,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                             <span className="text-white font-semibold line-clamp-1">
                               {(() => {
                                 const tourOpt = activePackage.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
-                                return tourOpt ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '') : `${activePackage.location} ${activePackage.duration} 맞춤 여행`;
+                                const rawTour = tourOpt ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '') : `${activePackage.location} ${activePackage.duration} 맞춤 여행`;
+                                return showDetailedCosts ? rawTour : sanitizeNonGolfPriceText(rawTour);
                               })()}
                             </span>
                           </>
@@ -2822,7 +2932,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       </div>
                       <div className="bg-white/10 p-2.5 sm:p-3 rounded-xl">
                         <span className="text-emerald-100 font-semibold block mb-0.5">선택 숙박 형태</span>
-                        <span className="text-white font-semibold line-clamp-1">{getChosenAccommodationName()}</span>
+                        <span className="text-white font-semibold line-clamp-1">
+                          {showDetailedCosts ? getChosenAccommodationName() : sanitizeNonGolfPriceText(getChosenAccommodationName())}
+                        </span>
                       </div>
                     </div>
 
@@ -3020,7 +3132,8 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           <span className="text-[#3A3A3C] font-semibold bg-white px-2 py-0.5 rounded-lg text-[11px]">
                             {(() => {
                               const tourOpt = activePackage?.options.find(o => o.id === 'diy-opt-tour' || (o.category === 'activity' && !o.name.includes('마사지') && !o.name.includes('스파')));
-                              return tourOpt ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '') : `${activePackage?.location || diyLocation} 맞춤 여행`;
+                              const rawTour = tourOpt ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '') : `${activePackage?.location || diyLocation} 맞춤 여행`;
+                              return showDetailedCosts ? rawTour : sanitizeNonGolfPriceText(rawTour);
                             })()}
                           </span>
                         </div>
@@ -3028,7 +3141,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       <div className="flex items-start gap-1.5">
                         <span className="font-semibold text-gray-900 shrink-0">숙소</span>
                         <span className="text-[#3A3A3C] font-semibold bg-white px-2 py-0.5 rounded-lg text-[11px]">
-                          {getChosenAccommodationName()}
+                          {showDetailedCosts ? getChosenAccommodationName() : sanitizeNonGolfPriceText(getChosenAccommodationName())}
                         </span>
                       </div>
                     </div>
@@ -3044,14 +3157,18 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       <span>제외된 항목</span>
                       <span className="font-semibold">{activePackage.options.length - selectedOptionIds.size}개</span>
                     </div>
-                    <div className="flex justify-between text-[#3A3A3C] pt-1.5 border-t border-black/[0.06]">
-                      <span>1인 기준 항목 ({personCount}인 × ${currentPerPersonOnlyTotalUSD.toLocaleString()})</span>
-                      <span className="font-bold text-gray-900 tabular-nums">${(currentPerPersonOnlyTotalUSD * personCount).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-[#3A3A3C]">
-                      <span>차량·가이드 ({pkgTravelDays}일 총액 · 인원 무관)</span>
-                      <span className="font-bold text-[#0A7E54] tabular-nums">${currentTeamTotalUSD.toLocaleString()}</span>
-                    </div>
+                    {showDetailedCosts && (
+                      <>
+                        <div className="flex justify-between text-[#3A3A3C] pt-1.5 border-t border-black/[0.06]">
+                          <span>1인 기준 항목 ({personCount}인 × ${currentPerPersonOnlyTotalUSD.toLocaleString()})</span>
+                          <span className="font-bold text-gray-900 tabular-nums">${(currentPerPersonOnlyTotalUSD * personCount).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-[#3A3A3C]">
+                          <span>차량·가이드 ({pkgTravelDays}일 총액 · 인원 무관)</span>
+                          <span className="font-bold text-[#0A7E54] tabular-nums">${currentTeamTotalUSD.toLocaleString()}</span>
+                        </div>
+                      </>
+                    )}
                     <div className="pt-2 border-t border-black/[0.08] flex justify-between items-center">
                       <div>
                         <span className="font-bold text-gray-900 md:text-base block">총 그룹 예상 견적 ({personCount}인)</span>
@@ -3115,17 +3232,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     </button>
                     <button
                       type="button"
-                      onClick={handleCopyQuote}
+                      onClick={() => setShowQuotePreviewModal(true)}
                       className="py-3 bg-[#F2F2F7] text-[#3A3A3C] font-semibold rounded-2xl hover:bg-gray-200 transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                     >
-                      <span>📋</span>
-                      <span>견적서 텍스트 복사</span>
+                      <span>📄</span>
+                      <span>견적서 미리보기</span>
                     </button>
                   </div>
                 </div>
 
                 <div className="p-2.5 md:p-3 bg-amber-50 rounded-xl border border-amber-200 text-[10px] md:text-xs text-amber-800 leading-relaxed font-normal">
-                  💡 <strong>안내:</strong> 견적서 캡처 저장 또는 1:1 온라인 신청 시 현재 맞춤 구성이 <strong>정식 A4 견적서</strong>로 생성되며, <strong>온라인 견적 신청서로 담당 매니저에게 즉시 접수</strong>됩니다.
+                  💡 <strong>안내:</strong> 견적서 미리보기, 캡처 저장 또는 1:1 온라인 신청 시 현재 맞춤 구성이 <strong>정식 A4 견적서</strong>로 생성되며, <strong>온라인 견적 신청서로 담당 매니저에게 즉시 접수</strong>됩니다.
                 </div>
 
               </div>
@@ -3521,17 +3638,25 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       activePackage.options.filter(o => selectedOptionIds.has(o.id)).map((opt) => {
                         const isTeam = opt.category === 'vehicle' || opt.category === 'guide';
                         const itemTotal = getOptionGroupTotalUSD(opt);
+                        const canShowOptPrice = showDetailedCosts || opt.category === 'golf';
+                        const optLabel = canShowOptPrice ? getOptionDisplayName(opt) : sanitizeNonGolfPriceText(getOptionDisplayName(opt));
                         return (
                           <div key={opt.id} className="flex justify-between items-center text-xs md:text-sm py-1 border-b border-gray-100 last:border-none">
                             <div className="flex items-center gap-1.5 text-gray-800 font-medium truncate mr-2 min-w-0">
                               <span className="text-[9px] md:text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0 font-bold">
                                 {opt.name.includes('패스트 트랙') ? '패스트트랙' : opt.category === 'hotel' ? '숙박(1인실)' : opt.category === 'vehicle' ? '차량' : opt.category === 'guide' ? '가이드' : opt.category === 'meal' ? '식사' : opt.category === 'golf' ? '골프' : '옵션'}
                               </span>
-                              <span className="truncate">{getOptionDisplayName(opt)}</span>
+                              <span className="truncate">{optLabel}</span>
                             </div>
-                            <span className="font-bold text-deepgreen text-xs md:text-sm shrink-0 whitespace-nowrap">
-                              ${itemTotal.toLocaleString()} <span className="text-[10px] text-gray-400 font-medium">({isTeam ? `${pkgTravelDays}일 총액` : `${personCount}인`})</span>
-                            </span>
+                            {canShowOptPrice ? (
+                              <span className="font-bold text-deepgreen text-xs md:text-sm shrink-0 whitespace-nowrap">
+                                ${itemTotal.toLocaleString()} <span className="text-[10px] text-gray-400 font-medium">({isTeam ? `${pkgTravelDays}일 총액` : `${personCount}인`})</span>
+                              </span>
+                            ) : (
+                              <span className="font-bold text-[#0A7E54] text-xs md:text-sm shrink-0 whitespace-nowrap">
+                                포함
+                              </span>
+                            )}
                           </div>
                         );
                       })
@@ -3544,12 +3669,12 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           const isChecked = diySelectedExtraIds.includes(svc.id);
                           return (
                             <div key={svc.id}>
-                              • {svc.name}: {isChecked ? '포함' : '미포함'}
+                              • {showDetailedCosts ? svc.name : sanitizeNonGolfPriceText(svc.name)}: {isChecked ? '포함' : '미포함'}
                             </div>
                           );
                         })}
                         <div>
-                          • 저녁식사: {dinnerCount > 0 ? `포함 (${dinnerCount}회 · 1인 $${dinnerPerPersonTotal.toLocaleString()})` : '미포함'}
+                          • 저녁식사: {dinnerCount > 0 ? (showDetailedCosts ? `포함 (${dinnerCount}회 · 1인 $${dinnerPerPersonTotal.toLocaleString()})` : `포함 (${dinnerCount}회)`) : '미포함'}
                         </div>
                       </div>
                     )}
@@ -4164,26 +4289,38 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     </span>
                   </div>
                   <div className="font-bold text-sm md:text-base text-white">
-                    {customOptionSelections[customizingOption.id]?.name || customizingOption.name}
+                    {(() => {
+                      const rawTitle = customOptionSelections[customizingOption.id]?.name || customizingOption.name;
+                      return (showDetailedCosts || customizingOption.category === 'golf') ? rawTitle : sanitizeNonGolfPriceText(rawTitle);
+                    })()}
                   </div>
                 </div>
                 <div className="text-right shrink-0 pl-3">
-                  <span className="text-[11px] text-emerald-100 block">
-                    {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
-                      ? `${pkgTravelDays}일 총액`
-                      : '1인 차액'}
-                  </span>
-                  <span className="text-base md:text-lg font-bold text-white tabular-nums">
-                    {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
-                      ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()}`
-                      : customOptionSelections[customizingOption.id]
-                      ? (customOptionSelections[customizingOption.id].priceDelta === 0 
-                          ? '기본 ($0)' 
-                          : customOptionSelections[customizingOption.id].priceDelta > 0 
-                          ? `+$${customOptionSelections[customizingOption.id].priceDelta}` 
-                          : `-$${Math.abs(customOptionSelections[customizingOption.id].priceDelta)}`)
-                      : '기본 ($0)'}
-                  </span>
+                  {(showDetailedCosts || customizingOption.category === 'golf') ? (
+                    <>
+                      <span className="text-[11px] text-emerald-100 block">
+                        {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                          ? `${pkgTravelDays}일 총액`
+                          : '1인 차액'}
+                      </span>
+                      <span className="text-base md:text-lg font-bold text-white tabular-nums">
+                        {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                          ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()}`
+                          : customOptionSelections[customizingOption.id]
+                          ? (customOptionSelections[customizingOption.id].priceDelta === 0 
+                              ? '기본 ($0)' 
+                              : customOptionSelections[customizingOption.id].priceDelta > 0 
+                              ? `+$${customOptionSelections[customizingOption.id].priceDelta}` 
+                              : `-$${Math.abs(customOptionSelections[customizingOption.id].priceDelta)}`)
+                          : '기본 ($0)'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[11px] text-emerald-100 block">합산 자동 반영</span>
+                      <span className="text-sm md:text-base font-bold text-white">옵션 선택</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -4305,11 +4442,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                         </div>
 
                         <h4 className="font-bold text-sm md:text-base text-gray-900 mt-1">
-                          {choice.name}
+                          {(showDetailedCosts || customizingOption.category === 'golf') ? choice.name : sanitizeNonGolfPriceText(choice.name)}
                         </h4>
                         {choice.description && (
                           <p className="text-[11px] md:text-xs text-[#8E8E93] leading-snug mt-1 line-clamp-2">
-                            {choice.description}
+                            {(showDetailedCosts || customizingOption.category === 'golf') ? choice.description : sanitizeNonGolfPriceText(choice.description)}
                           </p>
                         )}
                       </div>
@@ -4317,7 +4454,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                       <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-black/[0.06]">
                         <div>
                           <span className="text-xs md:text-sm font-bold text-[#0A7E54]">
-                            {choice.type === 'vehicle' || choice.type === 'guide'
+                            {!(showDetailedCosts || customizingOption.category === 'golf')
+                              ? (isSelected ? '포함 (합산 반영)' : '선택 가능')
+                              : choice.type === 'vehicle' || choice.type === 'guide'
                               ? `$${(choice as any).teamTotalUSD ?? 0} (${choice.priceDeltaUSD === 0 ? '기본' : choice.priceDeltaUSD > 0 ? `+$${choice.priceDeltaUSD}` : `-$${Math.abs(choice.priceDeltaUSD)}`})`
                               : choice.priceDeltaUSD === 0 
                               ? '기본 ($0)' 
@@ -4346,22 +4485,33 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             <div className="px-4 py-3 md:px-0 md:py-0 md:pt-4 border-t border-black/[0.06] bg-white/90 backdrop-blur-md sticky bottom-0 z-10 flex flex-col md:flex-row justify-between items-center gap-3 shrink-0" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}>
               <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
                 <div>
-                  <span className="text-[11px] text-[#8E8E93] block">
-                    {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
-                      ? `${pkgTravelDays}일 총액 (팀 기준)`
-                      : '변경 차액 (1인 기준)'}
-                  </span>
-                  <span className="text-sm md:text-base font-bold text-[#0A7E54]">
-                    {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
-                      ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()} (${pkgTravelDays}일 총액)`
-                      : customOptionSelections[customizingOption.id]
-                      ? (customOptionSelections[customizingOption.id].priceDelta === 0 
-                          ? '기본 동일 ($0)' 
-                          : customOptionSelections[customizingOption.id].priceDelta > 0 
-                          ? `+$${customOptionSelections[customizingOption.id].priceDelta} / 1인` 
-                          : `-$${Math.abs(customOptionSelections[customizingOption.id].priceDelta)} / 1인`)
-                      : '기본 동일 ($0)'}
-                  </span>
+                  {(showDetailedCosts || customizingOption.category === 'golf') ? (
+                    <>
+                      <span className="text-[11px] text-[#8E8E93] block">
+                        {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                          ? `${pkgTravelDays}일 총액 (팀 기준)`
+                          : '변경 차액 (1인 기준)'}
+                      </span>
+                      <span className="text-sm md:text-base font-bold text-[#0A7E54]">
+                        {customizingOption.category === 'vehicle' || customizingOption.category === 'guide'
+                          ? `$${getOptionGroupTotalUSD(customizingOption).toLocaleString()} (${pkgTravelDays}일 총액)`
+                          : customOptionSelections[customizingOption.id]
+                          ? (customOptionSelections[customizingOption.id].priceDelta === 0 
+                              ? '기본 동일 ($0)' 
+                              : customOptionSelections[customizingOption.id].priceDelta > 0 
+                              ? `+$${customOptionSelections[customizingOption.id].priceDelta} / 1인` 
+                              : `-$${Math.abs(customOptionSelections[customizingOption.id].priceDelta)} / 1인`)
+                          : '기본 동일 ($0)'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[11px] text-[#8E8E93] block">선택 항목 반영</span>
+                      <span className="text-sm md:text-base font-bold text-[#0A7E54]">
+                        선택 시 총 합산 금액에 자동 반영됩니다
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 {customOptionSelections[customizingOption.id] && (
@@ -4769,7 +4919,9 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
 
                     <div className="text-right shrink-0">
                       <div className="text-sm font-extrabold text-[#0A7E54] tabular-nums mb-1">
-                        {item.priceUSD > 0 ? `$${item.priceUSD}/인` : '자유 ($0)'}
+                        {showDetailedCosts
+                          ? (item.priceUSD > 0 ? `$${item.priceUSD}/인` : '자유 ($0)')
+                          : (item.isFreeTravel ? '자유 일정' : '선택 투어')}
                       </div>
                       <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
                         isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
@@ -4872,12 +5024,20 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     </div>
 
                     <div className="text-right shrink-0 space-y-1">
-                      <div className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums">
-                        1박 ${nightRate.toLocaleString()}
-                      </div>
-                      <div className="text-[11px] font-medium text-[#8E8E93] tabular-nums">
-                        ({diyNights}박 ${totalHotelCost.toLocaleString()})
-                      </div>
+                      {showDetailedCosts ? (
+                        <>
+                          <div className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums">
+                            1박 ${nightRate.toLocaleString()}
+                          </div>
+                          <div className="text-[11px] font-medium text-[#8E8E93] tabular-nums">
+                            ({diyNights}박 ${totalHotelCost.toLocaleString()})
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs font-bold text-[#0A7E54]">
+                          {diyNights}박 · 1인 1실
+                        </div>
+                      )}
                       <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
                         isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
                       }`}>
@@ -4983,12 +5143,20 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                     </div>
 
                     <div className="text-right shrink-0 space-y-1">
-                      <div className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums">
-                        1일 ${dayRate.toLocaleString()}
-                      </div>
-                      <div className="text-[11px] font-medium text-[#8E8E93] tabular-nums">
-                        ({diyDays}일 ${scheduleVehTotal.toLocaleString()})
-                      </div>
+                      {showDetailedCosts ? (
+                        <>
+                          <div className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums">
+                            1일 ${dayRate.toLocaleString()}
+                          </div>
+                          <div className="text-[11px] font-medium text-[#8E8E93] tabular-nums">
+                            ({diyDays}일 ${scheduleVehTotal.toLocaleString()})
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-xs font-bold text-[#0A7E54]">
+                          {diyDays}일 단독 차량
+                        </div>
+                      )}
                       <span className={`inline-block px-3 py-1 rounded-xl text-xs font-bold ${
                         isSelected ? 'bg-[#0A7E54] text-white' : 'bg-white text-[#3A3A3C] shadow-2xs'
                       }`}>
@@ -5085,7 +5253,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                           {pickedMenu ? pickedMenu.name : '미포함'}
                         </div>
                         <div className={`text-[10px] font-semibold tabular-nums ${isActive ? 'text-white/90' : pickedMenu ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
-                          {pickedMenu ? `$${pickedMenu.priceUSD}/인` : '선택 안함'}
+                          {pickedMenu ? (showDetailedCosts ? `$${pickedMenu.priceUSD}/인` : '선택됨') : '선택 안함'}
                         </div>
                       </button>
                     );
@@ -5170,9 +5338,11 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
                               </span>
                             )}
                           </div>
-                          <span className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums shrink-0">
-                            1인 ${menu.priceUSD}
-                          </span>
+                          {showDetailedCosts && (
+                            <span className="text-xs md:text-sm font-extrabold text-[#0A7E54] tabular-nums shrink-0">
+                              1인 ${menu.priceUSD}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-[#8E8E93] leading-snug">{menu.description}</p>
                       </div>
@@ -5201,10 +5371,17 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
               <div className="flex items-center justify-between sm:justify-start gap-3">
                 <div className="text-xs text-[#3A3A3C] font-medium">
                   {dinnerCount > 0 ? (
-                    <>
-                      선택 <strong className="text-[#0A7E54]">{dinnerCount}회</strong> · 1인 총 <strong className="text-[#0A7E54] tabular-nums">${dinnerPerPersonTotal.toLocaleString()}</strong>{' '}
-                      <span className="text-[11px] text-[#8E8E93]">({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})</span>
-                    </>
+                    showDetailedCosts ? (
+                      <>
+                        선택 <strong className="text-[#0A7E54]">{dinnerCount}회</strong> · 1인 총 <strong className="text-[#0A7E54] tabular-nums">${dinnerPerPersonTotal.toLocaleString()}</strong>{' '}
+                        <span className="text-[11px] text-[#8E8E93]">({personCount}인 ${(dinnerPerPersonTotal * personCount).toLocaleString()})</span>
+                      </>
+                    ) : (
+                      <>
+                        선택 <strong className="text-[#0A7E54]">{dinnerCount}회</strong>{' '}
+                        <span className="text-[11px] text-[#8E8E93]">(합산 금액 반영)</span>
+                      </>
+                    )
                   ) : (
                     <span className="text-[#8E8E93]">선택된 저녁식사 없음 (미포함)</span>
                   )}
@@ -5261,6 +5438,7 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             notes={customerNotes}
             reservationNotice={getReservationNoticeData()}
             showControls={false}
+            showDetailedCosts={showDetailedCosts}
           />
         </div>
       )}
@@ -5290,6 +5468,214 @@ export const TripPlanner: React.FC<Props> = ({ masterOptionPool, products = [], 
             >
               확인
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= QUOTATION PREVIEW POPUP (Matches Recommended Product QuotationModal) ================= */}
+      {showQuotePreviewModal && activePackage && (
+        <div
+          className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe"
+          onClick={() => setShowQuotePreviewModal(false)}
+        >
+          <div
+            className="bg-[#F2F2F7] w-full max-w-none md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden no-print shrink-0" />
+            {/* Top Control Bar inside Modal (no-print) */}
+            <div className="no-print bg-white/90 backdrop-blur-md px-3 md:px-6 py-2.5 md:py-3 border-b border-black/[0.06] flex items-center justify-between gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setShowQuotePreviewModal(false)}
+                  className="flex sm:hidden items-center justify-center w-8 h-8 rounded-full bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] active:scale-95 transition shrink-0 cursor-pointer"
+                  aria-label="뒤로가기"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="text-lg sm:text-xl shrink-0">📄</span>
+                <div className="min-w-0">
+                  <span className="font-extrabold text-xs sm:text-base text-gray-900 block truncate">
+                    {activePackage.title}
+                  </span>
+                  <span className="text-[10px] text-gold-600 font-bold block sm:hidden">
+                    맞춤 여행 견적 및 일정 안내서
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
+                {/* Desktop Quick Controls */}
+                <div className="hidden sm:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
+                  <span className="text-gray-500 font-bold">고객명:</span>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="고객"
+                    className="w-16 bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs font-bold outline-none"
+                  />
+                </div>
+
+                <div className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
+                  <span className="text-gray-500 font-bold">출발일:</span>
+                  <input
+                    type="date"
+                    value={departureDate}
+                    onChange={(e) => setDepartureDate(e.target.value)}
+                    className="bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs font-bold outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 sm:px-2.5 py-1 whitespace-nowrap">
+                  <span className="text-gray-500 font-bold text-[11px] sm:text-xs whitespace-nowrap">인원:</span>
+                  <select
+                    value={personCount}
+                    onChange={(e) => setPersonCount(Number(e.target.value))}
+                    className="bg-white border border-gray-300 rounded px-1.5 py-0.5 text-xs font-bold outline-none cursor-pointer"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 12, 16].map((n) => (
+                      <option key={n} value={n}>{n}인</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowQuotePreviewModal(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-sm transition cursor-pointer shrink-0"
+                  aria-label="닫기"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Quick Option Strip */}
+            <div className="sm:hidden no-print bg-gray-50/95 border-b border-gray-200 px-2.5 py-1.5 flex items-center gap-2 overflow-x-auto scrollbar-hide text-xs shrink-0 whitespace-nowrap">
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 whitespace-nowrap">
+                <span className="text-[10px] text-gray-500 font-bold">고객명:</span>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="고객"
+                  className="w-14 text-xs font-bold outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 whitespace-nowrap">
+                <span className="text-[10px] text-gray-500 font-bold">출발일:</span>
+                <input
+                  type="date"
+                  value={departureDate}
+                  onChange={(e) => setDepartureDate(e.target.value)}
+                  className="text-xs font-bold outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Admin Pricing Visibility Toggle Bar */}
+            {isAdmin && onToggleAdminDetailedCosts && (
+              <div className="no-print bg-amber-50/95 border-b border-amber-200/80 px-3 md:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+                <div className="flex items-center gap-1.5 text-amber-950 font-bold min-w-0">
+                  <span>🔐</span>
+                  <span>관리자 견적 금액 표시</span>
+                  <span className="hidden sm:inline text-[11px] font-medium text-amber-800">
+                    (비골프 세부 금액 보이기/숨기기)
+                  </span>
+                </div>
+                <div className="inline-flex items-center bg-white p-0.5 rounded-xl border border-amber-200 shadow-2xs shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onToggleAdminDetailedCosts(false)}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer whitespace-nowrap ${
+                      !showDetailedCosts
+                        ? 'bg-[#0A7E54] text-white shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    합산·골프만 보기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onToggleAdminDetailedCosts(true)}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer whitespace-nowrap ${
+                      showDetailedCosts
+                        ? 'bg-[#0A7E54] text-white shadow-xs'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    세부금액 전체 보기
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Scrollable Document Area */}
+            <div className="flex-1 overflow-y-auto p-0 md:p-6 print:p-0 print:overflow-visible">
+              <A4QuotationDocument
+                customerName={customerName || '고객'}
+                personCount={personCount}
+                managerName="망고투어 전문 상담팀"
+                managerContact="+84 37 720 4451"
+                location={activePackage.location}
+                duration={activePackage.duration}
+                departureDate={departureDate}
+                totalPriceKRW={currentTotalGroup * USD_TO_KRW}
+                totalPriceUSD={currentTotalGroup}
+                costItems={getA4CostItems()}
+                itinerary={getA4ItineraryDays()}
+                notes={customerNotes}
+                reservationNotice={getReservationNoticeData()}
+                onClose={() => setShowQuotePreviewModal(false)}
+                showControls={true}
+                showDetailedCosts={showDetailedCosts}
+              />
+            </div>
+
+            {/* Unified Sticky Bottom Action Bar */}
+            <div
+              className="no-print bg-white/95 backdrop-blur-md border-t border-black/[0.08] px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2.5 shrink-0 z-20"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+            >
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-xs text-[#8E8E93] font-semibold block">
+                  총 {personCount}인 예상 견적 (1인 약 ${currentTotalPerPerson.toLocaleString()})
+                </span>
+                <div className="text-sm sm:text-lg font-black text-[#0A7E54] tabular-nums truncate">
+                  ${currentTotalGroup.toLocaleString()} USD
+                  <span className="text-[11px] sm:text-xs text-[#3A3A3C] font-medium ml-1">
+                    (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href="https://open.kakao.com/o/gprQnKSi"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-3 bg-[#FEE500] hover:bg-[#FDD835] text-[#191919] font-bold rounded-xl text-xs sm:text-sm transition active:scale-95"
+                >
+                  <span>💬</span>
+                  <span>카톡 상담</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuotePreviewModal(false);
+                    handleOpenOnlineInquiry();
+                  }}
+                  className="px-4 sm:px-6 py-3 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-xl text-xs sm:text-sm md:text-base shadow-md transition-all duration-200 flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap"
+                >
+                  <span>📩</span>
+                  <span>1:1 온라인 견적 신청하기</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

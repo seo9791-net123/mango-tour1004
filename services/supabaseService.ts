@@ -12,7 +12,8 @@ import {
   ChatMessage,
   User,
   MasterOptionPool,
-  NoticeItem
+  NoticeItem,
+  QuotationVisibilitySettings
 } from '../types';
 import { 
   INITIAL_PRODUCTS, 
@@ -211,6 +212,18 @@ export const supabaseService = {
         } catch {}
         return INITIAL_NOTICES;
       })(),
+      quotationSettings: (() => {
+        try {
+          const localQuoteSettings = localStorage.getItem('mango_quotation_settings_db');
+          if (localQuoteSettings) {
+            const parsed = JSON.parse(localQuoteSettings);
+            if (parsed && typeof parsed === 'object') {
+              return { showDetailedCostsToCustomers: Boolean(parsed.showDetailedCostsToCustomers) };
+            }
+          }
+        } catch {}
+        return { showDetailedCostsToCustomers: false } as QuotationVisibilitySettings;
+      })(),
       customPackages: INITIAL_CUSTOM_PACKAGES,
       masterOptionPool: INITIAL_MASTER_OPTION_POOL,
       cloudinaryConfig: { cloudName: 'ducor31pp', uploadPreset: 'mangotour' },
@@ -350,10 +363,11 @@ export const supabaseService = {
         });
       }
 
-      // 6. Popup, Recommended Discount Popup & Homepage Notices
+      // 6. Popup, Recommended Discount Popup, Homepage Notices & Quotation Visibility Settings
       let popup = INITIAL_POPUP;
       let recommendedDiscountPopup = INITIAL_RECOMMENDED_DISCOUNT_POPUP;
       let notices: NoticeItem[] = INITIAL_NOTICES;
+      let quotationSettings: QuotationVisibilitySettings = { showDetailedCostsToCustomers: false };
       try {
         const localRecPopup = localStorage.getItem('mango_recommended_discount_popup_db');
         if (localRecPopup) {
@@ -366,13 +380,20 @@ export const supabaseService = {
             notices = parsedNotices;
           }
         }
+        const localQuoteSettings = localStorage.getItem('mango_quotation_settings_db');
+        if (localQuoteSettings) {
+          const parsedQuoteSettings = JSON.parse(localQuoteSettings);
+          if (parsedQuoteSettings && typeof parsedQuoteSettings === 'object') {
+            quotationSettings = { showDetailedCostsToCustomers: Boolean(parsedQuoteSettings.showDetailedCostsToCustomers) };
+          }
+        }
       } catch {
         // ignore
       }
       const { data: popupRows } = await supabase
         .from('popup')
         .select('*')
-        .in('id', ['main', 'recommended_discount', 'notices']);
+        .in('id', ['main', 'recommended_discount', 'notices', 'quotation_settings']);
       if (popupRows && popupRows.length > 0) {
         const mainRow = popupRows.find((r: any) => r.id === 'main');
         if (mainRow) {
@@ -392,6 +413,10 @@ export const supabaseService = {
           if (rawItems) {
             notices = rawItems;
           }
+        }
+        const quoteRow = popupRows.find((r: any) => r.id === 'quotation_settings');
+        if (quoteRow && quoteRow.data && typeof quoteRow.data === 'object') {
+          quotationSettings = { showDetailedCostsToCustomers: Boolean(quoteRow.data.showDetailedCostsToCustomers) };
         }
       }
 
@@ -415,6 +440,7 @@ export const supabaseService = {
         popup,
         recommendedDiscountPopup,
         notices,
+        quotationSettings,
         customPackages,
         masterOptionPool,
         cloudinaryConfig,
@@ -646,6 +672,32 @@ export const supabaseService = {
         }, { onConflict: 'id' });
     } catch (e) {
       console.warn("Failed to save notices to Supabase:", e);
+    }
+  },
+
+  /**
+   * 견적서 금액 표시 설정 저장 (합산·골프만 표시 / 전체 세부금액 표시)
+   */
+  async saveQuotationSettings(settings: QuotationVisibilitySettings) {
+    try {
+      localStorage.setItem('mango_quotation_settings_db', JSON.stringify(settings));
+    } catch {
+      // ignore
+    }
+
+    const supabase = getSupabase();
+    if (!supabase || !isSupabaseConfigured) return;
+
+    try {
+      await supabase
+        .from('popup')
+        .upsert({
+          id: 'quotation_settings',
+          data: settings,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+    } catch (e) {
+      console.warn("Failed to save quotation settings to Supabase:", e);
     }
   },
 

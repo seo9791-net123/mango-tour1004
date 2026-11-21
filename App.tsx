@@ -24,7 +24,7 @@ import Privacy from './components/Privacy';
 import Terms from './components/Terms';
 import SplashScreen from './components/SplashScreen';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_NOTICES, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
-import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool, ChatMessage } from './types';
+import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool, ChatMessage, QuotationVisibilitySettings } from './types';
 import { supabaseService } from './services/supabaseService';
 import { updateSupabaseCredentials, clearAdminSessionToken } from './services/supabaseClient';
 import { setCloudinaryConfig } from './services/uploadService';
@@ -489,6 +489,20 @@ const App: React.FC = () => {
     const raw = saved ? JSON.parse(saved) : INITIAL_MASTER_OPTION_POOL;
     return cleanMasterOptionPool(raw);
   });
+  const [quotationSettings, setQuotationSettings] = useState<QuotationVisibilitySettings>(() => {
+    try {
+      const saved = localStorage.getItem('mango_quotation_settings_db');
+      if (saved) return { showDetailedCostsToCustomers: false, ...JSON.parse(saved) };
+    } catch {}
+    return { showDetailedCostsToCustomers: false };
+  });
+  const [adminShowDetailedCosts, setAdminShowDetailedCosts] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('mango_admin_show_detailed_costs_v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [showPopup, setShowPopup] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
@@ -752,6 +766,16 @@ const App: React.FC = () => {
     }
   }, 1500)).current;
 
+  const debouncedSyncQuotationSettings = useRef(debounce(async (newSettings: QuotationVisibilitySettings) => {
+    if (isSyncing.current['quotation_settings']) return;
+    isSyncing.current['quotation_settings'] = true;
+    try {
+      await supabaseService.saveQuotationSettings(newSettings);
+    } finally {
+      isSyncing.current['quotation_settings'] = false;
+    }
+  }, 800)).current;
+
   // Initial Data Load
   useEffect(() => {
     const initData = async () => {
@@ -843,6 +867,16 @@ const App: React.FC = () => {
           }
           if ((data as any).masterOptionPool) {
             setMasterOptionPool(cleanMasterOptionPool((data as any).masterOptionPool));
+          }
+          if ((data as any).quotationSettings) {
+            const loadedQuotationSettings = {
+              showDetailedCostsToCustomers: false,
+              ...(data as any).quotationSettings,
+            };
+            setQuotationSettings(loadedQuotationSettings);
+            try {
+              localStorage.setItem('mango_quotation_settings_db', JSON.stringify(loadedQuotationSettings));
+            } catch {}
           }
         }
         
@@ -982,6 +1016,25 @@ const App: React.FC = () => {
       console.warn("Failed to write master options pool to localStorage:", e);
     }
     debouncedSyncMasterOptionPool(newPool);
+  };
+
+  const handleUpdateQuotationSettings = (newSettings: QuotationVisibilitySettings) => {
+    setQuotationSettings(newSettings);
+    try {
+      localStorage.setItem('mango_quotation_settings_db', JSON.stringify(newSettings));
+    } catch (e) {
+      console.warn("Failed to write quotation settings to localStorage:", e);
+    }
+    debouncedSyncQuotationSettings(newSettings);
+  };
+
+  const handleToggleAdminDetailedCosts = (show: boolean) => {
+    setAdminShowDetailedCosts(show);
+    try {
+      localStorage.setItem('mango_admin_show_detailed_costs_v1', String(show));
+    } catch (e) {
+      console.warn("Failed to write admin detailed costs toggle:", e);
+    }
   };
 
   const [users, setUsers] = useState<User[]>(() => {
@@ -1246,6 +1299,7 @@ const App: React.FC = () => {
   };
 
   const isAdmin = user?.role === 'admin';
+  const effectiveShowDetailedCosts = isAdmin ? adminShowDetailedCosts : quotationSettings.showDetailedCostsToCustomers;
 
   // 개인정보처리방침 전용 뷰 (https://mangotour.co.kr 접속 또는 /privacy 라우트 시 메인 화면 대신 표시)
   if (currentPage === 'privacy') {
@@ -1354,6 +1408,10 @@ const App: React.FC = () => {
             setRecommendedDiscountPopup={handleUpdateRecommendedDiscountPopup}
             notices={notices}
             setNotices={handleUpdateNotices}
+            quotationSettings={quotationSettings}
+            setQuotationSettings={handleUpdateQuotationSettings}
+            adminShowDetailedCosts={adminShowDetailedCosts}
+            setAdminShowDetailedCosts={handleToggleAdminDetailedCosts}
             setCurrentPage={setCurrentPage}
           />
         ) : (
@@ -1395,7 +1453,15 @@ const App: React.FC = () => {
               ) : selectedCategory === '비지니스' ? (
                 <BusinessPage content={pageContents['business']} onBack={handleBackOneStep} />
               ) : selectedCategory === '여행 만들기' ? (
-                <TripPlanner packages={customPackages} masterOptionPool={masterOptionPool} products={products} onBack={handleBackOneStep} />
+                <TripPlanner
+                  packages={customPackages}
+                  masterOptionPool={masterOptionPool}
+                  products={products}
+                  onBack={handleBackOneStep}
+                  isAdmin={isAdmin}
+                  showDetailedCosts={effectiveShowDetailedCosts}
+                  onToggleAdminDetailedCosts={isAdmin ? handleToggleAdminDetailedCosts : undefined}
+                />
               ) : selectedCategory === '호텔&빌라' ? (
                 <HotelVillaPage content={pageContents['hotel']} onBack={handleBackOneStep} />
               ) : selectedCategory === '골프' ? (
@@ -1506,16 +1572,7 @@ const App: React.FC = () => {
         currentPage={currentPage} 
         selectedCategory={selectedCategory}
         onNavigate={(page, cat) => navigateTo(page as any, cat || null)}
-        isChatOpen={isChatOpen} 
-        setIsChatOpen={(open) => {
-          setIsChatOpen(open);
-          if (open) {
-            setUnreadChatCount(0);
-            setIncomingChatToast(null);
-          }
-        }} 
         onBack={handleBackOneStep}
-        unreadChatCount={unreadChatCount}
       />
 
       {/* Popup Notification */}
@@ -1573,7 +1630,13 @@ const App: React.FC = () => {
       )}
 
       {selectedProduct && (
-        <QuotationModal product={selectedProduct} onClose={() => { setSelectedProduct(undefined); }} />
+        <QuotationModal
+          product={selectedProduct}
+          onClose={() => { setSelectedProduct(undefined); }}
+          isAdmin={isAdmin}
+          showDetailedCosts={effectiveShowDetailedCosts}
+          onToggleAdminDetailedCosts={isAdmin ? handleToggleAdminDetailedCosts : undefined}
+        />
       )}
 
       {showAuthModal && (

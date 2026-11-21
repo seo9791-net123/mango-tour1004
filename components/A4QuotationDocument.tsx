@@ -5,6 +5,7 @@ import {
   triggerBlobDownload,
 } from '../utils/quotationExportUtils';
 import { appAlert } from '../services/dialogService';
+import { isGolfCostItem, sanitizeNonGolfPriceText } from '../utils/costBreakdownUtils';
 
 export interface CostItem {
   category: string;
@@ -54,6 +55,7 @@ export interface A4QuotationProps {
   showControls?: boolean;
   uncheckedKeys?: Record<string, boolean>;
   onUncheckedKeysChange?: (next: Record<string, boolean>) => void;
+  showDetailedCosts?: boolean;
 }
 
 export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
@@ -75,6 +77,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   showControls = true,
   uncheckedKeys: controlledUncheckedKeys,
   onUncheckedKeysChange,
+  showDetailedCosts = false,
 }) => {
   const documentRef = useRef<HTMLDivElement>(null);
   const exactA4Ref = useRef<HTMLDivElement>(null);
@@ -216,6 +219,12 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   const finalTotalKRW = hasCostItems ? computedSelectedKRW : (totalPriceKRW || 0);
   const finalTotalUSD = hasCostItems ? computedSelectedUSD : (totalPriceUSD || 0);
 
+  const canShowItemPrice = (item: CostItem) => showDetailedCosts || isGolfCostItem(item.category);
+  const getDisplayDetail = (item: CostItem) =>
+    canShowItemPrice(item) ? item.detail : (sanitizeNonGolfPriceText(item.detail) || item.detail);
+  const sanitizeNoticeField = (text?: string) =>
+    showDetailedCosts ? (text || '') : sanitizeNonGolfPriceText(text || '');
+
   // Dynamically compute [망고투어 예약 안내 사항] from reservationNotice + live selectedCostItems
   const computedNotice = (() => {
     const uncheckedCostItems = costItems.filter((item, idx) => !isCostItemSelected(item, idx));
@@ -285,16 +294,16 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           : `${regionText} 자유·맞춤 일정`;
 
     const accommodationSummary = hotelIncluded
-      ? reservationNotice?.accommodation || hotelCost?.detail || '1인 1실 단독 숙박'
+      ? sanitizeNoticeField(reservationNotice?.accommodation || hotelCost?.detail || '1인 1실 단독 숙박')
       : '숙박 미포함 (개별 예약)';
 
     const vehicleSummary = vehicleIncluded
-      ? reservationNotice?.vehicle || vehicleCost?.detail || '전 일정 전용 차량'
+      ? sanitizeNoticeField(reservationNotice?.vehicle || vehicleCost?.detail || '전 일정 전용 차량')
       : '전용 차량 미포함';
 
     const includedList: string[] = [];
     if (isFlightPaid && flightCost) {
-      includedList.push(`국제선 왕복 항공권 (${flightCost.detail})`);
+      includedList.push(`국제선 왕복 항공권 (${sanitizeNoticeField(flightCost.detail)})`);
     }
     if (golfCost || (!hasCostItems && isGolfTrip && golfCoursesList.length > 0)) {
       includedList.push(
@@ -306,8 +315,8 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     if (tourCost || (!hasCostItems && !isGolfTrip && tourItemsList.length > 0)) {
       includedList.push(
         tourItemsList.length > 0
-          ? `선택 투어/관광 (${tourItemsList.join(', ')})`
-          : `투어/관광 (${tourCost?.detail})`
+          ? `선택 투어/관광 (${tourItemsList.map(t => sanitizeNoticeField(t)).join(', ')})`
+          : `투어/관광 (${sanitizeNoticeField(tourCost?.detail)})`
       );
     }
     if (hotelIncluded) {
@@ -317,7 +326,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       includedList.push(`전용 차량 (${vehicleSummary})`);
     }
     if (guideIncluded) {
-      includedList.push(guideCost?.detail ? `가이드 (${guideCost.detail})` : '전 일정 한국어 전문 가이드 포함');
+      includedList.push(guideCost?.detail ? `가이드 (${sanitizeNoticeField(guideCost.detail)})` : '전 일정 한국어 전문 가이드 포함');
     }
     if (fastTrackIncluded) {
       includedList.push('공항 VIP 패스트트랙 포함');
@@ -326,7 +335,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       includedList.push('스파 & 전신 마사지 케어 포함');
     }
     if (mealCost) {
-      includedList.push(`포함 식사 (${mealCost.detail})`);
+      includedList.push(`포함 식사 (${sanitizeNoticeField(mealCost.detail)})`);
     }
     // Include any additional checked items (e.g., 지역 운영 수배비 등)
     selectedCostItems.forEach((item) => {
@@ -343,7 +352,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       ) {
         return;
       }
-      includedList.push(`${item.category} (${item.detail})`);
+      includedList.push(`${item.category} (${getDisplayDetail(item)})`);
     });
 
     const excludedList: string[] = [];
@@ -417,8 +426,12 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `■ 주요 경비 내역 (선택 항목)\n`;
     selectedCostItems.forEach((item) => {
-      const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
-      text += `• [${item.category}] ${item.detail} (${item.quantity}): $${itemUSD.toLocaleString()} USD (약 ₩ ${item.amountKRW.toLocaleString()}원)\n`;
+      if (canShowItemPrice(item)) {
+        const itemUSD = item.amountUSD !== undefined ? item.amountUSD : Math.round(item.amountKRW / 1360);
+        text += `• [${item.category}] ${item.detail} (${item.quantity}): $${itemUSD.toLocaleString()} USD (약 ₩ ${item.amountKRW.toLocaleString()}원)\n`;
+      } else {
+        text += `• [${item.category}] ${getDisplayDetail(item)} (${item.quantity}): 포함\n`;
+      }
     });
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `■ 선택 구성 요약: ${computedNotice.activitySummary} | 숙박: ${computedNotice.accommodationSummary} | 차량: ${computedNotice.vehicleSummary}\n`;
@@ -728,7 +741,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                           selected ? 'text-gray-900' : 'text-gray-400'
                         }`}
                       >
-                        {item.detail}
+                        {getDisplayDetail(item)}
                       </div>
 
                       {/* 수량 */}
@@ -742,20 +755,41 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
 
                       {/* 금액 */}
                       <div className="text-right whitespace-nowrap tabular-nums">
-                        <span
-                          className={`block text-xs sm:text-[13px] font-black transition-colors ${
-                            selected ? 'text-[#064e3b]' : 'text-gray-400'
-                          }`}
-                        >
-                          ${itemUSD.toLocaleString()} USD
-                        </span>
-                        <span
-                          className={`block text-[10px] sm:text-[11px] font-normal transition-colors ${
-                            selected ? 'text-gray-500' : 'text-gray-400'
-                          }`}
-                        >
-                          (약 ₩ {item.amountKRW.toLocaleString()}원)
-                        </span>
+                        {canShowItemPrice(item) ? (
+                          <>
+                            <span
+                              className={`block text-xs sm:text-[13px] font-black transition-colors ${
+                                selected ? 'text-[#064e3b]' : 'text-gray-400'
+                              }`}
+                            >
+                              ${itemUSD.toLocaleString()} USD
+                            </span>
+                            <span
+                              className={`block text-[10px] sm:text-[11px] font-normal transition-colors ${
+                                selected ? 'text-gray-500' : 'text-gray-400'
+                              }`}
+                            >
+                              (약 ₩ {item.amountKRW.toLocaleString()}원)
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span
+                              className={`block text-xs sm:text-[13px] font-black transition-colors ${
+                                selected ? 'text-[#064e3b]' : 'text-gray-400'
+                              }`}
+                            >
+                              {selected ? '포함' : '미포함'}
+                            </span>
+                            <span
+                              className={`block text-[10px] sm:text-[11px] font-normal transition-colors ${
+                                selected ? 'text-gray-500' : 'text-gray-400'
+                              }`}
+                            >
+                              {selected ? '합산 금액 반영' : '제외됨'}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </button>
                   );
@@ -819,18 +853,31 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                       </div>
 
                       <p className={`text-xs font-medium leading-snug break-keep transition-colors ${selected ? 'text-gray-900' : 'text-gray-400'}`}>
-                        {item.detail}
+                        {getDisplayDetail(item)}
                       </p>
 
                       <div className={`flex items-baseline justify-between pt-1.5 border-t ${selected ? 'border-emerald-100' : 'border-gray-200/70'}`}>
                         <span className={`text-[10px] font-medium ${selected ? 'text-gray-500' : 'text-gray-400'}`}>항목 금액</span>
                         <div className="text-right tabular-nums">
-                          <span className={`text-xs font-black transition-colors ${selected ? 'text-[#064e3b]' : 'text-gray-400'}`}>
-                            ${itemUSD.toLocaleString()} USD
-                          </span>
-                          <span className={`block text-[10px] font-normal transition-colors ${selected ? 'text-gray-500' : 'text-gray-400'}`}>
-                            (약 ₩ {item.amountKRW.toLocaleString()}원)
-                          </span>
+                          {canShowItemPrice(item) ? (
+                            <>
+                              <span className={`text-xs font-black transition-colors ${selected ? 'text-[#064e3b]' : 'text-gray-400'}`}>
+                                ${itemUSD.toLocaleString()} USD
+                              </span>
+                              <span className={`block text-[10px] font-normal transition-colors ${selected ? 'text-gray-500' : 'text-gray-400'}`}>
+                                (약 ₩ {item.amountKRW.toLocaleString()}원)
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className={`text-xs font-black transition-colors ${selected ? 'text-[#064e3b]' : 'text-gray-400'}`}>
+                                {selected ? '포함' : '미포함'}
+                              </span>
+                              <span className={`block text-[10px] font-normal transition-colors ${selected ? 'text-gray-500' : 'text-gray-400'}`}>
+                                {selected ? '합산 금액 반영' : '제외됨'}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1032,18 +1079,31 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                         {item.category}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 500, color: '#111827', borderRight: '1px solid #e5e7eb', lineHeight: 1.5 }}>
-                        {item.detail}
+                        {getDisplayDetail(item)}
                       </td>
                       <td style={{ padding: '10px 12px', textAlign: 'center', color: '#4b5563', borderRight: '1px solid #e5e7eb', whiteSpace: 'nowrap' }}>
                         {item.quantity}
                       </td>
                       <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                        <div style={{ fontSize: '13px', fontWeight: 900, color: '#111827' }}>
-                          ${itemUSD.toLocaleString()} USD
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 400 }}>
-                          (약 ₩ {item.amountKRW.toLocaleString()}원)
-                        </div>
+                        {canShowItemPrice(item) ? (
+                          <>
+                            <div style={{ fontSize: '13px', fontWeight: 900, color: '#111827' }}>
+                              ${itemUSD.toLocaleString()} USD
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 400 }}>
+                              (약 ₩ {item.amountKRW.toLocaleString()}원)
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#064e3b' }}>
+                              포함
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#6b7280', fontWeight: 400 }}>
+                              (합산 금액 반영)
+                            </div>
+                          </>
+                        )}
                       </td>
                     </tr>
                   );

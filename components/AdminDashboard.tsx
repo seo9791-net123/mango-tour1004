@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Product, ProductCostBreakdownItem, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, RecommendedDiscountPopup, NoticeItem, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool } from '../types';
+import { User, Product, ProductCostBreakdownItem, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, RecommendedDiscountPopup, NoticeItem, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool, QuotationVisibilitySettings } from '../types';
 import { 
   INITIAL_PRODUCTS, 
   INITIAL_VIDEOS, 
@@ -52,6 +52,10 @@ interface Props {
   setRecommendedDiscountPopup?: (popup: RecommendedDiscountPopup) => void;
   notices?: NoticeItem[];
   setNotices?: (notices: NoticeItem[]) => void;
+  quotationSettings?: QuotationVisibilitySettings;
+  setQuotationSettings?: (settings: QuotationVisibilitySettings) => void;
+  adminShowDetailedCosts?: boolean;
+  setAdminShowDetailedCosts?: (show: boolean) => void;
   setCurrentPage: (page: 'home' | 'admin' | 'category') => void;
 }
 
@@ -81,6 +85,10 @@ const AdminDashboard: React.FC<Props> = ({
   setRecommendedDiscountPopup,
   notices = INITIAL_NOTICES,
   setNotices,
+  quotationSettings = { showDetailedCostsToCustomers: false },
+  setQuotationSettings,
+  adminShowDetailedCosts = false,
+  setAdminShowDetailedCosts,
   setCurrentPage
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'posts' | 'notices' | 'menu' | 'popup' | 'discountPopup'>('users');
@@ -1951,6 +1959,89 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
     }
   };
 
+  const renderQuotationVisibilityCard = () => {
+    if (!setQuotationSettings && !setAdminShowDetailedCosts) return null;
+    return (
+      <div className="mb-4 sm:mb-6 mx-2 sm:mx-0 bg-amber-50/90 border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-amber-200/70">
+          <div>
+            <h4 className="text-sm sm:text-base font-extrabold text-amber-950 flex items-center gap-1.5">
+              <span>🔐</span>
+              <span>견적서 금액 표시 설정 (추천 상품 · 여행 만들기 공통)</span>
+            </h4>
+            <p className="text-[11px] sm:text-xs text-amber-800 mt-0.5">
+              일반 고객에게 합산 금액과 골프비용만 표시할지, 관리자 접속 시 세부 항목 금액을 보이게 할지 선택합니다.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {setAdminShowDetailedCosts && (
+            <div className="bg-white rounded-xl p-3.5 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="min-w-0">
+                <div className="text-xs sm:text-sm font-bold text-gray-900">관리자 접속 시 화면 표시</div>
+                <div className="text-[11px] text-gray-500 mt-0.5">
+                  견적서 모달·플래너 상단에서도 실시간 전환 가능합니다.
+                </div>
+              </div>
+              <div className="inline-flex bg-gray-100 p-0.5 rounded-xl border border-gray-200 shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setAdminShowDetailedCosts(false)}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer whitespace-nowrap ${
+                    !adminShowDetailedCosts ? 'bg-[#0A7E54] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  합산·골프만
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminShowDetailedCosts(true)}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer whitespace-nowrap ${
+                    adminShowDetailedCosts ? 'bg-[#0A7E54] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  세부금액 전체
+                </button>
+              </div>
+            </div>
+          )}
+
+          {setQuotationSettings && (
+            <div className="bg-white rounded-xl p-3.5 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="min-w-0">
+                <div className="text-xs sm:text-sm font-bold text-gray-900">일반 고객 화면 표시 기준</div>
+                <div className="text-[11px] text-gray-500 mt-0.5">
+                  비로그인 및 일반 회원에게 적용되며 클라우드에 저장됩니다.
+                </div>
+              </div>
+              <div className="inline-flex bg-gray-100 p-0.5 rounded-xl border border-gray-200 shrink-0 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setQuotationSettings({ showDetailedCostsToCustomers: false })}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer whitespace-nowrap ${
+                    !quotationSettings.showDetailedCostsToCustomers ? 'bg-[#0A7E54] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  합산·골프만 (권장)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuotationSettings({ showDetailedCostsToCustomers: true })}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer whitespace-nowrap ${
+                    quotationSettings.showDetailedCostsToCustomers ? 'bg-[#0A7E54] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  전체 공개
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-0 sm:px-4 py-2 sm:py-6 animate-fade-in-up w-full overflow-x-hidden">
       {/* Top Bar: Title & Back Button */}
@@ -2462,6 +2553,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
         {/* Product Catalog Management */}
         {activeTab === 'products' && (
           <div className="animate-fade-in-up">
+            {renderQuotationVisibilityCard()}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-8 border-b pb-4 px-2.5 sm:px-0">
               <h3 className="text-lg sm:text-2xl font-bold text-gray-800">상품 카탈로그 관리</h3>
               <div className="flex flex-wrap gap-1.5 sm:gap-2 w-full sm:w-auto">
@@ -2930,6 +3022,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
         {/* 맞춤 여행 상품 관리 (Planner Tab) */}
         {activeTab === 'planner' && (
           <div className="animate-fade-in-up space-y-4 sm:space-y-6 px-2 sm:px-0">
+            {renderQuotationVisibilityCard()}
             {/* Top Sub-Nav Tabs for Planner */}
             <div className="flex flex-col sm:flex-row bg-gray-100 p-1.5 rounded-2xl border border-gray-200 gap-1.5 sm:gap-1">
               <button

@@ -7,9 +7,18 @@ import { supabaseService } from '../services/supabaseService';
 interface Props {
   product: Product;
   onClose: () => void;
+  isAdmin?: boolean;
+  showDetailedCosts?: boolean;
+  onToggleAdminDetailedCosts?: (show: boolean) => void;
 }
 
-const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
+const QuotationModal: React.FC<Props> = ({
+  product,
+  onClose,
+  isAdmin = false,
+  showDetailedCosts = false,
+  onToggleAdminDetailedCosts,
+}) => {
   const [customerName, setCustomerName] = useState('고객');
   const [personCount, setPersonCount] = useState(2);
   const [departureDate, setDepartureDate] = useState(() => {
@@ -431,7 +440,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
                 onChange={(e) => setIncludeFastTrack(e.target.checked)}
                 className="rounded text-gold-500"
               />
-              <span>패스트트랙 (+$60)</span>
+              <span>{showDetailedCosts ? '패스트트랙 (+$60)' : '패스트트랙'}</span>
             </label>
 
             <label className="hidden sm:flex items-center gap-1 text-xs cursor-pointer font-bold text-gray-700 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-200">
@@ -441,7 +450,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
                 onChange={(e) => setIncludeGuide(e.target.checked)}
                 className="rounded text-gold-500"
               />
-              <span>가이드 ($120)</span>
+              <span>{showDetailedCosts ? '가이드 ($120)' : '가이드'}</span>
             </label>
 
             <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 sm:px-2.5 py-1 whitespace-nowrap">
@@ -495,7 +504,7 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
               onChange={(e) => setIncludeFastTrack(e.target.checked)}
               className="rounded text-gold-500"
             />
-            <span>패스트트랙 (+$60)</span>
+            <span>{showDetailedCosts ? '패스트트랙 (+$60)' : '패스트트랙'}</span>
           </label>
           <label className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-200 font-bold text-[11px] text-indigo-900 shrink-0 cursor-pointer whitespace-nowrap">
             <input
@@ -504,9 +513,46 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
               onChange={(e) => setIncludeGuide(e.target.checked)}
               className="rounded text-indigo-600"
             />
-            <span>가이드 ($120)</span>
+            <span>{showDetailedCosts ? '가이드 ($120)' : '가이드'}</span>
           </label>
         </div>
+
+        {/* Admin Pricing Visibility Toggle Bar */}
+        {isAdmin && onToggleAdminDetailedCosts && (
+          <div className="no-print bg-amber-50/95 border-b border-amber-200/80 px-3 md:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0">
+            <div className="flex items-center gap-1.5 text-amber-950 font-bold min-w-0">
+              <span>🔐</span>
+              <span>관리자 견적 금액 표시</span>
+              <span className="hidden sm:inline text-[11px] font-medium text-amber-800">
+                (비골프 세부 금액 보이기/숨기기)
+              </span>
+            </div>
+            <div className="inline-flex items-center bg-white p-0.5 rounded-xl border border-amber-200 shadow-2xs shrink-0">
+              <button
+                type="button"
+                onClick={() => onToggleAdminDetailedCosts(false)}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer whitespace-nowrap ${
+                  !showDetailedCosts
+                    ? 'bg-[#0A7E54] text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                합산·골프만 보기
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleAdminDetailedCosts(true)}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] transition cursor-pointer whitespace-nowrap ${
+                  showDetailedCosts
+                    ? 'bg-[#0A7E54] text-white shadow-xs'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                세부금액 전체 보기
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Scrollable Document Area */}
         <div className="flex-1 overflow-y-auto p-0 md:p-6 print:p-0 print:overflow-visible">
@@ -522,10 +568,11 @@ const QuotationModal: React.FC<Props> = ({ product, onClose }) => {
             totalPriceUSD={groupTotalUSD}
             costItems={costItems}
             itinerary={itineraryDays}
-            notes={`선택 상품: ${product.title} | 패스트트랙: ${includeFastTrack ? '포함 ($60/인)' : '미포함 (선택 가능)'} | 가이드: ${includeGuide ? '포함 (1일 $120)' : '미포함'}`}
+            notes={`선택 상품: ${product.title} | 패스트트랙: ${includeFastTrack ? (showDetailedCosts ? '포함 ($60/인)' : '포함') : '미포함 (선택 가능)'} | 가이드: ${includeGuide ? (showDetailedCosts ? '포함 (1일 $120)' : '포함') : '미포함'}`}
             reservationNotice={reservationNotice}
             onClose={onClose}
             showControls={true}
+            showDetailedCosts={showDetailedCosts}
             uncheckedKeys={uncheckedKeys}
             onUncheckedKeysChange={setUncheckedKeys}
           />

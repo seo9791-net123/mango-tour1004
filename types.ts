@@ -112,6 +112,10 @@ export interface AppSettings {
   isAIPublic: boolean;
 }
 
+export interface QuotationVisibilitySettings {
+  showDetailedCostsToCustomers: boolean;
+}
+
 export interface PopupNotification {
   id: string;
   title: string;

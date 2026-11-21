@@ -97,3 +97,48 @@ export const calculateCostItemTotal = (
   }
   return { amountUSD: totalUSD, quantity: qty };
 };
+
+/**
+ * 견적 항목이 '골프 비용'에 해당하는지 판별
+ * (일반 고객 화면에서는 합산 금액과 골프 비용만 표시하고, 숙박/차량/가이드/패스트트랙 등 비골프 개별 금액은 숨김 처리)
+ */
+export const isGolfCostItem = (category?: string): boolean => {
+  const cat = (category || '').trim();
+  if (!cat) return false;
+  return cat.includes('골프') || cat.includes('그린피') || cat.includes('라운딩');
+};
+
+/**
+ * 비골프 항목의 명칭/설명 문자열에 포함된 단가($) 및 계산식 표기를 깔끔하게 제거
+ */
+export const sanitizeNonGolfPriceText = (text?: string): string => {
+  if (!text) return '';
+  let cleaned = text;
+
+  // 1) "1인 1일 $50 × 4일 = 총 $200 / " 또는 "1일 $100 × 5일 = $500, 4인 기준 1인 $125" 형태의 계산식 제거
+  cleaned = cleaned.replace(/\d+인\s*\d+일\s*\$[\d,]+(?:\.\d+)?[^/)]*\s*\/\s*/g, '');
+  cleaned = cleaned.replace(/(?:가이드|차량|7인승[^)]*)?\s*\d+일\s*\$[\d,]+(?:\.\d+)?\s*[×xX]\s*\d+일\s*=\s*(?:총\s*)?\$[\d,]+(?:\.\d+)?(?:[^)]*)?/g, '');
+
+  // 2) 괄호 내 가격 문구 정제: "(5일간 / 1대 1일 $100 기준)" -> "(5일간)" / "(1일 $120 기준)" -> ""
+  cleaned = cleaned.replace(/\(([^()]*\$[^()]*)\)/g, (_, inner: string) => {
+    const parts = inner
+      .split(/\s*[\/·]\s*/)
+      .map(p => p.trim())
+      .filter(p => p && !p.includes('$') && !p.includes('원') && !/^기준$/.test(p));
+    return parts.length > 0 ? `(${parts.join(' · ')})` : '';
+  });
+
+  // 3) 괄호 밖 잔여 "$120", "1일 $100", "1인당 $60" 패턴 제거
+  cleaned = cleaned.replace(/(?:1인당?|1일|1박|총|약)?\s*\$[\d,]+(?:\.\d+)?(?:\s*\/\s*(?:인|일|박))?/g, '');
+
+  // 4) 공백/구분자 정리
+  cleaned = cleaned
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([,.)])/g, '$1')
+    .replace(/[·\/]\s*$/g, '')
+    .replace(/^\s*[·\/]\s*/g, '')
+    .trim();
+
+  return cleaned;
+};
