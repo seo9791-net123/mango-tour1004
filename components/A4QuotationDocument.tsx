@@ -326,7 +326,12 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       includedList.push(`전용 차량 (${vehicleSummary})`);
     }
     if (guideIncluded) {
-      includedList.push(guideCost?.detail ? `가이드 (${sanitizeNoticeField(guideCost.detail)})` : '전 일정 한국어 전문 가이드 포함');
+      const guideText = guideCost?.detail ? sanitizeNoticeField(guideCost.detail) : '';
+      includedList.push(
+        guideText
+          ? (guideText.includes('가이드') ? guideText : `가이드 (${guideText})`)
+          : '전 일정 한국어 전문 가이드 포함'
+      );
     }
     if (fastTrackIncluded) {
       includedList.push('공항 VIP 패스트트랙 포함');
@@ -434,7 +439,6 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       }
     });
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `■ 선택 구성 요약: ${computedNotice.activitySummary} | 숙박: ${computedNotice.accommodationSummary} | 차량: ${computedNotice.vehicleSummary}\n`;
     text += `■ 포함 사항: ${computedNotice.includedText}\n`;
     text += `■ 불포함 사항: ${computedNotice.excludedText}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -857,7 +861,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                       </p>
 
                       <div className={`flex items-baseline justify-between pt-1.5 border-t ${selected ? 'border-emerald-100' : 'border-gray-200/70'}`}>
-                        <span className={`text-[10px] font-medium ${selected ? 'text-gray-500' : 'text-gray-400'}`}>항목 금액</span>
+                        <span className={`text-xs font-medium ${selected ? 'text-gray-500' : 'text-gray-400'}`}>항목 금액</span>
                         <div className="text-right tabular-nums">
                           {canShowItemPrice(item) ? (
                             <>
@@ -933,16 +937,19 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
 
                     {/* Day Activity Rows */}
                     <div className="pl-1 sm:pl-3.5 space-y-1.5">
-                      {activities.map((act, actIdx) => (
-                        <div key={actIdx} className="flex flex-col sm:flex-row items-start text-xs sm:text-[13px] text-gray-700 gap-0.5 sm:gap-2.5 leading-relaxed">
-                          <span className="font-bold text-gold-700 sm:text-gray-500 shrink-0 sm:w-28 text-left text-[11px] sm:text-[13px]">
-                            {act.time && act.time !== '일정' ? act.time : '•'}
-                          </span>
-                          <span className="flex-1 text-gray-800 font-normal break-keep">
-                            {act.desc}
-                          </span>
-                        </div>
-                      ))}
+                      {activities.map((act, actIdx) => {
+                        const hasTime = Boolean(act.time && act.time !== '일정');
+                        return (
+                          <div key={actIdx} className="flex flex-row items-start text-xs sm:text-[13px] text-gray-700 gap-2 sm:gap-2.5 leading-relaxed">
+                            <span className={`font-bold text-gold-700 sm:text-gray-500 shrink-0 text-left text-xs sm:text-[13px] tabular-nums whitespace-nowrap ${hasTime ? 'min-w-[44px] sm:w-28' : 'w-3 sm:w-28'}`}>
+                              {hasTime ? act.time : '•'}
+                            </span>
+                            <span className="flex-1 text-gray-800 font-normal break-keep">
+                              {act.desc}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -962,7 +969,6 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           </div>
           <p>• {computedNotice.openingLine}</p>
           <p>• <strong>선택 상품 및 일정:</strong> {computedNotice.titleText} (베트남 {computedNotice.regionText} · {computedNotice.durationText})</p>
-          <p>• <strong>세부 구성:</strong> {computedNotice.activitySummary} / 숙박: {computedNotice.accommodationSummary} / 차량: {computedNotice.vehicleSummary}</p>
           <p>• <strong>포함 사항:</strong> {computedNotice.includedText}</p>
           <p>• <strong>불포함 사항:</strong> {computedNotice.excludedText}</p>
           {notes && (
@@ -1167,7 +1173,6 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           </div>
           <div>• {computedNotice.openingLine}</div>
           <div>• <strong>선택 상품 및 일정:</strong> {computedNotice.titleText} (베트남 {computedNotice.regionText} · {computedNotice.durationText})</div>
-          <div>• <strong>세부 구성:</strong> {computedNotice.activitySummary} / 숙박: {computedNotice.accommodationSummary} / 차량: {computedNotice.vehicleSummary}</div>
           <div>• <strong>포함 사항:</strong> {computedNotice.includedText}</div>
           <div>• <strong>불포함 사항:</strong> {computedNotice.excludedText}</div>
           {notes && (

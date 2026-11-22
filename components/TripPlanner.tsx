@@ -1100,21 +1100,6 @@ export const TripPlanner: React.FC<Props> = ({
     };
   };
 
-  // Get dynamic display description for each option item
-  const getOptionDisplayDescription = (opt: PackageOptionItem) => {
-    if (customOptionSelections[opt.id]?.description) {
-      return customOptionSelections[opt.id].description;
-    }
-    if (opt.category === 'golf' && (opt.name.includes('그린피') || opt.name.includes('코스'))) {
-      const { rounds } = getDateMatchedGolfBreakdown();
-      const breakdownStr = rounds.map(r => 
-        `Day ${r.dayNumber} ${r.dateStr}: ${r.courseName.split(' ')[0]}[${r.isWeekend ? '주말' : '주중'} $${r.appliedUSD}]`
-      ).join(' · ');
-      return `[날짜별 자동 합산]: ${breakdownStr} (카트비/캐디피 포함, 운전기사 팁 별도)`;
-    }
-    return opt.description;
-  };
-
   // Helper to get selected accommodation name
   const getChosenAccommodationName = () => {
     const hotelOpt = activePackage?.options.find(o => o.category === 'hotel');
@@ -1276,19 +1261,91 @@ export const TripPlanner: React.FC<Props> = ({
     return text;
   };
 
-  // Helper to construct A4 quotation cost items
+  // Concise label helper for A4 quotation cost items & reservation notice (mobile + desktop)
+  const getConciseOptionLabel = (opt: PackageOptionItem): string => {
+    const rawName = getOptionDisplayName(opt);
+    const customName = customOptionSelections[opt.id]?.name;
+    const src = customName || rawName;
+
+    if (opt.category === 'golf') {
+      if (customGolfCourses.length > 0 && (opt.name.includes('그린피') || opt.name.includes('코스') || opt.id.includes('golf'))) {
+        return customGolfCourses.map(c => c.split(' ')[0]).join(' + ');
+      }
+      return rawName
+        .replace(/^\d+대\s*명문\s*코스\s*그린피\s*/g, '')
+        .replace(/\[[^\]]*\]\s*/g, '')
+        .replace(/^\((.+)\)$/, '$1')
+        .trim() || rawName;
+    }
+
+    if (opt.category === 'hotel') {
+      return src
+        .replace(/\s*\((\d+박)\s*\/\s*1인\s*객실\s*기준\)/g, ' ($1)')
+        .replace(/\s*\([^)]*(객실\s*기준|1인\s*1실|베드룸|배정|급|독채|오션뷰|인접)[^)]*\)/g, '')
+        .replace(/\s+/g, ' ')
+        .trim() || '고급 호텔';
+    }
+
+    if (opt.category === 'vehicle') {
+      if (src.includes('9인승')) return '9인승 VIP 리무진';
+      if (src.includes('7인승')) return '7인승 프리미엄 SUV';
+      if (src.includes('16인승')) return '16인승 전용 밴';
+      if (src.includes('26인승')) return '26인승 리무진 버스';
+      return src
+        .replace(/전\s*일정\s*단독\s*/g, '')
+        .replace(/\s*\([^)]*(일간|기준|총액|시트|\$)[^)]*\)/g, '')
+        .replace(/\s+/g, ' ')
+        .trim() || '전용 VIP 리무진';
+    }
+
+    if (opt.category === 'guide') {
+      if (src.includes('미포함')) return '가이드 미포함';
+      if (src.includes('VIP') || src.includes('비즈니스')) return 'VIP 의전 가이드';
+      return '한국어 전문 가이드';
+    }
+
+    if (opt.name.includes('패스트 트랙') || opt.name.includes('패스트트랙') || opt.id.includes('fasttrack')) {
+      return '공항 VIP 패스트트랙';
+    }
+
+    if (opt.name.includes('마사지') || opt.name.includes('스파')) {
+      return 'VIP 전신 마사지 (90분)';
+    }
+
+    if (opt.category === 'meal') {
+      if (opt.id === 'diy-opt-dinner') {
+        return selectedDinnerEntries.length > 0
+          ? `맞춤 저녁식사 (${selectedDinnerEntries.length}회)`
+          : '맞춤 저녁식사';
+      }
+      if (src.includes('미포함') || src.includes('자유 식사')) return '자유 식사 (미포함)';
+      return src.replace(/\s*\([^)]*(석식|1일|\$)[^)]*\)/g, '').trim() || '특식 포함';
+    }
+
+    if (opt.id === 'diy-opt-tour') {
+      return rawName.replace(/^선택 여행 일정:\s*/, '').replace(/\s*\([^)]*\)/g, '').trim() || '맞춤 여행 일정';
+    }
+
+    if (opt.id === 'diy-opt-region') {
+      return `${activePackage?.location || diyLocation} 기본 수배비`;
+    }
+
+    return sanitizeNonGolfPriceText(src).trim() || src;
+  };
+
+  // Helper to construct A4 quotation cost items (concise for both mobile & desktop preview)
   const getA4CostItems = (): CostItem[] => {
     if (!activePackage) return [];
     const items: CostItem[] = [];
 
     activePackage.options.forEach(opt => {
       if (!selectedOptionIds.has(opt.id)) return;
-      const name = getOptionDisplayName(opt);
-      const desc = getOptionDisplayDescription(opt);
+      const conciseLabel = getConciseOptionLabel(opt);
       const travelDays = pkgTravelDays;
 
       let catName = '기타 경비';
       let qty = `${personCount}인`;
+      let detail = conciseLabel;
 
       if (opt.category === 'flight') {
         catName = '항공권 (국제선 왕복)';
@@ -1296,36 +1353,48 @@ export const TripPlanner: React.FC<Props> = ({
       } else if (opt.id === 'diy-opt-region') {
         catName = '지역 운영/수배';
         qty = `${personCount}인`;
+        detail = `${activePackage.location} 현지 수배 및 맞춤 일정 관리`;
       } else if (opt.id === 'diy-opt-tour') {
         catName = '투어/관광';
         qty = `${personCount}인`;
       } else if (opt.category === 'hotel') {
         catName = '숙박 (1인 객실 기준)';
         qty = `${personCount}실 (${activePackage.duration || '4박'})`;
+        detail = `${conciseLabel} (1인 1실 · 조식 포함)`;
       } else if (opt.category === 'golf') {
         catName = '골프 라운딩 (18홀)';
-        qty = `${customGolfCourses.length}회 라운딩 × ${personCount}인`;
+        qty = `${customGolfCourses.length}회 × ${personCount}인`;
+        detail = `${conciseLabel} (카트·캐디피 포함)`;
       } else if (opt.category === 'vehicle') {
         catName = '전용 차량 & 기사';
-        qty = `1대 (전일정 ${travelDays}일 · 일정 기준 총액)`;
+        qty = `1대 (전일정 ${travelDays}일)`;
+        detail = `${conciseLabel} (전용 기사·유류비 포함)`;
       } else if (opt.category === 'guide') {
         catName = '한국어 전담 가이드';
-        qty = `1명 (전일정 ${travelDays}일 · 일정 기준 총액)`;
+        qty = `1명 (전일정 ${travelDays}일)`;
+        detail = conciseLabel.includes('미포함')
+          ? '가이드 미포함 (전용 기사만 배정)'
+          : `${conciseLabel} (전 일정 동행)`;
       } else if (opt.name.includes('패스트 트랙') || opt.name.includes('패스트트랙') || opt.id.includes('fasttrack')) {
         catName = 'VIP패스트트랙';
-        qty = `${personCount}인 (1인 $60)`;
+        qty = `${personCount}인`;
+        detail = '공항 VIP 전용 입국 심사 초고속 패스';
       } else if (opt.category === 'meal') {
         if (opt.id === 'diy-opt-dinner') {
           catName = '맞춤 저녁식사';
-          qty = `${personCount}인 (1인 $${getOptionPrice(opt).toLocaleString()})`;
+          qty = `${personCount}인 (${selectedDinnerEntries.length}회)`;
+          detail = selectedDinnerEntries.length > 0
+            ? selectedDinnerEntries.map(e => `${e.day}일차 ${e.menu.name}`).join(' · ')
+            : '맞춤 저녁식사';
         } else {
           const mealNights = activePackage.itinerary?.length ? activePackage.itinerary.length - 1 : 4;
           catName = '식사 및 만찬';
-          qty = `${personCount}인 (석식 ${mealNights}회 / 1일 $50)`;
+          qty = `${personCount}인 (석식 ${mealNights}회)`;
         }
       } else if (opt.name.includes('마사지') || opt.name.includes('스파')) {
         catName = '스파 & 마사지';
         qty = `${personCount}인`;
+        detail = 'VIP 전신 힐링 마사지 (90분)';
       } else if (opt.category === 'activity') {
         catName = '투어/액티비티';
         qty = `${personCount}인`;
@@ -1338,7 +1407,7 @@ export const TripPlanner: React.FC<Props> = ({
 
       items.push({
         category: catName,
-        detail: `${name}${desc && desc !== name ? ` (${desc})` : ''}`,
+        detail,
         quantity: qty,
         amountUSD: totalItemUSD,
         amountKRW: totalItemUSD * USD_TO_KRW,
@@ -1401,13 +1470,13 @@ export const TripPlanner: React.FC<Props> = ({
           o.category === 'meal'
       )
       .map(o => ({
-        name: getOptionDisplayName(o),
+        name: getConciseOptionLabel(o),
         included: selectedOptionIds.has(o.id)
       }));
 
     const excludedItems = activePackage.options
       .filter(o => !selectedOptionIds.has(o.id))
-      .map(o => getOptionDisplayName(o));
+      .map(o => getConciseOptionLabel(o));
 
     return {
       sourceType: activePackage.id.startsWith('diy-pkg-') ? 'diy' : 'product',
@@ -1415,16 +1484,16 @@ export const TripPlanner: React.FC<Props> = ({
       tripType: isGolfTrip ? 'golf' : 'tour',
       region: activePackage.location,
       duration: activePackage.duration,
-      golfCourses: isGolfTrip ? customGolfCourses : [],
+      golfCourses: isGolfTrip ? customGolfCourses.map(c => c.split(' ')[0]) : [],
       tourItems: !isGolfTrip
         ? [
             tourOpt && selectedOptionIds.has(tourOpt.id)
-              ? getOptionDisplayName(tourOpt).replace(/^선택 여행 일정:\s*/, '')
+              ? getConciseOptionLabel(tourOpt)
               : `${activePackage.location} ${activePackage.duration} 자유·맞춤 여행`
           ]
         : [],
-      accommodation: hotelOpt && selectedOptionIds.has(hotelOpt.id) ? getChosenAccommodationName() : undefined,
-      vehicle: vehicleOpt && selectedOptionIds.has(vehicleOpt.id) ? getOptionDisplayName(vehicleOpt) : undefined,
+      accommodation: hotelOpt && selectedOptionIds.has(hotelOpt.id) ? `${getConciseOptionLabel(hotelOpt)} (1인 1실)` : undefined,
+      vehicle: vehicleOpt && selectedOptionIds.has(vehicleOpt.id) ? getConciseOptionLabel(vehicleOpt) : undefined,
       extraServices,
       excludedItems
     };
@@ -3275,9 +3344,6 @@ export const TripPlanner: React.FC<Props> = ({
                                 >
                                   <span>{r.dateStr}</span>
                                   <span className="font-bold text-gray-900">{r.courseName.split(' ')[0]}</span>
-                                  <span className="text-[10px] text-[#0A7E54] font-bold">
-                                    ${r.appliedUSD}
-                                  </span>
                                 </span>
                               ));
                             })()}
