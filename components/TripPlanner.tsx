@@ -2155,7 +2155,7 @@ export const TripPlanner: React.FC<Props> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 items-stretch">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 items-stretch">
                   {/* 골프 버튼 */}
                   <button
                     type="button"
@@ -2164,27 +2164,21 @@ export const TripPlanner: React.FC<Props> = ({
                       setShowAllCoursesInGolfModal(false);
                       setShowActivityModal('golf');
                     }}
-                    className={`p-3.5 sm:p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col sm:flex-row sm:items-center justify-between gap-3 h-full cursor-pointer ${
+                    className={`p-3 sm:p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 h-full cursor-pointer ${
                       diyActivityMode === 'golf'
                         ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
                         : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                      <span className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl text-lg sm:text-xl flex items-center justify-center shrink-0 ${
-                        diyActivityMode === 'golf' ? 'bg-[#0A7E54] text-white' : 'bg-white text-gray-900 shadow-2xs'
-                      }`}>
-                        ⛳
+                    <div className="min-w-0 flex-1 flex items-baseline gap-1.5 sm:gap-2 whitespace-nowrap overflow-hidden">
+                      <span className="font-extrabold text-[15px] sm:text-xl md:text-2xl text-gray-900 tracking-tight leading-tight shrink-0">
+                        골프
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900 tracking-tight leading-tight">골프</div>
-                        <div className="text-[11px] sm:text-xs text-[#8E8E93] truncate mt-0.5">
-                          <span className="sm:hidden">{diyLocation} {diyRounds}회</span>
-                          <span className="hidden sm:inline">{diyLocation} 골프장 ({diyRounds}회)</span>
-                        </div>
-                      </div>
+                      <span className="text-[10px] sm:text-xs md:text-sm text-[#6B7280] font-medium truncate">
+                        {diyLocation} 골프장 ({diyRounds}회)
+                      </span>
                     </div>
-                    <span className={`w-full sm:w-auto text-center px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
+                    <span className={`w-full md:w-auto text-center px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
                       diyActivityMode === 'golf' ? 'text-[#0A7E54]' : 'text-[#3A3A3C]'
                     }`}>
                       골프장 선택 ▾
@@ -2198,27 +2192,21 @@ export const TripPlanner: React.FC<Props> = ({
                       setDiyActivityMode('tour');
                       setShowActivityModal('tour');
                     }}
-                    className={`p-3.5 sm:p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col sm:flex-row sm:items-center justify-between gap-3 h-full cursor-pointer ${
+                    className={`p-3 sm:p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3 h-full cursor-pointer ${
                       diyActivityMode === 'tour'
                         ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
                         : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                      <span className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl text-lg sm:text-xl flex items-center justify-center shrink-0 ${
-                        diyActivityMode === 'tour' ? 'bg-[#0A7E54] text-white' : 'bg-white text-gray-900 shadow-2xs'
-                      }`}>
-                        🧳
+                    <div className="min-w-0 flex-1 flex items-baseline gap-1.5 sm:gap-2 whitespace-nowrap overflow-hidden">
+                      <span className="font-extrabold text-[15px] sm:text-xl md:text-2xl text-gray-900 tracking-tight leading-tight shrink-0">
+                        여행
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-sm sm:text-base md:text-lg text-gray-900 tracking-tight leading-tight">여행</div>
-                        <div className="text-[11px] sm:text-xs text-[#8E8E93] truncate mt-0.5">
-                          <span className="sm:hidden">자유 · {diyLocation}</span>
-                          <span className="hidden sm:inline">자유 · {diyLocation} 관광</span>
-                        </div>
-                      </div>
+                      <span className="text-[10px] sm:text-xs md:text-sm text-[#6B7280] font-medium truncate">
+                        자유 · {diyLocation} 관광
+                      </span>
                     </div>
-                    <span className={`w-full sm:w-auto text-center px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
+                    <span className={`w-full md:w-auto text-center px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-white shadow-2xs whitespace-nowrap shrink-0 ${
                       diyActivityMode === 'tour' ? 'text-[#0A7E54]' : 'text-[#3A3A3C]'
                     }`}>
                       상품 선택 ▾
@@ -2232,7 +2220,7 @@ export const TripPlanner: React.FC<Props> = ({
                     <>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs md:text-sm font-bold text-[#0A7E54] whitespace-nowrap">
-                          ⛳ 배정 골프장 ({diyRounds}회)
+                          배정 골프장 ({diyRounds}회)
                         </span>
                         <button
                           type="button"
@@ -2265,7 +2253,7 @@ export const TripPlanner: React.FC<Props> = ({
                     <>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs md:text-sm font-bold text-[#0A7E54] whitespace-nowrap">
-                          🧳 선택 여행 구성
+                          선택 여행 구성
                         </span>
                         <button
                           type="button"
@@ -2327,7 +2315,7 @@ export const TripPlanner: React.FC<Props> = ({
                           : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60 opacity-85'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
                         <input
                           type="checkbox"
                           checked={diyIncludeHotel}
@@ -2336,20 +2324,9 @@ export const TripPlanner: React.FC<Props> = ({
                           aria-label="숙박 포함 여부"
                           className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                         />
-                        <span
-                          className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
-                            diyIncludeHotel ? 'bg-[#0A7E54] text-white' : 'bg-gray-300 text-white'
-                          }`}
-                        >
-                          {isImageIconUrl(selectedHotelTier?.icon) ? (
-                            <img src={getFreshImageUrl(selectedHotelTier?.icon || '')} alt={hotelDisplayName} className="w-7 h-7 object-contain rounded" />
-                          ) : (
-                            selectedHotelTier?.icon || '🏨'
-                          )}
-                        </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
+                            <span className="font-extrabold text-lg sm:text-xl md:text-[22px] text-gray-900 tracking-tight leading-snug break-keep">
                               {diyIncludeHotel ? hotelDisplayName : `${hotelDisplayName} (미포함)`}
                             </span>
                             {diyIncludeHotel && showDetailedCosts && (
@@ -2358,7 +2335,7 @@ export const TripPlanner: React.FC<Props> = ({
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
+                          <div className="text-xs sm:text-sm text-[#3A3A3C] line-clamp-1 mt-1">
                             {diyIncludeHotel
                               ? `${diyNights}박 기준 · 1인 1실 · ${selectedHotelTier?.description || '엄선된 숙박 옵션'}`
                               : '숙박 미포함 상태입니다 · 좌측 체크박스로 포함하거나 숙박을 변경하세요.'}
@@ -2417,7 +2394,7 @@ export const TripPlanner: React.FC<Props> = ({
                           : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60 opacity-85'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
                         <input
                           type="checkbox"
                           checked={diyIncludeVehicle}
@@ -2426,20 +2403,9 @@ export const TripPlanner: React.FC<Props> = ({
                           aria-label="차량 포함 여부"
                           className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                         />
-                        <span
-                          className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
-                            diyIncludeVehicle ? 'bg-[#0A7E54] text-white' : 'bg-gray-300 text-white'
-                          }`}
-                        >
-                          {isImageIconUrl(selectedVehicleItem?.icon) ? (
-                            <img src={getFreshImageUrl(selectedVehicleItem?.icon || '')} alt={vehDisplayName} className="w-7 h-7 object-contain rounded" />
-                          ) : (
-                            selectedVehicleItem?.icon || '🚐'
-                          )}
-                        </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
+                            <span className="font-extrabold text-lg sm:text-xl md:text-[22px] text-gray-900 tracking-tight leading-snug break-keep">
                               {diyIncludeVehicle ? vehDisplayName : `${vehDisplayName} (미포함)`}
                             </span>
                             {diyIncludeVehicle && showDetailedCosts && (
@@ -2448,7 +2414,7 @@ export const TripPlanner: React.FC<Props> = ({
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
+                          <div className="text-xs sm:text-sm text-[#3A3A3C] line-clamp-1 mt-1">
                             {diyIncludeVehicle
                               ? `전 일정(${diyDays}일) 단독 전용 · 차량 1대 (인원 무관) · ${selectedVehicleItem?.description || ''}`
                               : '차량 미포함 상태입니다 · 좌측 체크박스로 포함하거나 차량을 변경하세요.'}
@@ -2506,12 +2472,7 @@ export const TripPlanner: React.FC<Props> = ({
                             className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                           />
                           <div className="min-w-0">
-                            <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
-                              {isImageIconUrl(svc.icon) ? (
-                                <img src={getFreshImageUrl(svc.icon)} alt={svc.name} className="w-5 h-5 object-contain rounded shrink-0 inline-block" />
-                              ) : (
-                                <span>{svc.icon}</span>
-                              )}
+                            <div className="font-extrabold text-base sm:text-[17px] md:text-lg text-gray-900 tracking-tight leading-snug flex items-center gap-2 flex-wrap">
                               <span>{showDetailedCosts ? svc.name : sanitizeNonGolfPriceText(svc.name)}</span>
                               {showDetailedCosts && (
                                 <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
@@ -2519,7 +2480,7 @@ export const TripPlanner: React.FC<Props> = ({
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
+                            <div className="text-xs text-[#6B7280] mt-1 line-clamp-1">
                               {showDetailedCosts ? svc.description : sanitizeNonGolfPriceText(svc.description)}
                             </div>
                           </div>
@@ -2551,14 +2512,13 @@ export const TripPlanner: React.FC<Props> = ({
                         className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                       />
                       <div className="min-w-0">
-                        <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
-                          <span>🍽️</span>
+                        <div className="font-extrabold text-base sm:text-[17px] md:text-lg text-gray-900 tracking-tight leading-snug flex items-center gap-2 flex-wrap">
                           <span>저녁식사</span>
                           <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs">
                             {dinnerCount > 0 ? '변경 ▾' : '식사 선택 ▾'}
                           </span>
                         </div>
-                        <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
+                        <div className="text-xs text-[#6B7280] mt-1 line-clamp-1">
                           {dinnerCount > 0
                             ? selectedDinnerEntries.map(e => `${e.day}일차 ${e.menu.name}`).join(' · ')
                             : `${diyLocation} 지역 대표 메뉴 중 일자별 선택`}
