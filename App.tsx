@@ -1316,7 +1316,7 @@ const App: React.FC = () => {
       {showSplash && <SplashScreen isExiting={isSplashExiting} />}
       {isDataLoaded && (
       <div
-        className={`min-h-screen min-h-[100dvh] bg-[#F2F2F7] text-[#3A3A3C] flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full transition-opacity duration-700 ease-out ${
+        className={`min-h-screen min-h-[100dvh] bg-[#F2F2F7] text-[#3A3A3C] flex flex-col font-sans pb-safe md:pb-0 select-text w-full max-w-full transition-opacity duration-700 ease-out print:min-h-0 print:pb-0 print:bg-white print:block ${
           showSplash && !isSplashExiting ? 'opacity-0' : 'opacity-100'
         }`}
       >
@@ -1389,7 +1389,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col w-full max-w-full min-w-0">
+      <main className={`flex-1 flex flex-col w-full max-w-full min-w-0 ${selectedProduct ? 'print:hidden' : ''}`}>
         {currentPage === 'admin' && isAdmin ? (
           <AdminDashboard 
             users={users}
@@ -1577,7 +1577,7 @@ const App: React.FC = () => {
 
       {/* Popup Notification */}
       {showPopup && popup.isActive && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-fade-in">
+        <div className="no-print fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/45 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-[20px] overflow-hidden shadow-2xl w-[80%] md:w-full md:max-w-sm max-h-[80vh] md:max-h-[90vh] h-auto flex flex-col animate-scale-in overflow-y-auto">
             {popup.image && (
               <div className={`relative shrink-0 overflow-hidden bg-gray-950 flex items-center justify-center ${
@@ -1640,7 +1640,7 @@ const App: React.FC = () => {
       )}
 
       {showAuthModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-end md:items-center justify-center z-[10000] p-0 md:px-4 backdrop-blur-xs animate-fade-in">
+        <div className="no-print fixed inset-0 bg-black/40 flex items-end md:items-center justify-center z-[10000] p-0 md:px-4 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-t-3xl md:rounded-[20px] px-5 pt-2 pb-7 md:p-8 w-full md:max-w-md max-h-[90vh] flex flex-col justify-center shadow-2xl relative animate-ios-sheet-up overflow-y-auto">
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 md:hidden shrink-0" />
             <button type="button" onClick={() => { setShowAuthModal(false); resetAuthFields(); }} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#F2F2F7] text-[#8E8E93] hover:text-gray-900 font-bold text-sm flex items-center justify-center cursor-pointer transition active:scale-90">✕</button>

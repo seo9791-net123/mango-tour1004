@@ -454,25 +454,36 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     }
   };
 
-  // Helper to normalize activities into { time, desc }
+  // Helper to normalize activities into { time, desc } (start time only)
   const normalizeActivities = (acts: Array<{ time?: string; desc: string }> | string[]) => {
+    const stripEndTime = (rawTime?: string) => {
+      if (!rawTime) return rawTime;
+      const trimmed = rawTime.trim();
+      const match = trimmed.match(/^(\d{1,2}:\d{2})(?:\s*(?:[-~–]\s*(?:\d{1,2}:\d{2})?))?$/);
+      if (match) return match[1];
+      return trimmed.replace(/\s*[-~–]\s*\d{1,2}:\d{2}\s*$/, '').replace(/\s*[-~–]\s*$/, '').trim();
+    };
+
     return acts.map((act) => {
       if (typeof act === 'string') {
-        const timeMatch = act.match(/^(\d{1,2}:\d{2}\s*(?:~\s*\d{1,2}:\d{2}|-\s*\d{1,2}:\d{2}|~)?)\s*(.*)$/);
+        const timeMatch = act.match(/^(\d{1,2}:\d{2})(?:\s*(?:~\s*\d{1,2}:\d{2}|-\s*\d{1,2}:\d{2}|~|-))?\s*(.*)$/);
         if (timeMatch) {
           return { time: timeMatch[1].trim(), desc: timeMatch[2].trim() };
         }
         return { time: '일정', desc: act };
       }
-      return act;
+      return {
+        ...act,
+        time: stripEndTime(act.time),
+      };
     });
   };
 
   return (
-    <div className="w-full flex flex-col items-center select-text font-sans antialiased">
+    <div className="w-full flex flex-col items-center print:block select-text font-sans antialiased">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[10010] bg-gray-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md border border-gold-500/30">
+        <div className="no-print fixed top-20 left-1/2 -translate-x-1/2 z-[10010] bg-gray-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md border border-gold-500/30">
           <span>✨</span>
           <span>{toastMessage}</span>
         </div>
@@ -942,7 +953,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                         const hasTime = Boolean(act.time && act.time !== '일정');
                         return (
                           <div key={actIdx} className="flex flex-row items-start text-xs sm:text-[13px] text-gray-700 gap-2 sm:gap-2.5 leading-relaxed">
-                            <span className={`font-bold text-gold-700 sm:text-gray-500 shrink-0 text-left text-xs sm:text-[13px] tabular-nums whitespace-nowrap ${hasTime ? 'min-w-[44px] sm:w-28' : 'w-3 sm:w-28'}`}>
+                            <span className={`font-bold text-gold-700 sm:text-gray-500 shrink-0 text-left text-xs sm:text-[13px] tabular-nums whitespace-nowrap ${hasTime ? 'min-w-[44px] sm:w-16' : 'w-3 sm:w-16'}`}>
                               {hasTime ? act.time : '•'}
                             </span>
                             <span className="flex-1 text-gray-800 font-normal break-keep">
@@ -1154,7 +1165,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                     <div style={{ paddingLeft: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {activities.map((act, actIdx) => (
                         <div key={actIdx} style={{ display: 'flex', fontSize: '12.5px', color: '#374151', lineHeight: 1.6 }}>
-                          <span style={{ width: '130px', fontWeight: 600, color: '#6b7280', flexShrink: 0 }}>
+                          <span style={{ width: '68px', fontWeight: 600, color: '#6b7280', flexShrink: 0 }}>
                             {act.time && act.time !== '일정' ? act.time : '•'}
                           </span>
                           <span style={{ flex: 1, color: '#1f2937' }}>
@@ -1213,6 +1224,10 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           #a4-screen-view {
             display: none !important;
           }
+          #a4-exact-print-sheet,
+          #a4-exact-print-sheet * {
+            visibility: visible !important;
+          }
           #a4-exact-print-sheet {
             display: block !important;
             position: static !important;
@@ -1224,7 +1239,13 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            visibility: visible !important;
+          }
+          #a4-exact-print-sheet table {
+            page-break-inside: auto;
+          }
+          #a4-exact-print-sheet tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
           .page-break-avoid {
             break-inside: avoid !important;

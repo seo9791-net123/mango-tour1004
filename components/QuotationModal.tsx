@@ -190,13 +190,13 @@ const QuotationModal: React.FC<Props> = ({
     day: item.day,
     title: item.activities[0] ? item.activities[0].replace(/.*?(도착|체크인|라운딩|투어|휴식|귀국).*/, '$1 및 자유 일정') : `${product.location} 일정`,
     activities: item.activities.map((act, i) => {
-      let time = '09:00 - 12:00';
+      let time = '09:00';
       if (item.day === 1) {
-        time = i === 0 ? '10:00 - 13:30' : i === 1 ? '15:00 ~' : '18:00 ~';
+        time = i === 0 ? '10:00' : i === 1 ? '15:00' : '18:00';
       } else if (item.day === (product.itinerary?.length || 4)) {
-        time = i === 0 ? '09:00 - 12:00' : '14:00 - 22:00';
+        time = i === 0 ? '09:00' : '14:00';
       } else {
-        time = i === 0 ? '08:00 - 13:00' : i === 1 ? '13:30 - 17:00' : '18:00 - 20:30';
+        time = i === 0 ? '08:00' : i === 1 ? '13:30' : '18:00';
       }
       return { time, desc: act };
     }),
@@ -398,11 +398,11 @@ const QuotationModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
+      className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm print:backdrop-blur-none overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
       onClick={onClose}
     >
       <div
-        className="bg-[#F2F2F7] w-full max-w-none md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none"
+        className="bg-[#F2F2F7] w-full max-w-none md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:block print:overflow-visible print:h-auto print:max-h-none print:max-w-none print:my-0 print:shadow-none print:bg-white print:w-full print:rounded-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden no-print shrink-0"></div>

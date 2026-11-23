@@ -1744,11 +1744,11 @@ export const INITIAL_CUSTOM_PACKAGES: CustomTripPackage[] = [
 
 export const INITIAL_MASTER_OPTION_POOL: MasterOptionPool = {
   diyRegions: [
-    { id: 'reg-hcm', name: '호치민', subtitle: '명문 36홀 & 도심 나이트라이프', icon: '🏙️', baseFeeUSD: 0 },
-    { id: 'reg-vt', name: '붕따우', subtitle: '오션뷰 링크스 & 해변 휴양', icon: '🌊', baseFeeUSD: 0 },
-    { id: 'reg-mn', name: '무이네', subtitle: '사막 투어 & 해안 리조트 골프', icon: '🏜️', baseFeeUSD: 0 },
-    { id: 'reg-nt', name: '나트랑', subtitle: '에메랄드 바다 & 섬 리조트', icon: '🏝️', baseFeeUSD: 0 },
-    { id: 'reg-dl', name: '달랏', subtitle: '해발 1,500m 고원 힐링 투어', icon: '🌲', baseFeeUSD: 0 },
+    { id: 'reg-hcm', name: '호치민', subtitle: '명문 36홀 & 도심 나이트라이프', icon: '🏙️', image: '/images/products/hcm-tour-city.jpg', baseFeeUSD: 0 },
+    { id: 'reg-vt', name: '붕따우', subtitle: '오션뷰 링크스 & 해변 휴양', icon: '🌊', image: '/images/products/vungtau-tour-beach.jpg', baseFeeUSD: 0 },
+    { id: 'reg-mn', name: '무이네', subtitle: '사막 투어 & 해안 리조트 골프', icon: '🏜️', image: '/images/products/muine-tour-dunes.jpg', baseFeeUSD: 0 },
+    { id: 'reg-nt', name: '나트랑', subtitle: '에메랄드 바다 & 섬 리조트', icon: '🏝️', image: '/images/products/nhatrang-tour-bay.jpg', baseFeeUSD: 0 },
+    { id: 'reg-dl', name: '달랏', subtitle: '해발 1,500m 고원 힐링 투어', icon: '🌲', image: '/images/products/dalat-tour-garden.jpg', baseFeeUSD: 0 },
   ],
 
   golfCourses: [

@@ -142,24 +142,13 @@
   html, body {
     overflow: visible !important;
     height: auto !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  body * {
-    visibility: hidden;
-  }
-  .printable-area, .printable-area * {
-    visibility: visible;
-  }
-  .printable-area {
-    width: 100%;
-    height: auto;
-    margin: 0;
-    padding: 10mm !important;
-    background: white !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-    border-radius: 0 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
   }
   .no-print {
     display: none !important;

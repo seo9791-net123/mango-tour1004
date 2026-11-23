@@ -189,6 +189,7 @@ export interface MasterOptionPool {
     name: string;
     subtitle: string;
     icon: string;
+    image?: string;
     baseFeeUSD: number;
   }>;
   golfCourses: Array<{

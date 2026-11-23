@@ -37,6 +37,14 @@ const getDinnerMenusForRegion = (pool: MasterOptionPool, loc: string): DinnerMen
   return (matched.length > 0 ? matched : fallback).slice(0, 6);
 };
 
+const REGION_COVER_IMAGES: Record<string, string> = {
+  '호치민': '/images/products/hcm-tour-city.jpg',
+  '붕따우': '/images/products/vungtau-tour-beach.jpg',
+  '무이네': '/images/products/muine-tour-dunes.jpg',
+  '나트랑': '/images/products/nhatrang-tour-bay.jpg',
+  '달랏': '/images/products/dalat-tour-garden.jpg',
+};
+
 export const TripPlanner: React.FC<Props> = ({
   masterOptionPool,
   products = [],
@@ -236,6 +244,7 @@ export const TripPlanner: React.FC<Props> = ({
 
   // DIY Trip Builder States (6-Step Flow)
   const [diyLocation, setDiyLocation] = useState<string>(diyRegions[0]?.name || '호치민');
+  const [failedRegionImageIds, setFailedRegionImageIds] = useState<Record<string, boolean>>({});
   const [diyNights, setDiyNights] = useState<number>(3);
   const [diyRounds, setDiyRounds] = useState<number>(3);
   const [diyActivityMode, setDiyActivityMode] = useState<'golf' | 'tour'>('golf');
@@ -1897,17 +1906,17 @@ export const TripPlanner: React.FC<Props> = ({
   };
 
   return (
-    <div className="bg-[#F2F2F7] select-text font-sans antialiased text-[#3A3A3C] tracking-tight break-keep w-full max-w-full overflow-x-clip">
+    <div className="bg-[#F2F2F7] select-text font-sans antialiased text-[#3A3A3C] tracking-tight break-keep w-full max-w-full overflow-x-clip print:overflow-visible print:bg-white">
       {/* Toast Notification */}
       {copyToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[10007] bg-gray-900/90 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-full shadow-lg text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md">
+        <div className="no-print fixed top-20 left-1/2 -translate-x-1/2 z-[10007] bg-gray-900/90 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-full shadow-lg text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md">
           <span>{copyToast}</span>
         </div>
       )}
 
       {/* Sticky Hero Header */}
       <div
-        className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
+        className="no-print sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
         style={{ top: 'var(--site-header-height, 45px)' }}
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 w-full">
@@ -1951,7 +1960,7 @@ export const TripPlanner: React.FC<Props> = ({
       </div>
 
       {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-0 pb-0 w-full">
+      <div className={`max-w-7xl mx-auto px-3 sm:px-4 pt-0 pb-0 w-full ${showQuotePreviewModal ? 'print:hidden' : ''}`}>
         {isAdmin && onToggleAdminDetailedCosts && (
           <div className="mb-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-950">
@@ -2007,29 +2016,57 @@ export const TripPlanner: React.FC<Props> = ({
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
                   {diyRegions.map((reg) => {
                     const isSelected = diyLocation === reg.name;
+                    const coverImageSrc = isImageIconUrl(reg.icon)
+                      ? getFreshImageUrl(reg.icon)
+                      : REGION_COVER_IMAGES[reg.name];
+                    const showCoverImage = Boolean(coverImageSrc && !failedRegionImageIds[reg.id]);
                     return (
                       <button
                         key={reg.id}
                         type="button"
                         onClick={() => handleDIYLocationChange(reg.name)}
-                        className={`p-3.5 md:p-4 rounded-2xl text-center transition-all duration-200 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        aria-pressed={isSelected}
+                        className={`group relative w-full aspect-video rounded-xl sm:rounded-2xl overflow-hidden text-left transition-all duration-200 active:scale-[0.97] cursor-pointer border-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 ${
                           isSelected
-                            ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54] shadow-xs'
-                            : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
+                            ? 'border-[#10B981] shadow-[0_8px_20px_-4px_rgba(16,185,129,0.32)]'
+                            : 'border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
                         }`}
                       >
-                        <div className="flex items-center gap-1.5">
-                          {isImageIconUrl(reg.icon) ? (
-                            <img src={getFreshImageUrl(reg.icon)} alt={reg.name} className="w-6 h-6 md:w-7 md:h-7 object-contain rounded shrink-0" />
-                          ) : (
-                            <span className="text-lg md:text-xl">{reg.icon}</span>
-                          )}
-                          <span className="font-bold text-sm md:text-base text-gray-900 tracking-tight">{reg.name}</span>
+                        {/* Fallback gradient surface */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-slate-800 to-slate-950" />
+
+                        {/* Full-bleed regional landscape photo */}
+                        {showCoverImage && (
+                          <img
+                            src={coverImageSrc}
+                            alt={`${reg.name} 풍경`}
+                            referrerPolicy="no-referrer"
+                            onError={() =>
+                              setFailedRegionImageIds((prev) => ({ ...prev, [reg.id]: true }))
+                            }
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+                          />
+                        )}
+
+                        {/* Dark gradient scrim for crisp white text contrast */}
+                        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_top,rgba(0,0,0,0.85)_0%,rgba(0,0,0,0.3)_100%)]" />
+
+                        {/* Selected badge (top-right) */}
+                        {isSelected && (
+                          <span className="absolute top-1.5 right-1.5 sm:top-1 sm:right-1 lg:top-2 lg:right-2 z-20 inline-flex items-center px-1.5 py-0.5 lg:px-2 lg:py-0.5 rounded-full bg-[#10B981] text-white font-bold text-[9px] sm:text-[8px] md:text-[9px] lg:text-[10px] leading-none shadow-sm whitespace-nowrap">
+                            ✓ 선택됨
+                          </span>
+                        )}
+
+                        {/* Compact bottom text overlay */}
+                        <div className="relative z-10 w-full h-full flex flex-col justify-end p-2 sm:p-1.5 md:p-2 lg:p-3 text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.85)]">
+                          <span className="block font-extrabold text-[14px] sm:text-[11px] md:text-[12px] lg:text-[14px] xl:text-[16px] leading-tight tracking-tight text-white">
+                            {reg.name}
+                          </span>
+                          <span className="block mt-0.5 font-medium text-[10px] sm:text-[8.5px] md:text-[9.5px] lg:text-[10.5px] xl:text-[11.5px] leading-[1.2] text-white/95 break-keep">
+                            {reg.subtitle}
+                          </span>
                         </div>
-                        <span className="text-[11px] md:text-xs text-[#8E8E93] line-clamp-1">{reg.subtitle}</span>
-                        <span className={`text-[11px] font-semibold mt-0.5 ${isSelected ? 'text-[#0A7E54]' : 'text-[#8E8E93]'}`}>
-                          {isSelected ? '✓ 선택됨' : '선택'}
-                        </span>
                       </button>
                     );
                   })}
@@ -5636,6 +5673,7 @@ export const TripPlanner: React.FC<Props> = ({
         <div
           ref={a4QuotationPrintRef}
           aria-hidden="true"
+          className="no-print"
           style={{
             position: 'fixed',
             left: '-9999px',
@@ -5698,11 +5736,11 @@ export const TripPlanner: React.FC<Props> = ({
       {/* ================= QUOTATION PREVIEW POPUP (Matches Recommended Product QuotationModal) ================= */}
       {showQuotePreviewModal && activePackage && (
         <div
-          className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
+          className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm print:backdrop-blur-none overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
           onClick={() => setShowQuotePreviewModal(false)}
         >
           <div
-            className="bg-[#F2F2F7] w-full max-w-none md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:max-h-none print:shadow-none print:bg-white print:w-full print:rounded-none"
+            className="bg-[#F2F2F7] w-full max-w-none md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:block print:overflow-visible print:h-auto print:max-h-none print:max-w-none print:my-0 print:shadow-none print:bg-white print:w-full print:rounded-none"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden no-print shrink-0" />
