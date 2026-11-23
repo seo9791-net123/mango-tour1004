@@ -480,7 +480,10 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col items-center print:block select-text font-sans antialiased">
+    <div
+      className="quotation-vertical-only w-full max-w-full overflow-x-hidden flex flex-col items-center print:block print:overflow-visible select-text font-sans antialiased"
+      style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+    >
       {/* Toast Notification */}
       {toastMessage && (
         <div className="no-print fixed top-20 left-1/2 -translate-x-1/2 z-[10010] bg-gray-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in backdrop-blur-md border border-gold-500/30">
@@ -491,7 +494,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
 
       {/* Action Toolbar (no-print) */}
       {showControls && (
-        <div className="no-print w-full max-w-[794px] mb-2 sm:mb-3 px-2.5 sm:px-0 pt-2 sm:pt-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        <div className="no-print w-full max-w-[794px] box-border overflow-x-hidden mb-2 sm:mb-3 px-2.5 sm:px-0 pt-2 sm:pt-0 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
           <div className="flex items-center justify-between text-xs text-gray-500 font-semibold px-0.5 sm:px-0">
             <div className="flex items-center gap-1.5 whitespace-nowrap">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
@@ -509,11 +512,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-4 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-4 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto min-w-0">
             <button
               type="button"
               onClick={handlePrint}
-              className="py-1.5 px-2 sm:px-4 sm:py-2 bg-deepgreen text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-emerald-800 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
+              className="min-w-0 py-1.5 px-1.5 sm:px-4 sm:py-2 bg-deepgreen text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-emerald-800 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>🖨️</span>
               <span>인쇄</span>
@@ -523,7 +526,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
               type="button"
               onClick={handleExportPDF}
               disabled={isExporting}
-              className="py-1.5 px-2 sm:px-4 sm:py-2 bg-gold-500 text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-gold-600 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+              className="min-w-0 py-1.5 px-1.5 sm:px-4 sm:py-2 bg-gold-500 text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-gold-600 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
             >
               <span>{exportingFormat === 'pdf' ? '⏳' : '📄'}</span>
               <span>{exportingFormat === 'pdf' ? '저장 중...' : 'PDF'}</span>
@@ -533,7 +536,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
               type="button"
               onClick={handleDownloadPNG}
               disabled={isExporting}
-              className="py-1.5 px-2 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+              className="min-w-0 py-1.5 px-1.5 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
             >
               <span>{exportingFormat === 'png' ? '⏳' : '📥'}</span>
               <span>{exportingFormat === 'png' ? '저장 중...' : '이미지'}</span>
@@ -542,7 +545,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             <button
               type="button"
               onClick={handleCopyText}
-              className="py-1.5 px-2 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
+              className="min-w-0 py-1.5 px-1.5 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>📋</span>
               <span>복사</span>
@@ -575,9 +578,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       <div
         ref={documentRef}
         id="a4-screen-view"
-        className="a4-print-container bg-white w-full max-w-[794px] min-h-0 sm:min-h-[1050px] print:hidden p-3 xs:p-4 sm:p-10 md:p-12 border-y sm:border border-gray-200 shadow-xl rounded-none sm:rounded-2xl text-gray-900 text-xs sm:text-sm leading-normal box-border relative mx-auto"
+        className="a4-print-container bg-white w-full max-w-[794px] min-h-0 sm:min-h-[1050px] print:hidden p-3 xs:p-4 sm:p-10 md:p-12 border-y sm:border border-gray-200 shadow-xl rounded-none sm:rounded-2xl text-gray-900 text-xs sm:text-sm leading-normal box-border relative mx-auto overflow-x-hidden"
         style={{
           boxSizing: 'border-box',
+          touchAction: 'pan-y',
+          overscrollBehaviorX: 'none',
         }}
       >
         {/* Top Header: Brand + Title */}
@@ -628,41 +633,41 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
         </div>
 
         {/* Mobile Responsive Meta Info Block (sm:hidden print:hidden) */}
-        <div className="sm:hidden print:hidden mb-3.5 overflow-hidden rounded-lg border border-gray-300 text-xs bg-white">
+        <div className="sm:hidden print:hidden mb-3.5 overflow-hidden rounded-lg border border-gray-300 text-xs bg-white w-full max-w-full">
           <div className="grid grid-cols-2 divide-x divide-gray-200 border-b border-gray-200">
-            <div className="p-2.5 bg-gray-50/50">
+            <div className="p-2.5 bg-gray-50/50 min-w-0 break-words">
               <span className="text-[10px] font-bold text-gray-500 block mb-0.5">👤 고객명</span>
-              <span className="font-bold text-gray-900 text-xs block">{customerName} 고객님 {personCount > 1 ? `(외 ${personCount - 1}인)` : ''}</span>
+              <span className="font-bold text-gray-900 text-xs block break-words">{customerName} 고객님 {personCount > 1 ? `(외 ${personCount - 1}인)` : ''}</span>
             </div>
-            <div className="p-2.5 bg-gray-50/50">
+            <div className="p-2.5 bg-gray-50/50 min-w-0 break-words">
               <span className="text-[10px] font-bold text-gray-500 block mb-0.5">👨‍💼 담당자</span>
-              <span className="font-bold text-gray-900 text-xs block">{managerName}</span>
-              <span className="text-[10px] text-gray-500 block font-normal">{managerContact}</span>
+              <span className="font-bold text-gray-900 text-xs block break-words">{managerName}</span>
+              <span className="text-[10px] text-gray-500 block font-normal break-words">{managerContact}</span>
             </div>
           </div>
           <div className="grid grid-cols-2 divide-x divide-gray-200">
-            <div className="p-2.5 bg-gray-50/50">
+            <div className="p-2.5 bg-gray-50/50 min-w-0 break-words">
               <span className="text-[10px] font-bold text-gray-500 block mb-0.5">📍 여행지</span>
-              <span className="font-bold text-gray-900 text-xs block">베트남 {location}</span>
+              <span className="font-bold text-gray-900 text-xs block break-words">베트남 {location}</span>
             </div>
-            <div className="p-2.5 bg-gray-50/50">
+            <div className="p-2.5 bg-gray-50/50 min-w-0 break-words">
               <span className="text-[10px] font-bold text-gray-500 block mb-0.5">📅 여행기간</span>
-              <span className="font-bold text-gray-900 text-xs block">{formattedDateRange}</span>
+              <span className="font-bold text-gray-900 text-xs block break-words">{formattedDateRange}</span>
               <span className="text-gold-700 font-bold text-[10px] block">({duration})</span>
             </div>
           </div>
         </div>
 
         {/* Golden Banner for Total Price (USD first, KRW below) */}
-        <div className="bg-[#F5A623] text-white rounded-lg px-3.5 sm:px-5 py-3 sm:py-3.5 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-1 shadow-xs">
-          <span className="text-xs sm:text-sm font-bold text-white tracking-wide">
+        <div className="bg-[#F5A623] text-white rounded-lg px-3.5 sm:px-5 py-3 sm:py-3.5 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-1 shadow-xs w-full max-w-full min-w-0">
+          <span className="text-xs sm:text-sm font-bold text-white tracking-wide min-w-0">
             선택 결제 금액 (Total Price)
           </span>
-          <div className="text-left sm:text-right">
-            <div className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs tabular-nums">
+          <div className="text-left sm:text-right min-w-0">
+            <div className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-xs tabular-nums break-words">
               ${finalTotalUSD.toLocaleString()} USD <span className="text-xs sm:text-sm font-semibold">({personCount}인 기준)</span>
             </div>
-            <div className="text-[11px] sm:text-xs text-amber-100 font-medium mt-0.5 tabular-nums">
+            <div className="text-[11px] sm:text-xs text-amber-100 font-medium mt-0.5 tabular-nums break-words">
               (약 ₩ {finalTotalKRW.toLocaleString()}원 / 1인 약 ${Math.round(finalTotalUSD / Math.max(1, personCount)).toLocaleString()})
             </div>
           </div>
@@ -831,7 +836,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                     role="checkbox"
                     aria-checked={selected}
                     onClick={() => toggleCostItem(item, idx)}
-                    className={`w-full p-3 rounded-xl border text-left transition-all duration-150 flex items-start gap-2.5 cursor-pointer ${
+                    className={`w-full max-w-full min-w-0 p-3 rounded-xl border text-left transition-all duration-150 flex items-start gap-2.5 cursor-pointer ${
                       selected
                         ? 'border-emerald-300 bg-emerald-50/25 shadow-2xs'
                         : 'border-gray-200 bg-gray-50/60'
@@ -853,7 +858,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                     </span>
 
                     <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex items-center justify-between gap-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
                         <span
                           className={`inline-block px-2 py-0.5 text-[11px] font-bold rounded-md transition-colors whitespace-nowrap shrink-0 ${
                             selected
@@ -952,11 +957,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                       {activities.map((act, actIdx) => {
                         const hasTime = Boolean(act.time && act.time !== '일정');
                         return (
-                          <div key={actIdx} className="flex flex-row items-start text-xs sm:text-[13px] text-gray-700 gap-2 sm:gap-2.5 leading-relaxed">
+                          <div key={actIdx} className="flex flex-row items-start text-xs sm:text-[13px] text-gray-700 gap-2 sm:gap-2.5 leading-relaxed min-w-0">
                             <span className={`font-bold text-gold-700 sm:text-gray-500 shrink-0 text-left text-xs sm:text-[13px] tabular-nums whitespace-nowrap ${hasTime ? 'min-w-[44px] sm:w-16' : 'w-3 sm:w-16'}`}>
                               {hasTime ? act.time : '•'}
                             </span>
-                            <span className="flex-1 text-gray-800 font-normal break-keep">
+                            <span className="flex-1 min-w-0 text-gray-800 font-normal break-keep break-words">
                               {act.desc}
                             </span>
                           </div>
@@ -975,7 +980,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
         </div>
 
         {/* Section 3: [망고투어 예약 안내 사항] */}
-        <div className="page-break-avoid border border-amber-300/90 bg-amber-50/20 rounded-lg p-3 sm:p-4 text-[10px] xs:text-[11px] sm:text-xs text-gray-700 leading-relaxed space-y-1 break-keep">
+        <div className="page-break-avoid w-full max-w-full overflow-hidden border border-amber-300/90 bg-amber-50/20 rounded-lg p-3 sm:p-4 text-[10px] xs:text-[11px] sm:text-xs text-gray-700 leading-relaxed space-y-1 break-keep break-words">
           <div className="font-bold text-gray-900 mb-1 text-xs sm:text-[13px]">
             [망고투어 예약 안내 사항]
           </div>

@@ -13,6 +13,7 @@ import {
 } from '../utils/quotationExportUtils';
 import { appAlert } from '../services/dialogService';
 import { sanitizeNonGolfPriceText } from '../utils/costBreakdownUtils';
+import { useQuotationMobileLock } from '../utils/useQuotationMobileLock';
 
 interface Props {
   packages?: CustomTripPackage[];
@@ -306,6 +307,8 @@ export const TripPlanner: React.FC<Props> = ({
       document.body.style.overscrollBehavior = prevBodyOverscroll;
     };
   }, [isAnyModalOpen]);
+
+  useQuotationMobileLock(Boolean(showQuotePreviewModal));
 
   const diyDays = diyNights + 1;
 
@@ -2004,10 +2007,15 @@ export const TripPlanner: React.FC<Props> = ({
               {/* 1. 여행 지역 선택 */}
               <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
                 <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.06] gap-2">
-                  <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
-                    <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">1</span>
-                    <span>여행 지역 선택</span>
-                  </h3>
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 min-w-0">
+                    <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
+                      <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">1</span>
+                      <span>여행 지역 선택</span>
+                    </h3>
+                    <span className="text-[11px] sm:text-xs font-medium text-[#8E8E93]">
+                      원하시는 여행 지역을 클릭해 주세요
+                    </span>
+                  </div>
                   <span className="text-xs md:text-sm font-semibold text-[#0A7E54] bg-[#ECFDF5] px-3 py-1 rounded-full whitespace-nowrap shrink-0">
                     {diyLocation}
                   </span>
@@ -2026,10 +2034,10 @@ export const TripPlanner: React.FC<Props> = ({
                         type="button"
                         onClick={() => handleDIYLocationChange(reg.name)}
                         aria-pressed={isSelected}
-                        className={`group relative w-full aspect-video rounded-xl sm:rounded-2xl overflow-hidden text-left transition-all duration-200 active:scale-[0.97] cursor-pointer border-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 ${
+                        className={`group relative w-full aspect-video rounded-xl sm:rounded-2xl overflow-hidden text-left transition-all duration-200 ease-out active:scale-[0.97] cursor-pointer border-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 ${
                           isSelected
-                            ? 'border-[#10B981] shadow-[0_8px_20px_-4px_rgba(16,185,129,0.32)]'
-                            : 'border-transparent shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+                            ? 'z-10 scale-[1.03] border-[#10B981] shadow-[0_10px_24px_-4px_rgba(16,185,129,0.38)]'
+                            : 'border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:scale-[1.02] hover:border-[#34D399] hover:shadow-[0_8px_18px_-4px_rgba(16,185,129,0.22)]'
                         }`}
                       >
                         {/* Fallback gradient surface */}
@@ -2044,22 +2052,38 @@ export const TripPlanner: React.FC<Props> = ({
                             onError={() =>
                               setFailedRegionImageIds((prev) => ({ ...prev, [reg.id]: true }))
                             }
-                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+                            className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ease-out group-hover:scale-105 ${
+                              isSelected
+                                ? 'brightness-105 saturate-110'
+                                : 'brightness-[0.8] saturate-[0.72] group-hover:brightness-100 group-hover:saturate-100'
+                            }`}
                           />
+                        )}
+
+                        {/* Unselected subtle dim veil that lifts on hover */}
+                        {!isSelected && (
+                          <div className="absolute inset-0 pointer-events-none bg-black/20 transition-colors duration-200 group-hover:bg-black/5" />
                         )}
 
                         {/* Dark gradient scrim for crisp white text contrast */}
                         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_top,rgba(0,0,0,0.85)_0%,rgba(0,0,0,0.3)_100%)]" />
 
-                        {/* Selected badge (top-right) */}
-                        {isSelected && (
+                        {/* Top-right selection state badge */}
+                        {isSelected ? (
                           <span className="absolute top-1.5 right-1.5 sm:top-1 sm:right-1 lg:top-2 lg:right-2 z-20 inline-flex items-center px-1.5 py-0.5 lg:px-2 lg:py-0.5 rounded-full bg-[#10B981] text-white font-bold text-[9px] sm:text-[8px] md:text-[9px] lg:text-[10px] leading-none shadow-sm whitespace-nowrap">
                             ✓ 선택됨
+                          </span>
+                        ) : (
+                          <span className="absolute top-1.5 right-1.5 sm:top-1 sm:right-1 lg:top-2 lg:right-2 z-20 inline-flex items-center gap-1 px-1.5 py-0.5 lg:px-2 lg:py-0.5 rounded-full bg-black/55 group-hover:bg-[#10B981]/90 backdrop-blur-[2px] border border-white/40 group-hover:border-white/80 text-white/95 font-semibold text-[9px] sm:text-[8px] md:text-[9px] lg:text-[10px] leading-none shadow-xs transition-colors duration-200 whitespace-nowrap">
+                            <span className="w-2 h-2 lg:w-2.5 lg:h-2.5 rounded-[2px] border border-white/85 inline-block shrink-0" />
+                            <span>선택</span>
                           </span>
                         )}
 
                         {/* Compact bottom text overlay */}
-                        <div className="relative z-10 w-full h-full flex flex-col justify-end p-2 sm:p-1.5 md:p-2 lg:p-3 text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.85)]">
+                        <div className={`relative z-10 w-full h-full flex flex-col justify-end p-2 sm:p-1.5 md:p-2 lg:p-3 text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.85)] transition-opacity duration-200 ${
+                          isSelected ? 'opacity-100' : 'opacity-90 group-hover:opacity-100'
+                        }`}>
                           <span className="block font-extrabold text-[14px] sm:text-[11px] md:text-[12px] lg:text-[14px] xl:text-[16px] leading-tight tracking-tight text-white">
                             {reg.name}
                           </span>
@@ -5736,16 +5760,18 @@ export const TripPlanner: React.FC<Props> = ({
       {/* ================= QUOTATION PREVIEW POPUP (Matches Recommended Product QuotationModal) ================= */}
       {showQuotePreviewModal && activePackage && (
         <div
-          className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm print:backdrop-blur-none overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
+          className="quotation-vertical-only fixed inset-0 w-full max-w-full bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm print:backdrop-blur-none overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
+          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
           onClick={() => setShowQuotePreviewModal(false)}
         >
           <div
-            className="bg-[#F2F2F7] w-full max-w-none md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:block print:overflow-visible print:h-auto print:max-h-none print:max-w-none print:my-0 print:shadow-none print:bg-white print:w-full print:rounded-none"
+            className="bg-[#F2F2F7] w-full max-w-full md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:block print:overflow-visible print:h-auto print:max-h-none print:max-w-none print:my-0 print:shadow-none print:bg-white print:w-full print:rounded-none"
+            style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden no-print shrink-0" />
             {/* Top Control Bar inside Modal (no-print) */}
-            <div className="no-print bg-white/90 backdrop-blur-md px-3 md:px-6 py-2.5 md:py-3 border-b border-black/[0.06] flex items-center justify-between gap-2 shrink-0">
+            <div className="no-print w-full max-w-full overflow-x-hidden bg-white/90 backdrop-blur-md px-3 md:px-6 py-2.5 md:py-3 border-b border-black/[0.06] flex items-center justify-between gap-2 shrink-0">
               <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                 <button
                   type="button"
@@ -5815,25 +5841,25 @@ export const TripPlanner: React.FC<Props> = ({
               </div>
             </div>
 
-            {/* Mobile Quick Option Strip */}
-            <div className="sm:hidden no-print bg-gray-50/95 border-b border-gray-200 px-2.5 py-1.5 flex items-center gap-2 overflow-x-auto scrollbar-hide text-xs shrink-0 whitespace-nowrap">
-              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 whitespace-nowrap">
-                <span className="text-[10px] text-gray-500 font-bold">고객명:</span>
+            {/* Mobile Quick Option Strip (wrapped cleanly within 100% width, no horizontal scroll) */}
+            <div className="sm:hidden no-print w-full max-w-full bg-gray-50/95 border-b border-gray-200 px-2.5 py-1.5 flex flex-wrap items-center gap-1.5 overflow-x-hidden text-xs shrink-0">
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 max-w-full">
+                <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">고객명:</span>
                 <input
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="고객"
-                  className="w-14 text-xs font-bold outline-none"
+                  className="w-14 min-w-0 text-xs font-bold outline-none"
                 />
               </div>
-              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 whitespace-nowrap">
-                <span className="text-[10px] text-gray-500 font-bold">출발일:</span>
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 max-w-full">
+                <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">출발일:</span>
                 <input
                   type="date"
                   value={departureDate}
                   onChange={(e) => setDepartureDate(e.target.value)}
-                  className="text-xs font-bold outline-none"
+                  className="text-xs font-bold outline-none max-w-[130px] min-w-0"
                 />
               </div>
             </div>
@@ -5877,8 +5903,13 @@ export const TripPlanner: React.FC<Props> = ({
 
             {/* Scrollable Document Area */}
             <div
-              className="flex-1 overflow-y-auto overscroll-contain p-0 md:p-6 print:p-0 print:overflow-visible"
-              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+              className="flex-1 w-full max-w-full overflow-x-hidden overflow-y-auto overscroll-contain p-0 md:p-6 print:p-0 print:overflow-visible"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+                overscrollBehaviorX: 'none',
+                touchAction: 'pan-y',
+              }}
             >
               <A4QuotationDocument
                 customerName={customerName || '고객'}

@@ -3,6 +3,7 @@ import { Product } from '../types';
 import A4QuotationDocument, { CostItem, ItineraryDay, ReservationNoticeData } from './A4QuotationDocument';
 import { getTravelDays, calculateCostItemTotal } from '../utils/costBreakdownUtils';
 import { supabaseService } from '../services/supabaseService';
+import { useQuotationMobileLock } from '../utils/useQuotationMobileLock';
 
 interface Props {
   product: Product;
@@ -58,6 +59,8 @@ const QuotationModal: React.FC<Props> = ({
       document.body.style.overscrollBehavior = prevBodyOverscroll;
     };
   }, [product]);
+
+  useQuotationMobileLock(Boolean(product));
 
   if (!product) return null;
 
@@ -398,16 +401,18 @@ const QuotationModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm print:backdrop-blur-none overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
+      className="quotation-vertical-only fixed inset-0 w-full max-w-full bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm print:backdrop-blur-none overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
+      style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
       onClick={onClose}
     >
       <div
-        className="bg-[#F2F2F7] w-full max-w-none md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:block print:overflow-visible print:h-auto print:max-h-none print:max-w-none print:my-0 print:shadow-none print:bg-white print:w-full print:rounded-none"
+        className="bg-[#F2F2F7] w-full max-w-full md:max-w-4xl max-h-[92vh] md:h-auto md:max-h-[94vh] rounded-t-3xl md:rounded-[20px] shadow-2xl relative flex flex-col overflow-hidden md:my-auto animate-ios-sheet-up print:block print:overflow-visible print:h-auto print:max-h-none print:max-w-none print:my-0 print:shadow-none print:bg-white print:w-full print:rounded-none"
+        style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden no-print shrink-0"></div>
         {/* Top Control Bar inside Modal (no-print) */}
-        <div className="no-print bg-white/90 backdrop-blur-md px-3 md:px-6 py-2.5 md:py-3 border-b border-black/[0.06] flex items-center justify-between gap-2 shrink-0">
+        <div className="no-print w-full max-w-full overflow-x-hidden bg-white/90 backdrop-blur-md px-3 md:px-6 py-2.5 md:py-3 border-b border-black/[0.06] flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <button
               type="button"
@@ -497,24 +502,24 @@ const QuotationModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Mobile Quick Option Strip (scrollable horizontally) */}
-        <div className="sm:hidden no-print bg-gray-50/95 border-b border-gray-200 px-2.5 py-1.5 flex items-center gap-2 overflow-x-auto scrollbar-hide text-xs shrink-0 whitespace-nowrap">
-          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 whitespace-nowrap">
-            <span className="text-[10px] text-gray-500 font-bold">고객명:</span>
+        {/* Mobile Quick Option Strip (wrapped cleanly within 100% width, no horizontal scroll) */}
+        <div className="sm:hidden no-print w-full max-w-full bg-gray-50/95 border-b border-gray-200 px-2.5 py-1.5 flex flex-wrap items-center gap-1.5 overflow-x-hidden text-xs shrink-0">
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 max-w-full">
+            <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">고객명:</span>
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              className="w-14 text-xs font-bold outline-none"
+              className="w-14 min-w-0 text-xs font-bold outline-none"
             />
           </div>
-          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 whitespace-nowrap">
-            <span className="text-[10px] text-gray-500 font-bold">출발일:</span>
+          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shrink-0 max-w-full">
+            <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">출발일:</span>
             <input
               type="date"
               value={departureDate}
               onChange={(e) => setDepartureDate(e.target.value)}
-              className="text-xs font-bold outline-none"
+              className="text-xs font-bold outline-none max-w-[130px] min-w-0"
             />
           </div>
           <label className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 font-bold text-[11px] text-amber-900 shrink-0 cursor-pointer whitespace-nowrap">
@@ -576,8 +581,13 @@ const QuotationModal: React.FC<Props> = ({
 
         {/* Scrollable Document Area */}
         <div
-          className="flex-1 overflow-y-auto overscroll-contain p-0 md:p-6 print:p-0 print:overflow-visible"
-          style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+          className="flex-1 w-full max-w-full overflow-x-hidden overflow-y-auto overscroll-contain p-0 md:p-6 print:p-0 print:overflow-visible"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+            overscrollBehaviorX: 'none',
+            touchAction: 'pan-y',
+          }}
         >
           <A4QuotationDocument
             customerName={customerName}
@@ -603,11 +613,11 @@ const QuotationModal: React.FC<Props> = ({
 
         {/* Unified Sticky Bottom Action Bar for 1:1 Online Application */}
         <div
-          className="no-print bg-white/95 backdrop-blur-md border-t border-black/[0.08] px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2.5 shrink-0 z-20"
+          className="no-print w-full max-w-full overflow-x-hidden bg-white/95 backdrop-blur-md border-t border-black/[0.08] px-3 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between gap-2 shrink-0 z-20"
           style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
         >
-          <div className="min-w-0">
-            <span className="text-[10px] sm:text-xs text-[#8E8E93] font-semibold block">
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] sm:text-xs text-[#8E8E93] font-semibold block truncate">
               총 {personCount}인 예상 견적 (1인 약 ${perPersonUSD.toLocaleString()})
             </span>
             <div className="text-sm sm:text-lg font-black text-[#0A7E54] tabular-nums truncate">
@@ -631,7 +641,7 @@ const QuotationModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={handleOpenOnlineInquiry}
-              className="px-4 sm:px-6 py-3 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-xl text-xs sm:text-sm md:text-base shadow-md transition-all duration-200 flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap"
+              className="px-3 sm:px-6 py-3 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-xl text-xs sm:text-sm md:text-base shadow-md transition-all duration-200 flex items-center gap-1.5 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>📩</span>
               <span>1:1 온라인 견적 신청하기</span>
@@ -643,11 +653,13 @@ const QuotationModal: React.FC<Props> = ({
       {/* ================= 1:1 ONLINE INQUIRY MODAL (Unified with TripPlanner) ================= */}
       {showInquiryModal && (
         <div
-          className="no-print fixed inset-0 bg-black/60 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden overscroll-contain select-text font-sans break-keep"
+          className="quotation-vertical-only no-print fixed inset-0 w-full max-w-full bg-black/60 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden overscroll-contain select-text font-sans break-keep"
+          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
           onClick={() => setShowInquiryModal(false)}
         >
           <div
-            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-lg w-full max-h-[90vh] relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden box-border"
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-full md:max-w-lg w-full max-h-[90vh] relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden box-border"
+            style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0" />
@@ -676,10 +688,15 @@ const QuotationModal: React.FC<Props> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmitOnlineInquiry} className="flex-1 flex flex-col overflow-hidden">
+            <form onSubmit={handleSubmitOnlineInquiry} className="flex-1 flex flex-col overflow-hidden w-full max-w-full">
               <div
-                className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:px-6 md:py-5 space-y-3.5 text-xs md:text-sm"
-                style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+                className="flex-1 w-full max-w-full overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 md:px-6 md:py-5 space-y-3.5 text-xs md:text-sm"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain',
+                  overscrollBehaviorX: 'none',
+                  touchAction: 'pan-y',
+                }}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] md:text-xs font-semibold rounded-full shrink-0">

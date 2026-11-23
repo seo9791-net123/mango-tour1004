@@ -133,6 +133,17 @@
   background: #555;
 }
 
+/* Strict vertical-only scroll & no horizontal pan / pinch-zoom inside Quotation Modal only */
+.quotation-vertical-only,
+.quotation-vertical-only * {
+  touch-action: pan-y;
+}
+
+.quotation-vertical-only {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
 /* Print Styles for PDF Generation */
 @media print {
   @page {
@@ -152,6 +163,9 @@
   }
   .no-print {
     display: none !important;
+  }
+  .quotation-vertical-only {
+    overflow: visible !important;
   }
   ::-webkit-scrollbar {
     display: none;
