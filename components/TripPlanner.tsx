@@ -2062,19 +2062,20 @@ export const TripPlanner: React.FC<Props> = ({
                             }
                             className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ease-out group-hover:scale-105 ${
                               isSelected
-                                ? 'brightness-105 saturate-110'
-                                : 'brightness-[0.8] saturate-[0.72] group-hover:brightness-100 group-hover:saturate-100'
+                                ? 'brightness-125 saturate-125'
+                                : 'brightness-105 saturate-110 group-hover:brightness-115 group-hover:saturate-125'
                             }`}
                           />
                         )}
 
-                        {/* Unselected subtle dim veil that lifts on hover */}
-                        {!isSelected && (
-                          <div className="absolute inset-0 pointer-events-none bg-black/20 transition-colors duration-200 group-hover:bg-black/5" />
-                        )}
-
-                        {/* Dark gradient scrim for crisp white text contrast */}
-                        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_top,rgba(0,0,0,0.85)_0%,rgba(0,0,0,0.3)_100%)]" />
+                        {/* Gradient scrim for crisp white text contrast (brighter on selected card) */}
+                        <div
+                          className={`absolute inset-0 pointer-events-none transition-opacity duration-200 ${
+                            isSelected
+                              ? 'bg-[linear-gradient(to_top,rgba(0,0,0,0.72)_0%,rgba(0,0,0,0.16)_50%,rgba(0,0,0,0.02)_100%)]'
+                              : 'bg-[linear-gradient(to_top,rgba(0,0,0,0.85)_0%,rgba(0,0,0,0.3)_100%)]'
+                          }`}
+                        />
 
                         {/* Top-right selection state badge */}
                         {isSelected ? (
