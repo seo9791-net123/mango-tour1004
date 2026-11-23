@@ -139,6 +139,10 @@
     margin: 10mm;
     size: A4;
   }
+  html, body {
+    overflow: visible !important;
+    height: auto !important;
+  }
   body * {
     visibility: hidden;
   }

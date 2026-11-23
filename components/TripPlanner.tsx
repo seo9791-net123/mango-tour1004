@@ -262,6 +262,42 @@ export const TripPlanner: React.FC<Props> = ({
   const [diyChangingRoundIndex, setDiyChangingRoundIndex] = useState<number | null>(null);
   const [showAllCoursesInGolfModal, setShowAllCoursesInGolfModal] = useState<boolean>(false);
 
+  const isAnyModalOpen = Boolean(
+    showQuotePreviewModal ||
+    showInquiryModal ||
+    showKakaoModal ||
+    showImagePreviewModal ||
+    showGolfModal ||
+    customizingOption ||
+    diyChangingRoundIndex !== null ||
+    showScheduleModal ||
+    showActivityModal ||
+    showHotelModal ||
+    showVehicleModal ||
+    showDinnerModal ||
+    submissionNotice
+  );
+
+  useEffect(() => {
+    if (!isAnyModalOpen) return;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overscrollBehavior = 'none';
+
+    return () => {
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overscrollBehavior = prevHtmlOverscroll;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+    };
+  }, [isAnyModalOpen]);
+
   const diyDays = diyNights + 1;
 
   // Resolve currently active items safely (handles Admin edits/deletions cleanly)
@@ -2213,51 +2249,13 @@ export const TripPlanner: React.FC<Props> = ({
                       </span>
                     </div>
 
-                    {/* Box 1: 옵션 정보 및 [숙박 변경] 통합 카드 */}
-                    <button
-                      type="button"
-                      onClick={() => setShowHotelModal(true)}
-                      className={`w-full p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer ${
-                        diyIncludeHotel
-                          ? 'bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20'
-                          : 'bg-[#F2F2F7]/75 hover:bg-[#ECFDF5]/60 opacity-85'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span
-                          className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
-                            diyIncludeHotel ? 'bg-[#0A7E54] text-white' : 'bg-gray-300 text-white'
-                          }`}
-                        >
-                          {isImageIconUrl(selectedHotelTier?.icon) ? (
-                            <img src={getFreshImageUrl(selectedHotelTier?.icon || '')} alt={hotelDisplayName} className="w-7 h-7 object-contain rounded" />
-                          ) : (
-                            selectedHotelTier?.icon || '🏨'
-                          )}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
-                            {diyIncludeHotel ? hotelDisplayName : `${hotelDisplayName} (미포함)`}
-                          </div>
-                          <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
-                            {diyIncludeHotel
-                              ? `${diyNights}박 기준 · 1인 1실 · ${selectedHotelTier?.description || '엄선된 숙박 옵션'}`
-                              : '숙박 미포함 상태입니다 · 아래 체크박스로 포함하거나 숙박을 변경하세요.'}
-                          </div>
-                        </div>
-                      </div>
-                      <span className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-white text-[#0A7E54] shadow-2xs whitespace-nowrap shrink-0">
-                        숙박 변경
-                      </span>
-                    </button>
-
-                    {/* Box 2: 포함 여부 체크 및 총액 요약 카드 */}
+                    {/* 통합 숙박 카드 (체크박스 + 옵션 정보 + [숙박 변경]) */}
                     <div
                       onClick={() => setDiyIncludeHotel(prev => !prev)}
-                      className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 ${
+                      className={`w-full p-4 md:p-5 rounded-2xl text-left transition-all duration-200 flex items-center justify-between gap-3 cursor-pointer ${
                         diyIncludeHotel
-                          ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
-                          : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
+                          ? 'bg-[#ECFDF5] hover:bg-emerald-100/70 ring-2 ring-[#0A7E54]'
+                          : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60 opacity-85'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -2269,32 +2267,45 @@ export const TripPlanner: React.FC<Props> = ({
                           aria-label="숙박 포함 여부"
                           className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                         />
-                        <div className="min-w-0">
-                          <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
-                            <span>🏨</span>
-                            <span>숙박 포함</span>
-                            {showDetailedCosts && (
-                              <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs tabular-nums whitespace-nowrap">
-                                1박 ${hotelNightRate.toLocaleString()}
+                        <span
+                          className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
+                            diyIncludeHotel ? 'bg-[#0A7E54] text-white' : 'bg-gray-300 text-white'
+                          }`}
+                        >
+                          {isImageIconUrl(selectedHotelTier?.icon) ? (
+                            <img src={getFreshImageUrl(selectedHotelTier?.icon || '')} alt={hotelDisplayName} className="w-7 h-7 object-contain rounded" />
+                          ) : (
+                            selectedHotelTier?.icon || '🏨'
+                          )}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
+                              {diyIncludeHotel ? hotelDisplayName : `${hotelDisplayName} (미포함)`}
+                            </span>
+                            {diyIncludeHotel && showDetailedCosts && (
+                              <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-bold shadow-2xs tabular-nums whitespace-nowrap">
+                                1박 ${hotelNightRate.toLocaleString()} · {diyNights}박 총 ${hotelTotalUSD.toLocaleString()}
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
+                          <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
                             {diyIncludeHotel
-                              ? `${diyNights}박 기준 · 1인 1실 단독 객실 요금이 견적에 포함됩니다.`
-                              : '개별 숙박 예약 시 체크 해제하세요 (견적에서 제외됩니다).'}
+                              ? `${diyNights}박 기준 · 1인 1실 · ${selectedHotelTier?.description || '엄선된 숙박 옵션'}`
+                              : '숙박 미포함 상태입니다 · 좌측 체크박스로 포함하거나 숙박을 변경하세요.'}
                           </div>
                         </div>
                       </div>
-                      {diyIncludeHotel ? (
-                        <span className="px-3 py-1 bg-[#0A7E54] text-white rounded-xl text-xs md:text-sm font-bold tabular-nums whitespace-nowrap shrink-0 ml-auto">
-                          {showDetailedCosts ? `${diyNights}박 총 $${hotelTotalUSD.toLocaleString()}` : `${diyNights}박 포함`}
-                        </span>
-                      ) : (
-                        <span className="text-xs md:text-sm font-bold text-[#8E8E93] shrink-0 whitespace-nowrap ml-auto">
-                          미포함
-                        </span>
-                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowHotelModal(true);
+                        }}
+                        className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-white hover:bg-gray-50 text-[#0A7E54] shadow-2xs whitespace-nowrap shrink-0 active:scale-95 transition cursor-pointer"
+                      >
+                        숙박 변경
+                      </button>
                     </div>
                   </div>
                 );
@@ -2328,51 +2339,13 @@ export const TripPlanner: React.FC<Props> = ({
                       </span>
                     </div>
 
-                    {/* Box 1: 옵션 정보 및 [차량 변경] 통합 카드 */}
-                    <button
-                      type="button"
-                      onClick={() => setShowVehicleModal(true)}
-                      className={`w-full p-4 md:p-5 rounded-2xl text-left transition-all duration-200 active:scale-[0.98] flex items-center justify-between gap-3 cursor-pointer ${
-                        diyIncludeVehicle
-                          ? 'bg-[#ECFDF5] hover:bg-emerald-100/70 ring-1 ring-[#0A7E54]/20'
-                          : 'bg-[#F2F2F7]/75 hover:bg-[#ECFDF5]/60 opacity-85'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span
-                          className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
-                            diyIncludeVehicle ? 'bg-[#0A7E54] text-white' : 'bg-gray-300 text-white'
-                          }`}
-                        >
-                          {isImageIconUrl(selectedVehicleItem?.icon) ? (
-                            <img src={getFreshImageUrl(selectedVehicleItem?.icon || '')} alt={vehDisplayName} className="w-7 h-7 object-contain rounded" />
-                          ) : (
-                            selectedVehicleItem?.icon || '🚐'
-                          )}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
-                            {diyIncludeVehicle ? vehDisplayName : `${vehDisplayName} (미포함)`}
-                          </div>
-                          <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
-                            {diyIncludeVehicle
-                              ? `전 일정(${diyDays}일) 단독 전용 · 차량 1대 (인원 무관) · ${selectedVehicleItem?.description || ''}`
-                              : '차량 미포함 상태입니다 · 아래 체크박스로 포함하거나 차량을 변경하세요.'}
-                          </div>
-                        </div>
-                      </div>
-                      <span className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-white text-[#0A7E54] shadow-2xs whitespace-nowrap shrink-0">
-                        차량 변경
-                      </span>
-                    </button>
-
-                    {/* Box 2: 포함 여부 체크 및 총액 요약 카드 */}
+                    {/* 통합 차량 카드 (체크박스 + 옵션 정보 + [차량 변경]) */}
                     <div
                       onClick={() => setDiyIncludeVehicle(prev => !prev)}
-                      className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition-all duration-200 active:scale-[0.98] flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 ${
+                      className={`w-full p-4 md:p-5 rounded-2xl text-left transition-all duration-200 flex items-center justify-between gap-3 cursor-pointer ${
                         diyIncludeVehicle
-                          ? 'bg-[#ECFDF5] ring-2 ring-[#0A7E54]'
-                          : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60'
+                          ? 'bg-[#ECFDF5] hover:bg-emerald-100/70 ring-2 ring-[#0A7E54]'
+                          : 'bg-[#F2F2F7]/80 hover:bg-[#ECFDF5]/60 opacity-85'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -2384,34 +2357,45 @@ export const TripPlanner: React.FC<Props> = ({
                           aria-label="차량 포함 여부"
                           className="w-5 h-5 rounded-md accent-[#0A7E54] cursor-pointer shrink-0"
                         />
-                        <div className="min-w-0">
-                          <div className="font-bold text-sm text-gray-900 flex items-center gap-1.5 flex-wrap">
-                            <span>🚐</span>
-                            <span>차량 포함</span>
-                            {showDetailedCosts && (
-                              <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-semibold shadow-2xs tabular-nums whitespace-nowrap">
-                                1일 ${vehDayRate.toLocaleString()} (팀 기준)
+                        <span
+                          className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center shrink-0 ${
+                            diyIncludeVehicle ? 'bg-[#0A7E54] text-white' : 'bg-gray-300 text-white'
+                          }`}
+                        >
+                          {isImageIconUrl(selectedVehicleItem?.icon) ? (
+                            <img src={getFreshImageUrl(selectedVehicleItem?.icon || '')} alt={vehDisplayName} className="w-7 h-7 object-contain rounded" />
+                          ) : (
+                            selectedVehicleItem?.icon || '🚐'
+                          )}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-base md:text-lg text-gray-900 tracking-tight truncate">
+                              {diyIncludeVehicle ? vehDisplayName : `${vehDisplayName} (미포함)`}
+                            </span>
+                            {diyIncludeVehicle && showDetailedCosts && (
+                              <span className="text-[11px] text-[#0A7E54] bg-white px-2 py-0.5 rounded-lg font-bold shadow-2xs tabular-nums whitespace-nowrap">
+                                1일 ${vehDayRate.toLocaleString()} · {diyDays}일 총 ${vehTotalUSD.toLocaleString()}
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-[#8E8E93] mt-0.5 line-clamp-1">
+                          <div className="text-xs text-[#3A3A3C] line-clamp-1 mt-0.5">
                             {diyIncludeVehicle
-                              ? `전 일정(${diyDays}일) 단독 전용 차량 1대 · 기사/유류비가 견적에 포함됩니다.`
-                              : '개별 이동 시 체크 해제하세요 (차량 비용이 견적에서 제외됩니다).'}
+                              ? `전 일정(${diyDays}일) 단독 전용 · 차량 1대 (인원 무관) · ${selectedVehicleItem?.description || ''}`
+                              : '차량 미포함 상태입니다 · 좌측 체크박스로 포함하거나 차량을 변경하세요.'}
                           </div>
                         </div>
                       </div>
-                      {diyIncludeVehicle ? (
-                        <span className="px-3 py-1 bg-[#0A7E54] text-white rounded-xl text-xs md:text-sm font-bold tabular-nums whitespace-nowrap shrink-0 ml-auto">
-                          {showDetailedCosts
-                            ? `${diyDays}일 총 $${vehTotalUSD.toLocaleString()} (인원 무관)`
-                            : `${diyDays}일 포함 (인원 무관)`}
-                        </span>
-                      ) : (
-                        <span className="text-xs md:text-sm font-bold text-[#8E8E93] shrink-0 whitespace-nowrap ml-auto">
-                          미포함
-                        </span>
-                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowVehicleModal(true);
+                        }}
+                        className="px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold bg-white hover:bg-gray-50 text-[#0A7E54] shadow-2xs whitespace-nowrap shrink-0 active:scale-95 transition cursor-pointer"
+                      >
+                        차량 변경
+                      </button>
                     </div>
                   </div>
                 );
@@ -3493,13 +3477,13 @@ export const TripPlanner: React.FC<Props> = ({
       {/* ================= MODAL 1: 1:1 ONLINE INQUIRY MODAL ================= */}
       {showInquiryModal && (
         <div 
-          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
-          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden overscroll-contain select-text font-sans break-keep"
+          style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
           onClick={() => { setShowInquiryModal(false); setInquirySuccess(false); }}
         >
           <div 
             className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-lg w-full max-w-full max-h-[90vh] relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden box-border"
-            style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+            style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Mobile Drag Handle */}
@@ -3536,8 +3520,8 @@ export const TripPlanner: React.FC<Props> = ({
               <form onSubmit={handleSubmitOnlineInquiry} className="flex-1 flex flex-col overflow-hidden">
                 {/* Scrollable Form Body */}
                 <div 
-                  className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
-                  style={{ WebkitOverflowScrolling: 'touch' }}
+                  className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:px-6 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
+                  style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] md:text-xs font-semibold rounded-full shrink-0">온라인 공식 접수</span>
@@ -3680,7 +3664,10 @@ export const TripPlanner: React.FC<Props> = ({
                 </div>
               </form>
             ) : (
-              <div className="flex-1 overflow-y-auto px-3 py-4 md:p-8 text-center space-y-4 w-full max-w-full">
+              <div
+                className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 md:p-8 text-center space-y-4 w-full max-w-full"
+                style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+              >
                 <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl md:text-4xl mx-auto">
                   ✓
                 </div>
@@ -3747,13 +3734,13 @@ export const TripPlanner: React.FC<Props> = ({
       {/* ================= MODAL 2: KAKAOTALK CONSULTATION & SCREENSHOT SHARING MODAL ================= */}
       {showKakaoModal && (
         <div 
-          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-x-hidden overflow-y-auto overscroll-x-none font-sans break-keep"
-          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none', WebkitOverflowScrolling: 'touch' }}
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden overscroll-contain font-sans break-keep"
+          style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
           onClick={() => setShowKakaoModal(false)}
         >
           <div 
-            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-xl w-full max-w-full max-h-[90vh] px-4 py-4 md:p-6 relative shadow-2xl animate-ios-sheet-up m-0 md:my-6 overflow-x-hidden overflow-y-auto box-border"
-            style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none', WebkitOverflowScrolling: 'touch' }}
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-xl w-full max-w-full max-h-[90vh] px-4 py-4 md:p-6 relative shadow-2xl animate-ios-sheet-up m-0 md:my-6 overflow-x-hidden overflow-y-auto overscroll-contain box-border"
+            style={{ touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Mobile Drag Handle */}
@@ -4014,13 +4001,13 @@ export const TripPlanner: React.FC<Props> = ({
       {/* ================= MODAL 3: QUOTATION CAPTURE & SAVE MODAL ================= */}
       {showImagePreviewModal && (
         <div 
-          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
-          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden overscroll-contain select-text font-sans break-keep"
+          style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
           onClick={() => setShowImagePreviewModal(false)}
         >
           <div 
             className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-lg w-full max-w-full max-h-[90vh] relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden box-border"
-            style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
+            style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Mobile Drag Handle */}
@@ -4055,8 +4042,8 @@ export const TripPlanner: React.FC<Props> = ({
 
             {/* Scrollable Form Body */}
             <div 
-              className="flex-1 overflow-y-auto px-3 py-3 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
-              style={{ WebkitOverflowScrolling: 'touch' }}
+              className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
+              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2.5 py-0.5 bg-gold-100 text-gold-900 text-[10px] md:text-xs font-black rounded-md shrink-0">공식 견적서 발행</span>
@@ -4258,7 +4245,7 @@ export const TripPlanner: React.FC<Props> = ({
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="overflow-y-auto flex-1 px-4 md:px-0 space-y-4 py-4">
+            <div className="overflow-y-auto overscroll-contain flex-1 px-4 md:px-0 space-y-4 py-4">
 
               {/* Step 1: Select Round / Day to Modify */}
               <div>
@@ -4514,7 +4501,7 @@ export const TripPlanner: React.FC<Props> = ({
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="overflow-y-auto flex-1 px-4 md:px-0 space-y-4 py-4">
+            <div className="overflow-y-auto overscroll-contain flex-1 px-4 md:px-0 space-y-4 py-4">
 
               {/* Step 1: Current Selection Status Card */}
               <div className="p-3.5 bg-[#0A7E54] text-white rounded-2xl flex items-center justify-between">
@@ -4811,7 +4798,7 @@ export const TripPlanner: React.FC<Props> = ({
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-4 md:px-0 py-3 space-y-2.5 md:max-h-[65vh]">
+            <div className="overflow-y-auto overscroll-contain flex-1 px-4 md:px-0 py-3 space-y-2.5 md:max-h-[65vh]">
               {pool.golfCourses.map((course) => {
                 const isSelected = diyGolfCourses[diyChangingRoundIndex] === course.name;
                 return (
@@ -4871,11 +4858,11 @@ export const TripPlanner: React.FC<Props> = ({
       {/* ================= MODAL 7: DIY STEP 2 SCHEDULE PICKER MODAL (3박4일 ~ 6박7일) ================= */}
       {showScheduleModal && (
         <div
-          className="fixed inset-0 bg-black/40 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-xs animate-fade-in font-sans break-keep"
+          className="fixed inset-0 bg-black/40 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-xs animate-fade-in overflow-hidden overscroll-contain font-sans break-keep"
           onClick={() => setShowScheduleModal(false)}
         >
           <div
-            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-md w-full max-h-[90vh] px-5 pt-2 pb-6 md:p-6 shadow-2xl animate-ios-sheet-up space-y-4 overflow-y-auto"
+            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-md w-full max-h-[90vh] px-5 pt-2 pb-6 md:p-6 shadow-2xl animate-ios-sheet-up space-y-4 overflow-y-auto overscroll-contain"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-1 md:hidden shrink-0" />
@@ -4958,7 +4945,7 @@ export const TripPlanner: React.FC<Props> = ({
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-5 md:px-0 py-4 space-y-4">
+            <div className="overflow-y-auto overscroll-contain flex-1 px-5 md:px-0 py-4 space-y-4">
               {/* Round count selector */}
               <div className="p-4 bg-[#ECFDF5] rounded-2xl flex items-center justify-between">
                 <div>
@@ -5125,7 +5112,7 @@ export const TripPlanner: React.FC<Props> = ({
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-5 md:px-0 py-4 space-y-2.5">
+            <div className="overflow-y-auto overscroll-contain flex-1 px-5 md:px-0 py-4 space-y-2.5">
               {activeRegionTourOptions.map((item) => {
                 const isSelected = diySelectedTourIds.includes(item.id);
                 return (
@@ -5218,7 +5205,7 @@ export const TripPlanner: React.FC<Props> = ({
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-5 md:px-0 py-4 space-y-2.5">
+            <div className="overflow-y-auto overscroll-contain flex-1 px-5 md:px-0 py-4 space-y-2.5">
               {diyAccommodations.map((item) => {
                 const isSelected = selectedHotelTier?.id === item.id;
                 const nightRate = item.pricePerNightUSD ?? 90;
@@ -5333,7 +5320,7 @@ export const TripPlanner: React.FC<Props> = ({
               </button>
             </div>
 
-            <div className="overflow-y-auto flex-1 px-5 md:px-0 py-4 space-y-2.5">
+            <div className="overflow-y-auto overscroll-contain flex-1 px-5 md:px-0 py-4 space-y-2.5">
               {diyVehicles.map((item) => {
                 const isSelected = selectedVehicleItem?.id === item.id;
                 const dayRate = item.pricePerDayUSD ?? Math.max(15, 25 + (item.priceDeltaUSD || 0));
@@ -5457,7 +5444,7 @@ export const TripPlanner: React.FC<Props> = ({
             </div>
 
             {/* Body */}
-            <div className="overflow-y-auto flex-1 px-5 py-4 md:px-0 space-y-3.5">
+            <div className="overflow-y-auto overscroll-contain flex-1 px-5 py-4 md:px-0 space-y-3.5">
               {/* Day Tabs (1일차 ~ diyNights일차) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-semibold text-[#8E8E93] px-0.5">
@@ -5711,7 +5698,7 @@ export const TripPlanner: React.FC<Props> = ({
       {/* ================= QUOTATION PREVIEW POPUP (Matches Recommended Product QuotationModal) ================= */}
       {showQuotePreviewModal && activePackage && (
         <div
-          className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe"
+          className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
           onClick={() => setShowQuotePreviewModal(false)}
         >
           <div
@@ -5851,7 +5838,10 @@ export const TripPlanner: React.FC<Props> = ({
             )}
 
             {/* Scrollable Document Area */}
-            <div className="flex-1 overflow-y-auto p-0 md:p-6 print:p-0 print:overflow-visible">
+            <div
+              className="flex-1 overflow-y-auto overscroll-contain p-0 md:p-6 print:p-0 print:overflow-visible"
+              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+            >
               <A4QuotationDocument
                 customerName={customerName || '고객'}
                 personCount={personCount}

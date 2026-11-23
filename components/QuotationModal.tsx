@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '../types';
 import A4QuotationDocument, { CostItem, ItineraryDay, ReservationNoticeData } from './A4QuotationDocument';
 import { getTravelDays, calculateCostItemTotal } from '../utils/costBreakdownUtils';
@@ -38,6 +38,26 @@ const QuotationModal: React.FC<Props> = ({
   const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
   const [inquiryError, setInquiryError] = useState<string | null>(null);
   const [submissionNotice, setSubmissionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!product) return;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overscrollBehavior = 'none';
+
+    return () => {
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overscrollBehavior = prevHtmlOverscroll;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+    };
+  }, [product]);
 
   if (!product) return null;
 
@@ -378,7 +398,7 @@ const QuotationModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-y-auto animate-fade-in print:p-0 print:block print:bg-white print:static pt-safe"
+      className="fixed inset-0 bg-black/55 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm overflow-hidden overscroll-contain animate-fade-in print:p-0 print:block print:bg-white print:static print:overflow-visible pt-safe"
       onClick={onClose}
     >
       <div
@@ -555,7 +575,10 @@ const QuotationModal: React.FC<Props> = ({
         )}
 
         {/* Scrollable Document Area */}
-        <div className="flex-1 overflow-y-auto p-0 md:p-6 print:p-0 print:overflow-visible">
+        <div
+          className="flex-1 overflow-y-auto overscroll-contain p-0 md:p-6 print:p-0 print:overflow-visible"
+          style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+        >
           <A4QuotationDocument
             customerName={customerName}
             personCount={personCount}
@@ -620,7 +643,7 @@ const QuotationModal: React.FC<Props> = ({
       {/* ================= 1:1 ONLINE INQUIRY MODAL (Unified with TripPlanner) ================= */}
       {showInquiryModal && (
         <div
-          className="no-print fixed inset-0 bg-black/60 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden select-text font-sans break-keep"
+          className="no-print fixed inset-0 bg-black/60 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden overscroll-contain select-text font-sans break-keep"
           onClick={() => setShowInquiryModal(false)}
         >
           <div
@@ -655,8 +678,8 @@ const QuotationModal: React.FC<Props> = ({
 
             <form onSubmit={handleSubmitOnlineInquiry} className="flex-1 flex flex-col overflow-hidden">
               <div
-                className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5 space-y-3.5 text-xs md:text-sm"
-                style={{ WebkitOverflowScrolling: 'touch' }}
+                className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:px-6 md:py-5 space-y-3.5 text-xs md:text-sm"
+                style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="px-2.5 py-0.5 bg-[#ECFDF5] text-[#0A7E54] text-[11px] md:text-xs font-semibold rounded-full shrink-0">

@@ -412,9 +412,10 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
       vehicleSummary,
       includedText: includedList.length > 0 ? includedList.join(', ') : '선택된 포함 항목이 없습니다. (경비 내역에서 항목을 선택해주세요)',
       excludedText: excludedList.join(', '),
-      openingLine: isGolfTrip
-        ? '본 견적은 실시간 골프장 및 호텔 현황에 기반하여 작성되었으며, 예약 시점에 따라 금액 변동이 있을 수 있습니다.'
-        : '본 견적은 실시간 현지 투어·차량 및 호텔 현황에 기반하여 작성되었으며, 예약 시점에 따라 금액 변동이 있을 수 있습니다.',
+      openingPrefix: isGolfTrip
+        ? '본 견적은 실시간 골프장 및 호텔 현황에 기반하여 작성되었으며, '
+        : '본 견적은 실시간 현지 투어·차량 및 호텔 현황에 기반하여 작성되었으며, ',
+      openingHighlight: '예약 시점에 따라 변동이 있을 수 있습니다.',
     };
   })();
 
@@ -967,7 +968,10 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           <div className="font-bold text-gray-900 mb-1 text-xs sm:text-[13px]">
             [망고투어 예약 안내 사항]
           </div>
-          <p>• {computedNotice.openingLine}</p>
+          <p>
+            • {computedNotice.openingPrefix}
+            <span className="text-red-600 font-bold">{computedNotice.openingHighlight}</span>
+          </p>
           <p>• <strong>선택 상품 및 일정:</strong> {computedNotice.titleText} (베트남 {computedNotice.regionText} · {computedNotice.durationText})</p>
           <p>• <strong>포함 사항:</strong> {computedNotice.includedText}</p>
           <p>• <strong>불포함 사항:</strong> {computedNotice.excludedText}</p>
@@ -1171,7 +1175,10 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
           <div style={{ fontWeight: 800, color: '#111827', fontSize: '12px', marginBottom: '6px' }}>
             [망고투어 예약 안내 사항]
           </div>
-          <div>• {computedNotice.openingLine}</div>
+          <div>
+            • {computedNotice.openingPrefix}
+            <span style={{ color: '#dc2626', fontWeight: 700 }}>{computedNotice.openingHighlight}</span>
+          </div>
           <div>• <strong>선택 상품 및 일정:</strong> {computedNotice.titleText} (베트남 {computedNotice.regionText} · {computedNotice.durationText})</div>
           <div>• <strong>포함 사항:</strong> {computedNotice.includedText}</div>
           <div>• <strong>불포함 사항:</strong> {computedNotice.excludedText}</div>
