@@ -19,7 +19,7 @@ import { driveService } from '../services/googleDriveService';
 import { fetchGoogleSheetData } from '../services/googleSheetService';
 import { uploadFile, setCloudinaryConfig } from '../services/uploadService';
 import { supabaseService } from '../services/supabaseService';
-import { isSupabaseConfigured, updateSupabaseCredentials } from '../services/supabaseClient';
+import { isSupabaseConfigured, updateSupabaseCredentials, getAdminSessionToken } from '../services/supabaseClient';
 import { compressImage, getFreshImageUrl, withImageVersion, isImageIconUrl } from '../utils/imageUtils';
 import BackButton from './BackButton';
 import { appAlert, appConfirm, appPrompt } from '../services/dialogService';
@@ -56,6 +56,13 @@ interface Props {
   setQuotationSettings?: (settings: QuotationVisibilitySettings) => void;
   adminShowDetailedCosts?: boolean;
   setAdminShowDetailedCosts?: (show: boolean) => void;
+  cloudSyncStatus?: {
+    state: 'idle' | 'saving' | 'synced' | 'error';
+    lastSyncedAt?: string;
+    errorMessage?: string;
+  };
+  onFlushCloudSync?: () => Promise<{ success: boolean; message?: string }>;
+  onRequestAdminReauth?: () => void;
   setCurrentPage: (page: 'home' | 'admin' | 'category') => void;
 }
 
@@ -89,6 +96,9 @@ const AdminDashboard: React.FC<Props> = ({
   setQuotationSettings,
   adminShowDetailedCosts = false,
   setAdminShowDetailedCosts,
+  cloudSyncStatus,
+  onFlushCloudSync,
+  onRequestAdminReauth,
   setCurrentPage
 }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'hero' | 'products' | 'planner' | 'pages' | 'posts' | 'notices' | 'menu' | 'popup' | 'discountPopup'>('users');
@@ -131,6 +141,7 @@ const AdminDashboard: React.FC<Props> = ({
     name: string;
     shortName?: string;
     icon?: string;
+    image?: string;
     location: string;
     holes?: number;
     type?: 'hotel_5star' | 'hotel_4star' | 'pool_villa' | 'resort';
@@ -145,6 +156,7 @@ const AdminDashboard: React.FC<Props> = ({
     name: '',
     shortName: '',
     icon: '✨',
+    image: '',
     location: '호치민',
     holes: 18,
     type: 'hotel_5star',
@@ -932,9 +944,26 @@ const AdminDashboard: React.FC<Props> = ({
     const cleaned = newIconValue.trim();
     if (!cleaned) return;
     if (iconPickerTarget.mode === 'newPoolItem') {
-      setNewPoolItem(prev => ({ ...prev, icon: cleaned }));
+      setNewPoolItem(prev => ({
+        ...prev,
+        icon: cleaned,
+        ...(iconPickerTarget.category === 'region' && isImageIconUrl(cleaned) ? { image: cleaned } : {}),
+      }));
     } else if (iconPickerTarget.id) {
-      handleUpdateMasterOptionPoolItem(iconPickerTarget.category, iconPickerTarget.id, 'icon', cleaned);
+      if (iconPickerTarget.category === 'region' && isImageIconUrl(cleaned) && setMasterOptionPool) {
+        const pool = { ...masterOptionPool };
+        const list = pool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || [];
+        pool.diyRegions = list.map(item =>
+          item.id === iconPickerTarget.id ? { ...item, icon: cleaned, image: cleaned } : item
+        );
+        setMasterOptionPool(pool);
+        try {
+          localStorage.setItem('mango_master_options_pool_db', JSON.stringify(pool));
+        } catch {}
+        showToast('💾 지역 아이콘 및 카드 이미지가 저장되었습니다.');
+      } else {
+        handleUpdateMasterOptionPoolItem(iconPickerTarget.category, iconPickerTarget.id, 'icon', cleaned);
+      }
     }
     setIconPickerTarget(null);
   };
@@ -989,6 +1018,7 @@ const AdminDashboard: React.FC<Props> = ({
 
     if (newPoolItem.category === 'region') {
       const current = pool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || [];
+      const resolvedRegionImage = (newPoolItem.image || '').trim() || (isImageIconUrl(newPoolItem.icon) ? (newPoolItem.icon || '').trim() : '');
       pool.diyRegions = [
         ...current,
         {
@@ -996,6 +1026,7 @@ const AdminDashboard: React.FC<Props> = ({
           name: newPoolItem.name.trim(),
           subtitle: newPoolItem.description || '맞춤 골프 & 투어 지역',
           icon: newPoolItem.icon || '🌴',
+          ...(resolvedRegionImage ? { image: resolvedRegionImage } : {}),
           baseFeeUSD: Number(newPoolItem.priceUSD ?? newPoolItem.priceDeltaUSD) || 0,
         }
       ];
@@ -1136,6 +1167,7 @@ const AdminDashboard: React.FC<Props> = ({
       name: '',
       shortName: '',
       icon: '✨',
+      image: '',
       location: '호치민',
       holes: 18,
       type: 'hotel_5star',
@@ -1698,7 +1730,13 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
     // 자동으로 자격 증명 갱신 및 연결
     updateSupabaseCredentials(currentUrl, currentKey);
 
-    if (!(await appConfirm('현재 웹사이트의 모든 상품, 골프/호텔 페이지 이미지, 메인 슬라이드, 메뉴, 맞춤 여행 패키지 데이터를 Supabase 클라우드로 일괄 전송하시겠습니까?\n\n(Supabase에 데이터가 성공적으로 채워지면 전 세계 모든 고객에게 실시간 반영됩니다)'))) {
+    if (!getAdminSessionToken()) {
+      await appAlert('⚠️ 현재 탭에 관리자 클라우드 쓰기 인증 토큰이 없습니다.\n\n보안을 위해 로그아웃 후 관리자 비밀번호로 다시 로그인하신 다음 일괄 전송을 눌러주세요.');
+      onRequestAdminReauth?.();
+      return;
+    }
+
+    if (!(await appConfirm('현재 웹사이트의 모든 상품, 지역 사진/옵션 풀, 골프/호텔 페이지 이미지, 메인 슬라이드, 메뉴, 맞춤 여행 패키지 데이터를 Supabase 클라우드로 일괄 전송하시겠습니까?\n\n(Supabase에 데이터가 성공적으로 채워지면 전 세계 모든 고객에게 실시간 반영됩니다)'))) {
       return;
     }
     
@@ -1715,9 +1753,11 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
         popup,
         recommendedDiscountPopup,
         notices,
+        quotationSettings,
+        masterOptionPool,
         pageContents
       });
-      await appAlert('🎉 축하합니다! 웹사이트의 모든 상품/투어/페이지/슬라이드 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 www.mangotour.co.kr에 접속하는 모든 고객이 이 클라우드 데이터를 실시간으로 보게 됩니다.');
+      await appAlert('🎉 축하합니다! 웹사이트의 모든 상품/지역 이미지/투어/페이지/슬라이드 데이터가 Supabase 클라우드로 성공적으로 저장되었습니다.\n\n이제 홈페이지에 접속하는 모든 고객이 이 클라우드 데이터를 실시간으로 보게 됩니다.');
     } catch (e: any) {
       console.error("Supabase seed error:", e);
       await appAlert('❌ 전송 실패: ' + (e?.message || e) + '\n\n테이블이 아직 생성되지 않았다면, 위의 [📋 원클릭 테이블 생성 SQL 복사] 버튼을 누른 후 Supabase 콘솔 SQL Editor에서 Run을 먼저 실행해 주세요.');
@@ -1867,9 +1907,14 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
       menuItems,
       products,
       customPackages,
+      masterOptionPool,
       videos,
       posts,
       pageContents,
+      notices,
+      popup,
+      recommendedDiscountPopup,
+      quotationSettings,
       timestamp: new Date().toISOString()
     };
     
@@ -2112,6 +2157,98 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
           <span className="truncate">구글 드라이브 연동</span>
         </button>
       </div>
+
+      {/* Live Cloud Sync & Admin Write-Token Status Banner */}
+      {(() => {
+        const hasAdminToken = Boolean(getAdminSessionToken());
+        const hasEphemeralUploads =
+          heroImages.some(u => typeof u === 'string' && u.startsWith('/uploads/')) ||
+          products.some(p => typeof p.image === 'string' && p.image.startsWith('/uploads/')) ||
+          (masterOptionPool.diyRegions || []).some(r => typeof r.image === 'string' && r.image.startsWith('/uploads/'));
+        const isError = cloudSyncStatus?.state === 'error';
+        const isSaving = cloudSyncStatus?.state === 'saving' || isSeedingSupabase;
+        const missingTokenWithSupabase = isSupabaseConfigured && !hasAdminToken;
+
+        return (
+          <div className={`mb-3 sm:mb-4 mx-2 sm:mx-0 rounded-2xl border p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs ${
+            isError || missingTokenWithSupabase
+              ? 'bg-rose-50 border-rose-200 text-rose-900'
+              : !isSupabaseConfigured
+                ? 'bg-amber-50 border-amber-200 text-amber-900'
+                : 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+          }`}>
+            <div className="space-y-0.5 min-w-0">
+              <div className="font-extrabold flex flex-wrap items-center gap-1.5">
+                <span>
+                  {!isSupabaseConfigured
+                    ? '⚠️ 현재 로컬 전용 모드 (이 브라우저에만 저장됨)'
+                    : missingTokenWithSupabase
+                      ? '🔐 관리자 클라우드 쓰기 인증 필요 (재로그인 필요)'
+                      : isError
+                        ? '❌ 클라우드(Supabase) 저장 실패'
+                        : isSaving
+                          ? '⏳ 클라우드(Supabase)에 변경사항 저장 중...'
+                          : cloudSyncStatus?.state === 'synced'
+                            ? `✅ 클라우드(Supabase) 동기화 완료 (${cloudSyncStatus.lastSyncedAt || ''})`
+                            : '🟢 클라우드(Supabase) 실시간 연동 활성화됨'}
+                </span>
+              </div>
+              <p className="text-[11px] opacity-90 leading-relaxed">
+                {!isSupabaseConfigured
+                  ? 'Supabase DB가 연결되지 않아 수정한 이미지가 배포된 실제 홈페이지(다른 기기/GitHub 배포)에 반영되지 않습니다. 위 [⚡ Supabase DB 설정]에서 연결해 주세요.'
+                  : missingTokenWithSupabase
+                    ? '새 탭 또는 재접속 상태여서 보안용 관리자 쓰기 토큰이 비어 있습니다. 아래 [🔑 관리자 재인증] 후 저장해야 실제 홈페이지 DB에 반영됩니다.'
+                    : isError
+                      ? cloudSyncStatus?.errorMessage
+                      : '관리자 대시보드에서 바꾼 이미지는 GitHub 소스 파일이 아닌 Supabase 클라우드 DB를 통해 홈페이지에 즉시 반영됩니다.'}
+              </p>
+              {hasEphemeralUploads && (
+                <p className="text-[11px] font-bold text-amber-800">
+                  ⚠️ 일부 이미지가 임시 서버 경로(/uploads/...)로 저장되어 있습니다. Cloudinary 또는 추천 사진/외부 URL을 사용하면 모든 배포 환경에서 깨지지 않습니다.
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {missingTokenWithSupabase && onRequestAdminReauth && (
+                <button
+                  type="button"
+                  onClick={onRequestAdminReauth}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-xs cursor-pointer whitespace-nowrap"
+                >
+                  🔑 관리자 재인증
+                </button>
+              )}
+              {isSupabaseConfigured && onFlushCloudSync && (
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={async () => {
+                    if (!getAdminSessionToken()) {
+                      await appAlert('⚠️ 관리자 쓰기 인증 토큰이 없습니다. 먼저 관리자 계정으로 다시 로그인해 주세요.');
+                      onRequestAdminReauth?.();
+                      return;
+                    }
+                    const res = await onFlushCloudSync();
+                    if (res.success) {
+                      showToast('☁️ 모든 이미지와 설정이 클라우드(Supabase)에 즉시 반영되었습니다!');
+                    } else {
+                      await appAlert('❌ 클라우드 반영 실패:\n\n' + (res.message || '알 수 없는 오류'));
+                    }
+                  }}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs transition cursor-pointer whitespace-nowrap ${
+                    isSaving
+                      ? 'bg-gray-300 text-gray-600 cursor-wait'
+                      : 'bg-deepgreen hover:bg-emerald-800 text-white'
+                  }`}
+                >
+                  {isSaving ? '⏳ 반영 중...' : '☁️ 지금 클라우드 즉시 반영'}
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Global Upload Loading Indicator */}
       {isUploading && (
@@ -3827,9 +3964,9 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                   <div className="space-y-4">
                     <div className="flex justify-between items-center bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200">
                       <div className="text-xs text-emerald-900">
-                        <strong className="font-black">📍 1단계 여행 지역 버튼 관리 (총 {(masterOptionPool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).length}곳)</strong>
+                        <strong className="font-black">📍 1단계 여행 지역 버튼 &amp; 카드 이미지 관리 (총 {(masterOptionPool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).length}곳)</strong>
                         <span className="block text-[11px] text-emerald-700 mt-0.5">
-                          호치민, 붕따우, 무이네, 나트랑, 달랏 등 1단계 지역 버튼 이름과 지역 기본 추가금($)을 수정할 수 있습니다.
+                          각 지역의 16:9 카드 배경 사진, 지역명, 설명, 기본 추가금($)을 수정하면 &apos;여행 만들기&apos; 1단계 화면에 즉시 반영됩니다.
                         </span>
                       </div>
                       <button
@@ -3839,6 +3976,7 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                             category: 'region',
                             name: '',
                             icon: '🌴',
+                            image: '',
                             location: '호치민',
                             priceUSD: 0,
                             priceDeltaUSD: 0,
@@ -3854,30 +3992,100 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {(masterOptionPool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).map((reg) => (
-                        <div key={reg.id} className="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm space-y-3 flex flex-col justify-between">
+                      {(masterOptionPool.diyRegions || INITIAL_MASTER_OPTION_POOL.diyRegions || []).map((reg) => {
+                        const defaultReg = (INITIAL_MASTER_OPTION_POOL.diyRegions || []).find(
+                          d => d.id === reg.id || d.name === reg.name
+                        );
+                        const previewImage = isImageIconUrl(reg.image)
+                          ? getFreshImageUrl(reg.image)
+                          : isImageIconUrl(reg.icon)
+                            ? getFreshImageUrl(reg.icon)
+                            : getFreshImageUrl(defaultReg?.image || '');
+                        const regImgKey = `region-${reg.id}`;
+                        const isRegBroken = Boolean(brokenImages[regImgKey]);
+
+                        return (
+                        <div key={reg.id} className={`bg-white p-4 rounded-2xl border shadow-sm space-y-3 flex flex-col justify-between ${isRegBroken ? 'border-red-400 ring-2 ring-red-100' : 'border-gray-200'}`}>
                           <div className="space-y-2.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <button
-                                type="button"
-                                onClick={() => openIconPicker('pool', 'region', reg.id, reg.name || '지역', reg.icon || '🌴')}
-                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-xl bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-400 transition cursor-pointer group"
-                                title="클릭하여 아이콘 변경"
-                              >
-                                {isImageIconUrl(reg.icon) ? (
-                                  <img src={getFreshImageUrl(reg.icon)} alt={reg.name} className="w-7 h-7 object-contain rounded-md shrink-0" />
+                            {/* 16:9 Card Cover Photo Preview & Controls */}
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-bold text-gray-500">1단계 카드 배경 사진 (16:9)</label>
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded whitespace-nowrap">
+                                  기본 추가금 ${reg.baseFeeUSD || 0}
+                                </span>
+                              </div>
+                              <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                                {previewImage ? (
+                                  <img
+                                    src={previewImage}
+                                    alt={`${reg.name} 배경`}
+                                    onLoad={() => clearImageBroken(regImgKey)}
+                                    onError={() => markImageBroken(regImgKey)}
+                                    className="w-full h-full object-cover"
+                                  />
                                 ) : (
-                                  <span className="text-2xl leading-none">{reg.icon || '🌴'}</span>
+                                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                    이미지 없음
+                                  </div>
                                 )}
-                                <span className="text-[10px] font-bold text-gray-500 group-hover:text-deepgreen whitespace-nowrap">아이콘 변경</span>
-                              </button>
-                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded whitespace-nowrap">
-                                기본 추가금 ${reg.baseFeeUSD || 0}
-                              </span>
+                                <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                <div className="absolute bottom-1.5 left-2 text-white text-xs font-extrabold drop-shadow">
+                                  {reg.name}
+                                </div>
+                                {isRegBroken && (
+                                  <span className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">
+                                    ⚠️ 깨진 이미지
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex gap-1.5">
+                                <label className="flex-1 py-1.5 bg-deepgreen hover:bg-gold-600 text-white rounded-lg text-[11px] font-bold text-center cursor-pointer transition">
+                                  📷 배경 사진 교체
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) =>
+                                      handleFileUpload(e, (url) => {
+                                        clearImageBroken(regImgKey);
+                                        handleUpdateMasterOptionPoolItem('region', reg.id, 'image', url);
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setImagePickerTarget({
+                                      label: `'${reg.name}' 지역 카드 배경 이미지 선택`,
+                                      currentUrl: reg.image || previewImage || '',
+                                      onSelect: (url) => {
+                                        clearImageBroken(regImgKey);
+                                        handleUpdateMasterOptionPoolItem('region', reg.id, 'image', url);
+                                      }
+                                    })
+                                  }
+                                  className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                >
+                                  🎨 추천 사진
+                                </button>
+                              </div>
+                              <input
+                                type="text"
+                                value={reg.image ?? defaultReg?.image ?? ''}
+                                onChange={(e) => {
+                                  clearImageBroken(regImgKey);
+                                  handleUpdateMasterOptionPoolItem('region', reg.id, 'image', e.target.value);
+                                }}
+                                placeholder="배경 이미지 URL (https://... 또는 /images/...)"
+                                className="w-full px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-[10px] text-gray-600 outline-none focus:bg-white focus:border-deepgreen"
+                              />
                             </div>
-                            <div className="grid grid-cols-12 gap-2 items-end">
+
+                            <div className="grid grid-cols-12 gap-2 items-end pt-1">
                               <div className="col-span-5 sm:col-span-5">
-                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">아이콘</label>
+                                <label className="text-[10px] font-bold text-gray-400 block mb-0.5">보조 아이콘</label>
                                 <button
                                   type="button"
                                   onClick={() => openIconPicker('pool', 'region', reg.id, reg.name || '지역', reg.icon || '🌴')}
@@ -3930,7 +4138,8 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                             </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -4995,6 +5204,45 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                             <span className="text-deepgreen text-xs font-extrabold whitespace-nowrap">아이콘 변경 &gt;</span>
                           </button>
                         </div>
+                        {newPoolItem.category === 'region' && (
+                          <div className="col-span-2 space-y-1.5 pt-1 border-t border-gray-100">
+                            <label className="font-bold text-gray-700 block">카드 배경 사진 (16:9)</label>
+                            {newPoolItem.image && (
+                              <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                                <img src={getFreshImageUrl(newPoolItem.image)} alt="미리보기" className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                            <div className="flex gap-2">
+                              <label className="flex-1 py-2 bg-deepgreen hover:bg-gold-600 text-white rounded-xl font-bold text-center cursor-pointer transition">
+                                📷 배경 사진 업로드
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => handleFileUpload(e, (url) => setNewPoolItem(prev => ({ ...prev, image: url })))}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setImagePickerTarget({
+                                  label: '새 지역 카드 배경 이미지 선택',
+                                  currentUrl: newPoolItem.image || '',
+                                  onSelect: (url) => setNewPoolItem(prev => ({ ...prev, image: url }))
+                                })}
+                                className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-xl font-bold cursor-pointer"
+                              >
+                                🎨 추천 사진
+                              </button>
+                            </div>
+                            <input
+                              type="text"
+                              value={newPoolItem.image || ''}
+                              onChange={(e) => setNewPoolItem({ ...newPoolItem, image: e.target.value })}
+                              placeholder="배경 이미지 URL (https://... 또는 /images/...)"
+                              className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:bg-white focus:border-deepgreen"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
 

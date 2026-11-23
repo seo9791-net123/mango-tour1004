@@ -1,4 +1,4 @@
-import { getSupabase, isSupabaseConfigured, setAdminSessionToken, clearAdminSessionToken } from './supabaseClient';
+import { getSupabase, isSupabaseConfigured, setAdminSessionToken, clearAdminSessionToken, getAdminSessionToken } from './supabaseClient';
 import { setCloudinaryConfig } from './uploadService';
 import { storageService } from './storageService';
 import { 
@@ -185,6 +185,28 @@ const isMissingRpcError = (err: any): boolean => {
   const code = String(err?.code || '');
   const msg = String(err?.message || '').toLowerCase();
   return code === 'PGRST202' || code === '42883' || msg.includes('could not find the function');
+};
+
+const formatSupabaseWriteError = (err: any, context: string): Error => {
+  const code = String(err?.code || '');
+  const rawMsg = String(err?.message || err || '알 수 없는 오류');
+  const lower = rawMsg.toLowerCase();
+
+  if (code === '42501' || lower.includes('row-level security') || lower.includes('permission denied')) {
+    const hasToken = Boolean(getAdminSessionToken());
+    const friendly = hasToken
+      ? `[${context}] Supabase 보안 정책(RLS)에 의해 저장이 거부되었습니다. Supabase SQL Editor에서 set_mango_admin_password('관리자비밀번호')가 환경변수(VITE_ADMIN_PASSWORD)와 동일하게 실행되었는지 확인해주세요.`
+      : `[${context}] 관리자 클라우드 쓰기 인증 토큰이 없어 저장이 거부되었습니다. 관리자 계정으로 다시 로그인한 뒤 저장해주세요.`;
+    const wrapped = new Error(friendly);
+    (wrapped as any).code = 'RLS_DENIED';
+    (wrapped as any).originalError = err;
+    return wrapped;
+  }
+
+  const wrapped = new Error(`[${context}] Supabase 저장 실패: ${rawMsg}`);
+  (wrapped as any).code = code || 'SUPABASE_WRITE_ERROR';
+  (wrapped as any).originalError = err;
+  return wrapped;
 };
 
 export const supabaseService = {
@@ -465,7 +487,7 @@ export const supabaseService = {
     }
 
     const supabase = getSupabase();
-    if (!supabase || !isSupabaseConfigured) return;
+    if (!supabase || !isSupabaseConfigured) return { success: true, skipped: true };
 
     try {
       // Supabase 테이블에는 id, data(jsonb), updated_at 구조로 저장하여 유연성 극대화
@@ -479,27 +501,29 @@ export const supabaseService = {
         const { error } = await supabase
           .from(tableName)
           .upsert(rows, { onConflict: 'id' });
-        if (error) throw error;
+        if (error) throw formatSupabaseWriteError(error, tableName);
       }
 
       // 기존 DB에서 삭제된 아이템 정리
       const currentIds = newItems.map(item => String(item.id));
-      if (currentIds.length > 0) {
-        const { data: existingRows } = await supabase
-          .from(tableName)
-          .select('id');
-        if (existingRows) {
-          const toDelete = existingRows
-            .map(r => String(r.id))
-            .filter(id => !currentIds.includes(id));
-          if (toDelete.length > 0) {
-            await supabase.from(tableName).delete().in('id', toDelete);
-          }
+      const { data: existingRows, error: selectErr } = await supabase
+        .from(tableName)
+        .select('id');
+      if (selectErr) throw formatSupabaseWriteError(selectErr, `${tableName}.select`);
+      if (existingRows) {
+        const toDelete = existingRows
+          .map(r => String(r.id))
+          .filter(id => !currentIds.includes(id));
+        if (toDelete.length > 0) {
+          const { error: delErr } = await supabase.from(tableName).delete().in('id', toDelete);
+          if (delErr) throw formatSupabaseWriteError(delErr, `${tableName}.delete`);
         }
       }
       console.log(`✅ Synced ${tableName} to Supabase successfully.`);
+      return { success: true };
     } catch (e) {
       console.warn(`Failed to sync ${tableName} to Supabase:`, e);
+      throw e;
     }
   },
 
@@ -509,7 +533,7 @@ export const supabaseService = {
    */
   async saveSettings(key: 'heroImages' | 'menuItems' | 'cloudinaryConfig', data: any) {
     const supabase = getSupabase();
-    if (!supabase || !isSupabaseConfigured) return;
+    if (!supabase || !isSupabaseConfigured) return { success: true, skipped: true };
 
     const columnMap: Record<string, string> = {
       heroImages: 'hero_images',
@@ -540,12 +564,13 @@ export const supabaseService = {
         .upsert(payload, { onConflict: 'id' });
 
       if (error) {
-        console.warn(`Supabase settings upsert error for ${key}:`, error.message);
-      } else {
-        console.log(`✅ Supabase settings [${key}] 자동 저장 완료`);
+        throw formatSupabaseWriteError(error, `settings.${key}`);
       }
+      console.log(`✅ Supabase settings [${key}] 자동 저장 완료`);
+      return { success: true };
     } catch (e) {
       console.warn(`Failed to save settings for ${key}:`, e);
+      throw e;
     }
   },
 
@@ -567,18 +592,21 @@ export const supabaseService = {
    */
   async savePageContent(pageId: string, content: PageContent) {
     const supabase = getSupabase();
-    if (!supabase || !isSupabaseConfigured) return;
+    if (!supabase || !isSupabaseConfigured) return { success: true, skipped: true };
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('pages')
         .upsert({
           id: pageId,
           data: content,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
+      if (error) throw formatSupabaseWriteError(error, `pages.${pageId}`);
+      return { success: true };
     } catch (e) {
       console.warn(`Failed to save page ${pageId}:`, e);
+      throw e;
     }
   },
 
@@ -587,19 +615,22 @@ export const supabaseService = {
    */
   async saveMasterOptionPool(pool: MasterOptionPool) {
     const supabase = getSupabase();
-    if (!supabase || !isSupabaseConfigured) return;
+    if (!supabase || !isSupabaseConfigured) return { success: true, skipped: true };
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('pages')
         .upsert({
           id: 'master_option_pool',
           data: pool,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
+      if (error) throw formatSupabaseWriteError(error, 'master_option_pool');
       console.log("✅ Synced master_option_pool to Supabase successfully.");
+      return { success: true };
     } catch (e) {
       console.warn("Failed to save master_option_pool to Supabase:", e);
+      throw e;
     }
   },
 
@@ -608,18 +639,21 @@ export const supabaseService = {
    */
   async savePopup(popup: PopupNotification) {
     const supabase = getSupabase();
-    if (!supabase || !isSupabaseConfigured) return;
+    if (!supabase || !isSupabaseConfigured) return { success: true, skipped: true };
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('popup')
         .upsert({
           id: 'main',
           data: popup,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
+      if (error) throw formatSupabaseWriteError(error, 'popup.main');
+      return { success: true };
     } catch (e) {
       console.warn("Failed to save popup to Supabase:", e);
+      throw e;
     }
   },
 
@@ -634,18 +668,21 @@ export const supabaseService = {
     }
 
     const supabase = getSupabase();
-    if (!supabase || !isSupabaseConfigured) return;
+    if (!supabase || !isSupabaseConfigured) return { success: true, skipped: true };
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('popup')
         .upsert({
           id: 'recommended_discount',
           data: discountPopup,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
+      if (error) throw formatSupabaseWriteError(error, 'popup.recommended_discount');
+      return { success: true };
     } catch (e) {
       console.warn("Failed to save recommended discount popup to Supabase:", e);
+      throw e;
     }
   },
 
@@ -660,18 +697,21 @@ export const supabaseService = {
     }
 
     const supabase = getSupabase();
-    if (!supabase || !isSupabaseConfigured) return;
+    if (!supabase || !isSupabaseConfigured) return { success: true, skipped: true };
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('popup')
         .upsert({
           id: 'notices',
           data: { items: notices },
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
+      if (error) throw formatSupabaseWriteError(error, 'popup.notices');
+      return { success: true };
     } catch (e) {
       console.warn("Failed to save notices to Supabase:", e);
+      throw e;
     }
   },
 
@@ -686,18 +726,21 @@ export const supabaseService = {
     }
 
     const supabase = getSupabase();
-    if (!supabase || !isSupabaseConfigured) return;
+    if (!supabase || !isSupabaseConfigured) return { success: true, skipped: true };
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('popup')
         .upsert({
           id: 'quotation_settings',
           data: settings,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
+      if (error) throw formatSupabaseWriteError(error, 'popup.quotation_settings');
+      return { success: true };
     } catch (e) {
       console.warn("Failed to save quotation settings to Supabase:", e);
+      throw e;
     }
   },
 
@@ -1391,6 +1434,8 @@ export const supabaseService = {
     popup: PopupNotification;
     recommendedDiscountPopup?: RecommendedDiscountPopup;
     notices?: NoticeItem[];
+    quotationSettings?: QuotationVisibilitySettings;
+    masterOptionPool?: MasterOptionPool;
     pageContents: Record<string, PageContent>;
   }) {
     const supabase = getSupabase();
@@ -1401,15 +1446,16 @@ export const supabaseService = {
     console.log("🚀 Starting one-click full data seeding to Supabase...");
 
     // 1. Settings
-    await supabase.from('settings').upsert({
+    const { error: settingsErr } = await supabase.from('settings').upsert({
       id: 'global',
       hero_images: payload.heroImages,
       menu_items: payload.menuItems,
       cloudinary_config: payload.cloudinaryConfig,
       updated_at: new Date().toISOString()
     }, { onConflict: 'id' });
+    if (settingsErr) throw formatSupabaseWriteError(settingsErr, 'settings');
 
-    // 2. Popup, Recommended Discount Popup & Notices
+    // 2. Popup, Recommended Discount Popup, Notices & Quotation Settings
     const popupRows: Array<{ id: string; data: any; updated_at: string }> = [
       {
         id: 'main',
@@ -1431,58 +1477,44 @@ export const supabaseService = {
         updated_at: new Date().toISOString()
       });
     }
-    await supabase.from('popup').upsert(popupRows, { onConflict: 'id' });
+    if (payload.quotationSettings) {
+      popupRows.push({
+        id: 'quotation_settings',
+        data: payload.quotationSettings,
+        updated_at: new Date().toISOString()
+      });
+    }
+    const { error: popupErr } = await supabase.from('popup').upsert(popupRows, { onConflict: 'id' });
+    if (popupErr) throw formatSupabaseWriteError(popupErr, 'popup');
 
     // 3. Products
-    if (payload.products && payload.products.length > 0) {
-      const productRows = payload.products.map(p => ({
-        id: String(p.id),
-        data: p,
-        updated_at: new Date().toISOString()
-      }));
-      await supabase.from('products').upsert(productRows, { onConflict: 'id' });
-    }
+    await this.syncCollection('products', payload.products || []);
 
     // 4. Videos
-    if (payload.videos && payload.videos.length > 0) {
-      const videoRows = payload.videos.map(v => ({
-        id: String(v.id),
-        data: v,
-        updated_at: new Date().toISOString()
-      }));
-      await supabase.from('videos').upsert(videoRows, { onConflict: 'id' });
-    }
+    await this.syncCollection('videos', payload.videos || []);
 
     // 5. Posts
-    if (payload.posts && payload.posts.length > 0) {
-      const postRows = payload.posts.map(p => ({
-        id: String(p.id),
-        data: p,
-        updated_at: new Date().toISOString()
-      }));
-      await supabase.from('posts').upsert(postRows, { onConflict: 'id' });
-    }
+    await this.syncCollection('posts', payload.posts || []);
 
     // 6. Custom Packages
-    if (payload.customPackages && payload.customPackages.length > 0) {
-      const packageRows = payload.customPackages.map(pkg => ({
-        id: String(pkg.id),
-        data: pkg,
-        updated_at: new Date().toISOString()
-      }));
-      await supabase.from('custom_packages').upsert(packageRows, { onConflict: 'id' });
-    }
+    await this.syncCollection('custom_packages', payload.customPackages || []);
 
-    // 7. Pages
-    if (payload.pageContents) {
-      const pageRows = Object.entries(payload.pageContents).map(([pageId, content]) => ({
-        id: pageId,
-        data: content,
+    // 7. Pages & Master Option Pool (including DIY Regions & images)
+    const pageRows = Object.entries(payload.pageContents || {}).map(([pageId, content]) => ({
+      id: pageId,
+      data: content,
+      updated_at: new Date().toISOString()
+    }));
+    if (payload.masterOptionPool) {
+      pageRows.push({
+        id: 'master_option_pool',
+        data: payload.masterOptionPool as any,
         updated_at: new Date().toISOString()
-      }));
-      if (pageRows.length > 0) {
-        await supabase.from('pages').upsert(pageRows, { onConflict: 'id' });
-      }
+      });
+    }
+    if (pageRows.length > 0) {
+      const { error: pagesErr } = await supabase.from('pages').upsert(pageRows, { onConflict: 'id' });
+      if (pagesErr) throw formatSupabaseWriteError(pagesErr, 'pages');
     }
 
     console.log("✅ All data seeded to Supabase successfully!");

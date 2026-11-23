@@ -2024,9 +2024,11 @@ export const TripPlanner: React.FC<Props> = ({
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3">
                   {diyRegions.map((reg) => {
                     const isSelected = diyLocation === reg.name;
-                    const coverImageSrc = isImageIconUrl(reg.icon)
-                      ? getFreshImageUrl(reg.icon)
-                      : REGION_COVER_IMAGES[reg.name];
+                    const coverImageSrc = isImageIconUrl(reg.image)
+                      ? getFreshImageUrl(reg.image)
+                      : isImageIconUrl(reg.icon)
+                        ? getFreshImageUrl(reg.icon)
+                        : REGION_COVER_IMAGES[reg.name];
                     const showCoverImage = Boolean(coverImageSrc && !failedRegionImageIds[reg.id]);
                     return (
                       <button
@@ -2046,9 +2048,15 @@ export const TripPlanner: React.FC<Props> = ({
                         {/* Full-bleed regional landscape photo */}
                         {showCoverImage && (
                           <img
+                            key={coverImageSrc}
                             src={coverImageSrc}
                             alt={`${reg.name} 풍경`}
                             referrerPolicy="no-referrer"
+                            onLoad={() =>
+                              setFailedRegionImageIds((prev) =>
+                                prev[reg.id] ? { ...prev, [reg.id]: false } : prev
+                              )
+                            }
                             onError={() =>
                               setFailedRegionImageIds((prev) => ({ ...prev, [reg.id]: true }))
                             }

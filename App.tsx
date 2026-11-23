@@ -26,8 +26,8 @@ import SplashScreen from './components/SplashScreen';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_NOTICES, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
 import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool, ChatMessage, QuotationVisibilitySettings } from './types';
 import { supabaseService } from './services/supabaseService';
-import { updateSupabaseCredentials, clearAdminSessionToken } from './services/supabaseClient';
-import { setCloudinaryConfig } from './services/uploadService';
+import { updateSupabaseCredentials, clearAdminSessionToken, isSupabaseConfigured } from './services/supabaseClient';
+import { setCloudinaryConfig, getCloudinaryConfig } from './services/uploadService';
 import { debounce } from './utils/debounce';
 import { getFreshImageUrl } from './utils/imageUtils';
 import CustomDialogHost from './components/CustomDialogHost';
@@ -432,9 +432,19 @@ const App: React.FC = () => {
       };
     });
 
+    const regionDefaults = INITIAL_MASTER_OPTION_POOL.diyRegions || [];
+    const mergedRegions = (pool.diyRegions && pool.diyRegions.length > 0 ? pool.diyRegions : regionDefaults).map((reg) => {
+      const def = regionDefaults.find(d => d.id === reg.id || d.name === reg.name);
+      return {
+        ...reg,
+        icon: reg.icon || def?.icon || '🌴',
+        image: reg.image || def?.image,
+      };
+    });
+
     return {
       ...pool,
-      diyRegions: (pool.diyRegions && pool.diyRegions.length > 0) ? pool.diyRegions : INITIAL_MASTER_OPTION_POOL.diyRegions,
+      diyRegions: mergedRegions,
       golfCourses: mergedGolf,
       tourOptions: (pool.tourOptions && pool.tourOptions.length > 0) ? pool.tourOptions : INITIAL_MASTER_OPTION_POOL.tourOptions,
       accommodationTiers: (pool.accommodationTiers && pool.accommodationTiers.length > 0) ? pool.accommodationTiers : INITIAL_MASTER_OPTION_POOL.accommodationTiers,
@@ -659,122 +669,169 @@ const App: React.FC = () => {
   }, [pageContents]);
 
   // --- Supabase Cloud Integration Handlers ---
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<{
+    state: 'idle' | 'saving' | 'synced' | 'error';
+    lastSyncedAt?: string;
+    errorMessage?: string;
+  }>({ state: 'idle' });
 
-  // Debounced Sync Functions
+  // Queued Sync Runner (prevents dropping edits made while an earlier sync is still in-flight)
   const isSyncing = useRef<Record<string, boolean>>({});
+  const queuedSyncTasks = useRef<Record<string, (() => Promise<any>) | null>>({});
+
+  const runQueuedSync = useCallback(async (key: string, task: () => Promise<any>) => {
+    if (isSyncing.current[key]) {
+      queuedSyncTasks.current[key] = task;
+      return;
+    }
+    isSyncing.current[key] = true;
+    setCloudSyncStatus(prev => ({ ...prev, state: 'saving', errorMessage: undefined }));
+    try {
+      let currentTask: (() => Promise<any>) | null = task;
+      let anySkipped = false;
+      while (currentTask) {
+        queuedSyncTasks.current[key] = null;
+        const res = await currentTask();
+        if (res && typeof res === 'object' && res.skipped) {
+          anySkipped = true;
+        }
+        currentTask = queuedSyncTasks.current[key];
+      }
+      if (!anySkipped) {
+        setCloudSyncStatus({
+          state: 'synced',
+          lastSyncedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        });
+      } else {
+        setCloudSyncStatus(prev => (prev.state === 'saving' ? { ...prev, state: 'idle' } : prev));
+      }
+    } catch (e: any) {
+      setCloudSyncStatus({
+        state: 'error',
+        errorMessage: e?.message || 'Supabase 클라우드 저장 중 오류가 발생했습니다.',
+      });
+    } finally {
+      isSyncing.current[key] = false;
+    }
+  }, []);
 
   const debouncedSyncProducts = useRef(debounce(async (newProducts: Product[]) => {
-    if (isSyncing.current['products']) return;
-    isSyncing.current['products'] = true;
-    try {
-      await supabaseService.syncCollection('products', newProducts);
-    } finally {
-      isSyncing.current['products'] = false;
-    }
-  }, 2000)).current;
+    await runQueuedSync('products', () => supabaseService.syncCollection('products', newProducts));
+  }, 1500)).current;
 
   const debouncedSyncVideos = useRef(debounce(async (newVideos: VideoItem[]) => {
-    if (isSyncing.current['videos']) return;
-    isSyncing.current['videos'] = true;
-    try {
-      await supabaseService.syncCollection('videos', newVideos);
-    } finally {
-      isSyncing.current['videos'] = false;
-    }
-  }, 2000)).current;
+    await runQueuedSync('videos', () => supabaseService.syncCollection('videos', newVideos));
+  }, 1500)).current;
 
   const debouncedSyncPosts = useRef(debounce(async (newPosts: CommunityPost[]) => {
-    if (isSyncing.current['posts']) return;
-    isSyncing.current['posts'] = true;
-    try {
-      await supabaseService.syncCollection('posts', newPosts);
-    } finally {
-      isSyncing.current['posts'] = false;
-    }
-  }, 2000)).current;
+    await runQueuedSync('posts', () => supabaseService.syncCollection('posts', newPosts));
+  }, 1500)).current;
 
   const debouncedSyncPages = useRef(debounce(async (newContents: Record<string, PageContent>) => {
-    if (isSyncing.current['pages']) return;
-    isSyncing.current['pages'] = true;
-    try {
-      const promises = Object.entries(newContents).map(([pageId, content]) => 
-        supabaseService.savePageContent(pageId, content)
+    await runQueuedSync('pages', async () => {
+      const results = await Promise.all(
+        Object.entries(newContents).map(([pageId, content]) =>
+          supabaseService.savePageContent(pageId, content)
+        )
       );
-      await Promise.all(promises);
-    } finally {
-      isSyncing.current['pages'] = false;
-    }
-  }, 3000)).current;
+      return { skipped: results.every((r: any) => r?.skipped) };
+    });
+  }, 1800)).current;
 
   const debouncedSyncSettings = useRef(debounce(async (key: 'heroImages' | 'menuItems', data: any) => {
-    if (isSyncing.current[`settings_${key}`]) return;
-    isSyncing.current[`settings_${key}`] = true;
-    try {
-      await supabaseService.saveSettings(key, data);
-    } finally {
-      isSyncing.current[`settings_${key}`] = false;
-    }
-  }, 1000)).current;
+    await runQueuedSync(`settings_${key}`, () => supabaseService.saveSettings(key, data));
+  }, 800)).current;
 
   const debouncedSyncPopup = useRef(debounce(async (newPopup: PopupNotification) => {
-    if (isSyncing.current['popup']) return;
-    isSyncing.current['popup'] = true;
-    try {
-      await supabaseService.savePopup(newPopup);
-    } finally {
-      isSyncing.current['popup'] = false;
-    }
-  }, 2000)).current;
+    await runQueuedSync('popup', () => supabaseService.savePopup(newPopup));
+  }, 1200)).current;
 
   const debouncedSyncRecommendedDiscountPopup = useRef(debounce(async (newDiscountPopup: RecommendedDiscountPopup) => {
-    if (isSyncing.current['recommended_discount_popup']) return;
-    isSyncing.current['recommended_discount_popup'] = true;
-    try {
-      await supabaseService.saveRecommendedDiscountPopup(newDiscountPopup);
-    } finally {
-      isSyncing.current['recommended_discount_popup'] = false;
-    }
-  }, 1500)).current;
+    await runQueuedSync('recommended_discount_popup', () => supabaseService.saveRecommendedDiscountPopup(newDiscountPopup));
+  }, 1200)).current;
 
   const debouncedSyncNotices = useRef(debounce(async (newNotices: NoticeItem[]) => {
-    if (isSyncing.current['notices']) return;
-    isSyncing.current['notices'] = true;
-    try {
-      await supabaseService.saveNotices(newNotices);
-    } finally {
-      isSyncing.current['notices'] = false;
-    }
-  }, 1000)).current;
+    await runQueuedSync('notices', () => supabaseService.saveNotices(newNotices));
+  }, 800)).current;
 
   const debouncedSyncCustomPackages = useRef(debounce(async (newPkgs: CustomTripPackage[]) => {
-    if (isSyncing.current['custom_packages']) return;
-    isSyncing.current['custom_packages'] = true;
-    try {
-      await supabaseService.syncCollection('custom_packages', newPkgs);
-    } finally {
-      isSyncing.current['custom_packages'] = false;
-    }
-  }, 2000)).current;
-
-  const debouncedSyncMasterOptionPool = useRef(debounce(async (newPool: MasterOptionPool) => {
-    if (isSyncing.current['master_option_pool']) return;
-    isSyncing.current['master_option_pool'] = true;
-    try {
-      await supabaseService.saveMasterOptionPool(newPool);
-    } finally {
-      isSyncing.current['master_option_pool'] = false;
-    }
+    await runQueuedSync('custom_packages', () => supabaseService.syncCollection('custom_packages', newPkgs));
   }, 1500)).current;
 
+  const debouncedSyncMasterOptionPool = useRef(debounce(async (newPool: MasterOptionPool) => {
+    await runQueuedSync('master_option_pool', () => supabaseService.saveMasterOptionPool(newPool));
+  }, 1000)).current;
+
   const debouncedSyncQuotationSettings = useRef(debounce(async (newSettings: QuotationVisibilitySettings) => {
-    if (isSyncing.current['quotation_settings']) return;
-    isSyncing.current['quotation_settings'] = true;
-    try {
-      await supabaseService.saveQuotationSettings(newSettings);
-    } finally {
-      isSyncing.current['quotation_settings'] = false;
-    }
+    await runQueuedSync('quotation_settings', () => supabaseService.saveQuotationSettings(newSettings));
   }, 800)).current;
+
+  const latestSyncSnapshotRef = useRef({
+    heroImages,
+    menuItems,
+    products,
+    videos,
+    posts,
+    customPackages,
+    masterOptionPool,
+    pageContents,
+    popup,
+    recommendedDiscountPopup,
+    notices,
+    quotationSettings,
+  });
+  latestSyncSnapshotRef.current = {
+    heroImages,
+    menuItems,
+    products,
+    videos,
+    posts,
+    customPackages,
+    masterOptionPool,
+    pageContents,
+    popup,
+    recommendedDiscountPopup,
+    notices,
+    quotationSettings,
+  };
+
+  const flushAllCloudSync = useCallback(async (): Promise<{ success: boolean; message?: string }> => {
+    if (!isSupabaseConfigured) {
+      return {
+        success: false,
+        message: 'Supabase가 아직 연결되지 않았습니다. [Supabase DB 설정]에서 URL과 Anon Key를 먼저 저장해주세요.'
+      };
+    }
+    setCloudSyncStatus(prev => ({ ...prev, state: 'saving', errorMessage: undefined }));
+    try {
+      const snap = latestSyncSnapshotRef.current;
+      const cloudCfg = getCloudinaryConfig();
+      await supabaseService.seedAllToSupabase({
+        products: snap.products,
+        videos: snap.videos,
+        posts: snap.posts,
+        customPackages: snap.customPackages,
+        heroImages: snap.heroImages,
+        menuItems: snap.menuItems,
+        cloudinaryConfig: cloudCfg,
+        popup: snap.popup,
+        recommendedDiscountPopup: snap.recommendedDiscountPopup,
+        notices: snap.notices,
+        quotationSettings: snap.quotationSettings,
+        masterOptionPool: snap.masterOptionPool,
+        pageContents: snap.pageContents,
+      });
+      setCloudSyncStatus({
+        state: 'synced',
+        lastSyncedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      });
+      return { success: true };
+    } catch (e: any) {
+      const msg = e?.message || 'Supabase 클라우드 저장 중 오류가 발생했습니다.';
+      setCloudSyncStatus({ state: 'error', errorMessage: msg });
+      return { success: false, message: msg };
+    }
+  }, []);
 
   // Initial Data Load
   useEffect(() => {
@@ -1412,6 +1469,12 @@ const App: React.FC = () => {
             setQuotationSettings={handleUpdateQuotationSettings}
             adminShowDetailedCosts={adminShowDetailedCosts}
             setAdminShowDetailedCosts={handleToggleAdminDetailedCosts}
+            cloudSyncStatus={cloudSyncStatus}
+            onFlushCloudSync={flushAllCloudSync}
+            onRequestAdminReauth={() => {
+              setShowAuthModal(true);
+              setAuthMode('login');
+            }}
             setCurrentPage={setCurrentPage}
           />
         ) : (
