@@ -1338,7 +1338,23 @@ const App: React.FC = () => {
     clearAdminSessionToken();
     navigateTo('home', null); 
   };
-  const handleProductClick = (id: string) => {
+  const requireMemberLoginForQuotation = useCallback(async (): Promise<boolean> => {
+    if (user) return true;
+    await appAlert(
+      '견적서 미리보기, 저장 및 신청은 로그인 회원 전용 서비스입니다. 로그인 후 이용해 주세요.',
+      {
+        title: '회원 전용 안내',
+        tone: 'info',
+        confirmText: '확인',
+      }
+    );
+    setAuthMode('login');
+    setShowAuthModal(true);
+    return false;
+  }, [user]);
+
+  const handleProductClick = async (id: string) => {
+    if (!(await requireMemberLoginForQuotation())) return;
     const product = products.find(p => p.id === id);
     if (product) setSelectedProduct(product);
   };
@@ -1522,6 +1538,8 @@ const App: React.FC = () => {
                   products={products}
                   onBack={handleBackOneStep}
                   isAdmin={isAdmin}
+                  isLoggedIn={Boolean(user)}
+                  onRequireLogin={requireMemberLoginForQuotation}
                   showDetailedCosts={effectiveShowDetailedCosts}
                   onToggleAdminDetailedCosts={isAdmin ? handleToggleAdminDetailedCosts : undefined}
                 />
@@ -1697,6 +1715,8 @@ const App: React.FC = () => {
           product={selectedProduct}
           onClose={() => { setSelectedProduct(undefined); }}
           isAdmin={isAdmin}
+          isLoggedIn={Boolean(user)}
+          onRequireLogin={requireMemberLoginForQuotation}
           showDetailedCosts={effectiveShowDetailedCosts}
           onToggleAdminDetailedCosts={isAdmin ? handleToggleAdminDetailedCosts : undefined}
         />

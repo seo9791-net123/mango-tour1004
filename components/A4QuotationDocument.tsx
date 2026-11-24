@@ -56,6 +56,8 @@ export interface A4QuotationProps {
   uncheckedKeys?: Record<string, boolean>;
   onUncheckedKeysChange?: (next: Record<string, boolean>) => void;
   showDetailedCosts?: boolean;
+  isLoggedIn?: boolean;
+  onRequireLogin?: () => Promise<boolean>;
 }
 
 export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
@@ -79,6 +81,8 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   uncheckedKeys: controlledUncheckedKeys,
   onUncheckedKeysChange,
   showDetailedCosts = false,
+  isLoggedIn = true,
+  onRequireLogin,
 }) => {
   const documentRef = useRef<HTMLDivElement>(null);
   const exactA4Ref = useRef<HTMLDivElement>(null);
@@ -150,13 +154,22 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     return `Day ${dayIdx}`;
   };
 
+  const ensureMemberAccess = async (): Promise<boolean> => {
+    if (onRequireLogin && !isLoggedIn) {
+      return await onRequireLogin();
+    }
+    return true;
+  };
+
   // Print A4 Document
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    if (!(await ensureMemberAccess())) return;
     window.print();
   };
 
   // Export PDF using isolated Pretendard rendering + jsPDF
   const handleExportPDF = async () => {
+    if (!(await ensureMemberAccess())) return;
     const targetElement = exactA4Ref.current || documentRef.current;
     if (!targetElement || isExportingPdf) return;
     setIsExportingPdf(true);
@@ -392,6 +405,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
 
   // Copy Quotation Summary Text
   const handleCopyText = async () => {
+    if (!(await ensureMemberAccess())) return;
     let text = `[MANGO TOUR 여행 견적 및 일정 안내서]\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `👤 고객명: ${customerName} 고객님 (외 ${Math.max(0, personCount - 1)}인)\n`;

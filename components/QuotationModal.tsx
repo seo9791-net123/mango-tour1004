@@ -10,6 +10,8 @@ interface Props {
   product: Product;
   onClose: () => void;
   isAdmin?: boolean;
+  isLoggedIn?: boolean;
+  onRequireLogin?: () => Promise<boolean>;
   showDetailedCosts?: boolean;
   onToggleAdminDetailedCosts?: (show: boolean) => void;
 }
@@ -18,6 +20,8 @@ const QuotationModal: React.FC<Props> = ({
   product,
   onClose,
   isAdmin = false,
+  isLoggedIn = true,
+  onRequireLogin,
   showDetailedCosts = false,
   onToggleAdminDetailedCosts,
 }) => {
@@ -256,7 +260,15 @@ const QuotationModal: React.FC<Props> = ({
     ],
   };
 
-  const handleOpenOnlineInquiry = () => {
+  const ensureMemberAccess = async (): Promise<boolean> => {
+    if (onRequireLogin && !isLoggedIn) {
+      return await onRequireLogin();
+    }
+    return true;
+  };
+
+  const handleOpenOnlineInquiry = async () => {
+    if (!(await ensureMemberAccess())) return;
     setInquiryError(null);
     if (!inquiryName && customerName && customerName !== '고객') {
       setInquiryName(customerName);
@@ -267,6 +279,7 @@ const QuotationModal: React.FC<Props> = ({
   const handleSubmitOnlineInquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmittingInquiry) return;
+    if (!(await ensureMemberAccess())) return;
 
     const trimmedName = (inquiryName || '').trim();
     const trimmedContact = (inquiryContact || '').trim();
@@ -620,6 +633,8 @@ const QuotationModal: React.FC<Props> = ({
             onClose={onClose}
             showControls={true}
             showDetailedCosts={showDetailedCosts}
+            isLoggedIn={isLoggedIn}
+            onRequireLogin={onRequireLogin}
             uncheckedKeys={uncheckedKeys}
             onUncheckedKeysChange={setUncheckedKeys}
           />

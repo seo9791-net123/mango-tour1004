@@ -19,6 +19,8 @@ interface Props {
   products?: Product[];
   onBack: () => void;
   isAdmin?: boolean;
+  isLoggedIn?: boolean;
+  onRequireLogin?: () => Promise<boolean>;
   showDetailedCosts?: boolean;
   onToggleAdminDetailedCosts?: (show: boolean) => void;
 }
@@ -49,10 +51,27 @@ export const TripPlanner: React.FC<Props> = ({
   products = [],
   onBack,
   isAdmin = false,
+  isLoggedIn = true,
+  onRequireLogin,
   showDetailedCosts = false,
   onToggleAdminDetailedCosts,
 }) => {
   const pool = masterOptionPool || INITIAL_MASTER_OPTION_POOL;
+  const ensureMemberLoginForQuotation = async (): Promise<boolean> => {
+    if (isLoggedIn) return true;
+    if (onRequireLogin) {
+      return await onRequireLogin();
+    }
+    await appAlert(
+      '견적서 미리보기, 저장 및 신청은 로그인 회원 전용 서비스입니다. 로그인 후 이용해 주세요.',
+      {
+        title: '회원 전용 안내',
+        tone: 'info',
+        confirmText: '확인',
+      }
+    );
+    return false;
+  };
   const [activePackage, setActivePackage] = useState<CustomTripPackage | null>(null);
   
   // Customization state for active package
@@ -507,7 +526,8 @@ export const TripPlanner: React.FC<Props> = ({
   const calculateDIYEstimatedPrice = () => getDIYPriceBreakdown().perPersonWithShareUSD;
 
   // Build DIY package dynamically & open into customizer (View 2)
-  const handleCreateDIYPackage = () => {
+  const handleCreateDIYPackage = async () => {
+    if (!(await ensureMemberLoginForQuotation())) return;
     const days = diyNights + 1;
     const totalEst = calculateDIYEstimatedPrice();
     const isGolf = diyActivityMode === 'golf';
@@ -1535,6 +1555,7 @@ export const TripPlanner: React.FC<Props> = ({
   // Direct PDF Download of A4 Quotation Sheet
   const handleDownloadPDF = async () => {
     if (isDownloadingPdf) return;
+    if (!(await ensureMemberLoginForQuotation())) return;
     const targetElement = a4QuotationPrintRef.current || quotationCardRef.current;
     if (!targetElement) {
       showToast('⚠️ 견적서 양식을 찾을 수 없습니다. 화면을 새로고침한 후 다시 시도해주세요.');
@@ -1563,6 +1584,7 @@ export const TripPlanner: React.FC<Props> = ({
 
   // KakaoTalk Consultation handler with text copy
   const handleKakaoInquiry = async () => {
+    if (!(await ensureMemberLoginForQuotation())) return;
     setShowKakaoModal(true);
 
     const text = generateQuotationText();
@@ -1574,8 +1596,15 @@ export const TripPlanner: React.FC<Props> = ({
     }
   };
 
+  // Open Quote Preview Modal (members only)
+  const handleOpenQuotePreview = async () => {
+    if (!(await ensureMemberLoginForQuotation())) return;
+    setShowQuotePreviewModal(true);
+  };
+
   // Open 1:1 Online Inquiry Modal
-  const handleOpenOnlineInquiry = () => {
+  const handleOpenOnlineInquiry = async () => {
+    if (!(await ensureMemberLoginForQuotation())) return;
     setShowInquiryModal(true);
     setInquirySuccess(false);
     setInquiryError(null);
@@ -1585,6 +1614,7 @@ export const TripPlanner: React.FC<Props> = ({
   const handleSubmitOnlineInquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmittingEmail) return;
+    if (!(await ensureMemberLoginForQuotation())) return;
 
     const trimmedName = customerName.trim();
     const trimmedContact = customerContact.trim();
@@ -3368,7 +3398,7 @@ export const TripPlanner: React.FC<Props> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowQuotePreviewModal(true)}
+                      onClick={handleOpenQuotePreview}
                       className="py-3 bg-[#F2F2F7] text-[#3A3A3C] font-semibold rounded-2xl hover:bg-gray-200 transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                     >
                       <span>📄</span>
@@ -5516,6 +5546,8 @@ export const TripPlanner: React.FC<Props> = ({
                 onClose={() => setShowQuotePreviewModal(false)}
                 showControls={true}
                 showDetailedCosts={showDetailedCosts}
+                isLoggedIn={isLoggedIn}
+                onRequireLogin={ensureMemberLoginForQuotation}
               />
             </div>
 
