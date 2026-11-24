@@ -679,41 +679,59 @@ const App: React.FC = () => {
   // Queued Sync Runner (prevents dropping edits made while an earlier sync is still in-flight)
   const isSyncing = useRef<Record<string, boolean>>({});
   const queuedSyncTasks = useRef<Record<string, (() => Promise<any>) | null>>({});
+  const activeSyncPromises = useRef<Record<string, Promise<{ success: boolean; skipped?: boolean; errorMessage?: string }> | null>>({});
 
-  const runQueuedSync = useCallback(async (key: string, task: () => Promise<any>) => {
+  const runQueuedSync = useCallback(async (
+    key: string,
+    task: () => Promise<any>
+  ): Promise<{ success: boolean; skipped?: boolean; errorMessage?: string }> => {
     if (isSyncing.current[key]) {
       queuedSyncTasks.current[key] = task;
-      return;
+      if (activeSyncPromises.current[key]) {
+        return await activeSyncPromises.current[key]!;
+      }
+      return { success: true };
     }
-    isSyncing.current[key] = true;
-    setCloudSyncStatus(prev => ({ ...prev, state: 'saving', errorMessage: undefined }));
-    try {
-      let currentTask: (() => Promise<any>) | null = task;
-      let anySkipped = false;
-      while (currentTask) {
-        queuedSyncTasks.current[key] = null;
-        const res = await currentTask();
-        if (res && typeof res === 'object' && res.skipped) {
-          anySkipped = true;
+
+    const runner = (async (): Promise<{ success: boolean; skipped?: boolean; errorMessage?: string }> => {
+      isSyncing.current[key] = true;
+      setCloudSyncStatus(prev => ({ ...prev, state: 'saving', errorMessage: undefined }));
+      try {
+        let currentTask: (() => Promise<any>) | null = task;
+        let anySkipped = false;
+        while (currentTask) {
+          queuedSyncTasks.current[key] = null;
+          const res = await currentTask();
+          if (res && typeof res === 'object' && res.skipped) {
+            anySkipped = true;
+          }
+          currentTask = queuedSyncTasks.current[key];
         }
-        currentTask = queuedSyncTasks.current[key];
-      }
-      if (!anySkipped) {
+        if (!anySkipped) {
+          setCloudSyncStatus({
+            state: 'synced',
+            lastSyncedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          });
+          return { success: true, skipped: false };
+        } else {
+          setCloudSyncStatus(prev => (prev.state === 'saving' ? { ...prev, state: 'idle' } : prev));
+          return { success: true, skipped: true };
+        }
+      } catch (e: any) {
+        const errorMessage = e?.message || 'Supabase 클라우드 저장 중 오류가 발생했습니다.';
         setCloudSyncStatus({
-          state: 'synced',
-          lastSyncedAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          state: 'error',
+          errorMessage,
         });
-      } else {
-        setCloudSyncStatus(prev => (prev.state === 'saving' ? { ...prev, state: 'idle' } : prev));
+        return { success: false, errorMessage };
+      } finally {
+        isSyncing.current[key] = false;
+        activeSyncPromises.current[key] = null;
       }
-    } catch (e: any) {
-      setCloudSyncStatus({
-        state: 'error',
-        errorMessage: e?.message || 'Supabase 클라우드 저장 중 오류가 발생했습니다.',
-      });
-    } finally {
-      isSyncing.current[key] = false;
-    }
+    })();
+
+    activeSyncPromises.current[key] = runner;
+    return await runner;
   }, []);
 
   const debouncedSyncProducts = useRef(debounce(async (newProducts: Product[]) => {
@@ -739,8 +757,12 @@ const App: React.FC = () => {
     });
   }, 1800)).current;
 
-  const debouncedSyncSettings = useRef(debounce(async (key: 'heroImages' | 'menuItems', data: any) => {
-    await runQueuedSync(`settings_${key}`, () => supabaseService.saveSettings(key, data));
+  const debouncedSyncHeroImages = useRef(debounce(async (data: string[]) => {
+    await runQueuedSync('settings_heroImages', () => supabaseService.saveSettings('heroImages', data));
+  }, 800)).current;
+
+  const debouncedSyncMenuItems = useRef(debounce(async (data: MenuItem[]) => {
+    await runQueuedSync('settings_menuItems', () => supabaseService.saveSettings('menuItems', data));
   }, 800)).current;
 
   const debouncedSyncPopup = useRef(debounce(async (newPopup: PopupNotification) => {
@@ -960,14 +982,46 @@ const App: React.FC = () => {
   }, []);
 
   // Update Handlers (Updates State, LocalStorage, and Supabase)
-  const handleUpdateHeroImages = async (newImages: string[]) => {
+  const handleUpdateHeroImages = async (
+    newImages: string[],
+    options?: { immediate?: boolean }
+  ): Promise<{ success: boolean; localSaved: boolean; cloudSynced: boolean; skipped?: boolean; errorMessage?: string }> => {
     setHeroImages(newImages);
+    let localSaved = false;
+    let localError = '';
     try {
       localStorage.setItem('mango_hero_images_db', JSON.stringify(newImages));
-    } catch (e) {
+      localSaved = true;
+    } catch (e: any) {
       console.warn("Failed to write hero images to localStorage:", e);
+      localError = e?.name === 'QuotaExceededError'
+        ? '브라우저 저장 공간(5MB)이 부족하여 로컬 저장에 실패했습니다. 이미지 용량을 줄이거나 이미지 서버(Cloudinary)를 확인해주세요.'
+        : (e?.message || '로컬 저장에 실패했습니다.');
     }
-    debouncedSyncSettings('heroImages', newImages);
+
+    if (options?.immediate === false) {
+      debouncedSyncHeroImages(newImages);
+      return {
+        success: localSaved,
+        localSaved,
+        cloudSynced: false,
+        skipped: !isSupabaseConfigured,
+        errorMessage: localError || undefined,
+      };
+    }
+
+    const syncRes = await runQueuedSync('settings_heroImages', () =>
+      supabaseService.saveSettings('heroImages', newImages)
+    );
+    const cloudSynced = Boolean(syncRes.success && !syncRes.skipped);
+    const overallSuccess = isSupabaseConfigured ? syncRes.success : localSaved;
+    return {
+      success: overallSuccess,
+      localSaved,
+      cloudSynced,
+      skipped: syncRes.skipped,
+      errorMessage: syncRes.errorMessage || localError || undefined,
+    };
   };
 
   const handleUpdateMenuItems = async (newItems: MenuItem[]) => {
@@ -977,7 +1031,7 @@ const App: React.FC = () => {
     } catch (e) {
       console.warn("Failed to write menu items to localStorage:", e);
     }
-    debouncedSyncSettings('menuItems', newItems);
+    debouncedSyncMenuItems(newItems);
   };
 
   const handleUpdateProducts = async (newProducts: Product[]) => {

@@ -544,11 +544,15 @@ export const supabaseService = {
 
     try {
       // 기존 설정 데이터를 조회하여 다른 컬럼(슬라이드, 메뉴, Cloudinary 등)이 지워지지 않도록 병합 보존
-      const { data: existing } = await supabase
+      const { data: existing, error: selectError } = await supabase
         .from('settings')
         .select('*')
         .eq('id', 'global')
         .maybeSingle();
+
+      if (selectError) {
+        throw formatSupabaseWriteError(selectError, `settings.${key}.select`);
+      }
 
       const payload: Record<string, any> = {
         id: 'global',
@@ -559,12 +563,16 @@ export const supabaseService = {
       };
       payload[col] = data;
 
-      const { error } = await supabase
+      const { data: savedRows, error } = await supabase
         .from('settings')
-        .upsert(payload, { onConflict: 'id' });
+        .upsert(payload, { onConflict: 'id' })
+        .select('id');
 
       if (error) {
         throw formatSupabaseWriteError(error, `settings.${key}`);
+      }
+      if (!savedRows || savedRows.length === 0) {
+        throw formatSupabaseWriteError({ code: '42501', message: 'No rows updated (RLS policy denied)' }, `settings.${key}`);
       }
       console.log(`✅ Supabase settings [${key}] 자동 저장 완료`);
       return { success: true };

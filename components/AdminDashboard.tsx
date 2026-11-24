@@ -31,7 +31,10 @@ interface Props {
   onUpdateUsers?: (users: User[]) => void;
   onRefreshUsers?: () => Promise<User[] | null>;
   heroImages: string[];
-  setHeroImages: (images: string[]) => void;
+  setHeroImages: (
+    images: string[],
+    options?: { immediate?: boolean }
+  ) => Promise<{ success: boolean; localSaved?: boolean; cloudSynced?: boolean; skipped?: boolean; errorMessage?: string } | void> | void;
   menuItems: MenuItem[];
   setMenuItems: (items: MenuItem[]) => void;
   products: Product[];
@@ -179,6 +182,13 @@ const AdminDashboard: React.FC<Props> = ({
   const [iconCustomInput, setIconCustomInput] = useState('');
   
   const heroFileInputRef = useRef<HTMLInputElement>(null);
+  const heroImagesRef = useRef<string[]>(heroImages);
+  heroImagesRef.current = heroImages;
+  const heroUrlEditedRef = useRef<boolean>(false);
+  const [heroSaveFeedback, setHeroSaveFeedback] = useState<{
+    status: 'idle' | 'saving' | 'saved' | 'error';
+    message?: string;
+  }>({ status: 'idle' });
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [editingPackage, setEditingPackage] = useState<CustomTripPackage | null>(null);
@@ -384,63 +394,117 @@ const AdminDashboard: React.FC<Props> = ({
     }
   };
 
+  const readBlobAsDataUrl = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') resolve(reader.result);
+        else reject(new Error('Failed to read file as Data URL'));
+      };
+      reader.onerror = () => reject(reader.error || new Error('FileReader failed'));
+      reader.readAsDataURL(blob);
+    });
+  };
+
   // Improved File Upload Handler - attaches version stamp once on replacement upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void | Promise<void>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 50 * 1024 * 1024) { 
-        await appAlert('파일이 너무 큽니다. 50MB 이하의 파일을 권장합니다.');
-        return;
-      }
-
-      setIsUploading(true);
-      setUploadProgress(0);
-      try {
-        const downloadUrl = await uploadFile(file, 'images', (progress) => {
-          setUploadProgress(progress);
-        });
-        await callback(withImageVersion(downloadUrl));
-      } catch (e: any) {
-        console.error("Upload failed, falling back to Base64:", e);
-        
-        try {
-          const compressedBlob = await compressImage(file, 800, 800, 0.5);
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            const base64 = reader.result as string;
-            
-            if (base64.length > 900000) { 
-              await appAlert('⚠️ 경고: 이미지 서버 연결 실패로 압축 후 저장하려고 했으나, 여전히 용량이 너무 큽니다. (Firestore 1MB 제한)\n\n더 작은 이미지를 사용하거나 Cloudinary 설정을 확인해주세요.');
-              return;
-            }
-
-            await callback(base64);
-            await appAlert('이미지 서버 연결 실패로 압축된 로컬(Base64) 데이터로 저장되었습니다.');
-          };
-          reader.readAsDataURL(compressedBlob);
-        } catch (compressErr) {
-          console.error("Compression fallback failed:", compressErr);
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            const base64 = reader.result as string;
-            await callback(base64);
-          };
-          reader.readAsDataURL(file);
-        }
-      } finally {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }
-    }
     e.target.value = '';
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      await appAlert('파일이 너무 큽니다. 50MB 이하의 파일을 권장합니다.');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    try {
+      const downloadUrl = await uploadFile(file, 'images', (progress) => {
+        setUploadProgress(progress);
+      });
+      await callback(withImageVersion(downloadUrl));
+    } catch (e: any) {
+      console.error("Upload failed, falling back to Base64:", e);
+      try {
+        const compressedBlob = await compressImage(file, 960, 960, 0.55);
+        const base64 = await readBlobAsDataUrl(compressedBlob);
+        if (base64.length > 900000) {
+          await appAlert('⚠️ 경고: 이미지 서버 연결 실패로 압축 후 저장하려고 했으나, 여전히 용량이 너무 큽니다.\n\n더 작은 이미지를 사용하거나 Cloudinary 설정을 확인해주세요.');
+          return;
+        }
+        await callback(base64);
+        await appAlert('이미지 서버 연결 실패로 압축된 로컬(Base64) 데이터로 저장되었습니다.');
+      } catch (compressErr) {
+        console.error("Compression fallback failed:", compressErr);
+        try {
+          const base64 = await readBlobAsDataUrl(file);
+          if (base64.length > 900000) {
+            await appAlert('⚠️ 이미지 용량이 너무 커서 저장할 수 없습니다. 더 작은 이미지를 선택해주세요.');
+            return;
+          }
+          await callback(base64);
+        } catch (readErr) {
+          console.error("FileReader fallback failed:", readErr);
+          await appAlert('이미지 파일을 읽는 중 오류가 발생했습니다.');
+        }
+      }
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   // --- Helper Wrappers ---
+  const commitHeroImages = async (
+    nextImages: string[],
+    successToast?: string
+  ): Promise<boolean> => {
+    heroImagesRef.current = nextImages;
+
+    if (isSupabaseConfigured && !getAdminSessionToken()) {
+      await setHeroImages(nextImages, { immediate: false });
+      setHeroSaveFeedback({
+        status: 'error',
+        message: '관리자 클라우드 쓰기 인증 토큰이 없어 이 브라우저에만 임시 반영되었습니다. 재로그인 후 저장해 주세요.',
+      });
+      await appAlert(
+        '⚠️ 현재 세션에 관리자 클라우드 쓰기 인증 토큰이 없어 실제 홈페이지 DB에 저장할 수 없습니다.\n\n[확인]을 누른 뒤 관리자 비밀번호로 다시 로그인하신 후 저장해주세요.'
+      );
+      onRequestAdminReauth?.();
+      return false;
+    }
+
+    setHeroSaveFeedback({ status: 'saving', message: '슬라이드 변경사항 저장 중...' });
+    try {
+      const res = await setHeroImages(nextImages, { immediate: true });
+      if (res && res.success === false) {
+        const errMsg = res.errorMessage || '클라우드 저장에 실패했습니다.';
+        setHeroSaveFeedback({ status: 'error', message: errMsg });
+        await appAlert(`❌ 메인 슬라이드 이미지 저장 실패:\n\n${errMsg}`);
+        return false;
+      }
+      const savedMsg = res?.cloudSynced
+        ? '클라우드(Supabase) 저장 완료'
+        : '로컬 브라우저 저장 완료';
+      setHeroSaveFeedback({ status: 'saved', message: savedMsg });
+      if (successToast) {
+        showToast(successToast);
+      }
+      return true;
+    } catch (err: any) {
+      const errMsg = err?.message || '메인 슬라이드 저장 중 오류가 발생했습니다.';
+      setHeroSaveFeedback({ status: 'error', message: errMsg });
+      await appAlert(`❌ 메인 슬라이드 저장 실패:\n\n${errMsg}`);
+      return false;
+    }
+  };
+
   const handleReplaceHeroImage = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileUpload(e, (url) => {
-      const updated = [...heroImages];
+    void handleFileUpload(e, async (url) => {
+      const updated = [...heroImagesRef.current];
       updated[index] = url;
-      setHeroImages(updated);
+      await commitHeroImages(updated, `✅ 슬라이드 #${index + 1} 이미지가 교체 및 저장되었습니다.`);
     });
   };
 
@@ -2562,7 +2626,25 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
               <div>
                 <h3 className="text-lg sm:text-2xl font-bold text-gray-800">메인 슬라이드 이미지 (총 {heroImages.length}개)</h3>
-                <p className="text-xs text-gray-500 mt-0.5">파일 업로드, 추천 사진 선택, 이미지 URL 직접 입력으로 즉시 교체하거나 추가할 수 있습니다.</p>
+                <p className="text-xs text-gray-500 mt-0.5">파일 업로드, 추천 사진 선택, 이미지 URL 직접 입력으로 즉시 교체하고 저장할 수 있습니다.</p>
+                {heroSaveFeedback.status !== 'idle' && (
+                  <p className={`text-[11px] font-bold mt-1.5 flex items-center gap-1.5 ${
+                    heroSaveFeedback.status === 'error'
+                      ? 'text-rose-600'
+                      : heroSaveFeedback.status === 'saving'
+                        ? 'text-amber-600'
+                        : 'text-emerald-700'
+                  }`}>
+                    <span>
+                      {heroSaveFeedback.status === 'error'
+                        ? '❌'
+                        : heroSaveFeedback.status === 'saving'
+                          ? '⏳'
+                          : '✅'}
+                    </span>
+                    <span>{heroSaveFeedback.message}</span>
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -2577,13 +2659,37 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                   onClick={() => setImagePickerTarget({
                     label: '메인 슬라이드 추가',
                     currentUrl: '',
-                    onSelect: (url) => setHeroImages([...heroImages, url])
+                    onSelect: (url) => {
+                      void commitHeroImages([...heroImagesRef.current, url], '✅ 추천 사진이 슬라이드에 추가 및 저장되었습니다.');
+                    }
                   })}
                   className="bg-amber-50 text-amber-800 border border-amber-300 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-amber-100 transition cursor-pointer"
                 >
                   🎨 + 추천 사진 추가
                 </button>
-                <input type="file" className="hidden" ref={heroFileInputRef} accept="image/*" onChange={(e) => handleFileUpload(e, (url) => setHeroImages([...heroImages, url]))} />
+                <button
+                  type="button"
+                  disabled={heroSaveFeedback.status === 'saving'}
+                  onClick={() => {
+                    void commitHeroImages(heroImagesRef.current, '✅ 메인 슬라이드 이미지가 저장되었습니다.');
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold shadow transition cursor-pointer ${
+                    heroSaveFeedback.status === 'saving'
+                      ? 'bg-gray-300 text-gray-600 cursor-wait'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  }`}
+                >
+                  {heroSaveFeedback.status === 'saving' ? '⏳ 저장 중...' : '💾 변경사항 저장'}
+                </button>
+                <input
+                  type="file"
+                  className="hidden"
+                  ref={heroFileInputRef}
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, async (url) => {
+                    await commitHeroImages([...heroImagesRef.current, url], '✅ 새 슬라이드가 추가 및 저장되었습니다.');
+                  })}
+                />
               </div>
             </div>
 
@@ -2597,11 +2703,11 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
               />
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   if (!newHeroUrl.trim()) return;
-                  setHeroImages([...heroImages, withImageVersion(newHeroUrl.trim())]);
+                  const targetUrl = withImageVersion(newHeroUrl.trim());
                   setNewHeroUrl('');
-                  showToast('✅ 새 슬라이드가 추가되었습니다.');
+                  await commitHeroImages([...heroImagesRef.current, targetUrl], '✅ 새 슬라이드가 추가 및 저장되었습니다.');
                 }}
                 className="px-4 py-2 bg-gold-500 hover:bg-gold-600 text-white rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
               >
@@ -2643,9 +2749,17 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                         value={img}
                         onChange={(e) => {
                           clearImageBroken(errKey);
-                          const updated = [...heroImages];
+                          heroUrlEditedRef.current = true;
+                          const updated = [...heroImagesRef.current];
                           updated[idx] = e.target.value;
-                          setHeroImages(updated);
+                          heroImagesRef.current = updated;
+                          setHeroImages(updated, { immediate: false });
+                        }}
+                        onBlur={() => {
+                          if (heroUrlEditedRef.current) {
+                            heroUrlEditedRef.current = false;
+                            void commitHeroImages(heroImagesRef.current);
+                          }
                         }}
                         placeholder="이미지 URL"
                         className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[11px] outline-none focus:bg-white focus:border-deepgreen"
@@ -2662,9 +2776,9 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                             currentUrl: img,
                             onSelect: (url) => {
                               clearImageBroken(errKey);
-                              const updated = [...heroImages];
+                              const updated = [...heroImagesRef.current];
                               updated[idx] = url;
-                              setHeroImages(updated);
+                              void commitHeroImages(updated, `✅ 슬라이드 #${idx + 1} 이미지가 교체 및 저장되었습니다.`);
                             }
                           })}
                           className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg font-bold text-[11px] transition cursor-pointer"
@@ -2673,7 +2787,10 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
                         </button>
                         <button
                           type="button"
-                          onClick={() => setHeroImages(heroImages.filter((_, i) => i !== idx))}
+                          onClick={() => {
+                            const updated = heroImagesRef.current.filter((_, i) => i !== idx);
+                            void commitHeroImages(updated, '🗑️ 슬라이드가 삭제 및 저장되었습니다.');
+                          }}
                           className="px-2.5 py-1.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 rounded-lg font-bold text-[11px] transition cursor-pointer"
                         >
                           🗑️

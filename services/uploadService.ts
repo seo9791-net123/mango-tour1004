@@ -230,8 +230,21 @@ export const uploadFile = async (
     );
   }
 
-  // 이미지만 비상용 Base64 폴백
+  // 이미지만 비상용 Base64 폴백 (localStorage/DB 용량 초과 방지를 위해 적정 크기로 재압축)
   console.log("Using Base64 fallback for image...");
+  let fallbackData: Blob | File = uploadData;
+  let dataUrl = await fileToDataUrl(fallbackData);
+  if (dataUrl.length > 420_000 && file.type.startsWith('image/')) {
+    try {
+      const compactBlob = await compressImage(file, 960, 960, 0.55);
+      const compactUrl = await fileToDataUrl(compactBlob);
+      if (compactUrl.length < dataUrl.length) {
+        dataUrl = compactUrl;
+      }
+    } catch (e) {
+      console.warn("Compact Base64 re-compression skipped:", e);
+    }
+  }
   if (onProgress) onProgress(100);
-  return await fileToDataUrl(uploadData);
+  return dataUrl;
 };

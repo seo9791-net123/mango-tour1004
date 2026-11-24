@@ -48,11 +48,11 @@ const HeroSlider: React.FC<Props> = ({ images, onActionClick }) => {
             <img
               src={getFreshImageUrl(img)}
               alt={`Slide ${index}`}
-              className="w-full h-full object-cover object-center opacity-80"
+              className="w-full h-full object-cover object-center opacity-90 brightness-105"
             />
           </div>
         ))}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-gradient-to-t from-black/75 via-black/30 to-black/35 px-4 py-3 sm:py-4 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10 bg-gradient-to-t from-black/65 via-black/20 to-black/25 px-4 py-3 sm:py-4 text-center">
           <span className="text-[10px] sm:text-xs font-bold tracking-[0.2em] text-emerald-300 uppercase mb-1">
             VIETNAM PREMIUM TRAVEL
           </span>
