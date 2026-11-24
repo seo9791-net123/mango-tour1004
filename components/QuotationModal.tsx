@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Product } from '../types';
 import A4QuotationDocument, { CostItem, ItineraryDay, ReservationNoticeData } from './A4QuotationDocument';
 import { getTravelDays, calculateCostItemTotal } from '../utils/costBreakdownUtils';
-import { supabaseService } from '../services/supabaseService';
+import { generateQuotationPdf } from '../utils/quotationExportUtils';
+import { submitQuotationWithPdf } from '../services/quotationSubmitService';
 import { useQuotationMobileLock } from '../utils/useQuotationMobileLock';
 
 interface Props {
@@ -31,7 +32,8 @@ const QuotationModal: React.FC<Props> = ({
   const [includeGuide, setIncludeGuide] = useState(true);
   const [uncheckedKeys, setUncheckedKeys] = useState<Record<string, boolean>>({});
 
-  // 1:1 Online Inquiry Modal & Web3Forms submission state
+  // 1:1 Online Inquiry Modal & PDF Email/Storage/Kakao submission state
+  const quotationDocumentContainerRef = useRef<HTMLDivElement>(null);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [inquiryName, setInquiryName] = useState('');
   const [inquiryContact, setInquiryContact] = useState('');
@@ -341,29 +343,39 @@ const QuotationModal: React.FC<Props> = ({
         'MANGO TOUR | +84 37 720 4451 | Kakao: MANGO TOUR',
       ].join('\n');
 
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          access_key: '58044e40-51a1-4f63-9248-81b6b1bca9ef',
-          subject: `[MANGO TOUR 견적신청] ${trimmedName}님의 맞춤 견적 문의`,
-          from_name: 'MANGO TOUR 온라인 견적',
-          name: trimmedName,
-          message: formattedMessage,
-        }),
+      setCustomerName(trimmedName);
+      // Allow React to flush customer info into #a4-exact-print-sheet before generating A4 PDF
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+
+      const generatedPdf = await generateQuotationPdf(quotationDocumentContainerRef.current, {
+        customerName: trimmedName,
       });
 
-      const result = await response.json().catch(() => null);
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.message || `Web3Forms error (${response.status})`);
-      }
-
-      // Supabase 비동기 백업 저장 (실패해도 메일 발송 성공에 영향 없음)
-      try {
-        await supabaseService.saveInquiry({
+      await submitQuotationWithPdf({
+        customerName: trimmedName,
+        customerContact: trimmedContact,
+        personCount,
+        departureDate: departureDate || '미정',
+        customerNotes: inquiryNotes.trim(),
+        productTitle: product.title,
+        region: product.location,
+        duration: product.duration,
+        totalPriceUSD: groupTotalUSD,
+        totalPriceKRW: groupTotalKRW,
+        perPersonUSD,
+        summaryText: formattedMessage,
+        costItems: selectedCostItems.map((it) => ({
+          category: it.category,
+          detail: it.detail,
+          quantity: it.quantity,
+          amountUSD: it.amountUSD !== undefined ? it.amountUSD : Math.round(it.amountKRW / USD_TO_KRW),
+          amountKRW: it.amountKRW,
+        })),
+        pdfFileName: generatedPdf.fileName,
+        pdfBase64: generatedPdf.base64,
+        inquiryBackupData: {
           _subject: `[MANGO TOUR 견적신청] ${trimmedName}님의 맞춤 견적 문의`,
           유형: '추천상품 견적신청',
           예약자명: trimmedName,
@@ -379,21 +391,21 @@ const QuotationModal: React.FC<Props> = ({
           '총_예상견적': `$${groupTotalUSD.toLocaleString()} (약 ${groupTotalKRW.toLocaleString()}원)`,
           고객요청사항: inquiryNotes.trim() || '없음',
           접수일시: submittedAt,
-        });
-      } catch (dbErr) {
-        console.warn('Supabase inquiry backup skipped:', dbErr);
-      }
+        },
+      });
 
-      setCustomerName(trimmedName);
       setShowInquiryModal(false);
       setInquiryError(null);
       setSubmissionNotice({
         type: 'success',
-        message: '견적 신청이 성공적으로 접수되었습니다. 담당 매니저가 곧 연락드리겠습니다.',
+        message: '견적 신청이 완료되었습니다. 담당자 확인 후 연락드리겠습니다.',
       });
     } catch (err) {
-      console.error('Web3Forms submission failed:', err);
-      setInquiryError('전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.');
+      console.error('Quotation PDF submission failed:', err);
+      const errMsg = err instanceof Error ? err.message : '';
+      setInquiryError(
+        errMsg || '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.'
+      );
     } finally {
       setIsSubmittingInquiry(false);
     }
@@ -581,6 +593,7 @@ const QuotationModal: React.FC<Props> = ({
 
         {/* Scrollable Document Area */}
         <div
+          ref={quotationDocumentContainerRef}
           className="flex-1 w-full max-w-full overflow-x-hidden overflow-y-auto overscroll-contain p-0 md:p-6 print:p-0 print:overflow-visible"
           style={{
             WebkitOverflowScrolling: 'touch',
@@ -590,7 +603,8 @@ const QuotationModal: React.FC<Props> = ({
           }}
         >
           <A4QuotationDocument
-            customerName={customerName}
+            customerName={inquiryName.trim() || customerName}
+            customerContact={inquiryContact.trim() || undefined}
             personCount={personCount}
             managerName="망고투어 전문 상담팀"
             managerContact="+84 37 720 4451"
@@ -601,7 +615,7 @@ const QuotationModal: React.FC<Props> = ({
             totalPriceUSD={groupTotalUSD}
             costItems={costItems}
             itinerary={itineraryDays}
-            notes={`선택 상품: ${product.title} | 패스트트랙: ${includeFastTrack ? (showDetailedCosts ? '포함 ($60/인)' : '포함') : '미포함 (선택 가능)'} | 가이드: ${includeGuide ? (showDetailedCosts ? '포함 (1일 $120)' : '포함') : '미포함'}`}
+            notes={`선택 상품: ${product.title} | 패스트트랙: ${includeFastTrack ? (showDetailedCosts ? '포함 ($60/인)' : '포함') : '미포함 (선택 가능)'} | 가이드: ${includeGuide ? (showDetailedCosts ? '포함 (1일 $120)' : '포함') : '미포함'}${inquiryNotes.trim() ? ` | 추가 요청사항: ${inquiryNotes.trim()}` : ''}`}
             reservationNotice={reservationNotice}
             onClose={onClose}
             showControls={true}
@@ -655,7 +669,7 @@ const QuotationModal: React.FC<Props> = ({
         <div
           className="quotation-vertical-only no-print fixed inset-0 w-full max-w-full bg-black/60 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden overscroll-contain select-text font-sans break-keep"
           style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
-          onClick={() => setShowInquiryModal(false)}
+          onClick={() => { if (!isSubmittingInquiry) setShowInquiryModal(false); }}
         >
           <div
             className="bg-white rounded-t-3xl md:rounded-[20px] max-w-full md:max-w-lg w-full max-h-[90vh] relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden box-border"
@@ -667,8 +681,9 @@ const QuotationModal: React.FC<Props> = ({
             <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-black/[0.06] bg-white/95 backdrop-blur-md sticky top-0 z-30 shrink-0">
               <button
                 type="button"
+                disabled={isSubmittingInquiry}
                 onClick={() => setShowInquiryModal(false)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-full transition active:scale-95 cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-full transition active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
@@ -680,8 +695,9 @@ const QuotationModal: React.FC<Props> = ({
               </span>
               <button
                 type="button"
+                disabled={isSubmittingInquiry}
                 onClick={() => setShowInquiryModal(false)}
-                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition active:scale-95 cursor-pointer"
+                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition active:scale-95 cursor-pointer disabled:opacity-50"
                 aria-label="닫기"
               >
                 ✕
@@ -849,10 +865,16 @@ const QuotationModal: React.FC<Props> = ({
                 <button
                   type="submit"
                   disabled={isSubmittingInquiry}
-                  className="w-full py-3.5 md:py-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-2xl text-sm sm:text-base active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
+                  className="w-full py-3.5 md:py-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-2xl text-sm sm:text-base active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
                 >
+                  {isSubmittingInquiry && (
+                    <span
+                      className="inline-block w-4 h-4 border-2 border-white/35 border-t-white rounded-full animate-spin shrink-0"
+                      aria-hidden="true"
+                    />
+                  )}
                   <span className="font-bold tracking-tight">
-                    {isSubmittingInquiry ? '발송 중...' : '1:1 온라인 견적 신청서 발송하기'}
+                    {isSubmittingInquiry ? '견적서 PDF를 생성하여 전송 중입니다...' : '견적 신청하기'}
                   </span>
                 </button>
               </div>

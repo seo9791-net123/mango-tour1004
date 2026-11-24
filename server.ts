@@ -8,6 +8,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 
 import fs from 'fs';
 import multer from 'multer';
+import { handleQuotationSubmission } from './server/quotationNotificationService';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,10 +21,14 @@ app.use(cors());
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
-// Ensure upload directory exists
+// Ensure upload directories exist
 const uploadsDir = path.resolve(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
+}
+const quotationsDir = path.resolve(uploadsDir, 'quotations');
+if (!fs.existsSync(quotationsDir)) {
+  fs.mkdirSync(quotationsDir, { recursive: true });
 }
 
 // Serve uploaded files statically with byte range support for efficient streaming
@@ -85,6 +90,47 @@ app.post('/api/upload-base64', async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Base64 upload error:', err);
     res.status(500).json({ error: err?.message || 'Upload failed' });
+  }
+});
+
+// Quotation PDF Storage Upload + Admin Gmail SMTP Email Attachment endpoint
+app.post('/api/quotations/submit', async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {};
+    const forwardedProto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+    const hostHeader = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+    const publicBaseUrl = hostHeader ? `${forwardedProto}://${hostHeader}` : '';
+
+    const result = await handleQuotationSubmission(
+      {
+        customerName: String(body.customerName || ''),
+        customerContact: String(body.customerContact || ''),
+        personCount: Number(body.personCount) || 1,
+        departureDate: String(body.departureDate || ''),
+        customerNotes: String(body.customerNotes || ''),
+        productTitle: String(body.productTitle || ''),
+        region: String(body.region || ''),
+        duration: String(body.duration || ''),
+        totalPriceUSD: Number(body.totalPriceUSD) || 0,
+        totalPriceKRW: Number(body.totalPriceKRW) || 0,
+        perPersonUSD: Number(body.perPersonUSD) || 0,
+        summaryText: String(body.summaryText || ''),
+        costItems: Array.isArray(body.costItems) ? body.costItems : [],
+        pdfFileName: String(body.pdfFileName || ''),
+        pdfBase64: String(body.pdfBase64 || ''),
+        publicBaseUrl,
+      },
+      quotationsDir
+    );
+
+    res.json(result);
+  } catch (err: any) {
+    console.error('Quotation submit error:', err);
+    const status = /누락|입력해주세요|형식|크기/.test(String(err?.message || '')) ? 400 : 500;
+    res.status(status).json({
+      success: false,
+      error: err?.message || '견적서 PDF 전송 중 오류가 발생했습니다.',
+    });
   }
 });
 

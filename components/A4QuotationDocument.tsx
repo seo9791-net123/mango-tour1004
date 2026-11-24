@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
-  captureQuotationDocument,
-  buildQuotationPdfBlob,
+  generateQuotationPdf,
   triggerBlobDownload,
 } from '../utils/quotationExportUtils';
 import { appAlert } from '../services/dialogService';
@@ -38,6 +37,7 @@ export interface ReservationNoticeData {
 
 export interface A4QuotationProps {
   customerName?: string;
+  customerContact?: string;
   personCount?: number;
   managerName?: string;
   managerContact?: string;
@@ -60,6 +60,7 @@ export interface A4QuotationProps {
 
 export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
   customerName = '고객',
+  customerContact,
   personCount = 2,
   managerName = '망고투어 전문 상담팀',
   managerContact = '+84 37 720 4451 (카카오: vnseen1)',
@@ -81,8 +82,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
 }) => {
   const documentRef = useRef<HTMLDivElement>(null);
   const exactA4Ref = useRef<HTMLDivElement>(null);
-  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'png' | null>(null);
-  const isExporting = exportingFormat !== null;
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [internalUncheckedKeys, setInternalUncheckedKeys] = useState<Record<string, boolean>>({});
   const uncheckedKeys = controlledUncheckedKeys ?? internalUncheckedKeys;
@@ -155,21 +155,15 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
     window.print();
   };
 
-  const buildExportFileName = (ext: 'pdf' | 'png') => {
-    const safeName = (customerName || '고객').replace(/[^a-zA-Z0-9가-힣]/g, '_');
-    return `망고투어_정식견적서_${safeName}_${new Date().toISOString().split('T')[0]}.${ext}`;
-  };
-
-  // Export PDF using isolated capture + jsPDF
+  // Export PDF using isolated Pretendard rendering + jsPDF
   const handleExportPDF = async () => {
     const targetElement = exactA4Ref.current || documentRef.current;
-    if (!targetElement || exportingFormat !== null) return;
-    setExportingFormat('pdf');
+    if (!targetElement || isExportingPdf) return;
+    setIsExportingPdf(true);
     showToast('📄 정식 A4 규격 PDF를 생성 중입니다...');
     try {
-      const captured = await captureQuotationDocument(targetElement);
-      const pdfBlob = await buildQuotationPdfBlob(captured);
-      triggerBlobDownload(pdfBlob, buildExportFileName('pdf'));
+      const pdf = await generateQuotationPdf(targetElement, { customerName });
+      triggerBlobDownload(pdf.blob, pdf.fileName);
       showToast('📥 정식 A4 PDF 다운로드가 완료되었습니다.');
     } catch (err) {
       console.error('PDF export error:', err);
@@ -180,30 +174,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
         tone: 'error',
       });
     } finally {
-      setExportingFormat(null);
-    }
-  };
-
-  // Download high-resolution PNG using isolated capture + Blob URL
-  const handleDownloadPNG = async () => {
-    const targetElement = exactA4Ref.current || documentRef.current;
-    if (!targetElement || exportingFormat !== null) return;
-    setExportingFormat('png');
-    showToast('📸 정식 견적서 고해상도 이미지를 생성 중입니다...');
-    try {
-      const captured = await captureQuotationDocument(targetElement);
-      triggerBlobDownload(captured.blob, buildExportFileName('png'));
-      showToast('📥 정식 견적서 이미지가 저장되었습니다.');
-    } catch (err) {
-      console.error('PNG download error:', err);
-      const errMsg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
-      showToast('⚠️ 이미지 생성에 실패했습니다.');
-      await appAlert(`견적서 이미지(PNG) 저장 중 오류가 발생했습니다.\n\n사유: ${errMsg}`, {
-        title: '이미지 저장 실패',
-        tone: 'error',
-      });
-    } finally {
-      setExportingFormat(null);
+      setIsExportingPdf(false);
     }
   };
 
@@ -512,7 +483,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-4 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto min-w-0">
+          <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto min-w-0">
             <button
               type="button"
               onClick={handlePrint}
@@ -525,21 +496,11 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             <button
               type="button"
               onClick={handleExportPDF}
-              disabled={isExporting}
+              disabled={isExportingPdf}
               className="min-w-0 py-1.5 px-1.5 sm:px-4 sm:py-2 bg-gold-500 text-white text-[11px] sm:text-sm font-bold rounded-xl shadow hover:bg-gold-600 transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
             >
-              <span>{exportingFormat === 'pdf' ? '⏳' : '📄'}</span>
-              <span>{exportingFormat === 'pdf' ? '저장 중...' : 'PDF'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownloadPNG}
-              disabled={isExporting}
-              className="min-w-0 py-1.5 px-1.5 sm:px-3.5 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
-            >
-              <span>{exportingFormat === 'png' ? '⏳' : '📥'}</span>
-              <span>{exportingFormat === 'png' ? '저장 중...' : '이미지'}</span>
+              <span>{isExportingPdf ? '⏳' : '📄'}</span>
+              <span>{isExportingPdf ? '저장 중...' : 'PDF'}</span>
             </button>
 
             <button
@@ -554,7 +515,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             <button
               type="button"
               onClick={() => window.open('https://open.kakao.com/o/gprQnKSi', '_blank')}
-              className="col-span-4 sm:col-span-1 py-2 sm:py-2 px-3 sm:px-4 bg-[#FEE500] text-[#191919] text-xs sm:text-sm font-black rounded-xl hover:bg-[#FDD835] transition shadow-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
+              className="col-span-3 sm:col-span-1 py-2 sm:py-2 px-3 sm:px-4 bg-[#FEE500] text-[#191919] text-xs sm:text-sm font-black rounded-xl hover:bg-[#FDD835] transition shadow-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap"
             >
               <span>💬</span>
               <span>카카오톡 즉시 상담</span>
@@ -606,6 +567,9 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
                 </th>
                 <td className="py-2 sm:py-2.5 px-3 font-semibold text-gray-900 border-r border-gray-200">
                   {customerName} 고객님 {personCount > 1 ? `(외 ${personCount - 1}인)` : ''}
+                  {customerContact ? (
+                    <span className="block text-[11px] text-gray-500 font-medium mt-0.5">{customerContact}</span>
+                  ) : null}
                 </td>
                 <th className="bg-gray-50/80 font-bold text-gray-700 py-2 sm:py-2.5 px-3 w-20 sm:w-24 border-r border-gray-200 text-left">
                   담당자
@@ -638,6 +602,9 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
             <div className="p-2.5 bg-gray-50/50 min-w-0 break-words">
               <span className="text-[10px] font-bold text-gray-500 block mb-0.5">👤 고객명</span>
               <span className="font-bold text-gray-900 text-xs block break-words">{customerName} 고객님 {personCount > 1 ? `(외 ${personCount - 1}인)` : ''}</span>
+              {customerContact ? (
+                <span className="text-[10px] text-gray-500 block font-normal break-words">{customerContact}</span>
+              ) : null}
             </div>
             <div className="p-2.5 bg-gray-50/50 min-w-0 break-words">
               <span className="text-[10px] font-bold text-gray-500 block mb-0.5">👨‍💼 담당자</span>
@@ -1038,6 +1005,7 @@ export const A4QuotationDocument: React.FC<A4QuotationProps> = ({
               </th>
               <td style={{ padding: '9px 14px', borderRight: '1px solid #e5e7eb', fontWeight: 600, color: '#111827' }}>
                 {customerName} 고객님 {personCount > 1 ? `(외 ${personCount - 1}인)` : ''}
+                {customerContact ? ` · ${customerContact}` : ''}
               </td>
               <th style={{ backgroundColor: '#f9fafb', width: '90px', padding: '9px 14px', borderRight: '1px solid #e5e7eb', textAlign: 'left', fontWeight: 700, color: '#374151' }}>
                 담당자

@@ -2,15 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CustomTripPackage, PackageOptionItem, MasterOptionPool, Product } from '../types';
 import { INITIAL_MASTER_OPTION_POOL } from '../constants';
 import BackButton from './BackButton';
-import { supabaseService } from '../services/supabaseService';
 import { A4QuotationDocument, CostItem, ItineraryDay, ReservationNoticeData } from './A4QuotationDocument';
 import { getFreshImageUrl, isImageIconUrl } from '../utils/imageUtils';
 import {
-  CapturedQuotationResult,
-  captureQuotationDocument,
-  buildQuotationPdfBlob,
+  generateQuotationPdf,
   triggerBlobDownload,
 } from '../utils/quotationExportUtils';
+import { submitQuotationWithPdf } from '../services/quotationSubmitService';
 import { appAlert } from '../services/dialogService';
 import { sanitizeNonGolfPriceText } from '../utils/costBreakdownUtils';
 import { useQuotationMobileLock } from '../utils/useQuotationMobileLock';
@@ -92,15 +90,12 @@ export const TripPlanner: React.FC<Props> = ({
   // UI states
   const [showInquiryModal, setShowInquiryModal] = useState<boolean>(false);
   const [showKakaoModal, setShowKakaoModal] = useState<boolean>(false);
-  const [showImagePreviewModal, setShowImagePreviewModal] = useState<boolean>(false);
   const [showQuotePreviewModal, setShowQuotePreviewModal] = useState<boolean>(false);
   const [inquirySuccess, setInquirySuccess] = useState<boolean>(false);
   const [inquiryError, setInquiryError] = useState<string | null>(null);
   const [submissionNotice, setSubmissionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSubmittingEmail, setIsSubmittingEmail] = useState<boolean>(false);
-  const [isCapturing, setIsCapturing] = useState<boolean>(false);
-  const [downloadingType, setDownloadingType] = useState<'png' | 'pdf' | null>(null);
-  const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState<boolean>(false);
   const [copyToast, setCopyToast] = useState<string | null>(null);
   const [viewTab, setViewTab] = useState<'options' | 'itinerary'>('options');
   const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
@@ -132,10 +127,6 @@ export const TripPlanner: React.FC<Props> = ({
     }
     if (showDinnerModal) {
       setShowDinnerModal(false);
-      return;
-    }
-    if (showImagePreviewModal) {
-      setShowImagePreviewModal(false);
       return;
     }
     if (showQuotePreviewModal) {
@@ -193,11 +184,6 @@ export const TripPlanner: React.FC<Props> = ({
         e?.detail?.handled?.();
         return;
       }
-      if (showImagePreviewModal) {
-        setShowImagePreviewModal(false);
-        e?.detail?.handled?.();
-        return;
-      }
       if (showQuotePreviewModal) {
         setShowQuotePreviewModal(false);
         e?.detail?.handled?.();
@@ -234,7 +220,7 @@ export const TripPlanner: React.FC<Props> = ({
     return () => {
       window.removeEventListener('mango_subview_back', handleSubViewBack as EventListener);
     };
-  }, [showScheduleModal, showActivityModal, showHotelModal, showVehicleModal, showDinnerModal, showImagePreviewModal, showGolfModal, customizingOption, showKakaoModal, showInquiryModal, activePackage]);
+  }, [showScheduleModal, showActivityModal, showHotelModal, showVehicleModal, showDinnerModal, showQuotePreviewModal, showGolfModal, customizingOption, showKakaoModal, showInquiryModal, activePackage]);
 
   // Live Pools synced from AdminDashboard (with safe fallbacks)
   const diyRegions = pool.diyRegions?.length ? pool.diyRegions : (INITIAL_MASTER_OPTION_POOL.diyRegions || []);
@@ -276,7 +262,6 @@ export const TripPlanner: React.FC<Props> = ({
     showQuotePreviewModal ||
     showInquiryModal ||
     showKakaoModal ||
-    showImagePreviewModal ||
     showGolfModal ||
     customizingOption ||
     diyChangingRoundIndex !== null ||
@@ -1547,97 +1532,21 @@ export const TripPlanner: React.FC<Props> = ({
     };
   };
 
-  const buildQuotationFileName = (ext: 'png' | 'pdf') => {
-    const sanitizedTitle = (activePackage?.title || '맞춤골프견적').replace(/[^a-zA-Z0-9가-힣]/g, '_');
-    const sanitizedCustomer = (customerName.trim() || '고객').replace(/[^a-zA-Z0-9가-힣]/g, '_');
-    const dateStr = new Date().toISOString().split('T')[0];
-    return `망고투어_정식A4견적서_${sanitizedTitle}_${sanitizedCustomer}_${dateStr}.${ext}`;
-  };
-
-  // Image Capture via isolated iframe (Captures the pristine #a4-exact-print-sheet safely)
-  const captureQuotationSheetResult = async (options?: {
-    copyToClipboard?: boolean;
-    throwOnError?: boolean;
-  }): Promise<CapturedQuotationResult | null> => {
+  // Direct PDF Download of A4 Quotation Sheet
+  const handleDownloadPDF = async () => {
+    if (isDownloadingPdf) return;
     const targetElement = a4QuotationPrintRef.current || quotationCardRef.current;
     if (!targetElement) {
-      const msg = '견적서 양식을 찾을 수 없습니다. 화면을 새로고침한 후 다시 시도해주세요.';
-      if (options?.throwOnError) {
-        throw new Error(msg);
-      }
-      showToast(`⚠️ ${msg}`);
-      return null;
+      showToast('⚠️ 견적서 양식을 찾을 수 없습니다. 화면을 새로고침한 후 다시 시도해주세요.');
+      return;
     }
-
-    setIsCapturing(true);
-    try {
-      const result = await captureQuotationDocument(targetElement);
-      setCapturedImageUrl(result.dataUrl);
-
-      if (options?.copyToClipboard) {
-        try {
-          if (result.blob && navigator.clipboard && (window as any).ClipboardItem) {
-            const item = new (window as any).ClipboardItem({ 'image/png': result.blob });
-            await navigator.clipboard.write([item]);
-          }
-        } catch (clipErr) {
-          console.log('ClipboardItem write skipped:', clipErr);
-        }
-      }
-
-      return result;
-    } catch (err) {
-      console.error('Failed to capture quote image:', err);
-      if (options?.throwOnError) {
-        throw err;
-      }
-      return null;
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
-  const captureQuotationImage = async (): Promise<string | null> => {
-    const res = await captureQuotationSheetResult({ copyToClipboard: true, throwOnError: false });
-    return res?.dataUrl || null;
-  };
-
-  // Direct PNG Download of A4 Quotation Sheet
-  const handleDownloadImage = async () => {
-    if (downloadingType || isCapturing) return;
-    setDownloadingType('png');
-    try {
-      const captured = await captureQuotationSheetResult({ throwOnError: true });
-      if (!captured) {
-        throw new Error('견적서 이미지를 생성하지 못했습니다.');
-      }
-      triggerBlobDownload(captured.blob, buildQuotationFileName('png'));
-      showToast('📥 A4 정식 견적서 이미지(PNG)가 다운로드되었습니다.');
-    } catch (err) {
-      console.error('PNG download error:', err);
-      const errMsg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
-      showToast('⚠️ 이미지 저장에 실패했습니다.');
-      await appAlert(`견적서 이미지(PNG) 저장 중 오류가 발생했습니다.\n\n사유: ${errMsg}`, {
-        title: '이미지 저장 실패',
-        tone: 'error',
-      });
-    } finally {
-      setDownloadingType(null);
-    }
-  };
-
-  // Direct PDF Download of A4 Quotation Sheet using jsPDF
-  const handleDownloadPDF = async () => {
-    if (downloadingType || isCapturing) return;
-    setDownloadingType('pdf');
+    setIsDownloadingPdf(true);
     try {
       showToast('📄 A4 규격 PDF 문서를 생성 중입니다...');
-      const captured = await captureQuotationSheetResult({ throwOnError: true });
-      if (!captured) {
-        throw new Error('견적서 화면 캡처에 실패했습니다.');
-      }
-      const pdfBlob = await buildQuotationPdfBlob(captured);
-      triggerBlobDownload(pdfBlob, buildQuotationFileName('pdf'));
+      const pdf = await generateQuotationPdf(targetElement, {
+        customerName: customerName.trim() || '고객',
+      });
+      triggerBlobDownload(pdf.blob, pdf.fileName);
       showToast('📥 A4 PDF 견적서 다운로드가 완료되었습니다.');
     } catch (err) {
       console.error('PDF export error:', err);
@@ -1648,13 +1557,12 @@ export const TripPlanner: React.FC<Props> = ({
         tone: 'error',
       });
     } finally {
-      setDownloadingType(null);
+      setIsDownloadingPdf(false);
     }
   };
 
-  // KakaoTalk Consultation handler with image capture & text copy
+  // KakaoTalk Consultation handler with text copy
   const handleKakaoInquiry = async () => {
-    // 1. 카카오톡 견적 문의 모달을 즉시 열어 상품 목록을 딜레이 없이 표시
     setShowKakaoModal(true);
 
     const text = generateQuotationText();
@@ -1664,46 +1572,16 @@ export const TripPlanner: React.FC<Props> = ({
     } catch (e) {
       console.warn('Text clipboard write error:', e);
     }
-
-    // 2. 백그라운드에서 A4 PDF 양식 고해상도 이미지 캡처 및 자동 다운로드 시도
-    try {
-      const captured = await captureQuotationSheetResult({ copyToClipboard: true, throwOnError: true });
-      if (captured) {
-        triggerBlobDownload(captured.blob, buildQuotationFileName('png'));
-        showToast('📥 A4 정식 견적서 이미지(PNG)가 다운로드되었습니다.');
-      }
-    } catch (err) {
-      console.error('Kakao background image capture failed:', err);
-      showToast('⚠️ 이미지 자동 저장에 실패했습니다. 아래 [이미지 다시 다운로드]를 눌러주세요.');
-    }
   };
 
-  // Open Direct Image Preview & Download Modal (A4 PDF Form)
-  const handleSaveQuoteImage = async () => {
-    setShowImagePreviewModal(true);
-    showToast('📸 A4 정식 견적서(PDF 양식)를 생성 중입니다...');
-    try {
-      await captureQuotationSheetResult({ throwOnError: true });
-      showToast('📸 정식 A4 견적서가 준비되었습니다. 아래 버튼으로 저장하세요.');
-    } catch (err) {
-      console.error('Preview capture error:', err);
-      const errMsg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.';
-      await appAlert(`견적서 미리보기 생성에 실패했습니다.\n\n사유: ${errMsg}`, {
-        title: '견적서 생성 오류',
-        tone: 'error',
-      });
-    }
-  };
-
-  // Open 1:1 Online Inquiry Modal with automatic image capture
-  const handleOpenOnlineInquiry = async () => {
+  // Open 1:1 Online Inquiry Modal
+  const handleOpenOnlineInquiry = () => {
     setShowInquiryModal(true);
     setInquirySuccess(false);
     setInquiryError(null);
-    await captureQuotationImage();
   };
 
-  // Submit Online Inquiry & Send via Web3Forms API (Text/Table format - no file attachments)
+  // Submit Online Inquiry with background A4 PDF generation -> Storage -> Admin Email Attachment -> Kakao hook
   const handleSubmitOnlineInquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmittingEmail) return;
@@ -1826,29 +1704,39 @@ export const TripPlanner: React.FC<Props> = ({
         'MANGO TOUR | +84 37 720 4451 | Kakao: MANGO TOUR',
       ].join('\n');
 
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          access_key: '58044e40-51a1-4f63-9248-81b6b1bca9ef',
-          subject: `[MANGO TOUR 견적신청] ${trimmedName}님의 맞춤 견적 문의`,
-          from_name: 'MANGO TOUR 온라인 견적',
-          name: trimmedName,
-          message: formattedMessage,
-        }),
-      });
+      // Allow DOM to settle with latest customer fields before generating A4 PDF
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
 
-      const result = await response.json().catch(() => null);
-      if (!response.ok || !result?.success) {
-        throw new Error(result?.message || `Web3Forms error (${response.status})`);
-      }
+      const generatedPdf = await generateQuotationPdf(
+        a4QuotationPrintRef.current || quotationCardRef.current,
+        { customerName: trimmedName }
+      );
 
-      // Backup save to Supabase Database (non-blocking)
-      try {
-        await supabaseService.saveInquiry({
+      await submitQuotationWithPdf({
+        customerName: trimmedName,
+        customerContact: trimmedContact,
+        personCount,
+        departureDate: departureDate || '미정',
+        customerNotes: customerNotes.trim(),
+        productTitle: tourName,
+        region: tourLocation,
+        duration: tourDuration,
+        totalPriceUSD: currentTotalGroup,
+        totalPriceKRW: currentTotalGroup * USD_TO_KRW,
+        perPersonUSD: currentTotalPerPerson,
+        summaryText: formattedMessage,
+        costItems: a4CostItems.map(it => ({
+          category: it.category,
+          detail: it.detail,
+          quantity: it.quantity,
+          amountUSD: it.amountUSD !== undefined ? it.amountUSD : Math.round(it.amountKRW / USD_TO_KRW),
+          amountKRW: it.amountKRW,
+        })),
+        pdfFileName: generatedPdf.fileName,
+        pdfBase64: generatedPdf.base64,
+        inquiryBackupData: {
           _subject: `[MANGO TOUR 견적신청] ${trimmedName}님의 맞춤 견적 문의`,
           예약자명: trimmedName,
           연락처_카카오톡ID: trimmedContact,
@@ -1863,22 +1751,21 @@ export const TripPlanner: React.FC<Props> = ({
           '총_예상견적': `$${currentTotalGroup.toLocaleString()} (약 ${(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)`,
           고객요청사항: customerNotes.trim() || '없음',
           접수일시: submittedAt,
-        });
-      } catch (dbErr) {
-        console.warn('Supabase backup save error:', dbErr);
-      }
+        },
+      });
 
       setShowInquiryModal(false);
       setInquirySuccess(false);
       setInquiryError(null);
       setSubmissionNotice({
         type: 'success',
-        message: '견적 신청이 성공적으로 접수되었습니다. 담당 매니저가 곧 연락드리겠습니다.',
+        message: '견적 신청이 완료되었습니다. 담당자 확인 후 연락드리겠습니다.',
       });
-      showToast('견적 신청이 성공적으로 접수되었습니다. 담당 매니저가 곧 연락드리겠습니다.');
+      showToast('견적 신청이 완료되었습니다. 담당자 확인 후 연락드리겠습니다.');
     } catch (err) {
-      console.error('Web3Forms submission failed:', err);
-      const failMsg = '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.';
+      console.error('Quotation PDF submission failed:', err);
+      const errMsg = err instanceof Error ? err.message : '';
+      const failMsg = errMsg || '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.';
       setInquiryError(failMsg);
       showToast(failMsg);
     } finally {
@@ -3448,18 +3335,17 @@ export const TripPlanner: React.FC<Props> = ({
 
                 {/* Primary Action Buttons */}
                 <div className="space-y-2.5 pt-1 sm:pt-2">
-                  {/* Kakao button with automatic capture */}
+                  {/* Kakao button */}
                   <button
                     type="button"
                     onClick={handleKakaoInquiry}
-                    disabled={isCapturing}
-                    className="w-full py-3.5 sm:py-4 bg-[#FEE500] text-[#191919] font-bold rounded-2xl hover:bg-[#FDD835] transition-all duration-200 flex items-center justify-center gap-2 text-xs sm:text-sm md:text-base tracking-tight active:scale-95 disabled:opacity-75 cursor-pointer"
+                    className="w-full py-3.5 sm:py-4 bg-[#FEE500] text-[#191919] font-bold rounded-2xl hover:bg-[#FDD835] transition-all duration-200 flex items-center justify-center gap-2 text-xs sm:text-sm md:text-base tracking-tight active:scale-95 cursor-pointer"
                   >
-                    <span>{isCapturing ? '⏳' : '💬'}</span>
-                    <span>{isCapturing ? '견적서 캡처 생성 중...' : '카카오톡으로 즉시 견적 문의하기'}</span>
+                    <span>💬</span>
+                    <span>카카오톡으로 즉시 견적 문의하기</span>
                   </button>
 
-                  {/* 1:1 Online Inquiry (Web3Forms) */}
+                  {/* 1:1 Online Inquiry (Auto PDF + Email + Kakao Hook) */}
                   <button
                     type="button"
                     onClick={handleOpenOnlineInquiry}
@@ -3473,12 +3359,12 @@ export const TripPlanner: React.FC<Props> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={handleSaveQuoteImage}
-                      disabled={isCapturing}
-                      className="py-3 bg-[#ECFDF5] text-[#0A7E54] font-semibold rounded-2xl hover:bg-emerald-100/80 transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                      onClick={handleDownloadPDF}
+                      disabled={isDownloadingPdf}
+                      className="py-3 bg-[#ECFDF5] text-[#0A7E54] font-semibold rounded-2xl hover:bg-emerald-100/80 transition-all duration-200 text-xs sm:text-sm flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-60 cursor-pointer"
                     >
-                      <span>📸</span>
-                      <span>견적서 캡처 저장</span>
+                      <span>{isDownloadingPdf ? '⏳' : '📄'}</span>
+                      <span>{isDownloadingPdf ? 'PDF 생성 중...' : '견적서 PDF 저장'}</span>
                     </button>
                     <button
                       type="button"
@@ -3492,7 +3378,7 @@ export const TripPlanner: React.FC<Props> = ({
                 </div>
 
                 <div className="p-2.5 md:p-3 bg-amber-50 rounded-xl border border-amber-200 text-[10px] md:text-xs text-amber-800 leading-relaxed font-normal">
-                  💡 <strong>안내:</strong> 견적서 미리보기, 캡처 저장 또는 1:1 온라인 신청 시 현재 맞춤 구성이 <strong>정식 A4 견적서</strong>로 생성되며, <strong>온라인 견적 신청서로 담당 매니저에게 즉시 접수</strong>됩니다.
+                  💡 <strong>안내:</strong> 견적서 미리보기, PDF 저장 또는 1:1 온라인 신청 시 현재 맞춤 구성이 <strong>정식 A4 견적서(PDF)</strong>로 생성되며, <strong>온라인 견적 신청서로 담당 매니저에게 즉시 접수</strong>됩니다.
                 </div>
 
               </div>
@@ -3558,36 +3444,7 @@ export const TripPlanner: React.FC<Props> = ({
                     <span className="text-xs text-[#8E8E93] font-medium">온라인 견적 신청서로 즉시 접수됩니다</span>
                   </div>
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">1:1 맞춤 견적서 온라인 접수</h3>
-                  <p className="text-xs md:text-sm text-[#8E8E93] break-keep">작성하신 예약 정보와 맞춤 견적서가 담당 매니저에게 즉시 접수됩니다.</p>
-
-                  {capturedImageUrl && (
-                    <div className="p-3.5 bg-[#F2F2F7] rounded-2xl w-full max-w-full overflow-hidden box-border">
-                      <div className="flex justify-between items-center mb-2 flex-wrap gap-1">
-                        <span className="text-[11px] md:text-xs font-bold text-gray-900">정식 A4 견적서 미리보기</span>
-                        <div className="flex items-center gap-2.5">
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadPDF()}
-                            disabled={downloadingType !== null || isCapturing}
-                            className="text-[11px] text-[#0A7E54] font-semibold hover:underline cursor-pointer disabled:opacity-50"
-                          >
-                            {downloadingType === 'pdf' ? '저장 중...' : 'PDF 다운로드'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDownloadImage()}
-                            disabled={downloadingType !== null || isCapturing}
-                            className="text-[11px] text-[#3A3A3C] font-semibold hover:underline cursor-pointer disabled:opacity-50"
-                          >
-                            {downloadingType === 'png' ? '저장 중...' : '이미지 저장'}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="max-h-48 md:max-h-60 overflow-y-auto rounded-xl bg-white p-1">
-                        <img src={capturedImageUrl} alt="A4 Quotation Preview" className="w-full object-top" />
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-xs md:text-sm text-[#8E8E93] break-keep">작성하신 예약 정보와 맞춤 견적서 PDF가 담당 매니저에게 즉시 접수됩니다.</p>
 
                   <div className="w-full max-w-full">
                     <label className="font-semibold text-[#3A3A3C] block mb-1.5 text-xs md:text-sm">예약자 성함 / 대표자명 *</label>
@@ -3685,10 +3542,16 @@ export const TripPlanner: React.FC<Props> = ({
                   <button
                     type="submit"
                     disabled={isSubmittingEmail}
-                    className="w-full py-3.5 md:py-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-2xl text-sm sm:text-base active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
+                    className="w-full py-3.5 md:py-4 bg-[#0A7E54] hover:bg-[#086945] text-white font-bold rounded-2xl text-sm sm:text-base active:scale-95 disabled:opacity-80 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer transition-all duration-200"
                   >
+                    {isSubmittingEmail && (
+                      <span
+                        className="inline-block w-4 h-4 border-2 border-white/35 border-t-white rounded-full animate-spin shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
                     <span className="font-bold tracking-tight">
-                      {isSubmittingEmail ? '발송 중...' : '1:1 온라인 견적 신청서 발송하기'}
+                      {isSubmittingEmail ? '견적서 PDF를 생성하여 전송 중입니다...' : '견적 신청하기'}
                     </span>
                   </button>
                 </div>
@@ -3701,41 +3564,20 @@ export const TripPlanner: React.FC<Props> = ({
                 <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl md:text-4xl mx-auto">
                   ✓
                 </div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-deepgreen">신청서가 성공적으로 전송되었습니다!</h3>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-deepgreen">견적 신청 완료</h3>
                 <p className="text-xs md:text-sm text-gray-600 leading-relaxed max-w-sm md:max-w-md mx-auto break-words">
-                  <strong>{customerName}</strong>님, 접수해주신 견적서가 <strong>온라인 견적 신청서로 즉시 접수</strong>되었습니다. 담당 매니저가 확인 후 연락처(<strong>{customerContact}</strong>)로 빠른 상담을 진행해 드립니다.
+                  견적 신청이 완료되었습니다. 담당자 확인 후 연락드리겠습니다.
                 </p>
-
-                {capturedImageUrl && (
-                  <div className="p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-200 text-left w-full max-w-full overflow-hidden box-border">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[11px] md:text-xs font-bold text-gray-700">📄 전송된 정식 A4 견적서 (PDF 양식):</span>
-                      <span className="text-[10px] md:text-xs text-emerald-600 font-bold">✓ 접수 완료</span>
-                    </div>
-                    <div className="max-h-36 md:max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-1">
-                      <img src={capturedImageUrl} alt="Quotation" className="w-full" />
-                    </div>
-                  </div>
-                )}
 
                 <div className="pt-2 flex flex-col gap-2 w-full max-w-full">
                   <button
                     type="button"
                     onClick={() => handleDownloadPDF()}
-                    disabled={downloadingType !== null || isCapturing}
+                    disabled={isDownloadingPdf}
                     className="w-full py-3.5 md:py-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white font-extrabold rounded-2xl transition text-xs md:text-sm flex items-center justify-center gap-1.5 shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    <span>{downloadingType === 'pdf' ? '⏳' : '📄'}</span>
-                    <span>{downloadingType === 'pdf' ? '저장 중...' : '정식 A4 견적서 (PDF) 파일 다운로드'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadImage()}
-                    disabled={downloadingType !== null || isCapturing}
-                    className="w-full py-3 md:py-3.5 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs md:text-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    <span>{downloadingType === 'png' ? '⏳' : '📥'}</span>
-                    <span>{downloadingType === 'png' ? '저장 중...' : '견적서 고해상도 이미지(PNG) 다운로드'}</span>
+                    <span>{isDownloadingPdf ? '⏳' : '📄'}</span>
+                    <span>{isDownloadingPdf ? '저장 중...' : '정식 A4 견적서 (PDF) 파일 다운로드'}</span>
                   </button>
                   <button
                     type="button"
@@ -3951,19 +3793,6 @@ export const TripPlanner: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* Image Preview (if captured) */}
-              {capturedImageUrl && (
-                <div className="p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-200 text-left w-full max-w-full overflow-hidden box-border">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[11px] md:text-xs font-bold text-gray-700">📸 캡처된 견적서 이미지 미리보기</span>
-                    <span className="text-[10px] md:text-xs text-emerald-600 font-bold">✓ 다운로드 완료</span>
-                  </div>
-                  <div className="max-h-36 md:max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner">
-                    <img src={capturedImageUrl} alt="Quotation Capture" className="w-full object-top" />
-                  </div>
-                </div>
-              )}
-
               {/* Instructions Steps */}
               <div className="bg-amber-50 rounded-2xl p-3 md:p-4 border border-amber-200/80 text-left text-xs md:text-sm space-y-1.5 text-amber-900 w-full max-w-full box-border">
                 <div className="font-bold flex items-center gap-1 md:text-sm">
@@ -3972,7 +3801,7 @@ export const TripPlanner: React.FC<Props> = ({
                 <div className="text-[11px] md:text-xs text-amber-800 leading-relaxed pl-3.5 space-y-1 list-decimal">
                   <div>1. 아래 <strong>[카카오톡 오픈채팅방 바로가기]</strong>를 누릅니다.</div>
                   <div>2. 상담창에 <strong>붙여넣기 (길게 눌러 붙여넣기 또는 Ctrl+V)</strong>를 하시면 복사된 견적 텍스트가 전송됩니다.</div>
-                  <div>3. 갤러리에 저장된 <strong>견적서 이미지(PNG)</strong>를 함께 전송해 주시면 더욱 빠른 상담이 가능합니다!</div>
+                  <div>3. 아래 <strong>[A4 PDF 다운로드]</strong>로 저장한 정식 견적서 PDF 파일을 함께 전송해 주시면 더욱 빠른 상담이 가능합니다!</div>
                 </div>
               </div>
 
@@ -3992,12 +3821,12 @@ export const TripPlanner: React.FC<Props> = ({
                 <div className="grid grid-cols-2 gap-2 w-full max-w-full box-border">
                   <button
                     type="button"
-                    onClick={() => handleDownloadImage()}
-                    disabled={downloadingType !== null || isCapturing}
+                    onClick={() => handleDownloadPDF()}
+                    disabled={isDownloadingPdf}
                     className="py-3 md:py-3.5 bg-gray-100 text-gray-800 font-bold rounded-2xl hover:bg-gray-200 transition text-xs md:text-sm flex items-center justify-center gap-1 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    <span>{downloadingType === 'png' || isCapturing ? '⏳' : '📥'}</span>
-                    <span>{downloadingType === 'png' || isCapturing ? '저장 중...' : '이미지 다시 다운로드'}</span>
+                    <span>{isDownloadingPdf ? '⏳' : '📄'}</span>
+                    <span>{isDownloadingPdf ? 'PDF 생성 중...' : 'A4 PDF 다운로드'}</span>
                   </button>
                   <button
                     type="button"
@@ -4023,218 +3852,6 @@ export const TripPlanner: React.FC<Props> = ({
                 </button>
               </div>
 
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ================= MODAL 3: QUOTATION CAPTURE & SAVE MODAL ================= */}
-      {showImagePreviewModal && (
-        <div 
-          className="fixed inset-0 bg-black/55 z-[10002] flex items-end md:items-center justify-center p-0 md:p-4 backdrop-blur-sm animate-fade-in overflow-hidden overscroll-contain select-text font-sans break-keep"
-          style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
-          onClick={() => setShowImagePreviewModal(false)}
-        >
-          <div 
-            className="bg-white rounded-t-3xl md:rounded-[20px] max-w-none md:max-w-lg w-full max-w-full max-h-[90vh] relative shadow-2xl animate-ios-sheet-up flex flex-col overflow-hidden box-border"
-            style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Mobile Drag Handle */}
-            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-2.5 mb-1 md:hidden shrink-0"></div>
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-black/[0.06] bg-white/90 backdrop-blur-md sticky top-0 z-30 shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowImagePreviewModal(false)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-[#F2F2F7] hover:bg-gray-200 text-[#3A3A3C] text-xs font-semibold rounded-full transition-all duration-200 active:scale-95 cursor-pointer"
-                aria-label="뒤로 가기"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span>닫기</span>
-              </button>
-              
-              <div className="text-center">
-                <span className="font-bold text-sm sm:text-base md:text-lg text-gray-900 tracking-tight">정식 견적서 캡처 및 저장</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowImagePreviewModal(false)}
-                className="text-[#8E8E93] hover:text-gray-900 font-bold text-base w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7] hover:bg-gray-200 transition-all duration-200 active:scale-95 cursor-pointer"
-                aria-label="닫기"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Scrollable Form Body */}
-            <div 
-              className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 md:px-7 md:py-5 space-y-3.5 text-xs md:text-sm w-full max-w-full box-border"
-              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 bg-gold-100 text-gold-900 text-[10px] md:text-xs font-black rounded-md shrink-0">공식 견적서 발행</span>
-                <span className="text-xs md:text-sm text-gray-400 font-semibold">망고투어 정식 A4 규격 (PDF 양식)</span>
-              </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-black text-deepgreen">골프 투어 정식 견적서 저장</h3>
-              <p className="text-xs md:text-sm text-gray-500 break-keep">설정하신 예약 정보와 맞춤 일정이 반영된 정식 규격 견적서입니다.</p>
-
-              {/* Captured Screenshot Preview Thumbnail (A4 PDF Form) */}
-              {capturedImageUrl && (
-                <div className="p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-200 w-full max-w-full overflow-hidden box-border">
-                  <div className="flex justify-between items-center mb-1.5 flex-wrap gap-1">
-                    <span className="text-[11px] md:text-xs font-bold text-gray-800 flex items-center gap-1">
-                      <span>📄</span> 캡처된 정식 A4 견적서 (PDF 양식) 미리보기
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadPDF()}
-                        disabled={downloadingType !== null || isCapturing}
-                        className="text-[10px] md:text-xs text-gold-700 font-bold hover:underline cursor-pointer disabled:opacity-50"
-                      >
-                        {downloadingType === 'pdf' ? '⏳ 저장 중...' : '📄 PDF 다운로드'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadImage()}
-                        disabled={downloadingType !== null || isCapturing}
-                        className="text-[10px] md:text-xs text-deepgreen font-bold hover:underline cursor-pointer disabled:opacity-50"
-                      >
-                        {downloadingType === 'png' ? '⏳ 저장 중...' : '📥 이미지 저장'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="max-h-48 md:max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-inner p-1">
-                    <img src={capturedImageUrl} alt="A4 Quotation Preview" className="w-full object-top" />
-                  </div>
-                </div>
-              )}
-
-              <div className="w-full max-w-full">
-                <label className="font-bold text-gray-700 block mb-1 md:text-sm">예약자 성함 / 대표자명</label>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="홍길동"
-                  className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
-                />
-              </div>
-
-              <div className="w-full max-w-full">
-                <label className="font-bold text-gray-700 block mb-1 md:text-sm">연락처 또는 카카오톡 ID</label>
-                <input
-                  type="text"
-                  value={customerContact}
-                  onChange={(e) => setCustomerContact(e.target.value)}
-                  placeholder="010-1234-5678 또는 카카오톡ID"
-                  className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 w-full max-w-full box-border">
-                <div className="min-w-0">
-                  <label className="font-bold text-gray-700 block mb-1 md:text-sm">인원 수</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={personCount}
-                    onChange={(e) => setPersonCount(parseInt(e.target.value) || 1)}
-                    className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <label className="font-bold text-gray-700 block mb-1 md:text-sm">출발 희망일</label>
-                  <input
-                    type="date"
-                    value={departureDate}
-                    onChange={(e) => setDepartureDate(e.target.value)}
-                    className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white text-sm md:text-base"
-                  />
-                </div>
-              </div>
-
-              <div className="w-full max-w-full">
-                <label className="font-bold text-gray-700 block mb-1 md:text-sm">추가 요청사항 (선택)</label>
-                <textarea
-                  rows={2}
-                  value={customerNotes}
-                  onChange={(e) => setCustomerNotes(e.target.value)}
-                  placeholder="티타임 시간대, 선호 호텔 유형, 클럽 렌탈 여부 등"
-                  className="w-full max-w-full box-border p-3 md:p-3.5 bg-gray-50 border border-gray-200 rounded-xl font-medium outline-none focus:border-gold-500 focus:bg-white resize-none text-sm md:text-base"
-                />
-              </div>
-
-              <div className="p-3.5 md:p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex justify-between items-center w-full max-w-full box-border">
-                <div className="min-w-0 mr-2">
-                  <span className="text-[10px] md:text-xs text-emerald-700 block font-semibold">총 {personCount}인 예상 견적</span>
-                  <div className="font-black text-emerald-900 text-base sm:text-lg md:text-xl tracking-tight">
-                    ${currentTotalGroup.toLocaleString()} <span className="text-xs md:text-sm font-semibold">USD</span>
-                  </div>
-                  <div className="text-[11px] md:text-xs text-emerald-700 font-medium">
-                    (약 {(currentTotalGroup * USD_TO_KRW).toLocaleString()}원)
-                  </div>
-                </div>
-                <div className="text-[10px] md:text-xs text-emerald-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shrink-0">
-                  선택 {selectedOptionIds.size}개
-                </div>
-              </div>
-            </div>
-
-            {/* Sticky Pinned Bottom Action Bar */}
-            <div 
-              className="bg-white/95 backdrop-blur-md px-3 py-2.5 md:px-7 md:py-4 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] shrink-0 z-30 space-y-2"
-              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
-            >
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleDownloadPDF()}
-                  disabled={downloadingType !== null || isCapturing}
-                  className="w-full py-3.5 md:py-4 bg-gradient-to-r from-gold-500 to-amber-600 hover:from-gold-600 hover:to-amber-700 text-white font-extrabold rounded-2xl shadow-md text-xs sm:text-sm md:text-base active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer transition"
-                >
-                  <span>{downloadingType === 'pdf' ? '⏳' : '📄'}</span>
-                  <span>{downloadingType === 'pdf' ? '저장 중...' : 'A4 PDF 다운로드'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDownloadImage()}
-                  disabled={downloadingType !== null || isCapturing}
-                  className="w-full py-3.5 md:py-4 bg-deepgreen hover:bg-[#00382e] text-white font-black rounded-2xl shadow-md text-xs sm:text-sm md:text-base active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer transition"
-                >
-                  <span>{downloadingType === 'png' ? '⏳' : '📥'}</span>
-                  <span>{downloadingType === 'png' ? '저장 중...' : '이미지(PNG) 저장'}</span>
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowImagePreviewModal(false);
-                    setShowKakaoModal(true);
-                  }}
-                  className="w-full py-3 md:py-3.5 bg-[#FEE500] hover:bg-[#FDD835] text-[#191919] font-black rounded-xl text-xs sm:text-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition shadow-xs"
-                >
-                  <span>💬</span>
-                  <span>카카오톡 문의</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowImagePreviewModal(false);
-                    setShowInquiryModal(true);
-                  }}
-                  className="w-full py-3 md:py-3.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold rounded-xl text-xs sm:text-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer transition"
-                >
-                  <span>📧</span>
-                  <span>1:1 이메일 신청</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -5679,6 +5296,7 @@ export const TripPlanner: React.FC<Props> = ({
         >
           <A4QuotationDocument
             customerName={customerName || '고객'}
+            customerContact={customerContact.trim() || undefined}
             personCount={personCount}
             managerName="망고투어 전문 상담팀"
             managerContact="+84 37 720 4451 (카카오: vnseen1)"
@@ -5882,6 +5500,7 @@ export const TripPlanner: React.FC<Props> = ({
             >
               <A4QuotationDocument
                 customerName={customerName || '고객'}
+                customerContact={customerContact.trim() || undefined}
                 personCount={personCount}
                 managerName="망고투어 전문 상담팀"
                 managerContact="+84 37 720 4451"

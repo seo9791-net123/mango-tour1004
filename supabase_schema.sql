@@ -459,3 +459,21 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- 아래 문자열을 실제 설정한 비밀번호로 바꾼 뒤 1회 실행하세요. (실행 후 기록 삭제 권장)
 -- SELECT public.set_mango_admin_password('여기에_설정한_VITE_ADMIN_PASSWORD');
 -- =====================================================================
+
+-- =====================================================================
+-- [견적서 PDF 전용 스토리지 버킷 생성] (이메일 첨부 링크 & DB 백업용)
+-- =====================================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('quotations', 'quotations', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Public read quotations PDF" ON storage.objects;
+DROP POLICY IF EXISTS "Service or public insert quotations PDF" ON storage.objects;
+CREATE POLICY "Public read quotations PDF"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'quotations');
+
+CREATE POLICY "Service or public insert quotations PDF"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'quotations');
+

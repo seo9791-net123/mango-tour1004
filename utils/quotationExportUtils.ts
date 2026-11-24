@@ -1,11 +1,12 @@
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-export interface CapturedQuotationResult {
-  dataUrl: string;
+export interface GeneratedQuotationPdf {
   blob: Blob;
-  width: number;
-  height: number;
+  base64: string;
+  fileName: string;
+  pageCount: number;
+  sizeBytes: number;
 }
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -19,7 +20,7 @@ const nextFrame = (win: Window = window) =>
     }
   });
 
-const waitForFontsWithTimeout = async (doc: Document, timeoutMs = 1200) => {
+const waitForFontsWithTimeout = async (doc: Document, timeoutMs = 1500) => {
   try {
     const fonts = (doc as Document & { fonts?: FontFaceSet }).fonts;
     if (fonts && typeof fonts.ready?.then === 'function') {
@@ -28,62 +29,6 @@ const waitForFontsWithTimeout = async (doc: Document, timeoutMs = 1200) => {
   } catch {
     // Ignore font readiness failures
   }
-};
-
-const dataUrlToBlob = (dataUrl: string): Blob => {
-  const parts = dataUrl.split(',');
-  const mimeMatch = parts[0]?.match(/:(.*?);/);
-  const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-  const binary = atob(parts[1] || '');
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return new Blob([bytes], { type: mime });
-};
-
-const canvasToPngResult = async (canvas: HTMLCanvasElement): Promise<CapturedQuotationResult> => {
-  if (!canvas || canvas.width === 0 || canvas.height === 0) {
-    throw new Error('견적서 영역의 크기가 0으로 계산되어 캡처할 수 없습니다.');
-  }
-
-  let dataUrl = '';
-  try {
-    dataUrl = canvas.toDataURL('image/png');
-  } catch (err) {
-    throw new Error(
-      `이미지 데이터 변환에 실패했습니다 (보안/CORS 제한): ${err instanceof Error ? err.message : String(err)}`
-    );
-  }
-
-  if (!dataUrl || dataUrl === 'data:,') {
-    throw new Error('빈 이미지가 생성되었습니다.');
-  }
-
-  const blob = await new Promise<Blob>((resolve) => {
-    try {
-      canvas.toBlob(
-        (b) => {
-          if (b && b.size > 0) {
-            resolve(b);
-          } else {
-            resolve(dataUrlToBlob(dataUrl));
-          }
-        },
-        'image/png'
-      );
-    } catch {
-      resolve(dataUrlToBlob(dataUrl));
-    }
-  });
-
-  return {
-    dataUrl,
-    blob,
-    width: canvas.width,
-    height: canvas.height,
-  };
 };
 
 const sanitizeUnsupportedCssColors = (cssText: string): string => {
@@ -95,7 +40,28 @@ const sanitizeUnsupportedCssColors = (cssText: string): string => {
     .replace(/light-dark\([^)]*\)/gi, '#374151');
 };
 
-const captureSheetInIsolatedIframe = async (sheet: HTMLElement): Promise<CapturedQuotationResult> => {
+const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    binary += String.fromCharCode(...slice);
+  }
+  return btoa(binary);
+};
+
+export const buildStandardQuotationFileName = (customerName?: string): string => {
+  const safeName =
+    (customerName || '고객')
+      .trim()
+      .replace(/[^a-zA-Z0-9가-힣_\-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '') || '고객';
+  return `망고투어_견적서_${safeName}.pdf`;
+};
+
+const renderSheetCanvasInIsolatedIframe = async (sheet: HTMLElement): Promise<HTMLCanvasElement> => {
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.position = 'fixed';
@@ -115,7 +81,7 @@ const captureSheetInIsolatedIframe = async (sheet: HTMLElement): Promise<Capture
     const iframeWin = iframe.contentWindow;
     const iframeDoc = iframe.contentDocument || iframeWin?.document;
     if (!iframeDoc || !iframeWin) {
-      throw new Error('캡처용 샌드박스 문서를 초기화할 수 없습니다.');
+      throw new Error('견적서 PDF 생성용 문서를 초기화할 수 없습니다.');
     }
 
     // Collect only safe external font stylesheets (e.g. Pretendard), never app Tailwind CSS with oklch()
@@ -192,7 +158,7 @@ const captureSheetInIsolatedIframe = async (sheet: HTMLElement): Promise<Capture
 
     iframeDoc.body.appendChild(clonedSheet);
 
-    await waitForFontsWithTimeout(iframeDoc, 1200);
+    await waitForFontsWithTimeout(iframeDoc, 1500);
     await nextFrame(iframeWin);
     await delay(40);
 
@@ -200,7 +166,7 @@ const captureSheetInIsolatedIframe = async (sheet: HTMLElement): Promise<Capture
     iframe.style.height = `${sheetHeight + 40}px`;
     await nextFrame(iframeWin);
 
-    // Prevent giant canvas OOM on mobile devices while preserving sharp 2x scale for normal lengths
+    // Preserve sharp 2x scale while preventing giant canvas OOM on mobile devices
     const scale = sheetHeight * 2 > 14000 ? Math.max(1, Math.floor((14000 / sheetHeight) * 10) / 10) : 2;
 
     const canvas = await html2canvas(clonedSheet, {
@@ -218,7 +184,7 @@ const captureSheetInIsolatedIframe = async (sheet: HTMLElement): Promise<Capture
       imageTimeout: 5000,
     });
 
-    return await canvasToPngResult(canvas);
+    return canvas;
   } finally {
     if (iframe.parentNode) {
       iframe.parentNode.removeChild(iframe);
@@ -226,12 +192,12 @@ const captureSheetInIsolatedIframe = async (sheet: HTMLElement): Promise<Capture
   }
 };
 
-const captureFallbackElement = async (targetElement: HTMLElement): Promise<CapturedQuotationResult> => {
-  await waitForFontsWithTimeout(document, 1200);
+const renderFallbackCanvas = async (targetElement: HTMLElement): Promise<HTMLCanvasElement> => {
+  await waitForFontsWithTimeout(document, 1500);
   await nextFrame(window);
   await delay(80);
 
-  const canvas = await html2canvas(targetElement, {
+  return await html2canvas(targetElement, {
     scale: 2,
     useCORS: true,
     allowTaint: false,
@@ -241,7 +207,6 @@ const captureFallbackElement = async (targetElement: HTMLElement): Promise<Captu
     scrollY: 0,
     imageTimeout: 5000,
     onclone: (clonedDoc, clonedEl) => {
-      // Strip oklch/oklab/color-mix from inline styles and <style> elements
       clonedDoc.querySelectorAll('style').forEach((styleEl) => {
         if (styleEl.textContent && /oklch|oklab|color-mix|light-dark/i.test(styleEl.textContent)) {
           styleEl.textContent = sanitizeUnsupportedCssColors(styleEl.textContent);
@@ -263,83 +228,87 @@ const captureFallbackElement = async (targetElement: HTMLElement): Promise<Captu
       });
     },
   });
-
-  return await canvasToPngResult(canvas);
 };
 
-export const captureQuotationDocument = async (
-  containerOrElement: HTMLElement | null
-): Promise<CapturedQuotationResult> => {
+/**
+ * A4 규격(210 x 297mm) PDF 생성 (한글 폰트 보존을 위해 Pretendard 격리 렌더링 후 PDF 변환)
+ */
+export const generateQuotationPdf = async (
+  containerOrElement: HTMLElement | null,
+  options?: {
+    customerName?: string;
+    fileName?: string;
+  }
+): Promise<GeneratedQuotationPdf> => {
   if (!containerOrElement) {
-    throw new Error('견적서 캡처 대상 영역을 찾을 수 없습니다. 화면을 새로고침한 후 다시 시도해주세요.');
+    throw new Error('견적서 PDF 변환 대상 영역을 찾을 수 없습니다. 화면을 새로고침한 후 다시 시도해주세요.');
   }
 
-  // Prefer the dedicated inline-HEX A4 exact sheet (#a4-exact-print-sheet)
   const exactSheet =
     containerOrElement.id === 'a4-exact-print-sheet'
       ? containerOrElement
       : (containerOrElement.querySelector('#a4-exact-print-sheet') as HTMLElement | null);
 
-  if (exactSheet) {
-    return await captureSheetInIsolatedIframe(exactSheet);
+  const canvas = exactSheet
+    ? await renderSheetCanvasInIsolatedIframe(exactSheet)
+    : await renderFallbackCanvas(containerOrElement);
+
+  if (!canvas || canvas.width === 0 || canvas.height === 0) {
+    throw new Error('견적서 PDF 렌더링 영역 크기를 계산할 수 없습니다.');
   }
 
-  return await captureFallbackElement(containerOrElement);
-};
-
-export const buildQuotationPdfBlob = async (
-  captured: Pick<CapturedQuotationResult, 'dataUrl' | 'width' | 'height'>
-): Promise<Blob> => {
-  let imgWidthPx = captured.width;
-  let imgHeightPx = captured.height;
-
-  if (!imgWidthPx || !imgHeightPx) {
-    const dims = await new Promise<{ w: number; h: number }>((resolve, reject) => {
-      const img = new Image();
-      const timer = setTimeout(() => reject(new Error('견적서 이미지 로딩 시간이 초과되었습니다.')), 8000);
-      img.onload = () => {
-        clearTimeout(timer);
-        resolve({ w: img.naturalWidth || img.width, h: img.naturalHeight || img.height });
-      };
-      img.onerror = () => {
-        clearTimeout(timer);
-        reject(new Error('견적서 이미지 디코딩에 실패했습니다.'));
-      };
-      img.src = captured.dataUrl;
-    });
-    imgWidthPx = dims.w;
-    imgHeightPx = dims.h;
+  let jpegDataUrl = '';
+  try {
+    jpegDataUrl = canvas.toDataURL('image/jpeg', 0.94);
+  } catch (err) {
+    throw new Error(
+      `PDF 페이지 렌더링에 실패했습니다: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
 
-  if (!imgWidthPx || !imgHeightPx) {
-    throw new Error('유효한 견적서 이미지 크기를 읽을 수 없습니다.');
+  if (!jpegDataUrl || jpegDataUrl === 'data:,') {
+    throw new Error('빈 PDF 문서가 생성되었습니다.');
   }
 
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
+    compress: true,
   });
 
   const pageWidthMm = 210;
   const pageHeightMm = 297;
-  const imgHeightMm = (imgHeightPx * pageWidthMm) / imgWidthPx;
+  const imgHeightMm = (canvas.height * pageWidthMm) / canvas.width;
 
   let heightLeftMm = imgHeightMm;
   let positionMm = 0;
+  let pageCount = 1;
 
-  pdf.addImage(captured.dataUrl, 'PNG', 0, positionMm, pageWidthMm, imgHeightMm, undefined, 'FAST');
+  pdf.addImage(jpegDataUrl, 'JPEG', 0, positionMm, pageWidthMm, imgHeightMm, undefined, 'FAST');
   heightLeftMm -= pageHeightMm;
 
   // 1mm tolerance prevents emitting an unnecessary blank trailing page from rounding
   while (heightLeftMm > 1) {
     positionMm = heightLeftMm - imgHeightMm;
     pdf.addPage();
-    pdf.addImage(captured.dataUrl, 'PNG', 0, positionMm, pageWidthMm, imgHeightMm, undefined, 'FAST');
+    pageCount += 1;
+    pdf.addImage(jpegDataUrl, 'JPEG', 0, positionMm, pageWidthMm, imgHeightMm, undefined, 'FAST');
     heightLeftMm -= pageHeightMm;
   }
 
-  return pdf.output('blob');
+  const arrayBuffer = pdf.output('arraybuffer');
+  const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+  const base64 = arrayBufferToBase64(arrayBuffer);
+  const fileName = options?.fileName || buildStandardQuotationFileName(options?.customerName);
+
+  return {
+    blob,
+    base64,
+    fileName,
+    pageCount,
+    sizeBytes: blob.size,
+  };
 };
 
 export const triggerBlobDownload = (blob: Blob, fileName: string) => {
