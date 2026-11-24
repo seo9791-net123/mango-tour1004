@@ -139,10 +139,10 @@ const CategoryPage: React.FC<Props> = ({
   };
 
   return (
-    <div className="pt-2.5 sm:pt-3 pb-0 bg-[#F2F2F7] animate-fade-in">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4">
+    <div className="pt-0 md:pt-3 pb-0 bg-[#F2F2F7] animate-fade-in">
+      <div className="max-w-7xl mx-auto px-0 md:px-4">
         {/* Header: BackButton + Duration Segmented Tabs + Title */}
-        <div className="flex flex-col gap-3 mb-4 sm:mb-5">
+        <div className="flex flex-col gap-3 mb-3 md:mb-5 px-3 md:px-0 pt-2.5 md:pt-0">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <BackButton
               onClick={selectedDetail ? () => setSelectedDetail(null) : onBack}
@@ -211,15 +211,15 @@ const CategoryPage: React.FC<Props> = ({
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-14 xs:py-16 text-[#8E8E93] bg-white rounded-[20px] shadow-sm px-5 text-center">
+          <div className="flex flex-col items-center justify-center py-14 xs:py-16 text-[#8E8E93] bg-white rounded-none md:rounded-[20px] shadow-none md:shadow-sm px-5 text-center">
             <span className="text-3xl mb-3">⛳️</span>
             <p className="text-sm font-bold text-gray-900">해당 조건에 등록된 상품이 없습니다.</p>
             <p className="text-xs text-[#8E8E93] mt-1">다른 일정을 선택하시거나 카카오톡 채널로 맞춤 견적을 문의해 주세요.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-4">
             {filteredProducts.map(product => (
-              <div key={product.id} className="bg-white rounded-[20px] shadow-sm overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col">
+              <div key={product.id} className="bg-white rounded-none md:rounded-[20px] shadow-none md:shadow-sm overflow-hidden group hover:shadow-md transition-all duration-200 flex flex-col">
                 <div className="relative h-44 xs:h-48 overflow-hidden bg-gray-100">
                   <img 
                     src={getFreshImageUrl(product.image)} 

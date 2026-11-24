@@ -23,6 +23,7 @@ import BottomNav from './components/BottomNav';
 import Privacy from './components/Privacy';
 import Terms from './components/Terms';
 import SplashScreen from './components/SplashScreen';
+import VietnamWeatherBadge from './components/VietnamWeatherBadge';
 import { INITIAL_PRODUCTS, INITIAL_VIDEOS, INITIAL_POSTS, HERO_IMAGES, SUB_MENU_ITEMS, INITIAL_PAGE_CONTENTS, INITIAL_POPUP, INITIAL_RECOMMENDED_DISCOUNT_POPUP, INITIAL_NOTICES, INITIAL_CUSTOM_PACKAGES, INITIAL_MASTER_OPTION_POOL } from './constants';
 import { User, Product, VideoItem, CommunityPost, PageContent, MenuItem, PopupNotification, RecommendedDiscountPopup, NoticeItem, CustomTripPackage, MasterOptionPool, ChatMessage, QuotationVisibilitySettings } from './types';
 import { supabaseService } from './services/supabaseService';
@@ -1394,20 +1395,23 @@ const App: React.FC = () => {
         }`}
       >
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-black/[0.06] no-print" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-2">
-          {/* Logo */}
-          <button type="button" onClick={() => navigateTo('home', null)} className="flex items-center gap-2 active:scale-95 transition-transform duration-200 shrink-0 cursor-pointer">
-             <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#0A7E54] rounded-[10px] flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-xs">M</div>
-             <h1 className="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight uppercase whitespace-nowrap">MANGO TOUR</h1>
-          </button>
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-2.5 flex justify-between items-center gap-1.5 sm:gap-2">
+          {/* Left: Logo & Live Ho Chi Minh Weather */}
+          <div className="flex items-center gap-1 min-[400px]:gap-1.5 sm:gap-2.5 min-w-0">
+            <button type="button" onClick={() => navigateTo('home', null)} className="flex items-center gap-1 sm:gap-2 active:scale-95 transition-transform duration-200 shrink-0 cursor-pointer">
+               <div className="w-6 h-6 sm:w-8 sm:h-8 bg-[#0A7E54] rounded-[8px] sm:rounded-[10px] flex items-center justify-center text-white font-black text-[11px] sm:text-sm shadow-xs">M</div>
+               <h1 className="text-[13px] min-[400px]:text-sm sm:text-lg font-extrabold text-gray-900 tracking-tight uppercase whitespace-nowrap">MANGO TOUR</h1>
+            </button>
+            <VietnamWeatherBadge />
+          </div>
           
           {/* Right Navigation & Status */}
-          <nav className="flex items-center gap-1.5 sm:gap-2">
+          <nav className="flex items-center gap-1 sm:gap-2 shrink-0">
             {isAdmin && (
               <button 
                 type="button"
                 onClick={() => navigateTo(currentPage === 'home' ? 'admin' : 'home', null)}
-                className={`px-3 py-1.5 rounded-full font-semibold text-xs transition-all duration-200 active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer ${
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-semibold text-[10px] sm:text-xs transition-all duration-200 active:scale-95 flex items-center gap-1 shrink-0 cursor-pointer ${
                   currentPage === 'admin' ? 'bg-[#0A7E54] text-white' : 'bg-[#F2F2F7] text-[#0A7E54] hover:bg-[#ECFDF5]'
                 }`}
               >
@@ -1427,32 +1431,32 @@ const App: React.FC = () => {
             )}
 
             {user ? (
-              <div className="flex items-center gap-2 bg-[#F2F2F7]/90 px-3 py-1.5 rounded-full">
-                <span className="text-xs text-gray-900 font-semibold whitespace-nowrap max-w-[85px] sm:max-w-[140px] truncate">
+              <div className="flex items-center gap-1 sm:gap-2 bg-[#F2F2F7]/90 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
+                <span className="text-[10px] sm:text-xs text-gray-900 font-semibold whitespace-nowrap max-w-[44px] min-[400px]:max-w-[68px] sm:max-w-[140px] truncate">
                   {user.nickname}
                 </span>
-                <span className="text-[#8E8E93] text-[10px]">|</span>
+                <span className="text-[#8E8E93] text-[9px] sm:text-[10px]">|</span>
                 <button 
                   type="button"
                   onClick={handleLogout} 
-                  className="text-xs text-[#8E8E93] hover:text-red-500 transition-colors font-medium whitespace-nowrap active:scale-95 cursor-pointer"
+                  className="text-[10px] sm:text-xs text-[#8E8E93] hover:text-red-500 transition-colors font-medium whitespace-nowrap active:scale-95 cursor-pointer"
                 >
                   로그아웃
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5">
                 <button 
                   type="button"
                   onClick={() => { setShowAuthModal(true); setAuthMode('login'); }} 
-                  className="px-3.5 py-1.5 bg-[#0A7E54] text-white rounded-full text-xs font-semibold hover:bg-[#086945] transition-all duration-200 active:scale-95 whitespace-nowrap cursor-pointer"
+                  className="px-2 sm:px-3.5 py-1 sm:py-1.5 bg-[#0A7E54] text-white rounded-full text-[10.5px] sm:text-xs font-semibold hover:bg-[#086945] transition-all duration-200 active:scale-95 whitespace-nowrap cursor-pointer"
                 >
                   로그인
                 </button>
                 <button 
                   type="button"
                   onClick={() => { setShowAuthModal(true); setAuthMode('signup'); }} 
-                  className="px-3.5 py-1.5 bg-[#F2F2F7] text-[#3A3A3C] rounded-full text-xs font-semibold hover:bg-gray-200 transition-all duration-200 active:scale-95 whitespace-nowrap cursor-pointer"
+                  className="px-2 sm:px-3.5 py-1 sm:py-1.5 bg-[#F2F2F7] text-[#3A3A3C] rounded-full text-[10.5px] sm:text-xs font-semibold hover:bg-gray-200 transition-all duration-200 active:scale-95 whitespace-nowrap cursor-pointer"
                 >
                   회원가입
                 </button>
@@ -1496,7 +1500,7 @@ const App: React.FC = () => {
         ) : (
           <>
             {currentPage === 'home' && (
-              <div className="flex-1 flex flex-col justify-center gap-3.5 sm:gap-4 py-3.5 sm:py-4">
+              <div className="flex-1 flex flex-col justify-center gap-2.5 md:gap-4 pt-0 pb-2.5 md:py-4">
                 <HeroSlider 
                   images={heroImages} 
                   onActionClick={() => handleMenuClick('여행 만들기')} 
@@ -1573,8 +1577,8 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <div className={`mt-auto w-full max-w-7xl mx-auto px-3 sm:px-4 no-print ${currentPage === 'home' ? 'pt-0' : 'pt-2.5 sm:pt-3'}`}>
-        <footer className="bg-gray-800 text-gray-400 py-4 sm:py-5 px-3 sm:px-6 text-center text-xs rounded-none shadow-md">
+      <div className={`mt-auto w-full max-w-7xl mx-auto px-0 md:px-4 no-print ${currentPage === 'home' ? 'pt-0' : 'pt-2 md:pt-3'}`}>
+        <footer className="bg-gray-800 text-gray-400 py-4 sm:py-5 px-3 sm:px-6 text-center text-xs rounded-none shadow-none md:shadow-md">
           <p>MANGO TOUR TRAVEL AGENCY | <span className="ml-1 font-semibold text-gray-300">+84 37 720 4451</span> | 
             <a href="https://open.kakao.com/o/gprQnKSi" target="_blank" rel="noreferrer" className="ml-1 hover:text-gold-400 transition">
               Kakao: <span className="font-bold">MANGO TOUR</span>

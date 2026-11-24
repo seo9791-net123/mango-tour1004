@@ -382,11 +382,11 @@ const CommunityBoard: React.FC<Props> = ({
       {/* Sticky Subpage Hero Banner */}
       {onBack ? (
         <div
-          className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
+          className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2 md:pb-3"
           style={{ top: 'var(--site-header-height, 45px)' }}
         >
-          <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3">
-            <section className="relative h-[140px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-[20px] shadow-sm">
+          <div className="max-w-7xl mx-auto px-0 md:px-4 pt-0 md:pt-3">
+            <section className="relative h-[140px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none md:rounded-[20px] shadow-none md:shadow-sm">
               <div className="absolute inset-0 z-0">
                 <img 
                   src={getFreshImageUrl(heroImage || DEFAULT_COMMUNITY_HERO)} 
@@ -509,10 +509,10 @@ const CommunityBoard: React.FC<Props> = ({
       ) : null}
 
       <section className="pt-0 pb-0">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 space-y-3 sm:space-y-4">
+        <div className="max-w-7xl mx-auto px-0 md:px-4 space-y-2.5 md:space-y-4">
           
           {/* Header & Category Filter Bar */}
-          <div className="bg-white rounded-[20px] shadow-sm p-4 sm:p-5 space-y-4">
+          <div className="bg-white rounded-none md:rounded-[20px] shadow-none md:shadow-sm p-4 sm:p-5 space-y-4">
             <div className="flex flex-row justify-between items-center gap-3">
               <div className="min-w-0 flex-1">
                 <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 tracking-tight truncate">
@@ -573,7 +573,7 @@ const CommunityBoard: React.FC<Props> = ({
 
         {/* Write Post Form */}
         {isAdding && (
-          <div className="bg-white p-5 sm:p-6 rounded-[20px] shadow-sm animate-fade-in-up">
+          <div className="bg-white p-5 sm:p-6 rounded-none md:rounded-[20px] shadow-none md:shadow-sm animate-fade-in-up">
             <h3 className="font-bold text-sm md:text-base mb-3 text-gray-900">새 글 작성</h3>
             <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
@@ -677,7 +677,7 @@ const CommunityBoard: React.FC<Props> = ({
 
         {/* Photo-First 3-Column Card Gallery Grid */}
         {filteredPosts.length === 0 ? (
-          <div className="bg-white rounded-[20px] shadow-sm py-20 px-4 text-center text-[#8E8E93]">
+          <div className="bg-white rounded-none md:rounded-[20px] shadow-none md:shadow-sm py-20 px-4 text-center text-[#8E8E93]">
             <span className="text-4xl block mb-3">🧳</span>
             <p className="text-base font-bold text-gray-900">
               {selectedFilter === '전체'
@@ -700,7 +700,7 @@ const CommunityBoard: React.FC<Props> = ({
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4 pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-4 pb-4">
             {filteredPosts.map((post) => {
               const commentCount = post.comments ? post.comments.length : 0;
               const categoryText = [post.region, post.theme].filter(Boolean).join('·');
@@ -710,7 +710,7 @@ const CommunityBoard: React.FC<Props> = ({
                 <article
                   key={post.id}
                   onClick={() => handlePostClick(post)}
-                  className="group bg-white rounded-2xl overflow-hidden border border-black/[0.06] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer"
+                  className="group bg-white rounded-none md:rounded-2xl overflow-hidden border-y border-x-0 md:border border-black/[0.06] shadow-none md:shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer"
                 >
                   {/* Top Image Area (16:9 Widescreen) */}
                   <div className="relative aspect-video w-full overflow-hidden bg-gray-100 shrink-0">

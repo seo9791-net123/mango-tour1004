@@ -14,11 +14,11 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
     <div className="bg-[#F2F2F7] text-[#3A3A3C] font-sans overflow-x-clip animate-fade-in">
       {/* Sticky Compact Hero */}
       <div
-        className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
+        className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2 md:pb-3"
         style={{ top: 'var(--site-header-height, 45px)' }}
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3">
-          <section className="relative h-[140px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-[20px] shadow-sm">
+        <div className="max-w-7xl mx-auto px-0 md:px-4 pt-0 md:pt-3">
+          <section className="relative h-[140px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none md:rounded-[20px] shadow-none md:shadow-sm">
             <div className="absolute inset-0 z-0">
               <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-60" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/25"></div>
@@ -36,8 +36,8 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </div>
 
-      <section className="pt-0 pb-0 max-w-7xl mx-auto px-3 sm:px-4 space-y-3 sm:space-y-4">
-        <div className="bg-white rounded-[20px] shadow-sm p-5 sm:p-6 md:p-7 grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 items-center">
+      <section className="pt-0 pb-0 max-w-7xl mx-auto px-0 md:px-4 space-y-2.5 md:space-y-4">
+        <div className="bg-white rounded-none md:rounded-[20px] shadow-none md:shadow-sm p-5 sm:p-6 md:p-7 grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 items-center">
            <div className="space-y-3">
               <h2 className="text-xl xs:text-2xl md:text-3xl font-bold text-gray-900 uppercase leading-tight tracking-tight whitespace-pre-line">{content.introTitle}</h2>
               <p className="text-sm xs:text-base md:text-lg leading-relaxed font-normal text-[#3A3A3C] whitespace-pre-line">{content.introText}</p>
@@ -49,7 +49,7 @@ const BusinessPage: React.FC<Props> = ({ content, onBack }) => {
 
         <PageSectionList sections={content.sections} />
 
-        <div className="bg-white rounded-[20px] shadow-sm p-5 sm:p-6 md:p-7">
+        <div className="bg-white rounded-none md:rounded-[20px] shadow-none md:shadow-sm p-5 sm:p-6 md:p-7">
            <div className="text-left mb-4">
               <h3 className="text-[#0A7E54] font-semibold tracking-wider text-xs mb-0.5 uppercase">GALLERY</h3>
               <h2 className="text-xl xs:text-2xl font-bold text-gray-900 tracking-tight">비즈니스 VIP 갤러리</h2>

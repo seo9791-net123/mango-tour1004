@@ -28,11 +28,11 @@ const PageSectionList: React.FC<Props> = ({ sections }) => {
   if (!sections || sections.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 md:gap-5">
       {sections.map((section, idx) => (
         <div 
           key={idx} 
-          className="bg-white rounded-[20px] p-5 sm:p-6 shadow-sm border-0 flex flex-col h-full hover:shadow-md transition-all duration-200 group cursor-pointer relative active:scale-[0.98]"
+          className="bg-white rounded-none md:rounded-[20px] p-5 sm:p-6 shadow-none md:shadow-sm border-0 flex flex-col h-full hover:shadow-md transition-all duration-200 group cursor-pointer relative active:scale-[0.98]"
           onClick={() => setSelectedSection(section)}
         >
           <h3 className="text-base xs:text-lg sm:text-xl font-bold tracking-tight text-gray-900 mb-2 leading-snug">

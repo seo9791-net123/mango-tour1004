@@ -404,9 +404,9 @@ const VideoGallery: React.FC<Props> = ({ videos, user, onUpdateVideos, onReqLogi
   };
 
   return (
-    <div className="bg-[#F2F2F7] pt-2.5 sm:pt-3 pb-0">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <section className="p-4 sm:p-6 md:p-8 bg-gray-900 text-white rounded-[20px] shadow-sm">
+    <div className="bg-[#F2F2F7] pt-0 md:pt-3 pb-0">
+      <div className="max-w-7xl mx-auto px-0 md:px-4">
+        <section className="p-4 sm:p-6 md:p-8 bg-gray-900 text-white rounded-none md:rounded-[20px] shadow-none md:shadow-sm">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 sm:mb-6 gap-4">
           <div className="flex items-center gap-3">

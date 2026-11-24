@@ -14,11 +14,11 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
     <div className="bg-[#F2F2F7] text-white font-sans overflow-x-clip animate-fade-in">
       {/* Sticky Compact Hero */}
       <div
-        className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
+        className="sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2 md:pb-3"
         style={{ top: 'var(--site-header-height, 45px)' }}
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3">
-          <section className="relative h-[144px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-[20px] shadow-sm">
+        <div className="max-w-7xl mx-auto px-0 md:px-4 pt-0 md:pt-3">
+          <section className="relative h-[144px] sm:h-[164px] md:h-[240px] lg:h-[260px] flex items-center justify-center overflow-hidden bg-black rounded-none md:rounded-[20px] shadow-none md:shadow-sm">
             <div className="absolute inset-0 z-0">
               <img src={getFreshImageUrl(content.heroImage)} alt="Hero" className="w-full h-full object-cover object-center opacity-50" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-[#050505]"></div>
@@ -37,8 +37,8 @@ const ForMenPage: React.FC<Props> = ({ content, onBack }) => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-0 pb-0">
-        <section className="p-5 sm:p-6 md:p-8 bg-gray-900 rounded-[20px] shadow-sm overflow-hidden space-y-6">
+      <div className="max-w-7xl mx-auto px-0 md:px-4 pt-0 pb-0">
+        <section className="p-5 sm:p-6 md:p-8 bg-gray-900 rounded-none md:rounded-[20px] shadow-none md:shadow-sm overflow-hidden space-y-6">
            <div className="flex flex-col lg:flex-row gap-5 sm:gap-8 items-center">
               <div className="flex-1 space-y-3">
                  <h2 className="text-xl xs:text-2xl md:text-3xl font-bold uppercase text-white tracking-tight">{content.introTitle}</h2>

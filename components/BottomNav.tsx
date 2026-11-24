@@ -143,10 +143,10 @@ const BottomNav: React.FC<Props> = ({
   return (
     <nav
       aria-label="모바일 하단 메뉴"
-      className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-black/[0.05] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] z-[100] md:hidden no-print"
+      className="fixed bottom-0 left-0 right-0 w-full bg-white/95 backdrop-blur-md border-t border-black/[0.06] z-[100] md:hidden no-print"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="grid grid-cols-5 items-end h-[64px] max-w-lg mx-auto px-1 pb-2">
+      <div className="grid grid-cols-5 items-end h-[64px] w-full max-w-none px-0 pb-2">
         {navItems.map((item) => {
           const isActive = item.id === 'home'
             ? currentPage === 'home'

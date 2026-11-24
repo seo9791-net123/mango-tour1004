@@ -47,7 +47,7 @@ const NoticeBar: React.FC<Props> = ({ notices }) => {
 
   return (
     <>
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 shrink-0">
+      <div className="w-full max-w-7xl mx-auto px-0 md:px-4 shrink-0">
         <button
           type="button"
           onClick={() => setSelectedNotice(currentNotice)}
@@ -56,7 +56,7 @@ const NoticeBar: React.FC<Props> = ({ notices }) => {
           onFocus={() => setIsPaused(true)}
           onBlur={() => setIsPaused(false)}
           aria-label={`공지사항 보기: ${currentNotice.title}`}
-          className="w-full rounded-2xl bg-[#E5E7EB]/85 hover:bg-[#DFE3E8] border border-gray-300/80 shadow-2xs px-4 sm:px-5 py-3 sm:py-3.5 md:py-4 flex items-center justify-between gap-3 text-left transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-deepgreen/50"
+          className="w-full rounded-none md:rounded-2xl bg-[#E5E7EB]/85 hover:bg-[#DFE3E8] border-y border-x-0 md:border border-gray-300/80 shadow-none md:shadow-2xs px-4 sm:px-5 py-3 sm:py-3.5 md:py-4 flex items-center justify-between gap-3 text-left transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-deepgreen/50"
         >
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
             <span className="text-[13px] sm:text-sm md:text-[15px] font-black text-gray-900 shrink-0 whitespace-nowrap tracking-tight">

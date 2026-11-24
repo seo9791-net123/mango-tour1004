@@ -1838,11 +1838,11 @@ export const TripPlanner: React.FC<Props> = ({
 
       {/* Sticky Hero Header */}
       <div
-        className="no-print sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2.5 sm:pb-3"
+        className="no-print sticky z-20 w-full bg-[#F2F2F7]/90 backdrop-blur-md pb-2 md:pb-3"
         style={{ top: 'var(--site-header-height, 45px)' }}
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-2.5 sm:pt-3 w-full">
-          <div className="bg-[#0A7E54] text-white relative overflow-hidden rounded-[20px] shadow-sm">
+        <div className="max-w-7xl mx-auto px-0 md:px-4 pt-0 md:pt-3 w-full">
+          <div className="bg-[#0A7E54] text-white relative overflow-hidden rounded-none md:rounded-[20px] shadow-none md:shadow-sm">
             <div className="px-5 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 relative z-10 w-full flex flex-col justify-center">
               <div className="flex items-center justify-between gap-2 mb-2 md:mb-3">
                 <BackButton 
@@ -1882,9 +1882,9 @@ export const TripPlanner: React.FC<Props> = ({
       </div>
 
       {/* Main Container */}
-      <div className={`max-w-7xl mx-auto px-3 sm:px-4 pt-0 pb-0 w-full ${showQuotePreviewModal ? 'print:hidden' : ''}`}>
+      <div className={`max-w-7xl mx-auto px-0 md:px-4 pt-0 pb-0 w-full ${showQuotePreviewModal ? 'print:hidden' : ''}`}>
         {isAdmin && onToggleAdminDetailedCosts && (
-          <div className="mb-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+          <div className="mb-3 bg-amber-50 border-y border-x-0 md:border border-amber-200 rounded-none md:rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-none md:shadow-2xs">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-950">
               <span>🔐</span>
               <span>관리자 견적 금액 표시 설정</span>
@@ -1924,7 +1924,7 @@ export const TripPlanner: React.FC<Props> = ({
           <div>
             <div className="space-y-2.5 sm:space-y-3">
               {/* 1. 여행 지역 선택 */}
-              <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+              <div className="bg-white rounded-none md:rounded-[20px] p-4 sm:p-5 shadow-none md:shadow-sm space-y-3">
                 <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.06] gap-2">
                   <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 min-w-0">
                     <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
@@ -2026,7 +2026,7 @@ export const TripPlanner: React.FC<Props> = ({
               </div>
 
               {/* 2. 여행 일정 */}
-              <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+              <div className="bg-white rounded-none md:rounded-[20px] p-4 sm:p-5 shadow-none md:shadow-sm space-y-3">
                 <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.06] gap-2">
                   <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5">
                     <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">2</span>
@@ -2059,7 +2059,7 @@ export const TripPlanner: React.FC<Props> = ({
               </div>
 
               {/* 3. 골프, 여행 선택 */}
-              <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+              <div className="bg-white rounded-none md:rounded-[20px] p-4 sm:p-5 shadow-none md:shadow-sm space-y-3">
                 <div className="flex justify-between items-start sm:items-center pb-2.5 border-b border-black/[0.06] gap-2">
                   <div className="min-w-0">
                     <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
@@ -2204,7 +2204,7 @@ export const TripPlanner: React.FC<Props> = ({
                 const hotelTotalUSD = Math.round(hotelNightRate * diyNights);
                 const hotelDisplayName = selectedHotelTier?.name || '고급 호텔';
                 return (
-                  <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                  <div className="bg-white rounded-none md:rounded-[20px] p-4 sm:p-5 shadow-none md:shadow-sm space-y-3">
                     <div className="flex justify-between items-start sm:items-center pb-2.5 border-b border-black/[0.06] gap-2">
                       <div className="min-w-0">
                         <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
@@ -2283,7 +2283,7 @@ export const TripPlanner: React.FC<Props> = ({
                 const vehTotalUSD = Math.round(vehDayRate * diyDays);
                 const vehDisplayName = selectedVehicleItem?.shortName || selectedVehicleItem?.name || '9인승';
                 return (
-                  <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+                  <div className="bg-white rounded-none md:rounded-[20px] p-4 sm:p-5 shadow-none md:shadow-sm space-y-3">
                     <div className="flex justify-between items-start sm:items-center pb-2.5 border-b border-black/[0.06] gap-2">
                       <div className="min-w-0">
                         <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
@@ -2357,7 +2357,7 @@ export const TripPlanner: React.FC<Props> = ({
               })()}
 
               {/* 6. 기타 (Multi-select 2x2 Grid: 가이드, 패스트 트랙, 마사지, 저녁식사) */}
-              <div className="bg-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+              <div className="bg-white rounded-none md:rounded-[20px] p-4 sm:p-5 shadow-none md:shadow-sm space-y-3">
                 <div className="flex justify-between items-center pb-2.5 border-b border-black/[0.06] gap-2">
                   <h3 className="font-bold text-base md:text-lg text-gray-900 tracking-tight flex items-center gap-2.5 whitespace-nowrap">
                     <span className="w-6 h-6 rounded-full bg-[#0A7E54] text-white text-xs flex items-center justify-center font-bold shrink-0">6</span>
@@ -2489,7 +2489,7 @@ export const TripPlanner: React.FC<Props> = ({
               </div>
 
               {/* Bottom Real-Time Price Preview & Package Generation Action Box */}
-              <div className="bg-[#0A7E54] text-white rounded-[20px] p-4 sm:p-5 shadow-sm space-y-3">
+              <div className="bg-[#0A7E54] text-white rounded-none md:rounded-[20px] p-4 sm:p-5 shadow-none md:shadow-sm space-y-3">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-white/15">
                   <div>
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -2569,7 +2569,7 @@ export const TripPlanner: React.FC<Props> = ({
               {/* Capturable Card Wrapper */}
               <div 
                 ref={quotationCardRef} 
-                className="bg-white rounded-[20px] p-5 sm:p-7 shadow-sm space-y-4 sm:space-y-5 relative w-full max-w-full"
+                className="bg-white rounded-none md:rounded-[20px] p-5 sm:p-7 shadow-none md:shadow-sm space-y-4 sm:space-y-5 relative w-full max-w-full"
               >
                 {/* Brand Watermark on Image */}
                 <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
@@ -3142,7 +3142,7 @@ export const TripPlanner: React.FC<Props> = ({
             <div className="lg:col-span-5 space-y-4 sm:space-y-5 w-full max-w-full min-w-0">
               
               {/* Sticky Calculator Box */}
-              <div className="bg-white rounded-[20px] p-5 sm:p-6 md:p-7 shadow-sm space-y-4 sm:space-y-5 sm:sticky sm:top-20 w-full max-w-full">
+              <div className="bg-white rounded-none md:rounded-[20px] p-5 sm:p-6 md:p-7 shadow-none md:shadow-sm space-y-4 sm:space-y-5 sm:sticky sm:top-20 w-full max-w-full">
                 
                 <div className="bg-[#0A7E54] text-white p-4 sm:p-5 rounded-2xl text-center">
                   <div className="text-[11px] sm:text-xs text-emerald-100 font-semibold tracking-wide">실시간 맞춤 견적 계산기</div>
