@@ -7,6 +7,7 @@ import BackButton from './BackButton';
 import { getFreshImageUrl, withImageVersion } from '../utils/imageUtils';
 import { VERIFIED_IMAGE_PRESETS } from '../constants';
 import { appAlert, appConfirm } from '../services/dialogService';
+import { useBodyScrollLock } from '../utils/useBodyScrollLock';
 
 interface Props {
   posts: CommunityPost[];
@@ -72,6 +73,8 @@ const CommunityBoard: React.FC<Props> = ({
   const FILTER_TABS = ['전체', '호치민', '붕따우', '무이네', '달랏', '골프 여행', '자유 여행', '단체 여행'] as const;
   const [selectedFilter, setSelectedFilter] = useState<string>('전체');
   const [brokenCardImageIds, setBrokenCardImageIds] = useState<Record<string, boolean>>({});
+
+  useBodyScrollLock(Boolean((viewingPost && user) || showPasswordPrompt));
 
   const filteredPosts = useMemo(() => {
     if (selectedFilter === '전체') return posts;
@@ -797,7 +800,7 @@ const CommunityBoard: React.FC<Props> = ({
       {/* Password Prompt Modal */}
       {showPasswordPrompt && (
         <div
-          className="fixed inset-0 bg-black/55 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 bg-black/55 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm animate-fade-in overscroll-contain"
           onClick={() => setShowPasswordPrompt(null)}
         >
           <div
@@ -840,7 +843,7 @@ const CommunityBoard: React.FC<Props> = ({
       {/* Post Detail & Edit Modal */}
       {viewingPost && user && (
         <div
-          className="fixed inset-0 bg-black/55 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 bg-black/55 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm animate-fade-in overscroll-contain"
           onClick={() => setViewingPost(null)}
         >
           <div
@@ -849,7 +852,7 @@ const CommunityBoard: React.FC<Props> = ({
           >
             
             {/* Left/Top: Content & Image */}
-            <div className="flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-7 sm:py-6 md:px-9 md:py-8 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto overscroll-contain bg-white px-5 py-5 sm:px-7 sm:py-6 md:px-9 md:py-8 scrollbar-hide">
               <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 md:hidden"></div>
                 <div className="flex justify-between items-start gap-3 mb-5 sm:mb-6">
                      {isEditing && editForm ? (
@@ -1185,7 +1188,7 @@ const CommunityBoard: React.FC<Props> = ({
                     </div>
                     
                     {/* Comment List */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    <div className="flex-1 overflow-y-auto overscroll-contain p-3 space-y-3">
                         {viewingPost.comments.length === 0 ? (
                             <div className="text-center text-gray-400 py-8 text-xs md:text-sm">
                                 첫 번째 댓글을 남겨보세요!

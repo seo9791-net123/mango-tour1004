@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { PageSlide } from '../types';
 import { getFreshImageUrl } from '../utils/imageUtils';
+import { useBodyScrollLock } from '../utils/useBodyScrollLock';
 
 interface Props {
   slides?: PageSlide[];
@@ -15,6 +16,7 @@ const SliderPopup: React.FC<Props> = ({ slides, images, initialIndex = 0, onClos
 
   const data = slides || (images || []).map(img => ({ image: img, description: '' }));
   const total = data.length;
+  useBodyScrollLock(total > 0);
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev === total - 1 ? 0 : prev + 1));
@@ -29,7 +31,7 @@ const SliderPopup: React.FC<Props> = ({ slides, images, initialIndex = 0, onClos
   const currentItem = data[currentIndex];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 bg-black/80 backdrop-blur-md animate-fade-in overscroll-contain">
       <div className="relative bg-white overflow-hidden shadow-2xl max-w-4xl w-full h-full md:h-auto md:rounded-[2rem] animate-scale-in">
         {/* Close Button */}
         <button 
@@ -79,7 +81,7 @@ const SliderPopup: React.FC<Props> = ({ slides, images, initialIndex = 0, onClos
 
           {/* Content Section - Only show if there is a description */}
           {currentItem.description && (
-            <div className="w-full md:w-1/3 p-8 flex flex-col justify-center bg-white">
+            <div className="w-full md:w-1/3 p-8 flex flex-col justify-center bg-white overflow-y-auto overscroll-contain">
               <div className="mb-4">
                 <span className="text-gold-600 font-bold text-xs uppercase tracking-widest">Slide {currentIndex + 1} / {total}</span>
                 <div className="h-1 w-12 bg-gold-500 mt-1"></div>

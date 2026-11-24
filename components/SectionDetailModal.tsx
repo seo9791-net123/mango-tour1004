@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PageSection } from '../types';
 import AdaptiveImageViewer from './AdaptiveImageViewer';
+import { useBodyScrollLock } from '../utils/useBodyScrollLock';
 
 interface Props {
   section: PageSection;
@@ -9,13 +10,14 @@ interface Props {
 
 const SectionDetailModal: React.FC<Props> = ({ section, onClose }) => {
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  useBodyScrollLock(Boolean(section));
   const images = section.detailImages && section.detailImages.length > 0 
     ? section.detailImages 
     : [];
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/40 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-[10000] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/40 backdrop-blur-xs animate-fade-in overscroll-contain"
       onClick={onClose}
     >
       <div
@@ -36,7 +38,7 @@ const SectionDetailModal: React.FC<Props> = ({ section, onClose }) => {
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto flex-1 px-5 py-4 md:p-6 space-y-4 md:space-y-6">
+        <div className="overflow-y-auto overscroll-contain flex-1 px-5 py-4 md:p-6 space-y-4 md:space-y-6">
           {images.length > 0 && (
             <AdaptiveImageViewer
               images={images}

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { getFreshImageUrl } from '../utils/imageUtils';
+import { useBodyScrollLock } from '../utils/useBodyScrollLock';
 
 interface Props {
   images: string[];
@@ -20,6 +21,8 @@ const AdaptiveImageViewer: React.FC<Props> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const dragStartRef = useRef({ x: 0, y: 0 });
+
+  useBodyScrollLock(isFullscreen);
 
   if (!images || images.length === 0) return null;
   const currentImg = getFreshImageUrl(images[activeIdx] || images[0]);
@@ -249,7 +252,7 @@ const AdaptiveImageViewer: React.FC<Props> = ({
       {/* ================= FULLSCREEN LIGHTBOX MODAL ================= */}
       {isFullscreen && (
         <div
-          className="fixed inset-0 z-[10020] bg-black/95 flex flex-col justify-between p-0 md:p-6 backdrop-blur-xl animate-fade-in"
+          className="fixed inset-0 z-[10020] bg-black/95 flex flex-col justify-between p-0 md:p-6 backdrop-blur-xl animate-fade-in overscroll-contain"
           onClick={() => setIsFullscreen(false)}
         >
           {/* Top Bar in Lightbox */}
