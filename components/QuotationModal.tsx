@@ -3,7 +3,7 @@ import { Product } from '../types';
 import A4QuotationDocument, { CostItem, ItineraryDay, ReservationNoticeData } from './A4QuotationDocument';
 import { getTravelDays, calculateCostItemTotal } from '../utils/costBreakdownUtils';
 import { generateQuotationPdf } from '../utils/quotationExportUtils';
-import { submitQuotationWithPdf } from '../services/quotationSubmitService';
+import { extractReadableErrorMessage, submitQuotationWithPdf } from '../services/quotationSubmitService';
 import { useQuotationMobileLock } from '../utils/useQuotationMobileLock';
 
 interface Props {
@@ -415,10 +415,11 @@ const QuotationModal: React.FC<Props> = ({
       });
     } catch (err) {
       console.error('Quotation PDF submission failed:', err);
-      const errMsg = err instanceof Error ? err.message : '';
-      setInquiryError(
-        errMsg || '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.'
+      const errMsg = extractReadableErrorMessage(
+        err,
+        '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.'
       );
+      setInquiryError(errMsg);
     } finally {
       setIsSubmittingInquiry(false);
     }

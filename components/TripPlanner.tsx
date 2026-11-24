@@ -8,7 +8,7 @@ import {
   generateQuotationPdf,
   triggerBlobDownload,
 } from '../utils/quotationExportUtils';
-import { submitQuotationWithPdf } from '../services/quotationSubmitService';
+import { extractReadableErrorMessage, submitQuotationWithPdf } from '../services/quotationSubmitService';
 import { appAlert } from '../services/dialogService';
 import { sanitizeNonGolfPriceText } from '../utils/costBreakdownUtils';
 import { useQuotationMobileLock } from '../utils/useQuotationMobileLock';
@@ -1794,8 +1794,10 @@ export const TripPlanner: React.FC<Props> = ({
       showToast('견적 신청이 완료되었습니다. 담당자 확인 후 연락드리겠습니다.');
     } catch (err) {
       console.error('Quotation PDF submission failed:', err);
-      const errMsg = err instanceof Error ? err.message : '';
-      const failMsg = errMsg || '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.';
+      const failMsg = extractReadableErrorMessage(
+        err,
+        '전송에 실패했습니다. 잠시 후 다시 시도하거나 카카오톡으로 문의해 주세요.'
+      );
       setInquiryError(failMsg);
       showToast(failMsg);
     } finally {
