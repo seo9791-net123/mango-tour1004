@@ -1,4 +1,5 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
@@ -173,19 +174,41 @@ export async function uploadQuotationPdfToStorage(params: {
     }
   }
 
-  // Fallback: save to confined server directory under public/uploads/quotations
-  if (!fs.existsSync(quotationsDir)) {
-    fs.mkdirSync(quotationsDir, { recursive: true });
-  }
-
+  // Fallback: save to confined server directory (or /tmp on read-only serverless environments)
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
   const storedFileName = `${Date.now()}_${uniqueId}.pdf`;
-  const resolvedBase = path.resolve(quotationsDir);
-  const resolvedTarget = path.resolve(resolvedBase, storedFileName);
-  if (!resolvedTarget.startsWith(resolvedBase + path.sep)) {
-    throw new Error('허용되지 않은 파일 저장 경로입니다.');
+  let resolvedBase = path.resolve(quotationsDir);
+
+  try {
+    if (!fs.existsSync(resolvedBase)) {
+      fs.mkdirSync(resolvedBase, { recursive: true });
+    }
+    const resolvedTarget = path.resolve(resolvedBase, storedFileName);
+    if (!resolvedTarget.startsWith(resolvedBase + path.sep)) {
+      throw new Error('허용되지 않은 파일 저장 경로입니다.');
+    }
+    await fs.promises.writeFile(resolvedTarget, pdfBuffer);
+  } catch (diskErr: any) {
+    console.warn('[Quotation Storage] Primary disk fallback failed, trying os.tmpdir():', diskErr?.message || diskErr);
+    try {
+      resolvedBase = path.resolve(os.tmpdir(), 'mango-quotations');
+      if (!fs.existsSync(resolvedBase)) {
+        fs.mkdirSync(resolvedBase, { recursive: true });
+      }
+      await fs.promises.writeFile(path.resolve(resolvedBase, storedFileName), pdfBuffer);
+    } catch (tmpErr: any) {
+      console.warn('[Quotation Storage] Temp disk write skipped; continuing with email attachment only:', tmpErr?.message || tmpErr);
+    }
   }
 
-  await fs.promises.writeFile(resolvedTarget, pdfBuffer);
+  // Ephemeral /tmp in serverless cannot be served statically via HTTP
+  if (isServerless || resolvedBase.startsWith(path.resolve(os.tmpdir()))) {
+    return {
+      provider: 'server_local',
+      pdfDownloadUrl: '',
+      storagePath: `tmp/${storedFileName}`,
+    };
+  }
 
   const relativePath = `/uploads/quotations/${storedFileName}`;
   const cleanOrigin = (process.env.PUBLIC_BASE_URL || publicBaseUrl || '').trim().replace(/\/+$/, '');
@@ -291,6 +314,9 @@ export async function sendAdminQuotationEmail(params: {
         user: smtpUser,
         pass: smtpPass,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
 
     const fromHeader = (process.env.SMTP_FROM || `MANGO TOUR <${smtpUser}>`).trim();
@@ -300,7 +326,9 @@ export async function sendAdminQuotationEmail(params: {
         from: fromHeader,
         to: adminEmail,
         subject,
-        text: `${input.summaryText}\n\n[PDF 다운로드 링크]\n${pdfDownloadUrl}`,
+        text: pdfDownloadUrl
+          ? `${input.summaryText}\n\n[PDF 다운로드 링크]\n${pdfDownloadUrl}`
+          : input.summaryText,
         html: htmlBody,
         attachments: [
           {
