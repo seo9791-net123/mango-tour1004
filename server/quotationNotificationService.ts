@@ -198,6 +198,38 @@ export async function uploadQuotationPdfToStorage(params: {
   };
 }
 
+const resolveSmtpHost = (rawHost?: string): string => {
+  const trimmed = (rawHost || '').trim();
+  if (!trimmed) return 'smtp.gmail.com';
+
+  // If an email address was mistakenly placed in SMTP_HOST (e.g. seo9791@gmail.com), use Gmail SMTP host
+  if (trimmed.includes('@')) {
+    console.warn(`[Quotation Email] SMTP_HOST("${trimmed}")에 이메일 형식이 입력되어 smtp.gmail.com으로 자동 보정합니다.`);
+    return 'smtp.gmail.com';
+  }
+
+  // Strip accidental URL schemes or stray "://" prefixes (e.g. "smtp://gmail.com", "://gmail.com") and trailing paths/ports
+  const stripped = trimmed
+    .replace(/^[a-z0-9+.-]*:\/\//i, '')
+    .replace(/^\/+/, '')
+    .split('/')[0]
+    .split(':')[0]
+    .trim()
+    .toLowerCase();
+
+  if (!stripped || /\s/.test(stripped) || !stripped.includes('.')) {
+    console.warn(`[Quotation Email] 유효하지 않은 SMTP_HOST("${trimmed}")가 입력되어 smtp.gmail.com으로 자동 보정합니다.`);
+    return 'smtp.gmail.com';
+  }
+
+  if (stripped === 'gmail.com' || stripped === 'www.gmail.com' || stripped === 'mail.google.com') {
+    console.warn(`[Quotation Email] SMTP_HOST("${trimmed}")를 Gmail SMTP 서버(smtp.gmail.com)로 자동 보정합니다.`);
+    return 'smtp.gmail.com';
+  }
+
+  return stripped;
+};
+
 /**
  * 2. 생성된 A4 견적서 PDF를 관리자 이메일로 자동 첨부 발송
  */
@@ -211,10 +243,14 @@ export async function sendAdminQuotationEmail(params: {
   const { input, pdfBuffer, pdfFileName, pdfDownloadUrl, submittedAt } = params;
 
   const smtpUser = (process.env.SMTP_USER || '').trim();
-  const smtpPass = (process.env.SMTP_PASS || '').trim();
-  const smtpHost = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
-  const smtpPort = Number(process.env.SMTP_PORT || 465);
-  const smtpSecure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : smtpPort === 465;
+  // Strip accidental spaces from Google 16-char App Password (e.g. "abcd efgh ijkl mnop")
+  const smtpPass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+  const smtpHost = resolveSmtpHost(process.env.SMTP_HOST);
+  const parsedPort = Number((process.env.SMTP_PORT || '').trim());
+  const smtpPort = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 465;
+  const smtpSecure = process.env.SMTP_SECURE
+    ? process.env.SMTP_SECURE.trim().toLowerCase() === 'true'
+    : smtpPort === 465;
 
   const adminEmail = (process.env.ADMIN_EMAIL || smtpUser || '').trim();
 
@@ -259,20 +295,29 @@ export async function sendAdminQuotationEmail(params: {
 
     const fromHeader = (process.env.SMTP_FROM || `MANGO TOUR <${smtpUser}>`).trim();
 
-    await transporter.sendMail({
-      from: fromHeader,
-      to: adminEmail,
-      subject,
-      text: `${input.summaryText}\n\n[PDF 다운로드 링크]\n${pdfDownloadUrl}`,
-      html: htmlBody,
-      attachments: [
-        {
-          filename: pdfFileName,
-          content: pdfBuffer,
-          contentType: 'application/pdf',
-        },
-      ],
-    });
+    try {
+      await transporter.sendMail({
+        from: fromHeader,
+        to: adminEmail,
+        subject,
+        text: `${input.summaryText}\n\n[PDF 다운로드 링크]\n${pdfDownloadUrl}`,
+        html: htmlBody,
+        attachments: [
+          {
+            filename: pdfFileName,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
+    } catch (mailErr: any) {
+      const code = String(mailErr?.code || '');
+      const msg = String(mailErr?.message || mailErr || '');
+      if (code === 'EAUTH' || /535|Invalid login|Username and Password not accepted/i.test(msg)) {
+        throw new Error('Gmail SMTP 인증에 실패했습니다. SMTP_USER(Gmail 주소)와 SMTP_PASS(구글 앱 비밀번호 16자리)를 확인해주세요.');
+      }
+      throw mailErr;
+    }
 
     return {
       sent: true,
