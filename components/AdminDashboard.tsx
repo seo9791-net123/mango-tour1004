@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { User, Product, ProductCostBreakdownItem, PageContent, MenuItem, VideoItem, CommunityPost, PopupNotification, RecommendedDiscountPopup, NoticeItem, PageSection, PageSlide, CustomTripPackage, PackageOptionItem, MasterOptionPool, QuotationVisibilitySettings } from '../types';
 import { 
   INITIAL_PRODUCTS, 
@@ -18,7 +18,7 @@ import {
 import { driveService } from '../services/googleDriveService';
 import { fetchGoogleSheetData } from '../services/googleSheetService';
 import { uploadFile, setCloudinaryConfig } from '../services/uploadService';
-import { supabaseService } from '../services/supabaseService';
+import { supabaseService, VisitorStats, getKstDateString } from '../services/supabaseService';
 import { isSupabaseConfigured, updateSupabaseCredentials, getAdminSessionToken } from '../services/supabaseClient';
 import { compressImage, getFreshImageUrl, withImageVersion, isImageIconUrl } from '../utils/imageUtils';
 import BackButton from './BackButton';
@@ -252,6 +252,39 @@ const AdminDashboard: React.FC<Props> = ({
       window.clearInterval(intervalId);
     };
   }, [activeTab, onRefreshUsers]);
+
+  // 일일 / 전체 방문자 수 통계 (실제 방문자 기준, 오늘 날짜부터 집계)
+  const [visitorStats, setVisitorStats] = useState<VisitorStats | null>(null);
+  const [isLoadingVisitorStats, setIsLoadingVisitorStats] = useState<boolean>(true);
+
+  const loadVisitorStats = useCallback(async () => {
+    setIsLoadingVisitorStats(true);
+    try {
+      await supabaseService.recordDailyVisit();
+      const stats = await supabaseService.getVisitorStats();
+      setVisitorStats(stats);
+    } catch (e) {
+      console.warn('Failed to load visitor stats:', e);
+    } finally {
+      setIsLoadingVisitorStats(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadVisitorStats();
+    const handleFocus = () => {
+      void loadVisitorStats();
+    };
+    window.addEventListener('focus', handleFocus);
+    const intervalId = window.setInterval(() => {
+      void loadVisitorStats();
+    }, 60000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.clearInterval(intervalId);
+    };
+  }, [loadVisitorStats]);
 
   // Cloudinary Config
   const [showCloudinaryConfig, setShowCloudinaryConfig] = useState(false);
@@ -1765,6 +1798,47 @@ CREATE POLICY "Admin insert users" ON public.users FOR INSERT WITH CHECK (public
 CREATE POLICY "Admin update users" ON public.users FOR UPDATE USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
 CREATE POLICY "Admin delete users" ON public.users FOR DELETE USING (public.is_mango_admin());
 
+CREATE TABLE IF NOT EXISTS public.site_visitors (visit_date DATE NOT NULL, visitor_id TEXT NOT NULL, first_seen_at TIMESTAMPTZ DEFAULT NOW(), PRIMARY KEY (visit_date, visitor_id));
+CREATE INDEX IF NOT EXISTS idx_site_visitors_date ON public.site_visitors (visit_date);
+INSERT INTO public.site_visitors (visit_date, visitor_id, first_seen_at)
+SELECT (data->>'visitDate')::date, trim(data->>'visitorId'), MIN(created_at)
+FROM public.inquiries
+WHERE data->>'type' = '__visitor_ping__' AND (data->>'visitDate') ~ '^\\d{4}-\\d{2}-\\d{2}$' AND length(trim(COALESCE(data->>'visitorId', ''))) BETWEEN 8 AND 128
+GROUP BY (data->>'visitDate')::date, trim(data->>'visitorId')
+ON CONFLICT (visit_date, visitor_id) DO NOTHING;
+ALTER TABLE public.site_visitors ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public insert site_visitors" ON public.site_visitors;
+DROP POLICY IF EXISTS "Admin read site_visitors" ON public.site_visitors;
+CREATE POLICY "Public insert site_visitors" ON public.site_visitors FOR INSERT WITH CHECK (length(trim(visitor_id)) BETWEEN 8 AND 128);
+CREATE POLICY "Admin read site_visitors" ON public.site_visitors FOR SELECT USING (public.is_mango_admin());
+
+CREATE OR REPLACE FUNCTION public.record_site_visit(p_visit_date TEXT, p_visitor_id TEXT)
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_date DATE; v_kst_today DATE; v_clean_id TEXT := trim(COALESCE(p_visitor_id, ''));
+BEGIN
+  IF p_visit_date IS NULL OR p_visit_date !~ '^\\d{4}-\\d{2}-\\d{2}$' THEN RETURN jsonb_build_object('success', false, 'reason', 'INVALID_DATE'); END IF;
+  IF length(v_clean_id) < 8 OR length(v_clean_id) > 128 THEN RETURN jsonb_build_object('success', false, 'reason', 'INVALID_VISITOR_ID'); END IF;
+  v_date := p_visit_date::date;
+  v_kst_today := (NOW() AT TIME ZONE 'Asia/Seoul')::date;
+  IF v_date < (v_kst_today - 1) OR v_date > (v_kst_today + 1) THEN v_date := v_kst_today; END IF;
+  INSERT INTO public.site_visitors (visit_date, visitor_id, first_seen_at) VALUES (v_date, v_clean_id, NOW()) ON CONFLICT (visit_date, visitor_id) DO NOTHING;
+  RETURN jsonb_build_object('success', true, 'visitDate', to_char(v_date, 'YYYY-MM-DD'));
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.get_visitor_stats(p_today TEXT DEFAULT NULL)
+RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE v_today DATE; v_today_count BIGINT := 0; v_total_count BIGINT := 0; v_start_date DATE;
+BEGIN
+  IF NOT public.is_mango_admin() THEN RAISE EXCEPTION 'Admin authentication required'; END IF;
+  v_today := CASE WHEN p_today IS NOT NULL AND p_today ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN p_today::date ELSE (NOW() AT TIME ZONE 'Asia/Seoul')::date END;
+  SELECT COUNT(*) INTO v_today_count FROM public.site_visitors WHERE visit_date = v_today;
+  SELECT COUNT(*), MIN(visit_date) INTO v_total_count, v_start_date FROM public.site_visitors;
+  RETURN jsonb_build_object('todayVisitors', COALESCE(v_today_count, 0), 'totalVisitors', COALESCE(v_total_count, 0), 'startDate', to_char(COALESCE(v_start_date, v_today), 'YYYY-MM-DD'));
+END; $$;
+
+GRANT EXECUTE ON FUNCTION public.record_site_visit(TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_visitor_stats(TEXT) TO anon, authenticated;
+
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -2583,6 +2657,91 @@ DO $$ BEGIN ALTER PUBLICATION supabase_realtime ADD TABLE public.users; EXCEPTIO
         </div>
       )}
       
+      {/* 일일 / 전체 방문자 수 요약 카드 (실제 방문자 기준, 오늘 날짜부터 집계) */}
+      <div className="mb-3 sm:mb-4 mx-2 sm:mx-0 bg-white border border-gray-200/80 rounded-2xl p-3 sm:p-4 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-xs sm:text-sm font-extrabold text-gray-800 flex items-center gap-1.5">
+              <span>📊</span>
+              <span>실시간 방문자 통계</span>
+            </h3>
+            <span className="text-[11px] text-gray-500 font-medium">
+              실제 방문자 기준 (1일 1인/기기 중복·봇 제외)
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {visitorStats?.requiresAdminAuth && onRequestAdminReauth && (
+              <button
+                type="button"
+                onClick={onRequestAdminReauth}
+                className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold transition cursor-pointer"
+              >
+                🔑 재인증 후 조회
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={isLoadingVisitorStats}
+              onClick={() => void loadVisitorStats()}
+              className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-60 cursor-pointer"
+            >
+              <span>{isLoadingVisitorStats ? '⏳' : '🔄'}</span>
+              <span>{isLoadingVisitorStats ? '조회 중' : '새로고침'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div className="rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-3 sm:p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs font-bold text-emerald-900">
+              <span>일일 방문자 수</span>
+              <span className="text-[10px] sm:text-[11px] text-emerald-700 font-semibold">
+                {visitorStats?.todayDate || getKstDateString()}
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-1">
+              <span className="text-xl sm:text-2xl font-black text-deepgreen tabular-nums">
+                {visitorStats?.requiresAdminAuth
+                  ? '-'
+                  : isLoadingVisitorStats && !visitorStats
+                    ? '...'
+                    : (visitorStats?.todayVisitors ?? 0).toLocaleString()}
+              </span>
+              {!visitorStats?.requiresAdminAuth && (
+                <span className="text-xs sm:text-sm font-bold text-emerald-800">명</span>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-slate-50 border border-slate-200/90 p-3 sm:p-3.5 flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1 text-[11px] sm:text-xs font-bold text-slate-800">
+              <span>전체 방문자 수</span>
+              <span className="text-[10px] sm:text-[11px] text-slate-500 font-semibold">
+                {visitorStats?.startDate || getKstDateString()}~
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-baseline gap-1">
+              <span className="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">
+                {visitorStats?.requiresAdminAuth
+                  ? '-'
+                  : isLoadingVisitorStats && !visitorStats
+                    ? '...'
+                    : (visitorStats?.totalVisitors ?? 0).toLocaleString()}
+              </span>
+              {!visitorStats?.requiresAdminAuth && (
+                <span className="text-xs sm:text-sm font-bold text-slate-700">명</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {visitorStats?.errorMessage && (
+          <p className="mt-2 text-[11px] text-rose-600 font-medium">
+            ⚠️ {visitorStats.errorMessage}
+          </p>
+        )}
+      </div>
+
       {/* Navigation Tabs (좌우 여백 없이 칸에 딱 맞게 배치된 세련된 탭 바) */}
       <div className="w-full mb-3 sm:mb-5 bg-gray-100/90 p-1.5 rounded-none sm:rounded-2xl border-y sm:border border-gray-200/80 shadow-xs">
         <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1 sm:gap-1.5 w-full">

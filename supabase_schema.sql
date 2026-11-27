@@ -443,6 +443,111 @@ CREATE POLICY "Admin insert users" ON public.users FOR INSERT WITH CHECK (public
 CREATE POLICY "Admin update users" ON public.users FOR UPDATE USING (public.is_mango_admin()) WITH CHECK (public.is_mango_admin());
 CREATE POLICY "Admin delete users" ON public.users FOR DELETE USING (public.is_mango_admin());
 
+-- 6) 사이트 방문자 통계 테이블 (1일 1인/기기 중복 제거, 개인정보 미저장)
+CREATE TABLE IF NOT EXISTS public.site_visitors (
+  visit_date DATE NOT NULL,
+  visitor_id TEXT NOT NULL,
+  first_seen_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (visit_date, visitor_id)
+);
+CREATE INDEX IF NOT EXISTS idx_site_visitors_date ON public.site_visitors (visit_date);
+
+-- 기존 폴백(inquiries)에 기록된 방문 핑이 있다면 안전하게 일괄 이관
+INSERT INTO public.site_visitors (visit_date, visitor_id, first_seen_at)
+SELECT
+  (data->>'visitDate')::date,
+  trim(data->>'visitorId'),
+  MIN(created_at)
+FROM public.inquiries
+WHERE data->>'type' = '__visitor_ping__'
+  AND (data->>'visitDate') ~ '^\d{4}-\d{2}-\d{2}$'
+  AND length(trim(COALESCE(data->>'visitorId', ''))) BETWEEN 8 AND 128
+GROUP BY (data->>'visitDate')::date, trim(data->>'visitorId')
+ON CONFLICT (visit_date, visitor_id) DO NOTHING;
+
+ALTER TABLE public.site_visitors ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public insert site_visitors" ON public.site_visitors;
+DROP POLICY IF EXISTS "Admin read site_visitors" ON public.site_visitors;
+CREATE POLICY "Public insert site_visitors"
+  ON public.site_visitors FOR INSERT
+  WITH CHECK (length(trim(visitor_id)) BETWEEN 8 AND 128);
+CREATE POLICY "Admin read site_visitors"
+  ON public.site_visitors FOR SELECT
+  USING (public.is_mango_admin());
+
+CREATE OR REPLACE FUNCTION public.record_site_visit(p_visit_date TEXT, p_visitor_id TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_date DATE;
+  v_kst_today DATE;
+  v_clean_id TEXT := trim(COALESCE(p_visitor_id, ''));
+BEGIN
+  IF p_visit_date IS NULL OR p_visit_date !~ '^\d{4}-\d{2}-\d{2}$' THEN
+    RETURN jsonb_build_object('success', false, 'reason', 'INVALID_DATE');
+  END IF;
+  IF length(v_clean_id) < 8 OR length(v_clean_id) > 128 THEN
+    RETURN jsonb_build_object('success', false, 'reason', 'INVALID_VISITOR_ID');
+  END IF;
+
+  v_date := p_visit_date::date;
+  v_kst_today := (NOW() AT TIME ZONE 'Asia/Seoul')::date;
+  IF v_date < (v_kst_today - 1) OR v_date > (v_kst_today + 1) THEN
+    v_date := v_kst_today;
+  END IF;
+
+  INSERT INTO public.site_visitors (visit_date, visitor_id, first_seen_at)
+  VALUES (v_date, v_clean_id, NOW())
+  ON CONFLICT (visit_date, visitor_id) DO NOTHING;
+
+  RETURN jsonb_build_object('success', true, 'visitDate', to_char(v_date, 'YYYY-MM-DD'));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_visitor_stats(p_today TEXT DEFAULT NULL)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_today DATE;
+  v_today_count BIGINT := 0;
+  v_total_count BIGINT := 0;
+  v_start_date DATE;
+BEGIN
+  IF NOT public.is_mango_admin() THEN
+    RAISE EXCEPTION 'Admin authentication required';
+  END IF;
+
+  v_today := CASE
+    WHEN p_today IS NOT NULL AND p_today ~ '^\d{4}-\d{2}-\d{2}$' THEN p_today::date
+    ELSE (NOW() AT TIME ZONE 'Asia/Seoul')::date
+  END;
+
+  SELECT COUNT(*) INTO v_today_count
+  FROM public.site_visitors
+  WHERE visit_date = v_today;
+
+  SELECT COUNT(*), MIN(visit_date) INTO v_total_count, v_start_date
+  FROM public.site_visitors;
+
+  RETURN jsonb_build_object(
+    'todayVisitors', COALESCE(v_today_count, 0),
+    'totalVisitors', COALESCE(v_total_count, 0),
+    'startDate', to_char(COALESCE(v_start_date, v_today), 'YYYY-MM-DD')
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.record_site_visit(TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_visitor_stats(TEXT) TO anon, authenticated;
+
 -- 실시간 채팅 및 회원 목록 실시간 동기화를 위해 Realtime Publication에 테이블 추가
 DO $$
 BEGIN

@@ -981,6 +981,13 @@ const App: React.FC = () => {
     initData();
   }, []);
 
+  const hasTriggeredDailyVisitRef = useRef(false);
+  useEffect(() => {
+    if (!isDataLoaded || hasTriggeredDailyVisitRef.current) return;
+    hasTriggeredDailyVisitRef.current = true;
+    void supabaseService.recordDailyVisit();
+  }, [isDataLoaded]);
+
   // Update Handlers (Updates State, LocalStorage, and Supabase)
   const handleUpdateHeroImages = async (
     newImages: string[],

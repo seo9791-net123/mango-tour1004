@@ -209,6 +209,103 @@ const formatSupabaseWriteError = (err: any, context: string): Error => {
   return wrapped;
 };
 
+export interface VisitorStats {
+  todayVisitors: number;
+  totalVisitors: number;
+  todayDate: string;
+  startDate: string;
+  source: 'supabase' | 'supabase-fallback' | 'local';
+  requiresAdminAuth?: boolean;
+  errorMessage?: string;
+}
+
+const VISITOR_UID_KEY = 'mango_visitor_uid_v1';
+const VISITOR_RECORDED_DATE_KEY = 'mango_visit_recorded_date_v1';
+const LOCAL_VISITOR_STATS_KEY = 'mango_local_visitor_stats_v1';
+
+export const getKstDateString = (date: Date = new Date()): string => {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const y = parts.find(p => p.type === 'year')?.value;
+    const m = parts.find(p => p.type === 'month')?.value;
+    const d = parts.find(p => p.type === 'day')?.value;
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch {
+    // fallback below
+  }
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+};
+
+const isAutomatedBotClient = (): boolean => {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return true;
+  if ((navigator as any).webdriver) return true;
+  const ua = String(navigator.userAgent || '');
+  if (!ua) return true;
+  return /bot|crawl|spider|slurp|mediapartners|bingpreview|headless|lighthouse|pingdom|uptime|pagespeed|gtmetrix|facebookexternalhit|kakaotalk-scrap|yeti|naverbot|daumoa|python-requests|curl\/|wget\//i.test(ua);
+};
+
+const getOrCreateVisitorUid = (): string => {
+  try {
+    const existing = localStorage.getItem(VISITOR_UID_KEY)?.trim();
+    if (existing && existing.length >= 8 && existing.length <= 128) {
+      return existing;
+    }
+    const generated =
+      typeof globalThis !== 'undefined' && typeof globalThis.crypto?.randomUUID === 'function'
+        ? globalThis.crypto.randomUUID()
+        : `v_${Date.now().toString(36)}_${generateRandomSaltHex(8)}`;
+    localStorage.setItem(VISITOR_UID_KEY, generated);
+    return generated;
+  } catch {
+    return `v_${Date.now().toString(36)}_${generateRandomSaltHex(8)}`;
+  }
+};
+
+const isMissingTableError = (err: any, tableName: string): boolean => {
+  const code = String(err?.code || '');
+  const msg = String(err?.message || '').toLowerCase();
+  return (
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    msg.includes(`relation "public.${tableName}" does not exist`) ||
+    msg.includes(`could not find the table 'public.${tableName}'`) ||
+    msg.includes(`could not find the table '${tableName}'`)
+  );
+};
+
+const incrementLocalVisitorCount = (today: string): void => {
+  try {
+    const raw = localStorage.getItem(LOCAL_VISITOR_STATS_KEY);
+    let parsed: { startDate?: string; dailyCounts?: Record<string, number> } = {};
+    if (raw) {
+      try {
+        parsed = JSON.parse(raw) || {};
+      } catch {
+        parsed = {};
+      }
+    }
+    const startDate =
+      typeof parsed.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(parsed.startDate)
+        ? parsed.startDate
+        : today;
+    const dailyCounts: Record<string, number> =
+      parsed.dailyCounts && typeof parsed.dailyCounts === 'object' ? { ...parsed.dailyCounts } : {};
+    dailyCounts[today] = (Number(dailyCounts[today]) || 0) + 1;
+    localStorage.setItem(LOCAL_VISITOR_STATS_KEY, JSON.stringify({ startDate, dailyCounts }));
+  } catch {
+    // ignore storage errors
+  }
+};
+
+let inFlightVisitKey = '';
+let inFlightVisitPromise: Promise<{ recorded: boolean; alreadyCounted?: boolean; skipped?: boolean; mode?: 'supabase' | 'supabase-fallback' | 'local' }> | null = null;
+
 export const supabaseService = {
   /**
    * 앱 로딩 시 Supabase에서 모든 전역 데이터를 가져옵니다.
@@ -1527,5 +1624,319 @@ export const supabaseService = {
 
     console.log("✅ All data seeded to Supabase successfully!");
     return { success: true };
+  },
+
+  /**
+   * 실제 방문자 1일 1회 집계 기록 (봇/크롤러 및 중복 새로고침 제외, KST 날짜 기준)
+   */
+  async recordDailyVisit(): Promise<{
+    recorded: boolean;
+    alreadyCounted?: boolean;
+    skipped?: boolean;
+    mode?: 'supabase' | 'supabase-fallback' | 'local';
+  }> {
+    if (isAutomatedBotClient()) {
+      return { recorded: false, skipped: true };
+    }
+
+    const today = getKstDateString();
+    try {
+      if (localStorage.getItem(VISITOR_RECORDED_DATE_KEY) === today) {
+        return { recorded: false, alreadyCounted: true };
+      }
+    } catch {
+      // ignore localStorage read failures
+    }
+
+    if (inFlightVisitPromise && inFlightVisitKey === today) {
+      return inFlightVisitPromise;
+    }
+
+    inFlightVisitKey = today;
+    inFlightVisitPromise = (async () => {
+      const visitorId = getOrCreateVisitorUid();
+      const supabase = getSupabase();
+
+      if (!supabase || !isSupabaseConfigured) {
+        incrementLocalVisitorCount(today);
+        try {
+          localStorage.setItem(VISITOR_RECORDED_DATE_KEY, today);
+        } catch {}
+        return { recorded: true, mode: 'local' as const };
+      }
+
+      try {
+        // 1차: 전용 보안 RPC (record_site_visit)
+        const { data: rpcData, error: rpcError } = await supabase.rpc('record_site_visit', {
+          p_visit_date: today,
+          p_visitor_id: visitorId,
+        });
+
+        if (!rpcError && rpcData?.success !== false) {
+          try {
+            localStorage.setItem(VISITOR_RECORDED_DATE_KEY, today);
+          } catch {}
+          return { recorded: true, mode: 'supabase' as const };
+        }
+
+        // 2차: site_visitors 테이블 직접 INSERT (RPC 미설치 환경 대응)
+        if (!rpcError || isMissingRpcError(rpcError)) {
+          const { error: insertErr } = await supabase
+            .from('site_visitors')
+            .insert([{ visit_date: today, visitor_id: visitorId, first_seen_at: new Date().toISOString() }]);
+
+          const insertCode = String((insertErr as any)?.code || '');
+          if (!insertErr || insertCode === '23505') {
+            try {
+              localStorage.setItem(VISITOR_RECORDED_DATE_KEY, today);
+            } catch {}
+            return { recorded: !insertErr, alreadyCounted: insertCode === '23505', mode: 'supabase' as const };
+          }
+
+          if (!isMissingTableError(insertErr, 'site_visitors')) {
+            console.warn('Failed to record visit in site_visitors:', insertErr);
+          }
+        }
+
+        // 3차: 기존 inquiries 테이블의 __visitor_ping__ 폴백 (SQL 스키마 재실행 전에도 즉시 동작)
+        const { error: pingErr } = await supabase
+          .from('inquiries')
+          .insert([{
+            data: {
+              type: '__visitor_ping__',
+              visitDate: today,
+              visitorId,
+            },
+            created_at: new Date().toISOString(),
+          }]);
+
+        if (!pingErr) {
+          try {
+            localStorage.setItem(VISITOR_RECORDED_DATE_KEY, today);
+          } catch {}
+          return { recorded: true, mode: 'supabase-fallback' as const };
+        }
+
+        console.warn('Visitor tracking fallback insert failed:', pingErr);
+        return { recorded: false };
+      } catch (e) {
+        console.warn('recordDailyVisit failed:', e);
+        return { recorded: false };
+      } finally {
+        if (inFlightVisitKey === today) {
+          inFlightVisitPromise = null;
+        }
+      }
+    })();
+
+    return inFlightVisitPromise;
+  },
+
+  /**
+   * 관리자 대시보드용 일일/전체 방문자 수 조회 (KST 오늘 기준)
+   */
+  async getVisitorStats(): Promise<VisitorStats> {
+    const today = getKstDateString();
+    const supabase = getSupabase();
+
+    if (!supabase || !isSupabaseConfigured) {
+      let startDate = today;
+      let todayVisitors = 0;
+      let totalVisitors = 0;
+      try {
+        const raw = localStorage.getItem(LOCAL_VISITOR_STATS_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            if (typeof parsed.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(parsed.startDate)) {
+              startDate = parsed.startDate;
+            }
+            const dailyCounts = parsed.dailyCounts && typeof parsed.dailyCounts === 'object' ? parsed.dailyCounts : {};
+            todayVisitors = Number(dailyCounts[today]) || 0;
+            totalVisitors = Object.values(dailyCounts).reduce<number>((sum, val) => sum + (Number(val) || 0), 0);
+          }
+        }
+      } catch {
+        // ignore parse errors
+      }
+      return {
+        todayVisitors,
+        totalVisitors,
+        todayDate: today,
+        startDate,
+        source: 'local',
+      };
+    }
+
+    if (!getAdminSessionToken()) {
+      return {
+        todayVisitors: 0,
+        totalVisitors: 0,
+        todayDate: today,
+        startDate: today,
+        source: 'supabase',
+        requiresAdminAuth: true,
+        errorMessage: '관리자 재인증 후 방문자 통계를 조회할 수 있습니다.',
+      };
+    }
+
+    try {
+      // 1차: 전용 관리자 RPC (get_visitor_stats)
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_visitor_stats', {
+        p_today: today,
+      });
+
+      if (!rpcError && rpcData) {
+        return {
+          todayVisitors: Number(rpcData.todayVisitors ?? 0),
+          totalVisitors: Number(rpcData.totalVisitors ?? 0),
+          todayDate: today,
+          startDate: String(rpcData.startDate || today),
+          source: 'supabase',
+        };
+      }
+
+      if (rpcError && !isMissingRpcError(rpcError)) {
+        const msg = String(rpcError.message || '');
+        if (String(rpcError.code || '') === '42501' || msg.toLowerCase().includes('admin authentication')) {
+          return {
+            todayVisitors: 0,
+            totalVisitors: 0,
+            todayDate: today,
+            startDate: today,
+            source: 'supabase',
+            requiresAdminAuth: true,
+            errorMessage: '관리자 쓰기/조회 인증 토큰이 만료되었거나 일치하지 않습니다. 재인증 후 확인해주세요.',
+          };
+        }
+      }
+
+      // 2차: site_visitors 테이블 직접 페이지네이션 집계
+      const pageSize = 1000;
+      const seenKeys = new Set<string>();
+      const todayKeys = new Set<string>();
+      let minDate = '';
+      let siteVisitorsSupported = true;
+
+      for (let from = 0; ; from += pageSize) {
+        const { data: rows, error: rowsErr } = await supabase
+          .from('site_visitors')
+          .select('visit_date, visitor_id')
+          .order('visit_date', { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (rowsErr) {
+          if (isMissingTableError(rowsErr, 'site_visitors')) {
+            siteVisitorsSupported = false;
+            break;
+          }
+          const code = String(rowsErr.code || '');
+          if (code === '42501') {
+            return {
+              todayVisitors: 0,
+              totalVisitors: 0,
+              todayDate: today,
+              startDate: today,
+              source: 'supabase',
+              requiresAdminAuth: true,
+              errorMessage: '관리자 인증 후 방문자 통계를 조회할 수 있습니다.',
+            };
+          }
+          throw rowsErr;
+        }
+
+        if (!rows || rows.length === 0) break;
+
+        for (const r of rows as Array<{ visit_date?: string; visitor_id?: string }>) {
+          const d = String(r.visit_date || '').slice(0, 10);
+          const v = String(r.visitor_id || '').trim();
+          if (!d || !v) continue;
+          const composite = `${d}::${v}`;
+          seenKeys.add(composite);
+          if (d === today) todayKeys.add(composite);
+          if (!minDate || d < minDate) minDate = d;
+        }
+
+        if (rows.length < pageSize) break;
+      }
+
+      if (siteVisitorsSupported) {
+        return {
+          todayVisitors: todayKeys.size,
+          totalVisitors: seenKeys.size,
+          todayDate: today,
+          startDate: minDate || today,
+          source: 'supabase',
+        };
+      }
+
+      // 3차: 기존 inquiries 테이블 __visitor_ping__ 폴백 집계 (중복 제거)
+      const fallbackSeen = new Set<string>();
+      const fallbackToday = new Set<string>();
+      let fallbackMinDate = '';
+
+      for (let from = 0; ; from += pageSize) {
+        const { data: pingRows, error: pingErr } = await supabase
+          .from('inquiries')
+          .select('data, created_at')
+          .contains('data', { type: '__visitor_ping__' })
+          .order('id', { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (pingErr) {
+          const code = String(pingErr.code || '');
+          if (code === '42501') {
+            return {
+              todayVisitors: 0,
+              totalVisitors: 0,
+              todayDate: today,
+              startDate: today,
+              source: 'supabase-fallback',
+              requiresAdminAuth: true,
+              errorMessage: '관리자 인증 후 방문자 통계를 조회할 수 있습니다.',
+            };
+          }
+          throw pingErr;
+        }
+
+        if (!pingRows || pingRows.length === 0) break;
+
+        for (const row of pingRows as Array<{ data?: any; created_at?: string }>) {
+          const payload = row?.data || {};
+          const visitDate =
+            typeof payload.visitDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(payload.visitDate)
+              ? payload.visitDate
+              : row.created_at
+                ? getKstDateString(new Date(row.created_at))
+                : '';
+          const visitorId = typeof payload.visitorId === 'string' ? payload.visitorId.trim() : '';
+          if (!visitDate || !visitorId) continue;
+          const composite = `${visitDate}::${visitorId}`;
+          fallbackSeen.add(composite);
+          if (visitDate === today) fallbackToday.add(composite);
+          if (!fallbackMinDate || visitDate < fallbackMinDate) fallbackMinDate = visitDate;
+        }
+
+        if (pingRows.length < pageSize) break;
+      }
+
+      return {
+        todayVisitors: fallbackToday.size,
+        totalVisitors: fallbackSeen.size,
+        todayDate: today,
+        startDate: fallbackMinDate || today,
+        source: 'supabase-fallback',
+      };
+    } catch (e: any) {
+      console.warn('getVisitorStats failed:', e);
+      return {
+        todayVisitors: 0,
+        totalVisitors: 0,
+        todayDate: today,
+        startDate: today,
+        source: 'supabase',
+        errorMessage: e?.message || '방문자 통계를 불러오지 못했습니다.',
+      };
+    }
   }
 };
